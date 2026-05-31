@@ -1,4 +1,8 @@
 {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/cinderblock/openslate/master/packages/core/schema/openslate.schema.json",
+  "title": "OpenSlate v1",
+  "description": "An OpenSlate token is a JWS-compact (RFC 7515) string: BASE64URL(JCS(header)) + '.' + BASE64URL(JCS(payload)) + '.' + BASE64URL(signature). The 'header' conforms to #/definitions/JwsHeader, the 'payload' to #/definitions/SlatePayload. See SPEC.md and vectors/ for the normative format and conformance test vectors.",
   "$ref": "#/definitions/SlatePayload",
   "definitions": {
     "SlatePayload": {
@@ -171,7 +175,29 @@
         "positions"
       ],
       "additionalProperties": false
+    },
+    "JwsHeader": {
+      "type": "object",
+      "properties": {
+        "alg": {
+          "type": "string",
+          "const": "EdDSA"
+        },
+        "typ": {
+          "type": "string",
+          "const": "openslate+jws"
+        },
+        "kid": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "alg",
+        "typ",
+        "kid"
+      ],
+      "additionalProperties": false
     }
-  },
-  "$schema": "http://json-schema.org/draft-07/schema#"
+  }
 }
