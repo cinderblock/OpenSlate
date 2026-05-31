@@ -273,6 +273,31 @@ such additions ship with a coordinated spec revision). Incompatible changes bump
 
 ---
 
+## 11. File extension and media type
+
+A single OpenSlate token MAY be stored or transmitted as a file or HTTP body.
+
+| What | Value |
+| --- | --- |
+| File extension | `.slate` |
+| Media type     | `application/openslate+jws` |
+
+- The file content MUST be exactly the token string (`header.payload.signature`),
+  optionally followed by a single trailing newline. No surrounding whitespace,
+  no JSON wrapping, no Base64 of the whole thing.
+- The structured suffix `+jws` ([RFC 6839](https://www.rfc-editor.org/rfc/rfc6839))
+  signals that generic JWS-compact tooling MAY process the body.
+- The media type `application/jose` MAY also be used by generic JOSE tooling;
+  `application/openslate+jws` is preferred so consumers can dispatch on the
+  OpenSlate `typ` value without first decoding the header.
+
+This v1 specification does not define a collection format. The conventional
+representation of multiple slates is a directory of `.slate` files (with an
+out-of-band index if desired). A future revision MAY define `.slates` as a
+newline-delimited list of tokens; implementations SHOULD NOT preempt that.
+
+---
+
 ## Appendix A — illustrative payload
 
 ```json
