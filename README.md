@@ -30,9 +30,11 @@ base64url(header) . base64url(payload) . base64url(signature)
 - The **signature** is Ed25519 (EdDSA / [RFC 8037](https://www.rfc-editor.org/rfc/rfc8037)).
 - Your **public key is your identity** (`ed25519:<base58>`); real-world trust is a
   separate, optional layer (e.g. domain attestation via `/.well-known/openslate.json`).
+- Stored as a `.slate` file or transmitted with media type `application/openslate+jws`.
 
-See **[SPEC.md](./SPEC.md)** for the normative format. The standard is
-decentralized-first: a block is self-contained and verifiable without any server.
+See **[SPEC.md](./SPEC.md)** for the normative format and **[`vectors/`](./vectors/)**
+for cross-language conformance test vectors. The standard is decentralized-first:
+a block is self-contained and verifiable without any server.
 
 ## Repository layout
 
