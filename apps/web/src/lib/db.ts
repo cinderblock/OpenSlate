@@ -18,8 +18,20 @@ export interface KnownIdentity {
   addedAt: string;
 }
 
+export interface SubjectRaceMapping {
+  /** Canonicalised subject key — see `subjectKey` in lib/results.ts. */
+  subjectKey: string;
+  /** Provider tag — `civicapi` today; lets future providers coexist. */
+  provider: string;
+  /** The provider's race ID, as returned by `/race/search`. */
+  raceId: string;
+  /** Where the mapping came from. `manual` overrides survive auto re-resolution. */
+  source: "auto" | "manual";
+  setAt: string;
+}
+
 const DB_NAME = "openslate";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -39,6 +51,12 @@ function db(): Promise<IDBPDatabase> {
         // Auto-populated when the user saves an imported slate, plus manual adds.
         if (!database.objectStoreNames.contains("knownIdentities")) {
           database.createObjectStore("knownIdentities", { keyPath: "publicKey" });
+        }
+        // Maps a canonical Subject key to a results-provider race id. Persists
+        // both auto-resolved matches (so we don't re-search every render) and
+        // manual user overrides (which auto re-resolution must not clobber).
+        if (!database.objectStoreNames.contains("subjectRaceMap")) {
+          database.createObjectStore("subjectRaceMap", { keyPath: "subjectKey" });
         }
       },
     });
@@ -80,4 +98,16 @@ export async function putKnownIdentity(record: KnownIdentity): Promise<void> {
 
 export async function deleteKnownIdentity(publicKey: string): Promise<void> {
   await (await db()).delete("knownIdentities", publicKey);
+}
+
+export async function getSubjectRace(subjectKey: string): Promise<SubjectRaceMapping | undefined> {
+  return (await db()).get("subjectRaceMap", subjectKey) as Promise<SubjectRaceMapping | undefined>;
+}
+
+export async function putSubjectRace(record: SubjectRaceMapping): Promise<void> {
+  await (await db()).put("subjectRaceMap", record);
+}
+
+export async function deleteSubjectRace(subjectKey: string): Promise<void> {
+  await (await db()).delete("subjectRaceMap", subjectKey);
 }
