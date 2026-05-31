@@ -2,10 +2,12 @@ import { verifySlate } from "@openslate/core";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createBallotSource, createElectionsSource } from "./ballot";
+import { createPollsSource } from "./polls";
 
 const VERSION = "0.0.0";
 const ballot = createBallotSource();
 const elections = createElectionsSource();
+const polls = createPollsSource();
 const app = new Hono();
 
 app.use("/api/*", cors());
@@ -51,6 +53,37 @@ app.get("/api/elections", async (c) => {
     return c.json({ error: err instanceof Error ? err.message : "elections lookup failed" }, 502);
   }
 });
+
+// Polls passthrough — matches @openslate/poll-cache (Cloudflare Worker) so the
+// web client treats either as the source of truth. Short in-memory TTL keeps
+// VoteHub from being hammered when self-hosted at scale.
+const POLLS_PATHS = ["/api/polls", "/api/pollsters", "/api/subjects", "/api/poll-types"];
+for (const prefix of POLLS_PATHS) {
+  app.get(`${prefix}/*`, (c) => proxyPoll(c.req.path, c.req.url));
+  app.get(prefix, (c) => proxyPoll(c.req.path, c.req.url));
+}
+
+async function proxyPoll(reqPath: string, reqUrl: string) {
+  const upstreamPath = reqPath.replace(/^\/api/, "");
+  const search = new URL(reqUrl).search;
+  try {
+    const { status, contentType, body } = await polls.proxy(upstreamPath, search);
+    return new Response(body, {
+      status,
+      headers: {
+        "content-type": contentType,
+        "cache-control": "public, max-age=900, stale-while-revalidate=3600",
+        "x-data-source": "VoteHub (CC BY 4.0)",
+        "x-data-license": "https://creativecommons.org/licenses/by/4.0/",
+      },
+    });
+  } catch (err) {
+    return Response.json(
+      { error: err instanceof Error ? err.message : "polls lookup failed" },
+      { status: 502 },
+    );
+  }
+}
 
 // Example identity attestation document (see SPEC §7). A real host lists the keys
 // it controls here so verifiers can attest `issuer.uri` -> key.

@@ -1,4 +1,4 @@
-import { type Stance, verifySlate } from "@openslate/core";
+import { type Stance, type Subject, verifySlate } from "@openslate/core";
 import { useLiveQuery } from "@tanstack/react-db";
 import { Link, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
@@ -6,6 +6,7 @@ import { useBallotDraft } from "../lib/ballotDraft";
 import { slatesCollection } from "../lib/collections";
 import { shortKey, useKnownIdentities } from "../lib/identities";
 import { subjectKey } from "../lib/subjects";
+import { PollsPanel } from "./PollsPanel";
 
 const STANCE_LABEL: Record<Stance, string> = {
   endorse: "Endorse",
@@ -79,6 +80,16 @@ export function RacePanel() {
     [draft.rows, targetKey],
   );
 
+  const pollSubject = useMemo<Subject>(
+    () => ({
+      title: view.title,
+      ...(view.id ? { id: view.id } : {}),
+      ...(view.jurisdiction ? { jurisdiction: view.jurisdiction } : {}),
+      ...(view.election ? { election: view.election } : {}),
+    }),
+    [view.title, view.id, view.jurisdiction, view.election],
+  );
+
   const byChoice = useMemo(() => {
     const groups = new Map<string, IssuerPosition[]>();
     for (const position of view.positions) {
@@ -146,6 +157,8 @@ export function RacePanel() {
           </ul>
         </div>
       )}
+
+      <PollsPanel subject={pollSubject} />
 
       {view.positions.length === 0 ? (
         <div className="card">

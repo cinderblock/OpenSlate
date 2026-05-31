@@ -1,0 +1,17 @@
+{
+  "name": "@openslate/poll-cache",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Cloudflare Worker that caches VoteHub poll data behind permissive CORS. Stateless pass-through; no user data, no logs.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "wrangler": "^3.99.0"
+  }
+}

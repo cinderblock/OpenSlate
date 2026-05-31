@@ -1,0 +1,10 @@
+name = "openslate-poll-cache"
+main = "src/index.ts"
+compatibility_date = "2026-05-01"
+workers_dev = true
+
+# Tiered Cache must be enabled at the zone level for the global cache behavior
+# this Worker assumes; see plans/polls-cache-worker.md.
+
+# Custom route is added per-deployment, e.g.
+# routes = [{ pattern = "polls.openslate.dev/*", custom_domain = true }]

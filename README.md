@@ -44,8 +44,64 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 | [`packages/core`](./packages/core) | `@openslate/core` — the standard's reference impl: types, schema, canonical JSON, Ed25519 sign/verify, JSON Schema export. Pure TS, minimal audited deps. |
 | [`packages/cli`](./packages/cli) | `@openslate/cli` — `keygen` / `sign` / `verify` / `inspect`. |
 | [`apps/web`](./apps/web) | React + Vite SPA. Manage identity, compose/share slates, import & verify, collate by race. Data lives in **browser storage only**. |
-| [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Stateless verify helper + a proxy to the [Voting Information Project](https://www.votinginfoproject.org/) for ballot lookup (keeps the API key server-side). |
+| [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + proxies for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic) and opinion polls ([VoteHub](https://votehub.com)). |
+| [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls behind permissive CORS. Mirrors the Hono server's `/api/polls/*` shape so the web client treats either backend identically. Not yet deployed. |
 | [`apps/desktop`](./apps/desktop) | [Electrobun](https://blackboard.sh/electrobun) wrapper around the web build (stub). |
+
+## Hosting topologies
+
+OpenSlate is **decentralized-first**: a slate is fully verifiable offline, and
+the web/desktop app works against browser storage alone. The optional Hono
+server and Cloudflare Worker exist only to fetch *public* data on the user's
+behalf (ballot contests, polls); neither stores user data, identity, or
+positions. Signing and verification always happen in the browser.
+
+```mermaid
+flowchart LR
+  classDef ext fill:#fff7d6,stroke:#7a5500,color:#000
+  classDef opt stroke-dasharray:5 5
+
+  Peer["Another OpenSlate user"]
+
+  subgraph Browser["Your browser / desktop"]
+    Client["Web SPA / Electrobun<br/>identity · sign · verify<br/>collate · share<br/><i>IndexedDB + localStorage</i>"]
+  end
+
+  subgraph SelfHost["Optional — self-hosted"]
+    Hono["Hono server<br/>apps/server<br/><i>stateless, no user data</i>"]
+  end
+
+  subgraph ProjectInfra["Optional — project-operated (future)"]
+    Worker["CF Worker poll-cache<br/>apps/poll-cache<br/><i>15min edge cache</i>"]
+  end
+
+  GCI[("Google Civic Info<br/>VIP ballot data")]:::ext
+  VH[("VoteHub<br/>opinion polls<br/>CC BY 4.0")]:::ext
+
+  Client -.->|"/api/ballot · /api/elections"| Hono
+  Client -.->|"/api/polls/*"| Hono
+  Client -.->|"/api/polls/*"| Worker
+
+  Hono -->|"address (forwarded, not stored)"| GCI
+  Hono -->|"subject filter"| VH
+  Worker -->|"upstream fetch"| VH
+
+  Client <-.->|"text block · URL · email · QR · file"| Peer
+
+  class Hono opt
+  class Worker opt
+```
+
+| Mode | What runs | Sign & verify | Polls | Ballot lookup |
+| --- | --- | :---: | :---: | :---: |
+| **Pure client** (default) | Web SPA or desktop only | yes | manual entry | manual entry |
+| **+ Self-hosted Hono** | Above + your own `apps/server` | yes | yes (VoteHub) | yes (needs `GOOGLE_API_KEY`) |
+| **+ Public Worker** *(future)* | Above + project-operated Worker | yes | yes (cached) | — |
+
+Modes are not mutually exclusive: run your own Hono for ballot lookup **and**
+point `VITE_POLLS_BASE` at the public Worker for cached polls. The web client
+hits `/api/polls/*` on whichever backend the env var resolves to; the response
+shape is identical either way.
 
 ## Quickstart
 
