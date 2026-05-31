@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="OpenSlate">
+  <rect width="512" height="512" fill="#0f1115"/>
+  <text x="50%" y="48%" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="160" font-weight="700" fill="#e6e8ec" text-anchor="middle" dominant-baseline="central">OS</text>
+  <path d="M170 340 L232 402 L362 248" fill="none" stroke="#2ecc71" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

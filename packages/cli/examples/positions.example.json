@@ -1,0 +1,19 @@
+[
+  {
+    "subject": { "title": "Mayor of Springfield", "id": "vip:contest-123", "kind": "race" },
+    "stance": "endorse",
+    "choice": "A. Candidate",
+    "weight": 1,
+    "statement": "Strong record on transit and housing."
+  },
+  {
+    "subject": { "title": "Prop 12 — Parks Bond", "id": "vip:measure-77", "kind": "measure" },
+    "stance": "oppose",
+    "statement": "Funding mechanism is regressive."
+  },
+  {
+    "subject": { "title": "City Council District 4", "kind": "race" },
+    "stance": "lean_for",
+    "choice": "B. Other"
+  }
+]

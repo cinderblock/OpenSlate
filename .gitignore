@@ -1,0 +1,31 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+.vite/
+packages/*/dist/
+apps/*/dist/
+
+# electrobun
+.electrobun/
+apps/desktop/build/
+apps/desktop/dist/
+
+# test / coverage
+coverage/
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# private keys / generated identities (contain Ed25519 secret keys)
+*.identity.json
+*.key
+
+# logs & os cruft
+*.log
+.DS_Store
+Thumbs.db

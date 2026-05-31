@@ -1,0 +1,24 @@
+{
+  "name": "openslate",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "An open standard and toolkit for securely sharing verifiable endorsements.",
+  "license": "MIT",
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "bun run --filter '*' typecheck",
+    "build": "bun run --filter '@openslate/web' build",
+    "schema": "bun run --filter '@openslate/core' schema",
+    "dev:web": "bun run --filter '@openslate/web' dev",
+    "dev:server": "bun run --filter '@openslate/server' dev",
+    "lint": "biome check .",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/bun": "^1.1.14",
+    "typescript": "^5.7.2"
+  }
+}

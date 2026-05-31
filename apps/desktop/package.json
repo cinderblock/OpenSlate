@@ -1,0 +1,12 @@
+{
+  "name": "@openslate/desktop",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "description": "OpenSlate desktop app (Electrobun) wrapping the web UI. Stub — see README.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electrobun dev",
+    "build": "electrobun build"
+  }
+}

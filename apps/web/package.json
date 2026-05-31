@@ -1,0 +1,41 @@
+{
+  "name": "@openslate/web",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "description": "OpenSlate web app — manage identity, compose & share slates, import, verify, and collate.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@openslate/core": "workspace:*",
+    "@tanstack/db": "^0.6.7",
+    "@tanstack/react-db": "^0.1.85",
+    "@tanstack/react-query": "^5.100.14",
+    "@tanstack/react-query-persist-client": "^5.100.14",
+    "@tanstack/react-router": "^1.170.9",
+    "fuse.js": "^7.3.0",
+    "idb": "^8.0.0",
+    "idb-keyval": "^6.2.4",
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^18.3.17",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.7",
+    "vite-plugin-pwa": "^1.3.0"
+  }
+}

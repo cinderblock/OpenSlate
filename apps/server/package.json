@@ -1,0 +1,17 @@
+{
+  "name": "@openslate/server",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Minimal stateless OpenSlate backend: verify helper + Voting Information Project ballot proxy. Stores no user data.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "bun run --hot --env-file=../../.env src/index.ts",
+    "start": "bun run --env-file=../../.env src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openslate/core": "workspace:*",
+    "hono": "^4.6.14"
+  }
+}

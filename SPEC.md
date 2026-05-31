@@ -1,0 +1,307 @@
+# OpenSlate Specification — v1 (draft)
+
+This document defines the **OpenSlate** wire format: a compact, signed, tamper-evident
+token that carries a set of endorsement *positions* and is shareable over any medium.
+
+The key words MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY are to be interpreted as
+described in [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119).
+
+Status: **draft**. Stable enough to build against; breaking changes bump `v`.
+
+---
+
+## 1. Overview
+
+An OpenSlate **slate** is a [JWS Compact Serialization](https://www.rfc-editor.org/rfc/rfc7515)
+token signed with EdDSA (Ed25519, [RFC 8037](https://www.rfc-editor.org/rfc/rfc8037)):
+
+```
+BASE64URL(UTF8(header)) "." BASE64URL(UTF8(payload)) "." BASE64URL(signature)
+```
+
+- All BASE64URL is **without padding** (RFC 7515 §2).
+- `header` and `payload` are JSON, serialized in canonical form (§4).
+- The signature covers the ASCII bytes of `BASE64URL(header) "." BASE64URL(payload)`.
+
+Because the token is a standard JWS, generic JOSE tooling can verify it given the
+issuer's public key. Because the payload is canonical JSON, the token is trivial to
+reproduce and to reimplement in any language.
+
+A slate is **self-contained**: anyone can verify integrity and issuer authorship
+offline. Mapping an issuer key to a real-world identity is a separate, optional
+trust layer (§7).
+
+---
+
+## 2. Identity
+
+An issuer is identified by an **Ed25519 public key**. The public key *is* the
+identity at the cryptographic layer.
+
+### 2.1 Key encoding
+
+Public keys are encoded as:
+
+```
+ed25519:<base58btc(32-byte-public-key)>
+```
+
+- Prefix `ed25519:` names the algorithm.
+- `base58btc` is the Bitcoin base58 alphabet.
+
+Example: `ed25519:6fTPq8...` (44–45 chars after the prefix).
+
+> Future versions MAY also accept [`did:key`](https://w3c-ccg.github.io/did-method-key/)
+> for the same key material; `ed25519:` is the v1 canonical form.
+
+Secret keys, when serialized (e.g. for backup), use the same scheme over the
+32-byte Ed25519 seed. Secret keys MUST never appear in a slate.
+
+---
+
+## 3. Data model
+
+### 3.1 `SlatePayload`
+
+| Field | Type | Req | Notes |
+| --- | --- | --- | --- |
+| `v` | integer | yes | Spec version. MUST be `1`. |
+| `issuer` | `Issuer` | yes | Who is making these endorsements. |
+| `issued_at` | string | yes | [RFC 3339](https://www.rfc-editor.org/rfc/rfc3339) date-time, with offset (UTC `Z` recommended). |
+| `expires_at` | string | no | RFC 3339. After this, verifiers SHOULD warn. |
+| `context` | `Context` | no | Scopes the whole slate (one election/jurisdiction). |
+| `positions` | `Position[]` | yes | MAY be empty (e.g. an issuer publishing only `endorsed_by`). |
+| `endorsed_by` | `Reference[]` | no | Who endorsed *this* issuer (for candidates/orgs). |
+| `nonce` | string | no | Disambiguates otherwise-identical slates. |
+
+### 3.2 `Issuer`
+
+| Field | Type | Req | Notes |
+| --- | --- | --- | --- |
+| `key` | string | yes | `ed25519:<base58>` (§2.1). Verification uses this key. |
+| `name` | string | no | Self-asserted display name. NOT proof of identity. |
+| `kind` | string | no | `individual` \| `organization` \| `candidate` \| `campaign` \| other. |
+| `uri` | string | no | Self-asserted homepage; basis for domain attestation (§7). |
+
+### 3.3 `Subject` — the thing being voted on
+
+| Field | Type | Req | Notes |
+| --- | --- | --- | --- |
+| `title` | string | yes | Human label, e.g. `"Mayor of Springfield 2026"` or `"Prop 12"`. |
+| `id` | string | no | Canonical id. Source-namespaced, e.g. `vip:<contest-id>` (Voting Information Project). |
+| `kind` | string | no | `candidate` \| `measure` \| `race` \| `option` \| other. |
+| `jurisdiction` | string | no | e.g. `us/ca/sf`. |
+| `election` | string | no | Election identifier or date. |
+| `uri` | string | no | Link for more info. |
+
+Two positions refer to the same real-world item when their `id` matches. Absent an
+`id`, consumers fall back to `(title, jurisdiction, election)` matching.
+
+### 3.4 `Position`
+
+| Field | Type | Req | Notes |
+| --- | --- | --- | --- |
+| `subject` | `Subject` | yes | What this position is about. |
+| `stance` | `Stance` | yes | See §3.6. |
+| `choice` | string | no | The specific option/candidate chosen within a race. |
+| `weight` | number | no | Strength/confidence in `[0, 1]`. |
+| `statement` | string | no | Free-text endorsement / rationale. |
+| `source` | string | no | URL backing the position. |
+
+### 3.5 `Reference` — a claimed cross-endorsement
+
+Used in `endorsed_by` so a candidate/org can publish who endorsed them.
+
+| Field | Type | Req | Notes |
+| --- | --- | --- | --- |
+| `issuer` | string | yes | `ed25519:<base58>` of the endorser. |
+| `name` | string | no | Self-asserted endorser name. |
+| `slate` | string | no | An embedded OpenSlate token proving the endorsement. |
+| `uri` | string | no | Where the endorser's slate can be fetched. |
+| `note` | string | no | Free text. |
+
+A `Reference` is a *claim*. It is only proven if `slate` (or the slate at `uri`)
+verifies, is issued by `issuer`, and contains a matching `endorse`/`lean_for`
+position for this issuer. Consumers SHOULD treat unproven references as unverified.
+
+### 3.6 `Stance`
+
+One of: `endorse`, `oppose`, `lean_for`, `lean_against`, `neutral`, `abstain`.
+
+| Stance | Meaning |
+| --- | --- |
+| `endorse` | "I support / voted for this." |
+| `oppose` | "I am against this." |
+| `lean_for` | "Leaning toward, not committed." |
+| `lean_against` | "Leaning against, not committed." |
+| `neutral` | Explicitly no preference. |
+| `abstain` | Deliberately declining to weigh in. |
+
+### 3.7 `Context`
+
+| Field | Type | Req |
+| --- | --- | --- |
+| `election` | string | no |
+| `jurisdiction` | string | no |
+| `title` | string | no |
+
+### 3.8 Unknown fields
+
+Objects are **closed** in v1: a verifier MUST reject a payload containing fields not
+defined here. This prevents smuggling meaningful data outside the validated schema.
+
+---
+
+## 4. Canonical JSON
+
+The `header` and `payload` JSON MUST be serialized using JSON Canonicalization Scheme
+([RFC 8785, JCS](https://www.rfc-editor.org/rfc/rfc8785)):
+
+1. Object keys sorted by UTF-16 code unit.
+2. No insignificant whitespace.
+3. Strings escaped minimally per JSON.
+4. Numbers in ECMAScript `Number`-to-string form.
+
+OpenSlate payloads use only strings and a single bounded number (`weight` in `[0,1]`),
+so a conforming JCS implementation is a recursive key-sort plus standard JSON number
+formatting. Members whose value is `undefined`/absent MUST be omitted (not `null`),
+unless `null` is explicitly meaningful (it is not, in v1).
+
+Canonicalization guarantees two independent implementations produce the *same* token
+for the same logical input. Note that **verification** relies on the transmitted
+`BASE64URL(header).BASE64URL(payload)` bytes directly, so a verifier need not
+re-canonicalize to check a signature.
+
+---
+
+## 5. Header
+
+```json
+{ "alg": "EdDSA", "typ": "openslate+jws", "kid": "ed25519:<base58>" }
+```
+
+- `alg` MUST be `"EdDSA"`. Verifiers MUST reject other values.
+- `typ` MUST be `"openslate+jws"`.
+- `kid` MUST equal `payload.issuer.key`. Verifiers MUST reject a mismatch.
+
+---
+
+## 6. Signing & verification
+
+### 6.1 Signing
+
+1. Build and schema-validate the `SlatePayload`.
+2. Construct the header with `kid = issuer.key`.
+3. `signingInput = BASE64URL(JCS(header)) + "." + BASE64URL(JCS(payload))`.
+4. `signature = Ed25519-Sign(secretKey, ASCII(signingInput))`.
+5. Token = `signingInput + "." + BASE64URL(signature)`.
+
+### 6.2 Verification
+
+A verifier MUST:
+
+1. Split the token into three segments by `.`; reject if not exactly three.
+2. Base64url-decode and JSON-parse `header` and `payload`.
+3. Reject if `header.alg != "EdDSA"` or `header.typ != "openslate+jws"`.
+4. Schema-validate `payload` (§3); reject unknown fields.
+5. Reject if `header.kid != payload.issuer.key`.
+6. Decode the public key from `payload.issuer.key`.
+7. Verify the Ed25519 signature over `ASCII(seg0 + "." + seg1)` using that key.
+8. If `expires_at` is present and in the past, surface a warning (still structurally valid).
+
+A token is **valid** iff steps 1–7 succeed. Validity proves integrity and that the
+holder of the issuer's secret key authored it — *not* the issuer's real-world identity.
+
+---
+
+## 7. Trust & real-world identity (informative)
+
+The signature binds a slate to a *key*, not a person or org. Establishing that a key
+belongs to "The Sierra Club" or "Jane Candidate" is layered on top and is OPTIONAL:
+
+- **Domain attestation.** An issuer publishes a document at
+  `https://<domain>/.well-known/openslate.json` listing the keys they control. If
+  `issuer.uri` is on that domain and the key is listed, a verifier MAY treat the key
+  as attested by that domain.
+- **Cross-endorsement.** `endorsed_by` references that resolve to verifying slates
+  build a web of corroboration.
+- **External directories / web-of-trust.** Out of scope for v1.
+
+Example `/.well-known/openslate.json`:
+
+```json
+{
+  "version": 1,
+  "name": "Example Org",
+  "keys": [
+    { "key": "ed25519:6fTPq8...", "kind": "organization", "added": "2026-01-01T00:00:00Z" }
+  ]
+}
+```
+
+---
+
+## 8. Ballot data & subjects (informative)
+
+OpenSlate does not define an election catalog. The reference toolkit sources ballot
+contests from the [Voting Information Project](https://www.votinginfoproject.org/)
+through a stateless proxy, mapping VIP contests/candidates onto `Subject` (with
+`id = "vip:<id>"`). Any catalog may be used; matching across issuers relies on
+shared `Subject.id` values. Subjects need not be on any official ballot — arbitrary
+votable options are allowed via free-form `title`.
+
+---
+
+## 9. Security considerations
+
+- **Secret keys** are sensitive. Reference apps store them client-side only; users
+  are responsible for backup. Compromise allows forging that issuer's slates.
+- **No revocation in v1.** Use `expires_at` and re-issue. Key rotation is published
+  via the attestation document (§7).
+- **Replay / staleness.** `issued_at` (+ optional `expires_at`, `nonce`) let consumers
+  prefer the newest slate from an issuer.
+- **No confidentiality.** Slates are public artifacts; do not put secrets in them.
+- **Closed schema** (§3.8) limits injection of unvalidated data.
+
+---
+
+## 10. Versioning
+
+`v` is a single integer. Additive, backward-compatible changes MAY be made within a
+version by adding OPTIONAL fields (verifiers must already reject unknown fields, so
+such additions ship with a coordinated spec revision). Incompatible changes bump `v`.
+
+---
+
+## Appendix A — illustrative payload
+
+```json
+{
+  "v": 1,
+  "issuer": {
+    "key": "ed25519:6fTPq8K1...",
+    "name": "Jane Voter",
+    "kind": "individual"
+  },
+  "issued_at": "2026-05-28T17:00:00Z",
+  "context": { "election": "2026-11-03", "jurisdiction": "us/ca/sf" },
+  "positions": [
+    {
+      "subject": { "title": "Mayor of Springfield", "id": "vip:contest-123", "kind": "race" },
+      "stance": "endorse",
+      "choice": "A. Candidate",
+      "weight": 1,
+      "statement": "Strong record on transit."
+    },
+    {
+      "subject": { "title": "Prop 12", "id": "vip:measure-77", "kind": "measure" },
+      "stance": "oppose"
+    },
+    {
+      "subject": { "title": "City Council District 4", "kind": "race" },
+      "stance": "lean_for",
+      "choice": "B. Other"
+    }
+  ]
+}
+```
