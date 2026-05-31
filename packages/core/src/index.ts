@@ -4,3 +4,4 @@ export * from "./crypto";
 export * from "./envelope";
 export * from "./slate";
 export * from "./identity";
+export * from "./results";
