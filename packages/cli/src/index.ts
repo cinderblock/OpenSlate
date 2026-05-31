@@ -11,6 +11,7 @@ import {
   identityToIssuer,
   serializeIdentity,
   signSlate,
+  slatePayloadSchema,
   verifySlate,
 } from "@openslate/core";
 
@@ -20,11 +21,15 @@ Usage:
   openslate keygen [--name N] [--kind K] [--uri U] [-o file.json]
   openslate pubkey <identity.json>
   openslate sign <positions.json|-> --key <identity.json> [--election E] [--jurisdiction J] [-o out.txt]
+  openslate validate <payload.json|->
   openslate verify <token|file|->
   openslate inspect <token|file|->
 
 A <positions.json> is either a JSON array of Position objects, or an object
 { "positions": [...], "endorsed_by": [...], "context": {...} }. Use "-" for stdin.
+
+validate is a schema-only check (no crypto) of a complete SlatePayload JSON
+file — useful for CI on hand-authored research data before signing.
 
 Keys are Ed25519, encoded "ed25519:<base58>". keygen output contains the SECRET
 key — keep it safe.`;
@@ -161,6 +166,31 @@ async function cmdSign(rest: string[]): Promise<void> {
   }
 }
 
+async function cmdValidate(rest: string[]): Promise<void> {
+  const { positional } = parseFlags(rest);
+  const text = await readText(positional[0] ?? "-");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (err) {
+    fail(`could not parse JSON: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  const result = slatePayloadSchema.safeParse(parsed);
+  if (result.success) {
+    console.log("VALID");
+    console.log(`positions: ${result.data.positions.length}`);
+    if (result.data.endorsed_by?.length) {
+      console.log(`endorsed_by: ${result.data.endorsed_by.length}`);
+    }
+  } else {
+    console.log("INVALID");
+    for (const issue of result.error.issues) {
+      console.log(`error:     ${issue.path.join(".") || "(root)"}: ${issue.message}`);
+    }
+    process.exit(1);
+  }
+}
+
 async function cmdVerify(rest: string[]): Promise<void> {
   const { positional } = parseFlags(rest);
   const token = await resolveToken(positional[0] ?? "-");
@@ -202,6 +232,9 @@ switch (command) {
     break;
   case "sign":
     await cmdSign(rest);
+    break;
+  case "validate":
+    await cmdValidate(rest);
     break;
   case "verify":
     await cmdVerify(rest);
