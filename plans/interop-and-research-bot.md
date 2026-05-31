@@ -42,38 +42,28 @@ and Part 1's conformance vectors will protect that change going forward.
 
 Tracked in TaskList; mirror here for durability.
 
-### Part 1 — interop kit
+### Part 1 — interop kit — **DONE**
 
-- [ ] **Plan doc** — *this file* (in progress).
-- [ ] **Conformance test vectors.**
-  - Add `packages/core/vectors/*.json`. Each vector: name, deterministic
-    keypair, input payload (as the author would write it), canonical payload
-    JSON, canonical header JSON, signing input, signature, full token.
-  - `scripts/vectors-generate.ts` — re-derives every vector from its input
-    using `@openslate/core` and writes it to disk (so we can regen after any
-    schema change and inspect the diff).
-  - `scripts/vectors-check.ts` — reads every vector, re-derives, asserts
-    byte-equality. Used by tests and CI.
-  - Add `bun test` coverage that calls the checker.
-  - Cover: minimal slate, all stances, endorsed_by, expires_at, unicode in
-    titles (JCS UTF-16 sort), every optional field, deliberately-broken
-    tokens (tampered payload, wrong kid, bad signature).
-- [ ] **`openslate validate` command.**
-  - Schema-only check of a payload JSON file (no crypto). Exit 0 on valid,
-    1 on invalid with human errors.
-  - Useful for CI on hand-authored research data before signing.
-- [ ] **`.slate` extension + MIME type.**
-  - Add §11 to SPEC.md: `application/openslate+jws`, `.slate` for single
-    token, `.slates` (newline-delimited) for collections.
-  - CLI: when reading/writing files, accept either extension.
-- [ ] **Hook up `header.schema.json` via `$ref`.**
-  - Tweak the schema exporter so `openslate.schema.json` references the
-    header schema rather than duplicating, or at minimum so both have stable
-    `$id`s pointing at a future canonical URL location.
-- [ ] **`docs/PORTING.md`.**
-  - Minimum deps, sign + verify pseudocode, the four pitfalls (UTF-16 sort,
-    base64url no-padding, ECMAScript number formatting, closed schema),
-    pointer to vectors as the conformance bar.
+- [x] **Plan doc** — this file.
+- [x] **Conformance test vectors.** `vectors/{positive,negative}/*.json` +
+  `keys.json`. Generated from `packages/core/scripts/vectors-source.ts`;
+  driven by `bun run vectors:generate` and `vectors:check`. Checker also
+  wired into `bun test` via `packages/core/test/vectors.test.ts`.
+  Coverage: minimal, all stances, every optional field, endorsed_by,
+  unicode + JCS UTF-16 ordering, tampered payload/signature, kid mismatch,
+  wrong alg, closed-schema rejection, malformed token shapes.
+  (Commit `598b299`.)
+- [x] **`openslate validate` command.** Schema-only check (no crypto) on a
+  SlatePayload JSON, accepts a path or `-` for stdin, exits non-zero with
+  per-issue paths on schema failure. (Commit `37ba4b7`.)
+- [x] **`.slate` extension + `application/openslate+jws` media type.**
+  SPEC §11; README mention; deferred a multi-slate collection format.
+  (Commits `062d43a`, `1982737`.)
+- [x] **Schema bundle.** `openslate.schema.json` now ships both
+  `SlatePayload` and `JwsHeader` under `definitions`, with stable `$id`s
+  on both files (raw GitHub URLs). (Commit `7cafc0b`.)
+- [x] **`docs/PORTING.md`.** Four-primitive list, sign/verify pseudocode,
+  four pitfalls, four-step minimum-viable-port plan. (Commit `719f357`.)
 
 ### Part 2 — research bot (after Part 1)
 
@@ -123,7 +113,13 @@ Tracked in TaskList; mirror here for durability.
 
 - [x] Read SPEC, core src, CLI, existing schema export to confirm scope.
 - [x] Created TaskList entries for Part 1.
-- [ ] Plan doc (this file) — writing now.
+- [x] Plan doc.
+- [x] Conformance vectors + generator + checker + test wrapper.
+- [x] `openslate validate` CLI command.
+- [x] Combined schema with stable `$id`.
+- [x] `.slate` / `application/openslate+jws` defined in SPEC §11.
+- [x] `docs/PORTING.md`.
+- [ ] **Next: Part 2 — attribution field + scraper skill.** Awaiting go-ahead.
 
 ## Open questions for the user
 
