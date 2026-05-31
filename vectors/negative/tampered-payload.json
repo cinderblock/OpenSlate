@@ -1,0 +1,10 @@
+{
+  "name": "tampered-payload",
+  "description": "A valid signed token whose payload segment was edited after signing. Signature MUST fail.",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJ2IjoxLCJpc3N1ZXIiOnsia2V5IjoiZWQyNTUxOTpBS25MNE5OZjNER1daSlM2Y1BrbkJ1RUduVnNWNEE0bTV0Z2ViTEhhUlNaOSIsIm5hbWUiOiJBbGljZSJ9LCJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsInBvc2l0aW9ucyI6W3sic3ViamVjdCI6eyJ0aXRsZSI6Ik1heW9yIn0sInN0YW5jZSI6Im9wcG9zZSJ9XX0.funpdOkJ0LWvWbgj_9gtFvpYkjV7NUSo-oukggs8y8K5NwjEaaqzBhh7dWj1v-DVYc4thVnLZYHN370c-oFhCw",
+  "expect": {
+    "error_contains": [
+      "signature"
+    ]
+  }
+}

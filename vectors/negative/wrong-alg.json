@@ -1,0 +1,10 @@
+{
+  "name": "wrong-alg",
+  "description": "header.alg is not EdDSA. MUST be rejected.",
+  "token": "eyJhbGciOiJIUzI1NiIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5In0sInBvc2l0aW9ucyI6W10sInYiOjF9.yYyT4NPS_HBPDHmfulVbXwWOXFht5CB3PLGnv_w7X-yHt8PZ3WSnEVeYNijlq6VFiT9aaFVySd5TOWj6nncSCg",
+  "expect": {
+    "error_contains": [
+      "alg"
+    ]
+  }
+}

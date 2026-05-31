@@ -1,0 +1,49 @@
+{
+  "name": "all-position-fields",
+  "description": "Every optional Position and Subject field populated.",
+  "signer": "alice",
+  "payload": {
+    "v": 1,
+    "issuer": {
+      "key": "ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+      "name": "Alice",
+      "kind": "individual",
+      "uri": "https://alice.example/"
+    },
+    "issued_at": "2026-01-01T00:00:00Z",
+    "expires_at": "2027-01-01T00:00:00Z",
+    "context": {
+      "election": "2026-11-03",
+      "jurisdiction": "us/ca/sf",
+      "title": "November 2026 General"
+    },
+    "positions": [
+      {
+        "subject": {
+          "title": "Mayor of Springfield",
+          "id": "vip:contest-123",
+          "kind": "race",
+          "jurisdiction": "us/ca/springfield",
+          "election": "2026-11-03",
+          "uri": "https://example.org/contest/123"
+        },
+        "stance": "endorse",
+        "choice": "A. Candidate",
+        "weight": 0.75,
+        "statement": "Strong record on transit.",
+        "source": "https://alice.example/endorsements/mayor"
+      }
+    ],
+    "nonce": "n1"
+  },
+  "header": {
+    "alg": "EdDSA",
+    "typ": "openslate+jws",
+    "kid": "ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9"
+  },
+  "canonical_header": "{\"alg\":\"EdDSA\",\"kid\":\"ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9\",\"typ\":\"openslate+jws\"}",
+  "canonical_payload": "{\"context\":{\"election\":\"2026-11-03\",\"jurisdiction\":\"us/ca/sf\",\"title\":\"November 2026 General\"},\"expires_at\":\"2027-01-01T00:00:00Z\",\"issued_at\":\"2026-01-01T00:00:00Z\",\"issuer\":{\"key\":\"ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9\",\"kind\":\"individual\",\"name\":\"Alice\",\"uri\":\"https://alice.example/\"},\"nonce\":\"n1\",\"positions\":[{\"choice\":\"A. Candidate\",\"source\":\"https://alice.example/endorsements/mayor\",\"stance\":\"endorse\",\"statement\":\"Strong record on transit.\",\"subject\":{\"election\":\"2026-11-03\",\"id\":\"vip:contest-123\",\"jurisdiction\":\"us/ca/springfield\",\"kind\":\"race\",\"title\":\"Mayor of Springfield\",\"uri\":\"https://example.org/contest/123\"},\"weight\":0.75}],\"v\":1}",
+  "signing_input": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJjb250ZXh0Ijp7ImVsZWN0aW9uIjoiMjAyNi0xMS0wMyIsImp1cmlzZGljdGlvbiI6InVzL2NhL3NmIiwidGl0bGUiOiJOb3ZlbWJlciAyMDI2IEdlbmVyYWwifSwiZXhwaXJlc19hdCI6IjIwMjctMDEtMDFUMDA6MDA6MDBaIiwiaXNzdWVkX2F0IjoiMjAyNi0wMS0wMVQwMDowMDowMFoiLCJpc3N1ZXIiOnsia2V5IjoiZWQyNTUxOTpBS25MNE5OZjNER1daSlM2Y1BrbkJ1RUduVnNWNEE0bTV0Z2ViTEhhUlNaOSIsImtpbmQiOiJpbmRpdmlkdWFsIiwibmFtZSI6IkFsaWNlIiwidXJpIjoiaHR0cHM6Ly9hbGljZS5leGFtcGxlLyJ9LCJub25jZSI6Im4xIiwicG9zaXRpb25zIjpbeyJjaG9pY2UiOiJBLiBDYW5kaWRhdGUiLCJzb3VyY2UiOiJodHRwczovL2FsaWNlLmV4YW1wbGUvZW5kb3JzZW1lbnRzL21heW9yIiwic3RhbmNlIjoiZW5kb3JzZSIsInN0YXRlbWVudCI6IlN0cm9uZyByZWNvcmQgb24gdHJhbnNpdC4iLCJzdWJqZWN0Ijp7ImVsZWN0aW9uIjoiMjAyNi0xMS0wMyIsImlkIjoidmlwOmNvbnRlc3QtMTIzIiwianVyaXNkaWN0aW9uIjoidXMvY2Evc3ByaW5nZmllbGQiLCJraW5kIjoicmFjZSIsInRpdGxlIjoiTWF5b3Igb2YgU3ByaW5nZmllbGQiLCJ1cmkiOiJodHRwczovL2V4YW1wbGUub3JnL2NvbnRlc3QvMTIzIn0sIndlaWdodCI6MC43NX1dLCJ2IjoxfQ",
+  "signature": "By0zjpXKnEGwtIJZQg40s_a-0BWM0XkgeaeKp5ZICu6qctUBdc_KuHHLcmty_qf_UqD6tXISHhbz73tGH2hWCQ",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJjb250ZXh0Ijp7ImVsZWN0aW9uIjoiMjAyNi0xMS0wMyIsImp1cmlzZGljdGlvbiI6InVzL2NhL3NmIiwidGl0bGUiOiJOb3ZlbWJlciAyMDI2IEdlbmVyYWwifSwiZXhwaXJlc19hdCI6IjIwMjctMDEtMDFUMDA6MDA6MDBaIiwiaXNzdWVkX2F0IjoiMjAyNi0wMS0wMVQwMDowMDowMFoiLCJpc3N1ZXIiOnsia2V5IjoiZWQyNTUxOTpBS25MNE5OZjNER1daSlM2Y1BrbkJ1RUduVnNWNEE0bTV0Z2ViTEhhUlNaOSIsImtpbmQiOiJpbmRpdmlkdWFsIiwibmFtZSI6IkFsaWNlIiwidXJpIjoiaHR0cHM6Ly9hbGljZS5leGFtcGxlLyJ9LCJub25jZSI6Im4xIiwicG9zaXRpb25zIjpbeyJjaG9pY2UiOiJBLiBDYW5kaWRhdGUiLCJzb3VyY2UiOiJodHRwczovL2FsaWNlLmV4YW1wbGUvZW5kb3JzZW1lbnRzL21heW9yIiwic3RhbmNlIjoiZW5kb3JzZSIsInN0YXRlbWVudCI6IlN0cm9uZyByZWNvcmQgb24gdHJhbnNpdC4iLCJzdWJqZWN0Ijp7ImVsZWN0aW9uIjoiMjAyNi0xMS0wMyIsImlkIjoidmlwOmNvbnRlc3QtMTIzIiwianVyaXNkaWN0aW9uIjoidXMvY2Evc3ByaW5nZmllbGQiLCJraW5kIjoicmFjZSIsInRpdGxlIjoiTWF5b3Igb2YgU3ByaW5nZmllbGQiLCJ1cmkiOiJodHRwczovL2V4YW1wbGUub3JnL2NvbnRlc3QvMTIzIn0sIndlaWdodCI6MC43NX1dLCJ2IjoxfQ.By0zjpXKnEGwtIJZQg40s_a-0BWM0XkgeaeKp5ZICu6qctUBdc_KuHHLcmty_qf_UqD6tXISHhbz73tGH2hWCQ"
+}

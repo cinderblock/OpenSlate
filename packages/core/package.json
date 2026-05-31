@@ -13,7 +13,9 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "schema": "bun run scripts/export-schema.ts"
+    "schema": "bun run scripts/export-schema.ts",
+    "vectors:generate": "bun run scripts/vectors-generate.ts",
+    "vectors:check": "bun run scripts/vectors-check.ts"
   },
   "dependencies": {
     "@noble/curves": "^1.7.0",

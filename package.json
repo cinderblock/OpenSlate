@@ -11,6 +11,8 @@
     "typecheck": "bun run --filter '*' typecheck",
     "build": "bun run --filter '@openslate/web' build",
     "schema": "bun run --filter '@openslate/core' schema",
+    "vectors:generate": "bun run --filter '@openslate/core' vectors:generate",
+    "vectors:check": "bun run --filter '@openslate/core' vectors:check",
     "dev:web": "bun run --filter '@openslate/web' dev",
     "dev:server": "bun run --filter '@openslate/server' dev",
     "lint": "biome check .",

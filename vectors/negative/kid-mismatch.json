@@ -1,0 +1,10 @@
+{
+  "name": "kid-mismatch",
+  "description": "header.kid points to a different key than payload.issuer.key. MUST be rejected.",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6OWhTUjZTN1dQdHhtVG9qZ282R0czazR5RFBlY2dKWTI5Mmo3eHJzVUdXQnUiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5In0sInBvc2l0aW9ucyI6W10sInYiOjF9.TwaZRXEjfzr56NEIH4Z0R-H6Peav-TBQ6aRR7qL9xSxN_PaPZ9GdMaPbw3JMg6DciUvFU2_P91G-Pw2jg1A5DQ",
+  "expect": {
+    "error_contains": [
+      "kid"
+    ]
+  }
+}

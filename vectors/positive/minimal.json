@@ -1,0 +1,24 @@
+{
+  "name": "minimal",
+  "description": "Minimal valid slate: required fields only, empty positions.",
+  "signer": "alice",
+  "payload": {
+    "v": 1,
+    "issuer": {
+      "key": "ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+      "name": "Alice"
+    },
+    "issued_at": "2026-01-01T00:00:00Z",
+    "positions": []
+  },
+  "header": {
+    "alg": "EdDSA",
+    "typ": "openslate+jws",
+    "kid": "ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9"
+  },
+  "canonical_header": "{\"alg\":\"EdDSA\",\"kid\":\"ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9\",\"typ\":\"openslate+jws\"}",
+  "canonical_payload": "{\"issued_at\":\"2026-01-01T00:00:00Z\",\"issuer\":{\"key\":\"ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9\",\"name\":\"Alice\"},\"positions\":[],\"v\":1}",
+  "signing_input": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5IiwibmFtZSI6IkFsaWNlIn0sInBvc2l0aW9ucyI6W10sInYiOjF9",
+  "signature": "at5hUQyeOF-dTYfRkuk7AXmBtv-lqccrk4lvdsWyL-xSieVgLI5bmTFWnVP5Jj7UnZw75pxoDlepefPXhrfFAg",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5IiwibmFtZSI6IkFsaWNlIn0sInBvc2l0aW9ucyI6W10sInYiOjF9.at5hUQyeOF-dTYfRkuk7AXmBtv-lqccrk4lvdsWyL-xSieVgLI5bmTFWnVP5Jj7UnZw75pxoDlepefPXhrfFAg"
+}

@@ -1,0 +1,10 @@
+{
+  "name": "garbage-string",
+  "description": "Completely unstructured input.",
+  "token": "this-is-not-a-token-at-all",
+  "expect": {
+    "error_contains": [
+      "segments"
+    ]
+  }
+}

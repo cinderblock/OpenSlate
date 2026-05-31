@@ -1,0 +1,10 @@
+{
+  "name": "not-three-segments",
+  "description": "String with only two dot-separated segments. Not a token.",
+  "token": "ey.ey",
+  "expect": {
+    "error_contains": [
+      "3 segments"
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "unicode-titles",
+  "description": "Non-ASCII titles and key sort behavior. Exercises JCS UTF-16 ordering and JSON escaping.",
+  "signer": "alice",
+  "payload": {
+    "v": 1,
+    "issuer": {
+      "key": "ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+      "name": "Älice"
+    },
+    "issued_at": "2026-01-01T00:00:00Z",
+    "positions": [
+      {
+        "subject": {
+          "title": "市長選挙"
+        },
+        "stance": "endorse"
+      },
+      {
+        "subject": {
+          "title": "Café Measure 🌳"
+        },
+        "stance": "oppose"
+      }
+    ]
+  },
+  "header": {
+    "alg": "EdDSA",
+    "typ": "openslate+jws",
+    "kid": "ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9"
+  },
+  "canonical_header": "{\"alg\":\"EdDSA\",\"kid\":\"ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9\",\"typ\":\"openslate+jws\"}",
+  "canonical_payload": "{\"issued_at\":\"2026-01-01T00:00:00Z\",\"issuer\":{\"key\":\"ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9\",\"name\":\"Älice\"},\"positions\":[{\"stance\":\"endorse\",\"subject\":{\"title\":\"市長選挙\"}},{\"stance\":\"oppose\",\"subject\":{\"title\":\"Café Measure 🌳\"}}],\"v\":1}",
+  "signing_input": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5IiwibmFtZSI6IsOEbGljZSJ9LCJwb3NpdGlvbnMiOlt7InN0YW5jZSI6ImVuZG9yc2UiLCJzdWJqZWN0Ijp7InRpdGxlIjoi5biC6ZW36YG45oyZIn19LHsic3RhbmNlIjoib3Bwb3NlIiwic3ViamVjdCI6eyJ0aXRsZSI6IkNhZsOpIE1lYXN1cmUg8J-MsyJ9fV0sInYiOjF9",
+  "signature": "1C0fMoFM2_ycsNpgnUp8RlqM_YKkX8Tspk19sf0_mmQ7bic3S6hhB_hqNFJvV7WunWAO-VQ6w5eTsg8dW0CVDQ",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5IiwibmFtZSI6IsOEbGljZSJ9LCJwb3NpdGlvbnMiOlt7InN0YW5jZSI6ImVuZG9yc2UiLCJzdWJqZWN0Ijp7InRpdGxlIjoi5biC6ZW36YG45oyZIn19LHsic3RhbmNlIjoib3Bwb3NlIiwic3ViamVjdCI6eyJ0aXRsZSI6IkNhZsOpIE1lYXN1cmUg8J-MsyJ9fV0sInYiOjF9.1C0fMoFM2_ycsNpgnUp8RlqM_YKkX8Tspk19sf0_mmQ7bic3S6hhB_hqNFJvV7WunWAO-VQ6w5eTsg8dW0CVDQ"
+}

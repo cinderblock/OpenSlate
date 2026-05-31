@@ -21,7 +21,10 @@
       "**/build",
       "**/node_modules",
       "**/*.gen.ts",
-      "packages/core/schema/*.json"
+      "packages/core/schema/*.json",
+      "vectors/positive/*.json",
+      "vectors/negative/*.json",
+      "vectors/keys.json"
     ]
   }
 }

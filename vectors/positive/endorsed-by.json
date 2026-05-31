@@ -1,0 +1,33 @@
+{
+  "name": "endorsed-by",
+  "description": "Candidate-style slate carrying claimed cross-endorsements.",
+  "signer": "bob",
+  "payload": {
+    "v": 1,
+    "issuer": {
+      "key": "ed25519:9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+      "name": "B. Candidate",
+      "kind": "candidate"
+    },
+    "issued_at": "2026-01-01T00:00:00Z",
+    "positions": [],
+    "endorsed_by": [
+      {
+        "issuer": "ed25519:1111111111111111111111111111111111111111111111",
+        "name": "Springfield Sierra Club",
+        "uri": "https://sierra.example/endorsements",
+        "note": "Endorsed at 2025-12 chapter meeting."
+      }
+    ]
+  },
+  "header": {
+    "alg": "EdDSA",
+    "typ": "openslate+jws",
+    "kid": "ed25519:9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu"
+  },
+  "canonical_header": "{\"alg\":\"EdDSA\",\"kid\":\"ed25519:9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu\",\"typ\":\"openslate+jws\"}",
+  "canonical_payload": "{\"endorsed_by\":[{\"issuer\":\"ed25519:1111111111111111111111111111111111111111111111\",\"name\":\"Springfield Sierra Club\",\"note\":\"Endorsed at 2025-12 chapter meeting.\",\"uri\":\"https://sierra.example/endorsements\"}],\"issued_at\":\"2026-01-01T00:00:00Z\",\"issuer\":{\"key\":\"ed25519:9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu\",\"kind\":\"candidate\",\"name\":\"B. Candidate\"},\"positions\":[],\"v\":1}",
+  "signing_input": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6OWhTUjZTN1dQdHhtVG9qZ282R0czazR5RFBlY2dKWTI5Mmo3eHJzVUdXQnUiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJlbmRvcnNlZF9ieSI6W3siaXNzdWVyIjoiZWQyNTUxOToxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExIiwibmFtZSI6IlNwcmluZ2ZpZWxkIFNpZXJyYSBDbHViIiwibm90ZSI6IkVuZG9yc2VkIGF0IDIwMjUtMTIgY2hhcHRlciBtZWV0aW5nLiIsInVyaSI6Imh0dHBzOi8vc2llcnJhLmV4YW1wbGUvZW5kb3JzZW1lbnRzIn1dLCJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OjloU1I2UzdXUHR4bVRvamdvNkdHM2s0eURQZWNnSlkyOTJqN3hyc1VHV0J1Iiwia2luZCI6ImNhbmRpZGF0ZSIsIm5hbWUiOiJCLiBDYW5kaWRhdGUifSwicG9zaXRpb25zIjpbXSwidiI6MX0",
+  "signature": "CosJQ8TXdzP-jkTleKUMoBSyxtrd9JkB7dcwE1Cu5OHbDEnp73B8OcaCAX0jPzCh75Qn9G20Nq0JZvkdwWkcDA",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6OWhTUjZTN1dQdHhtVG9qZ282R0czazR5RFBlY2dKWTI5Mmo3eHJzVUdXQnUiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJlbmRvcnNlZF9ieSI6W3siaXNzdWVyIjoiZWQyNTUxOToxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExIiwibmFtZSI6IlNwcmluZ2ZpZWxkIFNpZXJyYSBDbHViIiwibm90ZSI6IkVuZG9yc2VkIGF0IDIwMjUtMTIgY2hhcHRlciBtZWV0aW5nLiIsInVyaSI6Imh0dHBzOi8vc2llcnJhLmV4YW1wbGUvZW5kb3JzZW1lbnRzIn1dLCJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OjloU1I2UzdXUHR4bVRvamdvNkdHM2s0eURQZWNnSlkyOTJqN3hyc1VHV0J1Iiwia2luZCI6ImNhbmRpZGF0ZSIsIm5hbWUiOiJCLiBDYW5kaWRhdGUifSwicG9zaXRpb25zIjpbXSwidiI6MX0.CosJQ8TXdzP-jkTleKUMoBSyxtrd9JkB7dcwE1Cu5OHbDEnp73B8OcaCAX0jPzCh75Qn9G20Nq0JZvkdwWkcDA"
+}

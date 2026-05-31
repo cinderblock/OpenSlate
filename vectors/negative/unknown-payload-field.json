@@ -1,0 +1,10 @@
+{
+  "name": "unknown-payload-field",
+  "description": "Validly signed token whose payload carries an unknown field. MUST be rejected.",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5In0sInBvc2l0aW9ucyI6W10sInN1cnByaXNlIjoic211Z2dsZWQgZGF0YSIsInYiOjF9.8eud5AmwMgUHnGXaDqy_j4ZCJnN67M12oTPGBdj3aG84Ixv0QU6ILlghFW044okMMGODqoKhBOdJT9LJRfxFDA",
+  "expect": {
+    "error_contains": [
+      "payload"
+    ]
+  }
+}

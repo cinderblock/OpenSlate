@@ -1,0 +1,10 @@
+{
+  "name": "tampered-signature",
+  "description": "A valid token whose signature segment was bit-flipped. MUST fail signature check.",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5In0sInBvc2l0aW9ucyI6W10sInYiOjF9.AjvS9-rL1brKtsld_HVOzKPnekEE1DV7W5_ZDOydoR-cP3s-x8ODvbIEjtqEpPblG8CFhwfRlMEnw3RuFRO3Dg",
+  "expect": {
+    "error_contains": [
+      "signature"
+    ]
+  }
+}
