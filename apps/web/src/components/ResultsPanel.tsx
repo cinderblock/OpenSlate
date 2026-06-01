@@ -105,6 +105,19 @@ export function ResultsPanel({ subject, stance, choice, attributedTo }: ResultsP
             updated {formatRelativeTime(race.data.last_updated)}
           </span>
         )}
+        {race.data &&
+          (() => {
+            const turnout = turnoutPercent(race.data);
+            if (turnout === null) return null;
+            return (
+              <span
+                className="hint"
+                title={`${totalVotes(race.data).toLocaleString()} of ${race.data.registered_voters?.toLocaleString()} registered voters`}
+              >
+                {turnout.toFixed(1)}% turnout
+              </span>
+            );
+          })()}
         <button
           type="button"
           className="link"
@@ -357,6 +370,27 @@ function SourceFooter() {
       · third-party aggregator; verify against official results for high-stakes use.
     </p>
   );
+}
+
+/**
+ * Total votes counted across all candidates, useful for turnout math and as
+ * a "votes counted so far" denominator on live races.
+ */
+function totalVotes(race: Race): number {
+  return race.candidates.reduce((acc, c) => acc + (c.votes ?? 0), 0);
+}
+
+/**
+ * Turnout % = total votes counted / registered voters. Returns `null` when
+ * either side is missing or zero so the caller can suppress the display
+ * rather than render a misleading 0% or a NaN.
+ */
+function turnoutPercent(race: Race): number | null {
+  const registered = race.registered_voters;
+  if (!registered || registered <= 0) return null;
+  const cast = totalVotes(race);
+  if (cast <= 0) return null;
+  return (cast / registered) * 100;
 }
 
 /**
