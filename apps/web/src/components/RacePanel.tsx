@@ -7,6 +7,7 @@ import { slatesCollection } from "../lib/collections";
 import { shortKey, useKnownIdentities } from "../lib/identities";
 import { subjectKey } from "../lib/subjects";
 import { PollsPanel } from "./PollsPanel";
+import { ResultsPanel } from "./ResultsPanel";
 
 const STANCE_LABEL: Record<Stance, string> = {
   endorse: "Endorse",
@@ -159,6 +160,8 @@ export function RacePanel() {
       )}
 
       <PollsPanel subject={pollSubject} />
+
+      <ResultsPanel subject={pollSubject} />
 
       {view.positions.length === 0 ? (
         <div className="card">
