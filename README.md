@@ -48,8 +48,8 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 | [`packages/core`](./packages/core) | `@openslate/core` — the standard's reference impl: types, schema, canonical JSON, Ed25519 sign/verify, JSON Schema export. Pure TS, minimal audited deps. |
 | [`packages/cli`](./packages/cli) | `@openslate/cli` — `keygen` / `sign` / `verify` / `inspect`. |
 | [`apps/web`](./apps/web) | React + Vite SPA. Manage identity, compose/share slates, import & verify, collate by race. Data lives in **browser storage only**. |
-| [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + proxies for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic) and opinion polls ([VoteHub](https://votehub.com)). |
-| [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls behind permissive CORS. Mirrors the Hono server's `/api/polls/*` shape so the web client treats either backend identically. Not yet deployed. |
+| [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + proxies for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic), opinion polls ([VoteHub](https://votehub.com)), and election results ([civicAPI](https://civicapi.org)). |
+| [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls **and** [civicAPI](https://civicapi.org) results behind permissive CORS. Mirrors the Hono server's `/api/polls/*` and `/api/results/v2/*` shapes so the web client treats either backend identically. Not yet deployed. |
 | [`apps/desktop`](./apps/desktop) | [Electrobun](https://blackboard.sh/electrobun) wrapper around the web build (stub). |
 
 ## Hosting topologies
@@ -57,8 +57,13 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 OpenSlate is **decentralized-first**: a slate is fully verifiable offline, and
 the web/desktop app works against browser storage alone. The optional Hono
 server and Cloudflare Worker exist only to fetch *public* data on the user's
-behalf (ballot contests, polls); neither stores user data, identity, or
-positions. Signing and verification always happen in the browser.
+behalf (ballot contests, polls, election results); neither stores user data,
+identity, or positions. Signing and verification always happen in the browser.
+
+Election results (civicAPI) already serve permissive CORS without an API key,
+so the SPA hits civicAPI directly by default. The Hono/Worker mirrors are
+there for self-hosters who want a uniform fetch surface or edge caching on
+election night.
 
 ```mermaid
 flowchart LR
@@ -81,14 +86,20 @@ flowchart LR
 
   GCI[("Google Civic Info<br/>VIP ballot data")]:::ext
   VH[("VoteHub<br/>opinion polls<br/>CC BY 4.0")]:::ext
+  CA[("civicAPI<br/>election results")]:::ext
 
   Client -.->|"/api/ballot · /api/elections"| Hono
   Client -.->|"/api/polls/*"| Hono
   Client -.->|"/api/polls/*"| Worker
+  Client -.->|"/api/results/v2/*"| Hono
+  Client -.->|"/api/results/v2/*"| Worker
+  Client -->|"direct (default)"| CA
 
   Hono -->|"address (forwarded, not stored)"| GCI
   Hono -->|"subject filter"| VH
+  Hono -->|"race id / search"| CA
   Worker -->|"upstream fetch"| VH
+  Worker -->|"upstream fetch"| CA
 
   Client <-.->|"text block · URL · email · QR · file"| Peer
 
@@ -96,16 +107,18 @@ flowchart LR
   class Worker opt
 ```
 
-| Mode | What runs | Sign & verify | Polls | Ballot lookup |
-| --- | --- | :---: | :---: | :---: |
-| **Pure client** (default) | Web SPA or desktop only | yes | manual entry | manual entry |
-| **+ Self-hosted Hono** | Above + your own `apps/server` | yes | yes (VoteHub) | yes (needs `GOOGLE_API_KEY`) |
-| **+ Public Worker** *(future)* | Above + project-operated Worker | yes | yes (cached) | — |
+| Mode | What runs | Sign & verify | Polls | Ballot lookup | Results |
+| --- | --- | :---: | :---: | :---: | :---: |
+| **Pure client** (default) | Web SPA or desktop only | yes | manual entry | manual entry | yes (civicAPI direct) |
+| **+ Self-hosted Hono** | Above + your own `apps/server` | yes | yes (VoteHub) | yes (needs `GOOGLE_API_KEY`) | yes (cached) |
+| **+ Public Worker** *(future)* | Above + project-operated Worker | yes | yes (cached) | — | yes (cached) |
 
 Modes are not mutually exclusive: run your own Hono for ballot lookup **and**
 point `VITE_POLLS_BASE` at the public Worker for cached polls. The web client
 hits `/api/polls/*` on whichever backend the env var resolves to; the response
-shape is identical either way.
+shape is identical either way. The same goes for results — civicAPI is reached
+directly by default, but setting `VITE_RESULTS_BASE` reroutes the SPA through
+the Hono server or the Worker.
 
 ## Quickstart
 

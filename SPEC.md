@@ -250,6 +250,28 @@ through a stateless proxy, mapping VIP contests/candidates onto `Subject` (with
 shared `Subject.id` values. Subjects need not be on any official ballot — arbitrary
 votable options are allowed via free-form `title`.
 
+### 8.1 Subject ID namespaces (informative)
+
+`Subject.id` is source-namespaced so that multiple catalogs can coexist without
+collision. The reference toolkit uses:
+
+| Prefix | Source | Example |
+| --- | --- | --- |
+| `vip:` | Voting Information Project (Google Civic Info) | `vip:2024-11-05:CA-SF:mayor` |
+| `civicapi:` | [civicAPI](https://civicapi.org) race ID | `civicapi:26131` |
+| `local:` | Tool-local key for subjects with no upstream id | `local:us-ca-sf\|2024-11-05\|prop-12` |
+
+`civicapi:<id>` references civicAPI's numeric `race.id` and is used by the
+reference toolkit for post-election results comparison. It SHOULD NOT replace
+an existing `vip:<id>` on a `Subject` issued by a voter; rather, it's a
+secondary mapping the reference toolkit stores client-side so an outcome
+display can resolve `vip` ↔ `civicapi` without requiring the issuer to know
+about civicAPI.
+
+Verifiers and collators MUST treat unrecognised prefixes as opaque strings —
+they may still be equal across slates (enabling cross-issuer collation) without
+being interpretable.
+
 ---
 
 ## 9. Security considerations
