@@ -164,19 +164,54 @@ available slates.
 ## Progress log
 
 - [x] Plan written.
-- [x] Generate project keypair, surface private key for GH secret install.
-  Public key `ed25519:55R2yyDnvx3DZCYshQQAb1LKJf6QAiyvojUvBbmziNuT` committed
-  to `keys/project-public.json` and `well-known/openslate.json`. Secret half
-  written to `$env:TEMP/openslate-pe-keygen.json` and must be installed as
-  the `OPENSLATE_SIGNING_KEY` GH secret before any push to master.
-- [x] Create new repo directory + scaffolding files.
-- [x] Author LWV worked example.
-- [x] Write CI workflows.
+- [x] Generate project keypair. Public key
+  `ed25519:55R2yyDnvx3DZCYshQQAb1LKJf6QAiyvojUvBbmziNuT`. Secret half installed
+  as the `OPENSLATE_SIGNING_KEY` repo secret on the endorsements repo; temp
+  file deleted from `$env:TEMP`. The secret JSON survives in the chat
+  transcript of session 938177f1 only — back up to a password manager.
+- [x] Create new repo directory + scaffolding files (initial commit `9d4a160`,
+  17 files, 811 LOC; README catalog-integration note in `a8c9cb5`).
+- [x] Author LWV worked example (3 inferred federal policy stances, sources
+  cited).
+- [x] Write CI workflows (`verify.yml` on PR, `publish.yml` on master+manual).
 - [x] Write static-site generator script.
-- [x] End-to-end pipeline verified locally: schema-validate → batch-sign →
-  re-verify under project public key → build dist/. CLI `verify` on the
-  signed token reports VALID and renders the SECONDHAND REPORT banner.
-- [x] `git init` + initial commit `9d4a160` on master, 17 files, 811 LOC.
-- [x] User setup instructions surfaced in chat (push OpenSlate, create
-  remote, install OPENSLATE_SIGNING_KEY secret, enable Pages). Temp key
-  file deleted from `$env:TEMP`.
+- [x] End-to-end pipeline verified locally then in production.
+- [x] OpenSlate pushed to `origin/master` (24 commits ahead before this work
+  — now `eae2dc7` is live, satisfying the pinned ref).
+- [x] `github.com/cinderblock/openslate-public-endorsements` created public.
+- [x] New repo pushed to its origin/master.
+- [x] `OPENSLATE_SIGNING_KEY` secret installed via `gh secret set`.
+- [x] GitHub Pages enabled with `build_type: workflow` (Actions source).
+- [x] First publish workflow attempt failed (push beat secret installation by
+  ~10s). Manual `workflow_dispatch` re-run succeeded in 17s. Second push (the
+  README integration note) also succeeded in ~11s.
+- [x] Pages site live at <https://cinderblock.github.io/openslate-public-endorsements/>.
+  `index.json`, `well-known/openslate.json`, and the LWV `signed.slate` all
+  reachable with permissive CORS. Curling the slate and piping into
+  `openslate verify` returns VALID + SECONDHAND REPORT banner.
+- [x] **OpenSlate web app integration done.** New `/catalog` route in
+  `apps/web/src/components/CatalogPanel.tsx`, query helper +
+  `DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG` in `apps/web/src/lib/query.ts`,
+  route + nav entry registered. Default catalog URL points at the live
+  Pages site; overridable via `VITE_PUBLIC_ENDORSEMENTS_CATALOG`. Committed
+  in OpenSlate `83a6b26` and pushed.
+- [x] End-to-end UI verified in dev server (Chrome): Catalog tab renders the
+  LWV row, Import button fetches the slate from Pages, verifies offline,
+  inserts into IndexedDB; the 3 positions appear immediately on the
+  Collate page tagged to "OpenSlate Public Endorsements".
+
+## Open follow-ups (require user judgment, not blocked on code)
+
+1. **Audit the LWV worked example wording** — positions are real LWV public
+   stances with cited sources, but I'd rather you eyeball before treating
+   them as canonical.
+2. **More organizations** — adding Sierra Club / ACLU / AFL-CIO endorsement
+   slates needs (a) deciding scope, (b) access to their public endorsement
+   pages, and (c) review before push. The endorsement-scraper Claude skill
+   in OpenSlate (`.claude/skills/endorsement-scraper/`) is the recommended
+   path — it produces bundles in exactly the layout this repo expects.
+3. **Custom domain for the Pages site** — currently default
+   `cinderblock.github.io/openslate-public-endorsements/`. A custom domain
+   would enable the `/.well-known/openslate.json` convention to work at
+   the domain root (rather than the subpath), which improves the trust
+   story per OpenSlate SPEC §7.
