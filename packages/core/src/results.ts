@@ -38,12 +38,29 @@ export interface RaceSummary {
   candidates: RaceCandidate[];
 }
 
+/** Per-region snapshot. The `region_results` map is keyed by region slug. */
+export interface RegionResult {
+  name: string;
+  /** Geographic scope label, e.g. "County", "Precinct", "Town". */
+  type?: string;
+  /** Hex fill the upstream map renderer uses for this region. */
+  fill?: string;
+  percent_reporting?: number;
+  candidates: RaceCandidate[];
+}
+
 /** Full race detail returned by `/race/{raceid}`. */
 export interface Race extends RaceSummary {
   polls_open?: string;
   polls_close?: string;
   registered_voters?: number;
-  region_results?: unknown;
+  /** civicAPI returns `election_scope` separately from `election_type`. */
+  election_scope?: string;
+  is_disputed?: boolean;
+  last_updated?: string;
+  round?: number | string;
+  /** Object keyed by region slug; absent or empty when no breakdown is available. */
+  region_results?: Record<string, RegionResult>;
 }
 
 export interface RaceSearchParams {

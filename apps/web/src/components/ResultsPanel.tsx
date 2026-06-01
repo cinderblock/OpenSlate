@@ -8,6 +8,7 @@ import {
   saveSubjectRace,
 } from "../lib/results";
 import { type Actor, outcomeLine, pendingLine } from "../lib/results-framing";
+import { RegionBreakdown } from "./RegionBreakdown";
 import { ResultsTimeline } from "./ResultsTimeline";
 
 interface ResultsPanelProps {
@@ -199,6 +200,8 @@ function RaceBody({ race, stance, choice, attributedTo }: RaceBodyProps) {
           </li>
         ))}
       </ul>
+
+      <RegionBreakdown race={race} />
     </>
   );
 }

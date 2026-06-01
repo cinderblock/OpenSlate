@@ -780,3 +780,31 @@ footer a:hover {
 .secondhand-banner p {
   margin: 0.25rem 0;
 }
+
+/* civicAPI per-region breakdown */
+.region-breakdown {
+  margin-top: 1rem;
+}
+.region-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+.region-table th,
+.region-table td {
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.region-table th {
+  font-weight: 600;
+  color: var(--muted);
+}
+.region-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.region-table tbody tr:hover {
+  background: var(--surface-2);
+}
