@@ -8,13 +8,18 @@ interface ResultsTimelineProps {
   hasMap: boolean;
 }
 
-// Build a direct URL to civicAPI's rendered SVG map for the race. Mirrors the
+type MapFormat = "svg" | "png";
+
+// Build a direct URL to civicAPI's rendered map for the race. Mirrors the
 // upstream resolution in lib/results.ts so the env-var override flows through.
-function mapUrl(raceId: string | number): string {
+// SVG is the default — it scales cleanly at any zoom. PNG is offered for very
+// large maps where SVG path-rendering bogs the browser down.
+function mapUrl(raceId: string | number, format: MapFormat): string {
   const base = (
     (import.meta.env.VITE_RESULTS_BASE as string | undefined) ?? "https://civicapi.org/api/v2"
   ).replace(/\/+$/, "");
-  return `${base}/race/${encodeURIComponent(String(raceId))}?generateMap`;
+  const param = format === "png" ? "generateMapPNG" : "generateMap";
+  return `${base}/race/${encodeURIComponent(String(raceId))}?${param}`;
 }
 
 export function ResultsTimeline({ raceId, hasMap }: ResultsTimelineProps) {
@@ -24,6 +29,7 @@ export function ResultsTimeline({ raceId, hasMap }: ResultsTimelineProps) {
   const [index, setIndex] = useState<number | null>(null);
   const [liveFollow, setLiveFollow] = useState(true);
   const [showMap, setShowMap] = useState(false);
+  const [mapFormat, setMapFormat] = useState<MapFormat>("svg");
 
   // When timestamps load (or grow during live polling), follow the head until
   // the user scrubs manually.
@@ -73,9 +79,23 @@ export function ResultsTimeline({ raceId, hasMap }: ResultsTimelineProps) {
           Live
         </label>
         {hasMap && (
-          <button type="button" className="link" onClick={() => setShowMap((v) => !v)}>
-            {showMap ? "Hide map" : "Show map"}
-          </button>
+          <>
+            <button type="button" className="link" onClick={() => setShowMap((v) => !v)}>
+              {showMap ? "Hide map" : "Show map"}
+            </button>
+            {showMap && (
+              <label className="hint" style={{ flexDirection: "row", gap: "0.25rem" }}>
+                Format
+                <select
+                  value={mapFormat}
+                  onChange={(e) => setMapFormat(e.target.value as MapFormat)}
+                >
+                  <option value="svg">SVG</option>
+                  <option value="png">PNG</option>
+                </select>
+              </label>
+            )}
+          </>
         )}
       </div>
 
@@ -105,7 +125,12 @@ export function ResultsTimeline({ raceId, hasMap }: ResultsTimelineProps) {
               SVG markup. The current map endpoint reflects the live result, not
               the scrubbed timestamp — civicAPI doesn't expose per-timestamp
               maps on the history endpoint. */}
-          <img src={mapUrl(raceId)} alt={`Map of race ${raceId}`} loading="lazy" />
+          <img
+            key={mapFormat}
+            src={mapUrl(raceId, mapFormat)}
+            alt={`Map of race ${raceId}`}
+            loading="lazy"
+          />
         </div>
       )}
     </div>
