@@ -200,18 +200,37 @@ available slates.
   inserts into IndexedDB; the 3 positions appear immediately on the
   Collate page tagged to "OpenSlate Public Endorsements".
 
+## Scope correction (2026-06-01)
+
+User clarified that **only positions with a direct mapping to a specific
+ballot entry** are in scope for this repo — named candidates in named
+races, named ballot measures with Yes/No stances. NOT general policy
+issue stances, legislative position calls, or platform planks.
+
+That makes the LWV worked example wrong-shaped, and makes LWV (and ACLU)
+poor choices as worked-example orgs at all since neither endorses
+candidates. Sierra Club, labor councils, and editorial boards are better
+fits.
+
+**Actions taken in response:** deleted `orgs/league-of-women-voters/`
+entirely; rewrote README scope section to make ballot-entry mapping a hard
+requirement; updated the example JSON in the README to show race +
+measure subjects with `id`, `kind`, and `choice` populated; updated
+project memory `project_public_endorsements_repo.md` with a hard-constraint
+scope note.
+
+**Things NOT to do:** do not seed worked examples that are valid by schema
+but out of scope by content (issue stances, policy summaries). Reject in
+review even if they validate.
+
 ## Open follow-ups (require user judgment, not blocked on code)
 
-1. **Audit the LWV worked example wording** — positions are real LWV public
-   stances with cited sources, but I'd rather you eyeball before treating
-   them as canonical.
-2. **More organizations** — adding Sierra Club / ACLU / AFL-CIO endorsement
-   slates needs (a) deciding scope, (b) access to their public endorsement
-   pages, and (c) review before push. The endorsement-scraper Claude skill
-   in OpenSlate (`.claude/skills/endorsement-scraper/`) is the recommended
-   path — it produces bundles in exactly the layout this repo expects.
-3. **Custom domain for the Pages site** — currently default
+1. **Seed a first real worked example** — pick an org that actually
+   endorses candidates or measures (e.g., a state Sierra Club chapter
+   that's published 2026 endorsements; a city's editorial board; a labor
+   council). The OpenSlate `endorsement-scraper` Claude skill is the
+   recommended authoring path.
+2. **Custom domain for the Pages site** — currently default
    `cinderblock.github.io/openslate-public-endorsements/`. A custom domain
-   would enable the `/.well-known/openslate.json` convention to work at
-   the domain root (rather than the subpath), which improves the trust
-   story per OpenSlate SPEC §7.
+   would enable `/.well-known/openslate.json` at the domain root and
+   improve the trust story per OpenSlate SPEC §7.
