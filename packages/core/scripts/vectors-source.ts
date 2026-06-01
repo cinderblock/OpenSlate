@@ -165,6 +165,37 @@ export const POSITIVES: PositiveDef[] = [
       ],
     },
   },
+  {
+    name: "attribution-scraped",
+    description:
+      "Researcher-signed slate reporting another organization's stated stance (secondhand). " +
+      "Signer is the researcher; attribution.of names the reported entity.",
+    signer: "bob",
+    payload: {
+      v: 1,
+      issuer: { name: "OpenSlate Research Bot v0", kind: "researcher" },
+      issued_at: "2026-01-01T00:00:00Z",
+      context: { election: "2026-11-03", jurisdiction: "us/ca/sf" },
+      positions: [
+        {
+          subject: { title: "Mayor of Springfield", kind: "race" },
+          stance: "endorse",
+          choice: "A. Candidate",
+          source: "https://sierra.example/endorsements/2026/mayor",
+        },
+      ],
+      attribution: {
+        of: {
+          name: "Springfield Sierra Club",
+          uri: "https://sierra.example/",
+          kind: "organization",
+        },
+        mode: "scraped",
+        retrieved_at: "2025-12-15T18:30:00Z",
+        sources: ["https://sierra.example/endorsements/2026"],
+      },
+    },
+  },
 ];
 
 // ─── Negative vectors ────────────────────────────────────────────────────────
@@ -276,5 +307,29 @@ export const NEGATIVES: NegativeDef[] = [
     description: "Completely unstructured input.",
     build: () => "this-is-not-a-token-at-all",
     expect: { error_contains: ["segments"] },
+  },
+  {
+    name: "attribution-bad-mode",
+    description:
+      "Validly signed token whose attribution.mode is not in the enum. Closed schema MUST reject.",
+    build: (h) => {
+      const key = h.pubkey("bob");
+      return h.sign(
+        { alg: "EdDSA", typ: "openslate+jws", kid: key },
+        {
+          v: 1,
+          issuer: { key, kind: "researcher" },
+          issued_at: "2026-01-01T00:00:00Z",
+          positions: [],
+          attribution: {
+            of: { name: "Some Org" },
+            mode: "guessed", // not in {scraped, transcribed, inferred}
+            retrieved_at: "2025-12-15T18:30:00Z",
+          },
+        },
+        h.seed("bob"),
+      );
+    },
+    expect: { error_contains: ["attribution"] },
   },
 ];

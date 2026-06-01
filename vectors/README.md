@@ -84,11 +84,13 @@ included, base64url emitted **with** padding.)
 | `positive/all-position-fields` | Every optional Subject/Position field; `context`; `expires_at`; `nonce` |
 | `positive/endorsed-by`       | `endorsed_by` references |
 | `positive/unicode-titles`    | Non-ASCII titles; JCS UTF-16 key ordering and JSON escaping |
+| `positive/attribution-scraped` | Secondhand researcher slate with `attribution` block (SPEC §3.9) |
 | `negative/tampered-payload`  | Payload edited after signing |
 | `negative/tampered-signature`| Signature bit-flipped |
 | `negative/kid-mismatch`      | `header.kid` ≠ `payload.issuer.key` |
 | `negative/wrong-alg`         | Non-EdDSA `alg` |
 | `negative/unknown-payload-field` | Closed-schema rejection of smuggled fields |
+| `negative/attribution-bad-mode`  | Closed-enum rejection of unknown `attribution.mode` |
 | `negative/not-three-segments`| Missing token segments |
 | `negative/garbage-string`    | Completely unstructured input |
 

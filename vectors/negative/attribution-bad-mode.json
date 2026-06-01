@@ -1,0 +1,10 @@
+{
+  "name": "attribution-bad-mode",
+  "description": "Validly signed token whose attribution.mode is not in the enum. Closed schema MUST reject.",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6OWhTUjZTN1dQdHhtVG9qZ282R0czazR5RFBlY2dKWTI5Mmo3eHJzVUdXQnUiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJhdHRyaWJ1dGlvbiI6eyJtb2RlIjoiZ3Vlc3NlZCIsIm9mIjp7Im5hbWUiOiJTb21lIE9yZyJ9LCJyZXRyaWV2ZWRfYXQiOiIyMDI1LTEyLTE1VDE4OjMwOjAwWiJ9LCJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OjloU1I2UzdXUHR4bVRvamdvNkdHM2s0eURQZWNnSlkyOTJqN3hyc1VHV0J1Iiwia2luZCI6InJlc2VhcmNoZXIifSwicG9zaXRpb25zIjpbXSwidiI6MX0.EOAu2jGLgm6RWs9vY06AyB1FpfIiHsMQKfr0BMIak78TTYvhMZOaK0Ay4iFIIRYYkadIpN6GBl4f67E_d8c5Aw",
+  "expect": {
+    "error_contains": [
+      "attribution"
+    ]
+  }
+}

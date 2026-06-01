@@ -1,0 +1,51 @@
+{
+  "name": "attribution-scraped",
+  "description": "Researcher-signed slate reporting another organization's stated stance (secondhand). Signer is the researcher; attribution.of names the reported entity.",
+  "signer": "bob",
+  "payload": {
+    "v": 1,
+    "issuer": {
+      "key": "ed25519:9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+      "name": "OpenSlate Research Bot v0",
+      "kind": "researcher"
+    },
+    "issued_at": "2026-01-01T00:00:00Z",
+    "context": {
+      "election": "2026-11-03",
+      "jurisdiction": "us/ca/sf"
+    },
+    "positions": [
+      {
+        "subject": {
+          "title": "Mayor of Springfield",
+          "kind": "race"
+        },
+        "stance": "endorse",
+        "choice": "A. Candidate",
+        "source": "https://sierra.example/endorsements/2026/mayor"
+      }
+    ],
+    "attribution": {
+      "of": {
+        "name": "Springfield Sierra Club",
+        "uri": "https://sierra.example/",
+        "kind": "organization"
+      },
+      "mode": "scraped",
+      "retrieved_at": "2025-12-15T18:30:00Z",
+      "sources": [
+        "https://sierra.example/endorsements/2026"
+      ]
+    }
+  },
+  "header": {
+    "alg": "EdDSA",
+    "typ": "openslate+jws",
+    "kid": "ed25519:9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu"
+  },
+  "canonical_header": "{\"alg\":\"EdDSA\",\"kid\":\"ed25519:9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu\",\"typ\":\"openslate+jws\"}",
+  "canonical_payload": "{\"attribution\":{\"mode\":\"scraped\",\"of\":{\"kind\":\"organization\",\"name\":\"Springfield Sierra Club\",\"uri\":\"https://sierra.example/\"},\"retrieved_at\":\"2025-12-15T18:30:00Z\",\"sources\":[\"https://sierra.example/endorsements/2026\"]},\"context\":{\"election\":\"2026-11-03\",\"jurisdiction\":\"us/ca/sf\"},\"issued_at\":\"2026-01-01T00:00:00Z\",\"issuer\":{\"key\":\"ed25519:9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu\",\"kind\":\"researcher\",\"name\":\"OpenSlate Research Bot v0\"},\"positions\":[{\"choice\":\"A. Candidate\",\"source\":\"https://sierra.example/endorsements/2026/mayor\",\"stance\":\"endorse\",\"subject\":{\"kind\":\"race\",\"title\":\"Mayor of Springfield\"}}],\"v\":1}",
+  "signing_input": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6OWhTUjZTN1dQdHhtVG9qZ282R0czazR5RFBlY2dKWTI5Mmo3eHJzVUdXQnUiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJhdHRyaWJ1dGlvbiI6eyJtb2RlIjoic2NyYXBlZCIsIm9mIjp7ImtpbmQiOiJvcmdhbml6YXRpb24iLCJuYW1lIjoiU3ByaW5nZmllbGQgU2llcnJhIENsdWIiLCJ1cmkiOiJodHRwczovL3NpZXJyYS5leGFtcGxlLyJ9LCJyZXRyaWV2ZWRfYXQiOiIyMDI1LTEyLTE1VDE4OjMwOjAwWiIsInNvdXJjZXMiOlsiaHR0cHM6Ly9zaWVycmEuZXhhbXBsZS9lbmRvcnNlbWVudHMvMjAyNiJdfSwiY29udGV4dCI6eyJlbGVjdGlvbiI6IjIwMjYtMTEtMDMiLCJqdXJpc2RpY3Rpb24iOiJ1cy9jYS9zZiJ9LCJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OjloU1I2UzdXUHR4bVRvamdvNkdHM2s0eURQZWNnSlkyOTJqN3hyc1VHV0J1Iiwia2luZCI6InJlc2VhcmNoZXIiLCJuYW1lIjoiT3BlblNsYXRlIFJlc2VhcmNoIEJvdCB2MCJ9LCJwb3NpdGlvbnMiOlt7ImNob2ljZSI6IkEuIENhbmRpZGF0ZSIsInNvdXJjZSI6Imh0dHBzOi8vc2llcnJhLmV4YW1wbGUvZW5kb3JzZW1lbnRzLzIwMjYvbWF5b3IiLCJzdGFuY2UiOiJlbmRvcnNlIiwic3ViamVjdCI6eyJraW5kIjoicmFjZSIsInRpdGxlIjoiTWF5b3Igb2YgU3ByaW5nZmllbGQifX1dLCJ2IjoxfQ",
+  "signature": "ZaIZ7ldFXpYiqtzFi71TC1cjvf1UfvD1iySmojeulGDSIyWT8mPpYFMNFXDxDrY0Y6NngMVzGkymqbnPkdXTCw",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6OWhTUjZTN1dQdHhtVG9qZ282R0czazR5RFBlY2dKWTI5Mmo3eHJzVUdXQnUiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJhdHRyaWJ1dGlvbiI6eyJtb2RlIjoic2NyYXBlZCIsIm9mIjp7ImtpbmQiOiJvcmdhbml6YXRpb24iLCJuYW1lIjoiU3ByaW5nZmllbGQgU2llcnJhIENsdWIiLCJ1cmkiOiJodHRwczovL3NpZXJyYS5leGFtcGxlLyJ9LCJyZXRyaWV2ZWRfYXQiOiIyMDI1LTEyLTE1VDE4OjMwOjAwWiIsInNvdXJjZXMiOlsiaHR0cHM6Ly9zaWVycmEuZXhhbXBsZS9lbmRvcnNlbWVudHMvMjAyNiJdfSwiY29udGV4dCI6eyJlbGVjdGlvbiI6IjIwMjYtMTEtMDMiLCJqdXJpc2RpY3Rpb24iOiJ1cy9jYS9zZiJ9LCJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OjloU1I2UzdXUHR4bVRvamdvNkdHM2s0eURQZWNnSlkyOTJqN3hyc1VHV0J1Iiwia2luZCI6InJlc2VhcmNoZXIiLCJuYW1lIjoiT3BlblNsYXRlIFJlc2VhcmNoIEJvdCB2MCJ9LCJwb3NpdGlvbnMiOlt7ImNob2ljZSI6IkEuIENhbmRpZGF0ZSIsInNvdXJjZSI6Imh0dHBzOi8vc2llcnJhLmV4YW1wbGUvZW5kb3JzZW1lbnRzLzIwMjYvbWF5b3IiLCJzdGFuY2UiOiJlbmRvcnNlIiwic3ViamVjdCI6eyJraW5kIjoicmFjZSIsInRpdGxlIjoiTWF5b3Igb2YgU3ByaW5nZmllbGQifX1dLCJ2IjoxfQ.ZaIZ7ldFXpYiqtzFi71TC1cjvf1UfvD1iySmojeulGDSIyWT8mPpYFMNFXDxDrY0Y6NngMVzGkymqbnPkdXTCw"
+}
