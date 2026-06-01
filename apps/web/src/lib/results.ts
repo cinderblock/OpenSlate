@@ -10,7 +10,17 @@ import {
 } from "@openslate/core";
 import { useQueries } from "@tanstack/react-query";
 import { type SubjectRaceMapping, getSubjectRace, putSubjectRace } from "./db";
+import { electionPhase } from "./election-phase";
 import { subjectKey } from "./subjects";
+
+/**
+ * Whether civicAPI should be queried for this subject. Skips upcoming
+ * elections — there are no results yet, no need to pay the round trip.
+ * `today`, `past`, and `unknown` (no date set) all allow the fetch.
+ */
+function shouldFetchForSubject(subject: Subject): boolean {
+  return electionPhase(subject).kind !== "upcoming";
+}
 
 export { subjectKey };
 
@@ -139,6 +149,7 @@ export function raceSearchQueryOptions(subject: Subject) {
         .sort((a, b) => b.score - a.score);
       return { ...data, ranked };
     },
+    enabled: shouldFetchForSubject(subject),
     staleTime: 1000 * 60 * 5,
   };
 }

@@ -30,6 +30,9 @@ export function ResultsPanel({ subject, stance, choice, attributedTo }: ResultsP
   const [pinnedRaceId, setPinnedRaceId] = useState<string | null>(null);
   const [overrideOpen, setOverrideOpen] = useState(false);
 
+  const phase = electionPhase(subject);
+  const isUpcoming = phase.kind === "upcoming";
+
   // Load any persisted (auto or manual) mapping; that wins over fresh search.
   useEffect(() => {
     let cancelled = false;
@@ -45,7 +48,12 @@ export function ResultsPanel({ subject, stance, choice, attributedTo }: ResultsP
   const search = useQuery(raceSearchQueryOptions(subject));
 
   const topMatch = search.data?.ranked[0];
-  const effectiveRaceId = pinnedRaceId ?? (topMatch ? String(topMatch.race.id) : null);
+  // Don't surface a race for upcoming elections — there's no result yet and
+  // we suppress fetches for the same reason. The UpcomingNotice branch below
+  // covers the user-facing copy.
+  const effectiveRaceId = isUpcoming
+    ? null
+    : (pinnedRaceId ?? (topMatch ? String(topMatch.race.id) : null));
 
   // Auto-persist a high-confidence match if nothing is pinned yet.
   useEffect(() => {
@@ -68,7 +76,6 @@ export function ResultsPanel({ subject, stance, choice, attributedTo }: ResultsP
   }
 
   if (!effectiveRaceId) {
-    const phase = electionPhase(subject);
     // Future elections legitimately have no results yet; surface that instead
     // of the generic "no civicAPI race found" so the user knows it's not a
     // matching failure.
