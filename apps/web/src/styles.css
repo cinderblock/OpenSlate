@@ -808,3 +808,11 @@ footer a:hover {
 .region-table tbody tr:hover {
   background: var(--surface-2);
 }
+
+/* Slate-level outcome headline above ResultsForSlate */
+.slate-summary {
+  border-left: 4px solid var(--accent);
+}
+.slate-summary .card-title strong {
+  font-size: 1.05rem;
+}

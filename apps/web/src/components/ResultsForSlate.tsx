@@ -8,6 +8,7 @@ import { subjectKey } from "../lib/subjects";
 import { firsthandSubjectKeys, payloadsFromTokens } from "../lib/supersession";
 import { ResultsPanel } from "./ResultsPanel";
 import { SecondhandBanner } from "./SecondhandBanner";
+import { SlateSummaryHeadline } from "./SlateSummaryHeadline";
 
 export function ResultsForSlate() {
   const { token } = useParams({ from: "/results/$token" });
@@ -70,6 +71,8 @@ export function ResultsForSlate() {
       </p>
 
       {attribution && <SecondhandBanner attribution={attribution} signerDisplay={signerDisplay} />}
+
+      <SlateSummaryHeadline positions={payload.positions} attributedTo={attributedTo} />
 
       {payload.positions.length === 0 ? (
         <div className="card">
