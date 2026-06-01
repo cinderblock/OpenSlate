@@ -289,6 +289,50 @@ Example `/.well-known/openslate.json`:
 }
 ```
 
+### 7.1 Researcher identities (informative)
+
+Slates carrying `attribution` (§3.9) are *secondhand reports* — the signer is
+not the named entity but a researcher / journalist / volunteer who observed
+the entity's public statements. There is **no central or project-blessed
+researcher key**; anyone may publish their own.
+
+Conventions for researcher identities:
+
+- Use `issuer.kind: "researcher"` and a `name` that identifies the publisher
+  (e.g. `"OpenSlate Research Bot — coastal-team"`).
+- Publish a `/.well-known/openslate.json` on a domain you control, listing
+  the researcher key(s) and any rotation history. Set `issuer.uri` to that
+  domain so verifiers can fetch it.
+- Each Position SHOULD carry a `source` URL pointing at the page/document
+  the stance was taken from. `attribution.sources` may carry slate-level
+  pointers (e.g. the org's main endorsements page).
+- Rotate the researcher key whenever a backing system or operator changes;
+  add the new key to the well-known doc and let `expires_at` on prior slates
+  age them out. There is no in-slate revocation in v1.
+
+Example researcher `/.well-known/openslate.json`:
+
+```json
+{
+  "version": 1,
+  "name": "OpenSlate Research Bot — coastal-team",
+  "keys": [
+    {
+      "key": "ed25519:9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+      "kind": "researcher",
+      "added": "2026-01-15T00:00:00Z",
+      "note": "Used for the 2026 general; rotates per election cycle."
+    }
+  ]
+}
+```
+
+Consumers SHOULD treat secondhand slates as lower-confidence than firsthand
+slates whose key has been attested by the named entity's own domain. When
+the named entity later publishes their own firsthand slate, that slate
+SHOULD supersede any secondhand reports for the same `(election,
+jurisdiction, subject)` tuple.
+
 ---
 
 ## 8. Ballot data & subjects (informative)
