@@ -288,6 +288,30 @@ until earlier ones land.
       "firsthand available" so the user can prefer authoritative slates
       without us auto-hiding the secondhand ones (no trust layer yet to
       justify automatic demotion). 7 new tests; 73 total across 7 files.
+- [x] Step 15: slate-level outcome headline. `lib/slate-summary.ts` pure
+      helpers (`positionOutcome`, `summarizeSlate`); SlateSummaryHeadline
+      runs `useQueries` in parallel via shared TanStack cache and reports
+      "You picked X/Y winners (Z%)" framed for self vs attributed actor.
+      14 tests on the data layer.
+- [x] Step 16: outcome filter chips on the headline. ResultsForSlate owns
+      the data via a new `useResolvedRaces(subjects)` hook in `lib/results.ts`;
+      SlateSummaryHeadline becomes presentational. Chips toggle all / wins /
+      losses / pending / unresolved; clicking the active chip resets to all.
+      Empty-filter state has its own placeholder so the page doesn't look
+      broken on a clean sweep.
+- [x] Step 17: multi-slate leaderboard on /results. Opt-in card (deferred
+      fan-out until clicked) lists every imported slate with total / wins /
+      losses / pending / win-rate, sorted by win-rate descending. Rows
+      stream in via a shared callback + de-duplicated parent state so
+      sorting only re-runs on real count changes.
+- [x] Step 18: turnout % in the panel header. `registered_voters` was typed
+      but unsurfaced; now renders as a chip next to last_updated with a
+      tooltip showing absolute counts. Suppressed when either side is zero
+      to avoid misleading 0%.
+- [x] Step 19: free-text race search in OverridePicker. User can type a
+      race name into the picker and search civicAPI directly when the
+      auto-search hits miss. Jurisdiction + election are preserved from
+      the original Subject so the search stays scoped.
 - [ ] Future: vitest setup for `apps/web` React-component tests; AP/DDHQ
       adapter behind `ResultsSource`; per-timestamp maps if civicAPI ever
       exposes them; auto-supersession once domain attestation lands so
@@ -295,4 +319,7 @@ until earlier ones land.
       unifying OutcomeChip on CollatePanel so secondhand entries pick up
       the same framing as ResultsForSlate (today the chip just shows the
       winner without any stance/choice context, so attribution doesn't
-      change what it renders).
+      change what it renders). Print-friendly results sheet leveraging
+      the existing `.print-*` / `@media print` rules. Polls_open /
+      polls_close lifecycle indicators (pre-election countdown vs post-
+      election delta).
