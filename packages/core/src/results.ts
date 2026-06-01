@@ -114,20 +114,30 @@ interface ParsedJurisdiction {
 
 /**
  * Best-effort parse of OpenSlate's `us/ca/sf`-style jurisdiction strings into
- * civicAPI's `(country, province, district)` triple. Accepts a few variations:
+ * civicAPI's `(country, province, district)` triple.
+ *
+ * Recognised forms:
  * - `us` → country `US`
  * - `us/ca` → country `US`, province `CA`
- * - `us/ca/sf` → country `US`, province `CA`, district `SF` (uppercased)
- * - already-uppercase or ISO-formatted strings pass through (`US-CA`, `JP-06`)
+ * - `us/ca/sf` → country `US`, province `CA`, district `SF`
+ * - `us/ca/san-francisco` → district `SAN-FRANCISCO` (dashes inside a segment survive)
+ * - `JP-06` (ISO 3166-2 style with a single `-`) → country `JP`, province `06`
+ *
+ * Slashes are the primary separator. A single `-` immediately after the country
+ * code (the ISO 3166-2 convention) is also treated as a separator; further `-`
+ * within a segment are preserved.
  */
 export function parseJurisdiction(input: string | undefined): ParsedJurisdiction {
   if (!input) return {};
   const trimmed = input.trim();
   if (!trimmed) return {};
 
-  // Allow either `/` or `-` as separators after the country code.
-  // Examples: `us/ca/sf`, `US/CA`, `US-CA`, `JP-06`, `gb`.
-  const parts = trimmed.split(/[/\-]/).filter(Boolean);
+  // Normalize the ISO 3166-2 single-dash form (`JP-06`) into slash form, but
+  // only when no slash is present — otherwise a path like `us/ca/san-francisco`
+  // would have the `-` mis-split.
+  const normalized = trimmed.includes("/") ? trimmed : trimmed.replace("-", "/");
+
+  const parts = normalized.split("/").filter(Boolean);
   if (parts.length === 0) return {};
 
   const country = parts[0]?.toUpperCase();

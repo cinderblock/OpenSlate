@@ -1,8 +1,8 @@
 const UPSTREAM = "https://civicapi.org/api/v2";
 // Reporting < 100 → race may still move; keep cache short for the live tail.
-const LIVE_TTL_MS = 30 * 1000;
+export const LIVE_TTL_MS = 30 * 1000;
 // Settled race / search / dates / years — change at most a few times a day.
-const SETTLED_TTL_MS = 15 * 60 * 1000;
+export const SETTLED_TTL_MS = 15 * 60 * 1000;
 
 interface CacheEntry {
   status: number;
@@ -60,7 +60,7 @@ export function createResultsSource(): ResultsProxySource {
  * `percent_reporting` signal. Race detail responses that are still mid-count
  * use the live TTL; everything else uses the settled TTL.
  */
-function deriveTtl(upstreamPath: string, body: string): number {
+export function deriveTtl(upstreamPath: string, body: string): number {
   // Only `/race/{id}` (with no sub-path) carries a single live `percent_reporting`.
   // `/race/search` and `/race/{id}/history` go through the settled-TTL branch.
   if (!/^\/race\/[^/]+$/.test(upstreamPath)) return SETTLED_TTL_MS;
