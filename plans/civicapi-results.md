@@ -270,9 +270,29 @@ until earlier ones land.
       `attributedTo` plumbing + ResultsView "secondhand" tagging closes
       the gap. The civicAPI source footer was renamed `<SourceFooter />`
       to free up the `Attribution` symbol for SPEC §3.9 semantics.
+- [x] Step 11: extracted outcome copy into `lib/results-framing.ts`. Fixed
+      the "Your endorse for X" grammar bug; past-tense verbs everywhere;
+      possessives. 13 tests cover self vs attributed framing across stances.
+- [x] Step 12: per-region results breakdown. `region_results` is now typed
+      in core; `lib/region-summary.ts` exposes normalize/sort/aggregate
+      pure helpers; RegionBreakdown renders a sortable table with a
+      "leading in" tally under the candidate list. 12 tests on the data
+      layer.
+- [x] Step 13: small UX surfaces — `last_updated` relative chip, `is_disputed`
+      warning tag, SVG/PNG map format toggle (the PNG follow-up from the
+      original plan). PNG `<img key={mapFormat}>` prevents browser
+      cross-rendering of stale frames on format switch.
+- [x] Step 14: SPEC §3.9 supersession hint. `lib/supersession.ts` computes
+      firsthand-coverage overlap; ResultsView shows "N/M also firsthand" on
+      secondhand rows; ResultsForSlate flags per-position
+      "firsthand available" so the user can prefer authoritative slates
+      without us auto-hiding the secondhand ones (no trust layer yet to
+      justify automatic demotion). 7 new tests; 73 total across 7 files.
 - [ ] Future: vitest setup for `apps/web` React-component tests; AP/DDHQ
-      adapter behind `ResultsSource`; PNG-map support; per-timestamp maps
-      if civicAPI ever exposes them. Consider unifying OutcomeChip on
-      CollatePanel so secondhand entries pick up the same framing as
-      ResultsForSlate (today the chip just shows the winner without any
-      stance/choice context, so attribution doesn't change what it renders).
+      adapter behind `ResultsSource`; per-timestamp maps if civicAPI ever
+      exposes them; auto-supersession once domain attestation lands so
+      ResultsView can actually demote covered secondhand rows. Consider
+      unifying OutcomeChip on CollatePanel so secondhand entries pick up
+      the same framing as ResultsForSlate (today the chip just shows the
+      winner without any stance/choice context, so attribution doesn't
+      change what it renders).
