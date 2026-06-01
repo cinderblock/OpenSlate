@@ -252,13 +252,16 @@ until earlier ones land.
 - [x] 2026-05-31 — User confirmed: IndexedDB for override storage, dedicated
       `/results/:slateHash` route (read-only), `ResultsSource` abstraction
       from day one, maps in v1.
-- [ ] 2026-05-31 — Plan written; awaiting go-ahead to implement.
-- [ ] Step 1: `packages/core/src/results.ts`
-- [ ] Step 2: `apps/web/src/lib/results.ts`
-- [ ] Step 3: `apps/web/src/components/ResultsPanel.tsx`
-- [ ] Step 4: `apps/web/src/components/ResultsTimeline.tsx`
-- [ ] Step 5: wire panels into slate-view + collate routes
-- [ ] Step 6: `apps/server/src/results.ts`
-- [ ] Step 7: `apps/poll-cache` `/api/results/*` route
-- [ ] Step 8: README + SPEC.md updates
-- [ ] Step 9: tests
+- [x] 2026-05-31 — Plan written; user gave go-ahead to implement.
+- [x] Step 1: `packages/core/src/results.ts` — types + matching helpers.
+- [x] Step 2: `apps/web/src/lib/results.ts` + `subjectRaceMap` IndexedDB store.
+- [x] Step 3: `apps/web/src/components/ResultsPanel.tsx`.
+- [x] Step 4: `apps/web/src/components/ResultsTimeline.tsx` (scrubber + map).
+- [x] Step 5: `/results/:token` route + Results nav + `OutcomeChip` in collation.
+- [x] Step 6: `apps/server/src/results.ts` — adaptive-TTL proxy.
+- [x] Step 7: `apps/poll-cache` `/api/results/v2/*` route added.
+- [x] Step 8: README + SPEC.md §8.1 updates.
+- [x] Step 9: tests — 41 passing across core matching helpers + server TTL.
+- [ ] Future: vitest setup for `apps/web` React-component tests; AP/DDHQ
+      adapter behind `ResultsSource`; PNG-map support; per-timestamp maps
+      if civicAPI ever exposes them.
