@@ -262,6 +262,17 @@ until earlier ones land.
 - [x] Step 7: `apps/poll-cache` `/api/results/v2/*` route added.
 - [x] Step 8: README + SPEC.md §8.1 updates.
 - [x] Step 9: tests — 41 passing across core matching helpers + server TTL.
+- [x] Step 10 (added after schema change): surface SPEC §3.9 attribution.
+      A parallel session added `Attribution` to the schema for secondhand
+      reports. ResultsView/ResultsForSlate/ResultsPanel originally treated
+      every slate as firsthand and would have invited the impersonation
+      pattern the attribution block exists to prevent. SecondhandBanner +
+      `attributedTo` plumbing + ResultsView "secondhand" tagging closes
+      the gap. The civicAPI source footer was renamed `<SourceFooter />`
+      to free up the `Attribution` symbol for SPEC §3.9 semantics.
 - [ ] Future: vitest setup for `apps/web` React-component tests; AP/DDHQ
       adapter behind `ResultsSource`; PNG-map support; per-timestamp maps
-      if civicAPI ever exposes them.
+      if civicAPI ever exposes them. Consider unifying OutcomeChip on
+      CollatePanel so secondhand entries pick up the same framing as
+      ResultsForSlate (today the chip just shows the winner without any
+      stance/choice context, so attribution doesn't change what it renders).
