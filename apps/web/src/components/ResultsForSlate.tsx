@@ -6,6 +6,7 @@ import { slatesCollection } from "../lib/collections";
 import { shortKey } from "../lib/identities";
 import { useResolvedRaces } from "../lib/results";
 import { slateToCsv, suggestCsvFilename } from "../lib/results-csv";
+import { slateToMarkdown } from "../lib/results-markdown";
 import { positionOutcome, summarizeSlate } from "../lib/slate-summary";
 import { subjectKey } from "../lib/subjects";
 import { firsthandSubjectKeys, payloadsFromTokens } from "../lib/supersession";
@@ -30,6 +31,7 @@ export function ResultsForSlate() {
   const { token } = useParams({ from: "/results/$token" });
   const { data: allSlates } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
   const [filter, setFilter] = useState<OutcomeFilter>("all");
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
 
   const verified = useMemo(() => verifySlate(token), [token]);
   const positions = useMemo(() => verified.payload?.positions ?? [], [verified.payload]);
@@ -99,6 +101,28 @@ export function ResultsForSlate() {
           onClick={() => downloadCsv(slateToCsv(payload, races), suggestCsvFilename(payload))}
         >
           Download CSV
+        </button>
+        {" · "}
+        <button
+          type="button"
+          className="link"
+          onClick={async () => {
+            const md = slateToMarkdown(payload, races);
+            try {
+              await navigator.clipboard.writeText(md);
+              setCopyState("copied");
+              setTimeout(() => setCopyState("idle"), 2000);
+            } catch {
+              setCopyState("error");
+              setTimeout(() => setCopyState("idle"), 3000);
+            }
+          }}
+        >
+          {copyState === "copied"
+            ? "Copied!"
+            : copyState === "error"
+              ? "Copy failed"
+              : "Copy as Markdown"}
         </button>
       </p>
       <h2>
