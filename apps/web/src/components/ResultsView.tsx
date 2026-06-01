@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { slatesCollection } from "../lib/collections";
 import { shortKey } from "../lib/identities";
 import { firsthandSubjectKeys, payloadsFromTokens, supersessionFor } from "../lib/supersession";
+import { Leaderboard } from "./Leaderboard";
 
 // Listing page for /results. The user picks an imported slate (or pastes a
 // token) and we route to /results/$token, where each Position is rendered
@@ -146,6 +147,8 @@ export function ResultsView() {
           </ul>
         </div>
       )}
+
+      {rows.length >= 2 && <Leaderboard tokens={rows.map((r) => r.token)} />}
     </section>
   );
 }
