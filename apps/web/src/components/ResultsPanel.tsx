@@ -136,7 +136,7 @@ export function ResultsPanel({ subject, stance, choice, attributedTo }: ResultsP
           })()}
         <button
           type="button"
-          className="link"
+          className="link no-print"
           onClick={() => setOverrideOpen((v) => !v)}
           aria-expanded={overrideOpen}
         >
@@ -156,20 +156,26 @@ export function ResultsPanel({ subject, stance, choice, attributedTo }: ResultsP
       )}
 
       {overrideOpen && (
-        <OverridePicker
-          subject={subject}
-          hits={search.data?.ranked ?? []}
-          currentRaceId={effectiveRaceId}
-          onPick={(id) => {
-            saveSubjectRace(subject, id, "manual").then(() => {
-              setPinnedRaceId(String(id));
-              setOverrideOpen(false);
-            });
-          }}
-        />
+        <div className="no-print">
+          <OverridePicker
+            subject={subject}
+            hits={search.data?.ranked ?? []}
+            currentRaceId={effectiveRaceId}
+            onPick={(id) => {
+              saveSubjectRace(subject, id, "manual").then(() => {
+                setPinnedRaceId(String(id));
+                setOverrideOpen(false);
+              });
+            }}
+          />
+        </div>
       )}
 
-      {race.data && <ResultsTimeline raceId={race.data.id} hasMap={race.data.has_map ?? false} />}
+      {race.data && (
+        <div className="no-print">
+          <ResultsTimeline raceId={race.data.id} hasMap={race.data.has_map ?? false} />
+        </div>
+      )}
 
       <SourceFooter />
     </div>

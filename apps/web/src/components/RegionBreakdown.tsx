@@ -47,7 +47,7 @@ export function RegionBreakdown({ race }: RegionBreakdownProps) {
             {aggregate.fullyReporting} fully in
           </span>
         )}
-        <label className="hint" style={{ flexDirection: "row", gap: "0.25rem" }}>
+        <label className="hint no-print" style={{ flexDirection: "row", gap: "0.25rem" }}>
           Sort
           <select value={sortBy} onChange={(e) => setSortBy(e.target.value as RegionSort)}>
             {(Object.keys(SORT_LABEL) as RegionSort[]).map((key) => (
@@ -99,7 +99,7 @@ export function RegionBreakdown({ race }: RegionBreakdownProps) {
       </table>
 
       {sorted.length > DEFAULT_VISIBLE && (
-        <button type="button" className="link" onClick={() => setExpanded((v) => !v)}>
+        <button type="button" className="link no-print" onClick={() => setExpanded((v) => !v)}>
           {expanded
             ? `Show top ${DEFAULT_VISIBLE}`
             : `Show all ${sorted.length} ${regionLabel.toLowerCase()}s`}

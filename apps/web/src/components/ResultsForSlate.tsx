@@ -72,8 +72,12 @@ export function ResultsForSlate() {
 
   return (
     <section className="panel">
-      <p>
+      <p className="no-print">
         <Link to="/results">← back to Results</Link>
+        {" · "}
+        <button type="button" className="link" onClick={() => window.print()}>
+          Print
+        </button>
       </p>
       <h2>
         {attribution ? "Results reported for " : "Results for "}

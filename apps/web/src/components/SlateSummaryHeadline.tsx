@@ -34,7 +34,7 @@ export function SlateSummaryHeadline({
       <div className="card-title">
         <strong>{headline}</strong>
       </div>
-      <div className="filter-chips">
+      <div className="filter-chips no-print">
         <FilterChip
           label={`All (${summary.total})`}
           active={filter === "all"}

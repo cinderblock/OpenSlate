@@ -714,6 +714,47 @@ footer a:hover {
   footer {
     display: none !important;
   }
+  .app {
+    max-width: none;
+    padding: 0;
+  }
+  /* Cards must not split across pages — losing half a candidate list to a
+     page break is unreadable. Make borders subtle for ink savings. */
+  .card,
+  .region-breakdown,
+  .secondhand-banner,
+  .slate-summary {
+    break-inside: avoid;
+    background: #fff !important;
+    border: 1px solid #ccc !important;
+    color: #000 !important;
+    color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  /* Keep candidate swatches visible in print so party color cues survive. */
+  .result-swatch {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .hint,
+  .tag {
+    color: #444 !important;
+  }
+  .ok {
+    color: #1a7f37 !important;
+  }
+  .bad {
+    color: #b00 !important;
+  }
+  a {
+    color: inherit !important;
+    text-decoration: none;
+  }
+  /* The map is decorative for paper readers and prints poorly across
+     page breaks; hide it. The per-region table provides the same info. */
+  .timeline-map {
+    display: none !important;
+  }
 }
 
 /* civicAPI results panels (ResultsPanel, ResultsTimeline) */
