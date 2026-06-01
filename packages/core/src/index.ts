@@ -5,3 +5,4 @@ export * from "./envelope";
 export * from "./slate";
 export * from "./identity";
 export * from "./results";
+export * from "./polls";

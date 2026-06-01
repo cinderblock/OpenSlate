@@ -1,43 +1,63 @@
 import type { Subject } from "@openslate/core";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { type Poll, pollsBySubjectQueryOptions, subjectToVoteHubKey } from "../lib/polls";
+import { type Poll, pollsBySubjectQueryOptions, pollsSource } from "../lib/polls";
 
 interface PollsPanelProps {
   subject: Subject;
 }
 
 export function PollsPanel({ subject }: PollsPanelProps) {
-  const voteHubKey = useMemo(() => subjectToVoteHubKey(subject), [subject]);
-  const query = useQuery(pollsBySubjectQueryOptions(voteHubKey));
+  const lookup = useMemo(() => pollsSource.lookup(subject), [subject]);
 
-  const polls = useMemo(() => sortPolls(query.data ?? []), [query.data]);
+  // Fan out one query per candidate provider key (most-specific first). Each
+  // share TanStack cache so re-mounts are free; PollsSource encapsulates the
+  // taxonomy quirks.
+  const queries = useQueries({
+    queries: lookup.subjectKeys.map((key) => pollsBySubjectQueryOptions(key)),
+  });
+
+  const loading = queries.some((q) => q.isLoading);
+  const firstError = queries.find((q) => q.error)?.error;
+
+  const polls = useMemo(() => {
+    const seen = new Set<string>();
+    const merged: Poll[] = [];
+    for (const q of queries) {
+      for (const p of q.data ?? []) {
+        if (seen.has(p.id)) continue;
+        if (!pollsSource.matchesOffice(p, lookup.office)) continue;
+        seen.add(p.id);
+        merged.push(p);
+      }
+    }
+    return sortPolls(merged);
+  }, [queries, lookup.office]);
+
+  const officeLabel = lookup.office && lookup.office !== "other" ? lookup.office : undefined;
 
   return (
     <div className="card">
       <div className="card-title">
         <strong>Recent polls</strong>
-        {voteHubKey && <span className="tag">{voteHubKey}</span>}
+        {lookup.subjectKeys.map((key) => (
+          <span key={key} className="tag">
+            {key}
+          </span>
+        ))}
+        {officeLabel && <span className="tag">office: {officeLabel.replace("_", " ")}</span>}
       </div>
 
-      {query.isLoading && <p className="hint">Loading polls…</p>}
+      {loading && <p className="hint">Loading polls…</p>}
 
-      {query.error && (
+      {firstError && (
         <p className="hint warning">
-          Couldn't load polls:{" "}
-          {query.error instanceof Error ? query.error.message : "unknown error"}
+          Couldn't load polls: {firstError instanceof Error ? firstError.message : "unknown error"}
         </p>
       )}
 
-      {!query.isLoading && !query.error && polls.length === 0 && (
-        <p className="hint">
-          No polls found for <code className="key">{voteHubKey}</code>. Try a different subject, or
-          browse at{" "}
-          <a href="https://votehub.com" target="_blank" rel="noreferrer">
-            votehub.com
-          </a>
-          .
-        </p>
+      {!loading && !firstError && polls.length === 0 && (
+        <EmptyPolls subjectKeys={lookup.subjectKeys} officeLabel={officeLabel} />
       )}
 
       {polls.length > 0 && (
@@ -81,16 +101,47 @@ export function PollsPanel({ subject }: PollsPanelProps) {
 
       <p className="hint">
         Polling data via{" "}
-        <a href="https://votehub.com" target="_blank" rel="noreferrer">
-          VoteHub
-        </a>{" "}
-        — licensed{" "}
-        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">
-          CC BY 4.0
+        <a href={pollsSource.url} target="_blank" rel="noreferrer">
+          {pollsSource.name}
         </a>
+        {pollsSource.license && (
+          <>
+            {" "}
+            — licensed{" "}
+            <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">
+              {pollsSource.license}
+            </a>
+          </>
+        )}
         .
       </p>
     </div>
+  );
+}
+
+function EmptyPolls({
+  subjectKeys,
+  officeLabel,
+}: {
+  subjectKeys: string[];
+  officeLabel?: string;
+}) {
+  return (
+    <p className="hint">
+      No {officeLabel ?? ""} polls found. Tried{" "}
+      {subjectKeys.map((key, i) => (
+        <span key={key}>
+          {i > 0 && ", "}
+          <code className="key">{key}</code>
+        </span>
+      ))}
+      . VoteHub's API keys subjects by <code className="key">&lt;year&gt; &lt;state&gt;</code>{" "}
+      rollup; if no polls exist for this race in their dataset, none will show. Browse{" "}
+      <a href="https://votehub.com" target="_blank" rel="noreferrer">
+        votehub.com
+      </a>{" "}
+      to confirm.
+    </p>
   );
 }
 
