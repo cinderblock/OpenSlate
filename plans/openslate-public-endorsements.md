@@ -223,14 +223,56 @@ scope note.
 but out of scope by content (issue stances, policy summaries). Reject in
 review even if they validate.
 
+## CA primary push (2026-06-01, last 2 days before user's primary)
+
+User flagged primary in 2 days, asked "do all the ones you can find."
+Result: **31 endorser orgs, 681 ballot-entry positions** scraped + signed
++ published. Catalog lives at index.json; web app /catalog imports each.
+
+Orgs by region:
+- **Statewide civic/advocacy**: Sierra Club California, CA Environmental
+  Voters, Courage California, LWV California, SPUR.
+- **Statewide parties/party-adjacent**: CA Democratic Party (consent
+  calendar only), CA Republican Assembly, Reform California, Peace and
+  Freedom Party, Working Families Party CA.
+- **SF Bay Area**: SF Chronicle, SF Bay Guardian, SF League of Pissed
+  Off Voters, SF YIMBY, GrowSF, SF Democratic Party, SF Tenants Union,
+  Harvey Milk LGBTQ Democratic Club, Sierra Club SF Bay, LWV-SF.
+- **LA Area**: Thrive LA, LA Forward, Sierra Club Angeles.
+- **Santa Barbara**: SB Independent.
+- **San Diego**: SD County Democratic Party, SD County Republican Party,
+  SD Green Party, SD Libertarian Party, SD Lincoln Club, DSA San Diego,
+  SD & Imperial Counties Labor Council.
+
+Cross-org disagreements deliberately preserved as separate slates so
+voters can compare. Gov pick alone spans 8 distinct names across the 31
+orgs.
+
+### Sources that did NOT extract (gaps)
+
+- LA County Federation of Labor (thelafed.org): endorsements only in
+  image format. Ballotpedia index returned no 2026 entries.
+- SF Examiner: page is index of separate articles; main endorsement
+  guide behind paywall.
+- CA Federation of Labor (statewide): PDF binary, not parseable.
+- TogetherSF / SF Blueprint, SF Bicycle Coalition (403), Sierra Club
+  San Diego/Orange chapters, smaller SF Dem clubs (Alice B. Toklas,
+  Bernal Heights, Chinese American, Ed Lee Asian-Pacific, Noe Valley,
+  etc.). The sfendorsements.com aggregator lists 34 SF-area orgs total
+  — only 9 of them are in the catalog so far.
+
 ## Open follow-ups (require user judgment, not blocked on code)
 
-1. **Seed a first real worked example** — pick an org that actually
-   endorses candidates or measures (e.g., a state Sierra Club chapter
-   that's published 2026 endorsements; a city's editorial board; a labor
-   council). The OpenSlate `endorsement-scraper` Claude skill is the
-   recommended authoring path.
+1. **User's specific jurisdiction** — catalog has heavy SF, LA, SD,
+   Santa Barbara coverage. Voters in other CA counties (Sacramento,
+   Fresno, Ventura, Riverside, etc.) get state/federal/Republican
+   coverage but thin local coverage. Local newspaper editorial boards
+   + county party committees would fill gaps if needed.
 2. **Custom domain for the Pages site** — currently default
-   `cinderblock.github.io/openslate-public-endorsements/`. A custom domain
-   would enable `/.well-known/openslate.json` at the domain root and
-   improve the trust story per OpenSlate SPEC §7.
+   `cinderblock.github.io/openslate-public-endorsements/`. A custom
+   domain would enable `/.well-known/openslate.json` at the domain root
+   and improve the trust story per OpenSlate SPEC §7.
+3. **Per-slate content audit** before treating as canonical — slates
+   were authored under time pressure for the June 2 deadline. The big
+   ones (CRA 94, EnviroVoters 105, LA Forward 36) are most prone to
+   transcription error in the long candidate-name lists.
