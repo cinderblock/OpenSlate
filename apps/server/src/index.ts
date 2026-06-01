@@ -3,11 +3,13 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createBallotSource, createElectionsSource } from "./ballot";
 import { createPollsSource } from "./polls";
+import { createResultsSource } from "./results";
 
 const VERSION = "0.0.0";
 const ballot = createBallotSource();
 const elections = createElectionsSource();
 const polls = createPollsSource();
+const results = createResultsSource();
 const app = new Hono();
 
 app.use("/api/*", cors());
@@ -80,6 +82,36 @@ async function proxyPoll(reqPath: string, reqUrl: string) {
   } catch (err) {
     return Response.json(
       { error: err instanceof Error ? err.message : "polls lookup failed" },
+      { status: 502 },
+    );
+  }
+}
+
+// civicAPI results passthrough. Mounted under /api/results/v2/* so it 1:1
+// mirrors civicAPI's /api/v2/* path layout — the web client just retargets
+// VITE_RESULTS_BASE at the server prefix and everything else lines up.
+// Adaptive TTL: 30s while a race is mid-count, 15min once settled.
+app.get("/api/results/v2/*", (c) => proxyResults(c.req.path, c.req.url));
+app.get("/api/results/v2", (c) => proxyResults(c.req.path, c.req.url));
+
+async function proxyResults(reqPath: string, reqUrl: string) {
+  const upstreamPath = reqPath.replace(/^\/api\/results\/v2/, "");
+  const search = new URL(reqUrl).search;
+  try {
+    const { status, contentType, body, ttlMs } = await results.proxy(upstreamPath, search);
+    const maxAge = Math.max(1, Math.floor(ttlMs / 1000));
+    return new Response(body, {
+      status,
+      headers: {
+        "content-type": contentType,
+        "cache-control": `public, max-age=${maxAge}, stale-while-revalidate=${maxAge * 4}`,
+        "x-data-source": "civicAPI",
+        "x-data-license": "https://civicapi.org",
+      },
+    });
+  } catch (err) {
+    return Response.json(
+      { error: err instanceof Error ? err.message : "results lookup failed" },
       { status: 502 },
     );
   }
