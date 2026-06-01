@@ -7,6 +7,8 @@ import { ElectionsPanel } from "./components/ElectionsPanel";
 import { IdentityPanel } from "./components/IdentityPanel";
 import { ImportVerifyPanel } from "./components/ImportVerifyPanel";
 import { RacePanel } from "./components/RacePanel";
+import { ResultsForSlate } from "./components/ResultsForSlate";
+import { ResultsView } from "./components/ResultsView";
 
 const rootRoute = createRootRoute({ component: RootLayout });
 
@@ -45,6 +47,16 @@ const electionsRoute = createRoute({
   path: "/elections",
   component: ElectionsPanel,
 });
+const resultsIndexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/results",
+  component: ResultsView,
+});
+const resultsForSlateRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/results/$token",
+  component: ResultsForSlate,
+});
 
 const routeTree = rootRoute.addChildren([
   identityRoute,
@@ -54,6 +66,8 @@ const routeTree = rootRoute.addChildren([
   raceRoute,
   viewerRoute,
   electionsRoute,
+  resultsIndexRoute,
+  resultsForSlateRoute,
 ]);
 
 export const router = createRouter({ routeTree });

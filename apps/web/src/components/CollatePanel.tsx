@@ -1,9 +1,10 @@
-import { type Stance, verifySlate } from "@openslate/core";
+import { type Stance, type Subject, verifySlate } from "@openslate/core";
 import { useLiveQuery } from "@tanstack/react-db";
 import { Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { slatesCollection } from "../lib/collections";
 import { shortKey, useKnownIdentities } from "../lib/identities";
+import { OutcomeChip } from "./OutcomeChip";
 import { SlatesList } from "./SlatesList";
 
 interface Entry {
@@ -19,6 +20,7 @@ interface SubjectGroup {
   key: string;
   title: string;
   subjectId?: string;
+  subject: Subject;
   entries: Entry[];
 }
 
@@ -38,6 +40,7 @@ function collate(tokens: string[], contactNames: Map<string, string | undefined>
         key,
         title: subject.title,
         subjectId: subject.id,
+        subject,
         entries: [],
       };
       group.entries.push({
@@ -91,6 +94,7 @@ export function CollatePanel() {
                   <strong>{group.title}</strong>
                 </Link>
                 {group.subjectId && <span className="tag">{group.subjectId}</span>}
+                <OutcomeChip subject={group.subject} />
               </div>
               <ul className="position-list">
                 {group.entries.map((entry, index) => (

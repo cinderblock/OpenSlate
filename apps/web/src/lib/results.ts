@@ -4,15 +4,14 @@ import {
   type RaceSearchParams,
   type RaceSearchResult,
   type ResultsSource,
-  scoreMatch,
   type Subject,
+  scoreMatch,
   subjectToRaceQuery,
 } from "@openslate/core";
-import {
-  getSubjectRace,
-  putSubjectRace,
-  type SubjectRaceMapping,
-} from "./db";
+import { type SubjectRaceMapping, getSubjectRace, putSubjectRace } from "./db";
+import { subjectKey } from "./subjects";
+
+export { subjectKey };
 
 // Build-time configurable upstream. Defaults to civicAPI directly because their
 // CORS allows browser fetches and no API key is required. Self-hosters can
@@ -22,8 +21,9 @@ import {
 // civicAPI exposes `/api/v2/<x>`; the worker exposes `/api/results/v2/<x>`;
 // both produce the same shapes from the client's perspective.
 const DEFAULT_BASE = "https://civicapi.org/api/v2";
-const BASE: string = ((import.meta.env.VITE_RESULTS_BASE as string | undefined) ?? DEFAULT_BASE)
-  .replace(/\/+$/, "");
+const BASE: string = (
+  (import.meta.env.VITE_RESULTS_BASE as string | undefined) ?? DEFAULT_BASE
+).replace(/\/+$/, "");
 
 const PROVIDER = "civicapi";
 
@@ -77,24 +77,6 @@ export function createCivicApiSource(): ResultsSource {
 export const resultsSource: ResultsSource = createCivicApiSource();
 
 // ---- Subject ↔ race mapping --------------------------------------------------
-
-/**
- * Canonicalised key for the `subjectRaceMap` store. Prefer the Subject's `id`
- * (which is source-namespaced, e.g. `vip:contest-123`); fall back to a slug of
- * `(jurisdiction|election|title)` so manual subjects still get a stable key.
- */
-export function subjectKey(subject: Subject): string {
-  if (subject.id) return subject.id;
-  const parts = [subject.jurisdiction ?? "", subject.election ?? "", subject.title];
-  return `local:${parts.map(slugPart).join("|")}`;
-}
-
-function slugPart(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
 
 export async function resolveSubjectRace(
   subject: Subject,
