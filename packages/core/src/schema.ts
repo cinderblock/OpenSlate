@@ -70,6 +70,34 @@ export const contextSchema = z
   .strict();
 export type Context = z.infer<typeof contextSchema>;
 
+/** Modes by which a researcher may have obtained a third party's stance. */
+export const ATTRIBUTION_MODES = ["scraped", "transcribed", "inferred"] as const;
+export const attributionModeSchema = z.enum(ATTRIBUTION_MODES);
+export type AttributionMode = z.infer<typeof attributionModeSchema>;
+
+/**
+ * Optional secondhand-report marker. When present, the slate's issuer (the
+ * signer) is reporting what the entity in `of` is claimed to have said —
+ * NOT claiming to BE that entity. Verifiers MUST surface attribution
+ * prominently so consumers see "secondhand by <issuer> about <of>" and can
+ * supersede with a firsthand slate if/when one is published.
+ */
+export const attributionSchema = z
+  .object({
+    of: z
+      .object({
+        name: z.string().min(1),
+        uri: z.string().url().optional(),
+        kind: z.string().min(1).optional(),
+      })
+      .strict(),
+    mode: attributionModeSchema,
+    retrieved_at: rfc3339,
+    sources: z.array(z.string().url()).optional(),
+  })
+  .strict();
+export type Attribution = z.infer<typeof attributionSchema>;
+
 export const slatePayloadSchema = z
   .object({
     v: z.literal(1),
@@ -79,6 +107,7 @@ export const slatePayloadSchema = z
     context: contextSchema.optional(),
     positions: z.array(positionSchema),
     endorsed_by: z.array(referenceSchema).optional(),
+    attribution: attributionSchema.optional(),
     nonce: z.string().optional(),
   })
   .strict();

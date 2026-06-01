@@ -72,6 +72,7 @@ Secret keys, when serialized (e.g. for backup), use the same scheme over the
 | `context` | `Context` | no | Scopes the whole slate (one election/jurisdiction). |
 | `positions` | `Position[]` | yes | MAY be empty (e.g. an issuer publishing only `endorsed_by`). |
 | `endorsed_by` | `Reference[]` | no | Who endorsed *this* issuer (for candidates/orgs). |
+| `attribution` | `Attribution` | no | Marks this slate as a **secondhand report** by `issuer` about another entity. See §3.9. |
 | `nonce` | string | no | Disambiguates otherwise-identical slates. |
 
 ### 3.2 `Issuer`
@@ -149,6 +150,55 @@ One of: `endorse`, `oppose`, `lean_for`, `lean_against`, `neutral`, `abstain`.
 
 Objects are **closed** in v1: a verifier MUST reject a payload containing fields not
 defined here. This prevents smuggling meaningful data outside the validated schema.
+
+### 3.9 `Attribution` — secondhand reports
+
+When present, `attribution` marks the slate as a **secondhand report**: the
+slate's `issuer` (the signer) is reporting what the entity in `attribution.of`
+is claimed to have publicly said, rather than itself BEING that entity.
+
+The pattern lets researchers, journalists, or volunteers publish a verifiable
+summary of an organization's stated endorsements **without impersonating** the
+organization. The signature still proves authorship by the researcher's key;
+it does not prove the underlying claim is correct.
+
+| Field | Type | Req | Notes |
+| --- | --- | --- | --- |
+| `of` | object | yes | The entity whose stance is being reported. See below. |
+| `mode` | string | yes | `scraped` \| `transcribed` \| `inferred`. |
+| `retrieved_at` | string | yes | RFC 3339. When the researcher observed the source. |
+| `sources` | string[] | no | Slate-level source URLs. (`Position.source` is per-position.) |
+
+`attribution.of`:
+
+| Field | Type | Req | Notes |
+| --- | --- | --- | --- |
+| `name` | string | yes | Human-readable name of the reported entity. |
+| `uri` | string | no | Homepage / source page for the entity. |
+| `kind` | string | no | `organization` \| `candidate` \| `campaign` \| other. |
+
+`mode` values:
+
+| Mode | Meaning |
+| --- | --- |
+| `scraped` | Pulled programmatically from one or more web pages. |
+| `transcribed` | Manually entered by a human from a non-machine-readable source (PDF, video, in-person notes). |
+| `inferred` | Derived indirectly (e.g. from membership in a coalition that endorsed X). Lower confidence. |
+
+#### Consumer requirements
+
+Verifiers and UIs that render slates carrying `attribution` MUST:
+
+- Display the slate as a secondhand report attributed to `attribution.of.name`,
+  not as a firsthand statement by `issuer.name`.
+- Make clear which key signed (the researcher) and that the named entity has
+  NOT signed this slate.
+- Prefer a firsthand slate from `attribution.of` (i.e. one whose `issuer.key`
+  the entity has attested to under §7) when one is available, and offer to
+  supersede the secondhand slate with it.
+
+Issuers SHOULD set `kind: "researcher"` on themselves when publishing
+attributed slates (see §7.1).
 
 ---
 
@@ -292,6 +342,12 @@ being interpretable.
 `v` is a single integer. Additive, backward-compatible changes MAY be made within a
 version by adding OPTIONAL fields (verifiers must already reject unknown fields, so
 such additions ship with a coordinated spec revision). Incompatible changes bump `v`.
+
+### 10.1 Changelog (within v1)
+
+- **2026-05-31** — Added optional `attribution` field to `SlatePayload` (§3.9)
+  and conventional `kind: "researcher"` (§7.1). Amended in place rather than
+  bumping `v`; the format was unadopted at the time.
 
 ---
 

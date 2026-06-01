@@ -164,6 +164,57 @@
             "additionalProperties": false
           }
         },
+        "attribution": {
+          "type": "object",
+          "properties": {
+            "of": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uri": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "kind": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "additionalProperties": false
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "scraped",
+                "transcribed",
+                "inferred"
+              ]
+            },
+            "retrieved_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "sources": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          },
+          "required": [
+            "of",
+            "mode",
+            "retrieved_at"
+          ],
+          "additionalProperties": false
+        },
         "nonce": {
           "type": "string"
         }
