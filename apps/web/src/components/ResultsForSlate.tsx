@@ -5,12 +5,26 @@ import { useMemo, useState } from "react";
 import { slatesCollection } from "../lib/collections";
 import { shortKey } from "../lib/identities";
 import { useResolvedRaces } from "../lib/results";
+import { slateToCsv, suggestCsvFilename } from "../lib/results-csv";
 import { positionOutcome, summarizeSlate } from "../lib/slate-summary";
 import { subjectKey } from "../lib/subjects";
 import { firsthandSubjectKeys, payloadsFromTokens } from "../lib/supersession";
 import { ResultsPanel } from "./ResultsPanel";
 import { SecondhandBanner } from "./SecondhandBanner";
 import { type OutcomeFilter, SlateSummaryHeadline } from "./SlateSummaryHeadline";
+
+/** Trigger a client-side download of a string as a file. */
+function downloadCsv(csv: string, filename: string): void {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 export function ResultsForSlate() {
   const { token } = useParams({ from: "/results/$token" });
@@ -77,6 +91,14 @@ export function ResultsForSlate() {
         {" · "}
         <button type="button" className="link" onClick={() => window.print()}>
           Print
+        </button>
+        {" · "}
+        <button
+          type="button"
+          className="link"
+          onClick={() => downloadCsv(slateToCsv(payload, races), suggestCsvFilename(payload))}
+        >
+          Download CSV
         </button>
       </p>
       <h2>
