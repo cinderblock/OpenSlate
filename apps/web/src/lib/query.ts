@@ -30,6 +30,47 @@ export function slateFromUrlOptions(url: string) {
   };
 }
 
+/** One entry in a public-endorsements catalog (index.json from `openslate sign --batch`). */
+export interface CatalogEntry {
+  slug: string;
+  election: string;
+  /** Slate file path, relative to the catalog URL. */
+  path: string;
+  issuer: { key: string; name?: string; kind?: string };
+  attribution?: {
+    of: { name: string; uri?: string; kind?: string };
+    mode: "scraped" | "transcribed" | "inferred";
+    retrieved_at: string;
+    sources?: string[];
+  };
+  positions: number;
+  issued_at: string;
+}
+
+export interface Catalog {
+  version: number;
+  generated_at: string;
+  entries: CatalogEntry[];
+}
+
+/** Default URL for the curated public-endorsements catalog. Override per build via Vite env. */
+export const DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG =
+  (import.meta.env.VITE_PUBLIC_ENDORSEMENTS_CATALOG as string | undefined) ??
+  "https://cinderblock.github.io/openslate-public-endorsements/index.json";
+
+/** Fetch a catalog (index.json) listing publicly-attributed slates available for import. */
+export function catalogQueryOptions(catalogUrl: string) {
+  return {
+    queryKey: ["catalog", catalogUrl] as const,
+    queryFn: async (): Promise<Catalog> => {
+      const response = await fetch(catalogUrl);
+      if (!response.ok) throw new Error(`fetch failed: ${response.status}`);
+      return (await response.json()) as Catalog;
+    },
+    staleTime: 1000 * 60 * 5,
+  };
+}
+
 export interface Election {
   id: string;
   name: string;

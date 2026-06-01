@@ -1,6 +1,7 @@
 import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
 import { RootLayout } from "./App";
 import { BlockViewerPanel } from "./components/BlockViewerPanel";
+import { CatalogPanel } from "./components/CatalogPanel";
 import { CollatePanel } from "./components/CollatePanel";
 import { ComposePanel } from "./components/ComposePanel";
 import { ElectionsPanel } from "./components/ElectionsPanel";
@@ -26,6 +27,11 @@ const importRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/import",
   component: ImportVerifyPanel,
+});
+const catalogRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/catalog",
+  component: CatalogPanel,
 });
 const collateRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -62,6 +68,7 @@ const routeTree = rootRoute.addChildren([
   identityRoute,
   composeRoute,
   importRoute,
+  catalogRoute,
   collateRoute,
   raceRoute,
   viewerRoute,

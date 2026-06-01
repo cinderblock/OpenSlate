@@ -4,6 +4,7 @@ const NAV = [
   { to: "/", label: "Identity" },
   { to: "/compose", label: "Compose" },
   { to: "/import", label: "Import & verify" },
+  { to: "/catalog", label: "Catalog" },
   { to: "/collate", label: "Collate" },
   { to: "/elections", label: "Elections" },
   { to: "/results", label: "Results" },
