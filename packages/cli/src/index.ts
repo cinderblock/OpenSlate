@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import {
+  type Attribution,
   type Position,
   type Reference,
   type SlatePayload,
@@ -26,7 +27,12 @@ Usage:
   openslate inspect <token|file|->
 
 A <positions.json> is either a JSON array of Position objects, or an object
-{ "positions": [...], "endorsed_by": [...], "context": {...} }. Use "-" for stdin.
+{ "positions": [...], "endorsed_by": [...], "attribution": {...}, "context": {...} }.
+Use "-" for stdin.
+
+When publishing a SECONDHAND report of another entity's public stance,
+include "attribution" and sign with a researcher key (kind: "researcher").
+See SPEC §3.9 and §7.1.
 
 validate is a schema-only check (no crypto) of a complete SlatePayload JSON
 file — useful for CI on hand-authored research data before signing.
@@ -125,6 +131,7 @@ async function cmdSign(rest: string[]): Promise<void> {
   const raw = JSON.parse(await readText(positional[0] ?? "-")) as unknown;
   let positions: Position[] = [];
   let endorsedBy: Reference[] | undefined;
+  let attribution: Attribution | undefined;
   let context: SlatePayload["context"];
   if (Array.isArray(raw)) {
     positions = raw as Position[];
@@ -132,10 +139,12 @@ async function cmdSign(rest: string[]): Promise<void> {
     const obj = raw as {
       positions?: Position[];
       endorsed_by?: Reference[];
+      attribution?: Attribution;
       context?: SlatePayload["context"];
     };
     positions = obj.positions ?? [];
     endorsedBy = obj.endorsed_by;
+    attribution = obj.attribution;
     context = obj.context;
   }
 
@@ -151,7 +160,7 @@ async function cmdSign(rest: string[]): Promise<void> {
 
   let token: string;
   try {
-    const payload = buildSlate({ issuer, positions, endorsedBy, context });
+    const payload = buildSlate({ issuer, positions, endorsedBy, attribution, context });
     token = signSlate(payload, identity.keyPair.secretKey);
   } catch (err) {
     fail(`could not build slate: ${err instanceof Error ? err.message : String(err)}`);
@@ -200,6 +209,13 @@ async function cmdVerify(rest: string[]): Promise<void> {
     console.log(`issuer:    ${result.issuerKey}`);
     if (result.payload?.issuer.name)
       console.log(`name:      ${result.payload.issuer.name} (self-asserted)`);
+    const attr = result.payload?.attribution;
+    if (attr) {
+      console.log("SECONDHAND REPORT — not signed by the named entity:");
+      console.log(`  reported entity: ${attr.of.name}`);
+      console.log(`  mode:            ${attr.mode}`);
+      console.log(`  retrieved_at:    ${attr.retrieved_at}`);
+    }
     console.log(`positions: ${result.payload?.positions.length ?? 0}`);
     for (const warning of result.warnings) console.log(`warning:   ${warning}`);
   } else {
