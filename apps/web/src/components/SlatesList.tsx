@@ -3,6 +3,7 @@ import { useLiveQuery } from "@tanstack/react-db";
 import Fuse from "fuse.js";
 import { useMemo, useState } from "react";
 import { slatesCollection } from "../lib/collections";
+import { formatLocalDate } from "../lib/dates";
 import { shortKey, useKnownIdentities } from "../lib/identities";
 
 interface SlateRow {
@@ -133,7 +134,7 @@ export function SlatesList() {
               </td>
               <td>{row.election || <span className="hint">—</span>}</td>
               <td>{row.positions}</td>
-              <td>{row.importedAt.slice(0, 10)}</td>
+              <td>{formatLocalDate(row.importedAt)}</td>
               <td>{row.valid ? "✓" : "✗"}</td>
             </tr>
           ))}

@@ -1,4 +1,5 @@
 import type { Attribution } from "@openslate/core";
+import { formatLocalDate } from "../lib/dates";
 
 interface SecondhandBannerProps {
   attribution: Attribution;
@@ -35,7 +36,7 @@ export function SecondhandBanner({ attribution, signerDisplay }: SecondhandBanne
         — not signed by {reportedName}.
       </p>
       <p className="hint">
-        {MODE_LABEL[mode]} · retrieved {retrieved_at.slice(0, 10)}
+        {MODE_LABEL[mode]} · retrieved {formatLocalDate(retrieved_at)}
         {of.kind && <> · {of.kind}</>}
       </p>
       {sources && sources.length > 0 && (

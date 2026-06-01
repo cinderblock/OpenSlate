@@ -3,6 +3,7 @@ import { useLiveQuery } from "@tanstack/react-db";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { slatesCollection, upsertKnownIdentity } from "../lib/collections";
+import { formatLocalDate } from "../lib/dates";
 import {
   type CatalogEntry,
   DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
@@ -117,7 +118,7 @@ function CatalogTable({
     <div className="slates-list">
       <p className="hint">
         {sorted.length} entr{sorted.length === 1 ? "y" : "ies"} &middot; catalog generated{" "}
-        {catalog.generated_at.slice(0, 10)}
+        {formatLocalDate(catalog.generated_at)}
       </p>
       <table>
         <thead>
@@ -219,7 +220,7 @@ function CatalogRow({
         {entry.attribution ? (
           <>
             <code>{entry.attribution.mode}</code>
-            <div className="hint">retrieved {entry.attribution.retrieved_at.slice(0, 10)}</div>
+            <div className="hint">retrieved {formatLocalDate(entry.attribution.retrieved_at)}</div>
           </>
         ) : (
           <span className="hint">—</span>
