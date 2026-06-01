@@ -92,6 +92,19 @@ export function ResultsPanel({ subject, stance, choice, attributedTo }: ResultsP
               : "Final"}
           </span>
         )}
+        {race.data?.is_disputed && (
+          <span
+            className="tag warning"
+            title="civicAPI flagged this race as disputed — outcomes may shift."
+          >
+            disputed
+          </span>
+        )}
+        {race.data?.last_updated && (
+          <span className="hint" title={`Upstream timestamp: ${race.data.last_updated}`}>
+            updated {formatRelativeTime(race.data.last_updated)}
+          </span>
+        )}
         <button
           type="button"
           className="link"
@@ -344,4 +357,23 @@ function SourceFooter() {
       · third-party aggregator; verify against official results for high-stakes use.
     </p>
   );
+}
+
+/**
+ * Compact relative-time formatter for the "updated 2m ago" label. Falls back
+ * to the absolute date when the timestamp is more than a day old (at which
+ * point the relative form stops being useful).
+ */
+function formatRelativeTime(ts: string): string {
+  const date = new Date(ts);
+  if (Number.isNaN(date.getTime())) return ts;
+  const diffMs = Date.now() - date.getTime();
+  const sec = Math.round(diffMs / 1000);
+  if (sec < 5) return "just now";
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  return date.toLocaleDateString();
 }
