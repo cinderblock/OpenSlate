@@ -334,6 +334,11 @@ until earlier ones land.
       table with emoji outcomes (✅/❌/⏳/❓) that scans cleanly in
       Slack / Notion / GitHub. ResultsForSlate "Copy as Markdown" button
       writes to navigator.clipboard with auto-reverting status. 6 tests.
+- [x] Step 24: ResultsPanel on RacePanel. /race/$key shows polls and
+      per-issuer endorsements; now also shows the civicAPI race result
+      on the same page using the existing pollSubject. No stance/choice
+      passed (multi-issuer view), so the ✓/✗ comparison omits — rest of
+      the panel renders normally.
 - [ ] Future: vitest setup for `apps/web` React-component tests; AP/DDHQ
       adapter behind `ResultsSource`; per-timestamp maps if civicAPI ever
       exposes them; auto-supersession once domain attestation lands so
