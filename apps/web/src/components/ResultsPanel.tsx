@@ -1,6 +1,7 @@
 import { type Race, type Stance, type Subject, confidenceBucket } from "@openslate/core";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { electionPhase, upcomingChipLabel } from "../lib/election-phase";
 import {
   raceQueryOptions,
   raceSearchQueryOptions,
@@ -67,6 +68,17 @@ export function ResultsPanel({ subject, stance, choice, attributedTo }: ResultsP
   }
 
   if (!effectiveRaceId) {
+    const phase = electionPhase(subject);
+    // Future elections legitimately have no results yet; surface that instead
+    // of the generic "no civicAPI race found" so the user knows it's not a
+    // matching failure.
+    if (phase.kind === "upcoming" || phase.kind === "today") {
+      return (
+        <div className="card">
+          <UpcomingNotice subject={subject} label={upcomingChipLabel(phase) ?? ""} />
+        </div>
+      );
+    }
     return (
       <div className="card">
         <NoMatch
@@ -92,6 +104,10 @@ export function ResultsPanel({ subject, stance, choice, attributedTo }: ResultsP
               : "Final"}
           </span>
         )}
+        {(() => {
+          const label = upcomingChipLabel(electionPhase(subject));
+          return label ? <span className="tag">{label}</span> : null;
+        })()}
         {race.data?.is_disputed && (
           <span
             className="tag warning"
@@ -254,6 +270,22 @@ function UserCheck({ stance, choice, winner, matchedUserChoice, attributedTo }: 
     <p className={frame.success ? "ok" : "bad"}>
       <strong>{frame.success ? "✓" : "✗"}</strong> {frame.label}
     </p>
+  );
+}
+
+function UpcomingNotice({ subject, label }: { subject: Subject; label: string }) {
+  return (
+    <>
+      <div className="card-title">
+        <strong>Results</strong>
+        <span className="tag">{label}</span>
+      </div>
+      <p className="hint">
+        Election scheduled for <strong>{subject.election}</strong>. Results will appear here once
+        the race is called.
+      </p>
+      <SourceFooter />
+    </>
   );
 }
 
