@@ -771,3 +771,12 @@ footer a:hover {
   max-width: 100%;
   height: auto;
 }
+
+/* SPEC §3.9 secondhand-report banner */
+.secondhand-banner {
+  border-left: 4px solid var(--warn);
+  background: color-mix(in oklab, var(--surface), var(--warn) 6%);
+}
+.secondhand-banner p {
+  margin: 0.25rem 0;
+}

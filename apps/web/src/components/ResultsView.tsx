@@ -23,6 +23,7 @@ export function ResultsView() {
           token,
           importedAt,
           issuer: result.payload?.issuer,
+          attribution: result.payload?.attribution,
           positions: result.payload?.positions ?? [],
           valid: result.valid,
         };
@@ -89,23 +90,38 @@ export function ResultsView() {
         <div className="card">
           <h3>Your imported slates</h3>
           <ul className="position-list">
-            {rows.map((row) => (
-              <li key={row.token}>
-                <span className="position-subject">
-                  <strong>
-                    {row.issuer?.name?.trim() || shortKey(row.issuer?.key ?? "(unknown)")}
-                  </strong>
-                  {!row.valid && <span className="warning"> (unverified)</span>}
-                  <div className="hint">
-                    {row.positions.length} position{row.positions.length === 1 ? "" : "s"} ·
-                    imported {row.importedAt.slice(0, 10)}
-                  </div>
-                </span>
-                <Link to="/results/$token" params={{ token: row.token }} className="link">
-                  View results →
-                </Link>
-              </li>
-            ))}
+            {rows.map((row) => {
+              const signerName =
+                row.issuer?.name?.trim() || shortKey(row.issuer?.key ?? "(unknown)");
+              return (
+                <li key={row.token}>
+                  <span className="position-subject">
+                    {row.attribution ? (
+                      <>
+                        <strong>{row.attribution.of.name}</strong>
+                        <span className="tag" title="Secondhand report (SPEC §3.9)">
+                          secondhand
+                        </span>
+                        <div className="hint">
+                          reported by {signerName} · {row.attribution.mode} · retrieved{" "}
+                          {row.attribution.retrieved_at.slice(0, 10)}
+                        </div>
+                      </>
+                    ) : (
+                      <strong>{signerName}</strong>
+                    )}
+                    {!row.valid && <span className="warning"> (unverified)</span>}
+                    <div className="hint">
+                      {row.positions.length} position{row.positions.length === 1 ? "" : "s"} ·
+                      imported {row.importedAt.slice(0, 10)}
+                    </div>
+                  </span>
+                  <Link to="/results/$token" params={{ token: row.token }} className="link">
+                    View results →
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

@@ -14,9 +14,16 @@ interface ResultsPanelProps {
   /** Optional: the user's stance + choice on this subject; renders the win/loss check. */
   stance?: Stance;
   choice?: string;
+  /**
+   * When the slate carrying this position is a secondhand report (SPEC §3.9),
+   * the win/loss copy frames the outcome around the *reported* entity rather
+   * than the signer. Pass `attribution.of.name` here; leave undefined for
+   * firsthand slates.
+   */
+  attributedTo?: string;
 }
 
-export function ResultsPanel({ subject, stance, choice }: ResultsPanelProps) {
+export function ResultsPanel({ subject, stance, choice, attributedTo }: ResultsPanelProps) {
   const [pinnedRaceId, setPinnedRaceId] = useState<string | null>(null);
   const [overrideOpen, setOverrideOpen] = useState(false);
 
@@ -100,7 +107,9 @@ export function ResultsPanel({ subject, stance, choice }: ResultsPanelProps) {
         </p>
       )}
 
-      {race.data && <RaceBody race={race.data} stance={stance} choice={choice} />}
+      {race.data && (
+        <RaceBody race={race.data} stance={stance} choice={choice} attributedTo={attributedTo} />
+      )}
 
       {overrideOpen && (
         <OverridePicker
@@ -118,7 +127,7 @@ export function ResultsPanel({ subject, stance, choice }: ResultsPanelProps) {
 
       {race.data && <ResultsTimeline raceId={race.data.id} hasMap={race.data.has_map ?? false} />}
 
-      <Attribution />
+      <SourceFooter />
     </div>
   );
 }
@@ -127,9 +136,10 @@ interface RaceBodyProps {
   race: Race;
   stance?: Stance;
   choice?: string;
+  attributedTo?: string;
 }
 
-function RaceBody({ race, stance, choice }: RaceBodyProps) {
+function RaceBody({ race, stance, choice, attributedTo }: RaceBodyProps) {
   const winner = race.candidates.find((c) => c.winner);
   const matchedUserChoice = useMemo(() => {
     if (!choice) return null;
@@ -158,6 +168,7 @@ function RaceBody({ race, stance, choice }: RaceBodyProps) {
           choice={choice}
           winner={winner?.name}
           matchedUserChoice={matchedUserChoice?.winner}
+          attributedTo={attributedTo}
         />
       )}
 
@@ -196,30 +207,43 @@ interface UserCheckProps {
   choice: string;
   winner?: string;
   matchedUserChoice?: boolean;
+  /** Reported entity name when the slate is secondhand; falls back to "Your". */
+  attributedTo?: string;
 }
 
-function UserCheck({ stance, choice, winner, matchedUserChoice }: UserCheckProps) {
+function UserCheck({ stance, choice, winner, matchedUserChoice, attributedTo }: UserCheckProps) {
+  // For secondhand slates the SPEC requires that the framing point at the
+  // *reported* entity, not the signer. Use the entity's name as a possessive
+  // ("Sierra Club's pick won") rather than the firsthand "Your pick won".
+  const subjectLabel = attributedTo ? `${attributedTo}'s` : "Your";
+  const opposedLabel = attributedTo ? `${attributedTo}'s opposed pick` : "Your opposed pick";
+  const opposedFailLabel = attributedTo
+    ? `What ${attributedTo} opposed won.`
+    : "What you opposed won.";
+
   if (!winner) {
     return (
       <p className="hint">
-        Your <em>{stance}</em> for <strong>{choice}</strong> — no winner declared yet.
+        {subjectLabel} <em>{stance}</em> for <strong>{choice}</strong> — no winner declared yet.
       </p>
     );
   }
-  const userPickedWinner = matchedUserChoice === true;
+  const pickedWinner = matchedUserChoice === true;
   let success = false;
   let label = "";
   switch (stance) {
     case "endorse":
     case "lean_for":
-      success = userPickedWinner;
-      label = success ? "Your pick won." : `Your pick lost (winner: ${winner}).`;
+      success = pickedWinner;
+      label = success
+        ? `${subjectLabel} pick won.`
+        : `${subjectLabel} pick lost (winner: ${winner}).`;
       break;
     case "oppose":
     case "lean_against":
-      // For oppose, success means the user's choice did NOT win.
-      success = !userPickedWinner;
-      label = success ? `Your opposed pick lost — winner: ${winner}.` : "What you opposed won.";
+      // For oppose, success means the choice did NOT win.
+      success = !pickedWinner;
+      label = success ? `${opposedLabel} lost — winner: ${winner}.` : opposedFailLabel;
       break;
     default:
       return null;
@@ -248,7 +272,7 @@ function NoMatch({ subject, hits, onPick, error }: NoMatchProps) {
         <p className="error">
           Couldn't search civicAPI: {error instanceof Error ? error.message : "unknown error"}
         </p>
-        <Attribution />
+        <SourceFooter />
       </>
     );
   }
@@ -258,7 +282,7 @@ function NoMatch({ subject, hits, onPick, error }: NoMatchProps) {
         <p className="hint">
           No civicAPI race found for <strong>{subject.title}</strong>.
         </p>
-        <Attribution />
+        <SourceFooter />
       </>
     );
   }
@@ -268,7 +292,7 @@ function NoMatch({ subject, hits, onPick, error }: NoMatchProps) {
         No high-confidence match for <strong>{subject.title}</strong>. Pick a race:
       </p>
       <HitList hits={hits} onPick={onPick} />
-      <Attribution />
+      <SourceFooter />
     </>
   );
 }
@@ -334,7 +358,7 @@ function HitList({ hits, onPick, currentRaceId }: HitListProps) {
   );
 }
 
-function Attribution() {
+function SourceFooter() {
   return (
     <p className="hint attribution">
       Source:{" "}

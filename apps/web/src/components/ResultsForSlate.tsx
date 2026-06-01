@@ -3,6 +3,7 @@ import { Link, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { shortKey } from "../lib/identities";
 import { ResultsPanel } from "./ResultsPanel";
+import { SecondhandBanner } from "./SecondhandBanner";
 
 export function ResultsForSlate() {
   const { token } = useParams({ from: "/results/$token" });
@@ -28,20 +29,33 @@ export function ResultsForSlate() {
   }
 
   const { payload, valid } = verified;
-  const issuerName = payload.issuer.name?.trim() || shortKey(payload.issuer.key);
+  const signerDisplay = payload.issuer.name?.trim() || shortKey(payload.issuer.key);
+  const attribution = payload.attribution;
+  // For secondhand reports the headline names the *reported* entity; the signer
+  // is shown below in the SecondhandBanner. Firsthand slates use the signer name.
+  const headlineSubject = attribution ? attribution.of.name : signerDisplay;
+  // Per-position UserCheck framing in ResultsPanel — pass through so the
+  // copy says "Sierra Club's pick won" not "Your pick won" on a researcher's
+  // scrape of the Sierra Club.
+  const attributedTo = attribution?.of.name;
 
   return (
     <section className="panel">
       <p>
         <Link to="/results">← back to Results</Link>
       </p>
-      <h2>Results for {issuerName}'s slate</h2>
+      <h2>
+        {attribution ? "Results reported for " : "Results for "}
+        {headlineSubject}'s slate
+      </h2>
       <p className="hint">
         Issued {payload.issued_at.slice(0, 10)}
         {payload.context?.election && <> · election {payload.context.election}</>}
         {payload.context?.jurisdiction && <> · {payload.context.jurisdiction}</>}
         {!valid && <span className="warning"> · unverified</span>}
       </p>
+
+      {attribution && <SecondhandBanner attribution={attribution} signerDisplay={signerDisplay} />}
 
       {payload.positions.length === 0 ? (
         <div className="card">
@@ -66,6 +80,7 @@ export function ResultsForSlate() {
               subject={position.subject}
               stance={position.stance}
               choice={position.choice}
+              attributedTo={attributedTo}
             />
           </div>
         ))
