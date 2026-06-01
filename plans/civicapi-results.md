@@ -312,6 +312,28 @@ until earlier ones land.
       race name into the picker and search civicAPI directly when the
       auto-search hits miss. Jurisdiction + election are preserved from
       the original Subject so the search stays scoped.
+- [x] Step 20: election-phase awareness. `lib/election-phase.ts` classifies
+      a subject's election date as upcoming/today/past with UTC-day
+      granularity. Panel header gains an "Election in N days" chip when
+      pre-election; NoMatch swaps for a friendlier "Election scheduled
+      for X — results will appear here once the race is called" when
+      search comes up empty AND the election is in the future. 12 tests.
+- [x] Step 21: print-friendly results sheet. ResultsForSlate gains a
+      Print button; non-printable controls (filter chips, scrubber, sort
+      dropdowns, change-race) tagged `.no-print`. `@media print` rules
+      hold candidate-list color swatches and ok/bad outcome colors while
+      dropping card backgrounds; cards pick up `break-inside: avoid`.
+      Timeline map hidden in print (poor cross-page rendering); region
+      table covers the same data.
+- [x] Step 22: CSV export. `lib/results-csv.ts` emits RFC-4180 quoted
+      rows per position with subject metadata, civicAPI race id/winner/
+      percent/reporting, and the same `positionOutcome` column that
+      drives the headline and filter. `suggestCsvFilename` prefers
+      `attribution.of` for secondhand slates. 8 tests.
+- [x] Step 23: Markdown export. `lib/results-markdown.ts` emits a GFM
+      table with emoji outcomes (✅/❌/⏳/❓) that scans cleanly in
+      Slack / Notion / GitHub. ResultsForSlate "Copy as Markdown" button
+      writes to navigator.clipboard with auto-reverting status. 6 tests.
 - [ ] Future: vitest setup for `apps/web` React-component tests; AP/DDHQ
       adapter behind `ResultsSource`; per-timestamp maps if civicAPI ever
       exposes them; auto-supersession once domain attestation lands so
@@ -319,7 +341,7 @@ until earlier ones land.
       unifying OutcomeChip on CollatePanel so secondhand entries pick up
       the same framing as ResultsForSlate (today the chip just shows the
       winner without any stance/choice context, so attribution doesn't
-      change what it renders). Print-friendly results sheet leveraging
-      the existing `.print-*` / `@media print` rules. Polls_open /
-      polls_close lifecycle indicators (pre-election countdown vs post-
-      election delta).
+      change what it renders). Polls_open / polls_close finer-grained
+      lifecycle indicators (post-election delta; pre-election hours-
+      until-polls-close). Cross-cycle rollup on /results so a user with
+      slates spanning 2022/2024/2026 sees grouped sections.
