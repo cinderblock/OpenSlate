@@ -6,6 +6,7 @@ import { useBallotDraft } from "../lib/ballotDraft";
 import { slatesCollection } from "../lib/collections";
 import { shortKey, useKnownIdentities } from "../lib/identities";
 import { subjectKey } from "../lib/subjects";
+import { ForecastsPanel } from "./ForecastsPanel";
 import { PollsPanel } from "./PollsPanel";
 import { ResultsPanel } from "./ResultsPanel";
 
@@ -160,6 +161,8 @@ export function RacePanel() {
       )}
 
       <PollsPanel subject={pollSubject} />
+
+      <ForecastsPanel subject={pollSubject} />
 
       <ResultsPanel subject={pollSubject} />
 

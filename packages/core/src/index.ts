@@ -6,3 +6,4 @@ export * from "./slate";
 export * from "./identity";
 export * from "./results";
 export * from "./polls";
+export * from "./forecasts";

@@ -11,6 +11,7 @@ import {
 import { useQueries } from "@tanstack/react-query";
 import { type SubjectRaceMapping, getSubjectRace, putSubjectRace } from "./db";
 import { electionPhase } from "./election-phase";
+import { baseUrlFor } from "./routing";
 import { subjectKey } from "./subjects";
 
 /**
@@ -24,19 +25,14 @@ function shouldFetchForSubject(subject: Subject): boolean {
 
 export { subjectKey };
 
-// Build-time configurable upstream. Defaults to civicAPI directly because their
-// CORS allows browser fetches and no API key is required. Self-hosters can
-// point this at a Hono server or the poll-cache Worker.
-//
-// Path convention: callers append `/race/...`, `/getElectionYears`, etc.
-// civicAPI exposes `/api/v2/<x>`; the worker exposes `/api/results/v2/<x>`;
-// both produce the same shapes from the client's perspective.
-const DEFAULT_BASE = "https://civicapi.org/api/v2";
-const BASE: string = (
-  (import.meta.env.VITE_RESULTS_BASE as string | undefined) ?? DEFAULT_BASE
-).replace(/\/+$/, "");
-
 const PROVIDER = "civicapi";
+
+// Base URL is resolved per-request via the routing layer so user preference
+// changes (direct civicAPI vs through our backend proxy) take effect without
+// reloading. The routing layer honours VITE_RESULTS_BASE for the proxy URL.
+function base(): string {
+  return baseUrlFor(PROVIDER);
+}
 
 // ---- ResultsSource -----------------------------------------------------------
 
@@ -50,7 +46,7 @@ function buildSearchUrl(params: RaceSearchParams): string {
   if (params.startDate) usp.set("startDate", params.startDate);
   if (params.endDate) usp.set("endDate", params.endDate);
   if (params.limit !== undefined) usp.set("limit", String(params.limit));
-  return `${BASE}/race/search?${usp.toString()}`;
+  return `${base()}/race/search?${usp.toString()}`;
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -68,10 +64,10 @@ export function createCivicApiSource(): ResultsSource {
       return fetchJson<RaceSearchResult>(buildSearchUrl(params));
     },
     async get(raceId) {
-      return fetchJson<Race>(`${BASE}/race/${encodeURIComponent(String(raceId))}`);
+      return fetchJson<Race>(`${base()}/race/${encodeURIComponent(String(raceId))}`);
     },
     async history(raceId, timestamp) {
-      const path = `${BASE}/race/${encodeURIComponent(String(raceId))}/history${
+      const path = `${base()}/race/${encodeURIComponent(String(raceId))}/history${
         timestamp ? `/${encodeURIComponent(timestamp)}` : ""
       }`;
       const data = await fetchJson<unknown>(path);

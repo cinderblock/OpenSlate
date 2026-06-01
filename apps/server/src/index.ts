@@ -2,6 +2,7 @@ import { verifySlate } from "@openslate/core";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createBallotSource, createElectionsSource } from "./ballot";
+import { createForecastsSource } from "./forecasts";
 import { createPollsSource } from "./polls";
 import { createResultsSource } from "./results";
 
@@ -10,6 +11,7 @@ const ballot = createBallotSource();
 const elections = createElectionsSource();
 const polls = createPollsSource();
 const results = createResultsSource();
+const forecasts = createForecastsSource();
 const app = new Hono();
 
 app.use("/api/*", cors());
@@ -112,6 +114,36 @@ async function proxyResults(reqPath: string, reqUrl: string) {
   } catch (err) {
     return Response.json(
       { error: err instanceof Error ? err.message : "results lookup failed" },
+      { status: 502 },
+    );
+  }
+}
+
+// Kalshi forecasts passthrough — mounted at /api/forecasts/v2/* so the SPA's
+// VITE_FORECASTS_BASE points here. Kalshi's CORS only allows kalshi.com, so
+// this proxy is REQUIRED for browser access (the web client honours that and
+// pins kalshi to proxy mode in lib/routing.ts).
+app.get("/api/forecasts/v2/*", (c) => proxyForecasts(c.req.path, c.req.url));
+app.get("/api/forecasts/v2", (c) => proxyForecasts(c.req.path, c.req.url));
+
+async function proxyForecasts(reqPath: string, reqUrl: string) {
+  const upstreamPath = reqPath.replace(/^\/api\/forecasts\/v2/, "");
+  const search = new URL(reqUrl).search;
+  try {
+    const { status, contentType, body, ttlMs } = await forecasts.proxy(upstreamPath, search);
+    const maxAge = Math.max(1, Math.floor(ttlMs / 1000));
+    return new Response(body, {
+      status,
+      headers: {
+        "content-type": contentType,
+        "cache-control": `public, max-age=${maxAge}, stale-while-revalidate=${maxAge * 4}`,
+        "x-data-source": "Kalshi",
+        "x-data-license": "https://kalshi.com/legal",
+      },
+    });
+  } catch (err) {
+    return Response.json(
+      { error: err instanceof Error ? err.message : "forecasts lookup failed" },
       { status: 502 },
     );
   }

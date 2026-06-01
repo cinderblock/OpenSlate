@@ -10,6 +10,7 @@ import { ImportVerifyPanel } from "./components/ImportVerifyPanel";
 import { RacePanel } from "./components/RacePanel";
 import { ResultsForSlate } from "./components/ResultsForSlate";
 import { ResultsView } from "./components/ResultsView";
+import { RoutingPanel } from "./components/RoutingPanel";
 
 const rootRoute = createRootRoute({ component: RootLayout });
 
@@ -63,6 +64,11 @@ const resultsForSlateRoute = createRoute({
   path: "/results/$token",
   component: ResultsForSlate,
 });
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings",
+  component: RoutingPanel,
+});
 
 const routeTree = rootRoute.addChildren([
   identityRoute,
@@ -75,6 +81,7 @@ const routeTree = rootRoute.addChildren([
   electionsRoute,
   resultsIndexRoute,
   resultsForSlateRoute,
+  settingsRoute,
 ]);
 
 export const router = createRouter({ routeTree });

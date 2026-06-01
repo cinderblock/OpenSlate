@@ -10,15 +10,17 @@ import {
   inferUsStateCode,
   inferYear,
 } from "@openslate/core";
+import { baseUrlFor } from "./routing";
 
 export type { Poll, PollAnswer } from "@openslate/core";
 
-// Configured at build time. Empty string = use the dev proxy / same-origin server.
-const BASE = (import.meta.env.VITE_POLLS_BASE ?? "").replace(/\/+$/, "");
-
+// VoteHub doesn't permit browser-direct (no permissive CORS headers), so the
+// routing layer pins this provider to "proxy". The proxy URL flows from
+// VITE_POLLS_BASE; an empty string means same-origin (Vite dev proxy or a
+// sibling deployment).
 function pollsUrl(path: string, params?: Record<string, string>): string {
   const search = params ? `?${new URLSearchParams(params).toString()}` : "";
-  return `${BASE}${path}${search}`;
+  return `${baseUrlFor("votehub")}${path}${search}`;
 }
 
 // ---- VoteHub adapter --------------------------------------------------------

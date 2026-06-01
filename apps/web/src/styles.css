@@ -882,3 +882,18 @@ footer a:hover {
   background: var(--bad);
   border-color: var(--bad);
 }
+
+/* Toggle-style tags (used in RoutingPanel etc.) */
+button.tag {
+  cursor: pointer;
+  font-family: inherit;
+}
+button.tag:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+button.tag.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}

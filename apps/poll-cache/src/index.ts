@@ -1,5 +1,6 @@
 const POLLS_UPSTREAM = "https://api.votehub.com";
 const RESULTS_UPSTREAM = "https://civicapi.org/api/v2";
+const FORECASTS_UPSTREAM = "https://api.elections.kalshi.com/trade-api/v2";
 
 const POLLS_CACHE_TTL_SECONDS = 15 * 60;
 const POLLS_SWR_SECONDS = 60 * 60;
@@ -13,8 +14,13 @@ const RESULTS_LIVE_SWR_SECONDS = 5 * 60;
 const RESULTS_SETTLED_TTL_SECONDS = 15 * 60;
 const RESULTS_SETTLED_SWR_SECONDS = 60 * 60;
 
+// Kalshi markets trade continuously; keep cache short, SWR moderate.
+const FORECASTS_TTL_SECONDS = 30;
+const FORECASTS_SWR_SECONDS = 5 * 60;
+
 const POLLS_PROXY_PATHS = ["/api/polls", "/api/pollsters", "/api/subjects", "/api/poll-types"];
 const RESULTS_PREFIX = "/api/results/v2";
+const FORECASTS_PREFIX = "/api/forecasts/v2";
 
 function isPollsProxyPath(pathname: string): boolean {
   for (const prefix of POLLS_PROXY_PATHS) {
@@ -25,6 +31,10 @@ function isPollsProxyPath(pathname: string): boolean {
 
 function isResultsProxyPath(pathname: string): boolean {
   return pathname === RESULTS_PREFIX || pathname.startsWith(`${RESULTS_PREFIX}/`);
+}
+
+function isForecastsProxyPath(pathname: string): boolean {
+  return pathname === FORECASTS_PREFIX || pathname.startsWith(`${FORECASTS_PREFIX}/`);
 }
 
 function isLiveRaceDetailPath(pathname: string): boolean {
@@ -61,6 +71,7 @@ export default {
           service: "openslate-poll-cache",
           polls_upstream: POLLS_UPSTREAM,
           results_upstream: RESULTS_UPSTREAM,
+          forecasts_upstream: FORECASTS_UPSTREAM,
         },
         { headers: corsHeaders() },
       );
@@ -71,6 +82,9 @@ export default {
     }
     if (isResultsProxyPath(url.pathname)) {
       return proxyResults(url);
+    }
+    if (isForecastsProxyPath(url.pathname)) {
+      return proxyForecasts(url);
     }
 
     return new Response("Not Found", { status: 404, headers: corsHeaders() });
@@ -121,6 +135,32 @@ async function proxyResults(url: URL): Promise<Response> {
   headers.set("Cache-Control", `public, max-age=${ttl}, stale-while-revalidate=${swr}`);
   headers.set("X-Data-Source", "civicAPI");
   headers.set("X-Data-License", "https://civicapi.org");
+  headers.delete("Set-Cookie");
+
+  return new Response(upstreamRes.body, {
+    status: upstreamRes.status,
+    statusText: upstreamRes.statusText,
+    headers,
+  });
+}
+
+async function proxyForecasts(url: URL): Promise<Response> {
+  const upstream = new URL(FORECASTS_UPSTREAM);
+  upstream.pathname += url.pathname.slice(FORECASTS_PREFIX.length);
+  upstream.search = url.search;
+
+  const upstreamRes = await fetch(upstream.toString(), {
+    cf: { cacheTtl: FORECASTS_TTL_SECONDS, cacheEverything: true },
+  });
+
+  const headers = new Headers(upstreamRes.headers);
+  for (const [key, value] of Object.entries(corsHeaders())) headers.set(key, value);
+  headers.set(
+    "Cache-Control",
+    `public, max-age=${FORECASTS_TTL_SECONDS}, stale-while-revalidate=${FORECASTS_SWR_SECONDS}`,
+  );
+  headers.set("X-Data-Source", "Kalshi");
+  headers.set("X-Data-License", "https://kalshi.com/legal");
   headers.delete("Set-Cookie");
 
   return new Response(upstreamRes.body, {

@@ -9,6 +9,7 @@ const NAV = [
   { to: "/elections", label: "Elections" },
   { to: "/results", label: "Results" },
   { to: "/viewer", label: "Viewer" },
+  { to: "/settings", label: "Settings" },
 ] as const;
 
 export function RootLayout() {

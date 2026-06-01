@@ -8,18 +8,17 @@ interface ResultsTimelineProps {
   hasMap: boolean;
 }
 
+import { baseUrlFor } from "../lib/routing";
+
 type MapFormat = "svg" | "png";
 
-// Build a direct URL to civicAPI's rendered map for the race. Mirrors the
-// upstream resolution in lib/results.ts so the env-var override flows through.
+// Build a URL to civicAPI's rendered map for the race. Honours the user's
+// routing preference (direct vs through our backend proxy).
 // SVG is the default — it scales cleanly at any zoom. PNG is offered for very
 // large maps where SVG path-rendering bogs the browser down.
 function mapUrl(raceId: string | number, format: MapFormat): string {
-  const base = (
-    (import.meta.env.VITE_RESULTS_BASE as string | undefined) ?? "https://civicapi.org/api/v2"
-  ).replace(/\/+$/, "");
   const param = format === "png" ? "generateMapPNG" : "generateMap";
-  return `${base}/race/${encodeURIComponent(String(raceId))}?${param}`;
+  return `${baseUrlFor("civicapi")}/race/${encodeURIComponent(String(raceId))}?${param}`;
 }
 
 export function ResultsTimeline({ raceId, hasMap }: ResultsTimelineProps) {
