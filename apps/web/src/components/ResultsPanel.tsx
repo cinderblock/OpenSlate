@@ -7,6 +7,7 @@ import {
   resolveSubjectRace,
   saveSubjectRace,
 } from "../lib/results";
+import { type Actor, outcomeLine, pendingLine } from "../lib/results-framing";
 import { ResultsTimeline } from "./ResultsTimeline";
 
 interface ResultsPanelProps {
@@ -207,50 +208,22 @@ interface UserCheckProps {
   choice: string;
   winner?: string;
   matchedUserChoice?: boolean;
-  /** Reported entity name when the slate is secondhand; falls back to "Your". */
+  /** Reported entity name when the slate is secondhand; falls back to "you". */
   attributedTo?: string;
 }
 
 function UserCheck({ stance, choice, winner, matchedUserChoice, attributedTo }: UserCheckProps) {
-  // For secondhand slates the SPEC requires that the framing point at the
-  // *reported* entity, not the signer. Use the entity's name as a possessive
-  // ("Sierra Club's pick won") rather than the firsthand "Your pick won".
-  const subjectLabel = attributedTo ? `${attributedTo}'s` : "Your";
-  const opposedLabel = attributedTo ? `${attributedTo}'s opposed pick` : "Your opposed pick";
-  const opposedFailLabel = attributedTo
-    ? `What ${attributedTo} opposed won.`
-    : "What you opposed won.";
+  const actor: Actor = attributedTo ? { kind: "attributed", name: attributedTo } : { kind: "self" };
 
   if (!winner) {
-    return (
-      <p className="hint">
-        {subjectLabel} <em>{stance}</em> for <strong>{choice}</strong> — no winner declared yet.
-      </p>
-    );
+    const pending = pendingLine(actor, stance, choice);
+    return pending ? <p className="hint">{pending}</p> : null;
   }
-  const pickedWinner = matchedUserChoice === true;
-  let success = false;
-  let label = "";
-  switch (stance) {
-    case "endorse":
-    case "lean_for":
-      success = pickedWinner;
-      label = success
-        ? `${subjectLabel} pick won.`
-        : `${subjectLabel} pick lost (winner: ${winner}).`;
-      break;
-    case "oppose":
-    case "lean_against":
-      // For oppose, success means the choice did NOT win.
-      success = !pickedWinner;
-      label = success ? `${opposedLabel} lost — winner: ${winner}.` : opposedFailLabel;
-      break;
-    default:
-      return null;
-  }
+  const frame = outcomeLine(actor, stance, choice, winner, matchedUserChoice === true);
+  if (!frame) return null;
   return (
-    <p className={success ? "ok" : "bad"}>
-      <strong>{success ? "✓" : "✗"}</strong> {label}
+    <p className={frame.success ? "ok" : "bad"}>
+      <strong>{frame.success ? "✓" : "✗"}</strong> {frame.label}
     </p>
   );
 }
