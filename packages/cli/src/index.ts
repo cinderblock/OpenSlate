@@ -1,4 +1,6 @@
 #!/usr/bin/env bun
+import { existsSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 import {
   type Attribution,
   type Position,
@@ -10,6 +12,7 @@ import {
   decodeToken,
   deserializeIdentity,
   identityToIssuer,
+  parseSlate,
   serializeIdentity,
   signSlate,
   slatePayloadSchema,
@@ -22,6 +25,7 @@ Usage:
   openslate keygen [--name N] [--kind K] [--uri U] [-o file.json]
   openslate pubkey <identity.json>
   openslate sign <positions.json|-> --key <identity.json> [--election E] [--jurisdiction J] [-o out.txt]
+  openslate sign --batch <dir> --key <identity.json> [--force]
   openslate validate <payload.json|->
   openslate verify <token|file|->
   openslate inspect <token|file|->
@@ -33,6 +37,10 @@ Use "-" for stdin.
 When publishing a SECONDHAND report of another entity's public stance,
 include "attribution" and sign with a researcher key (kind: "researcher").
 See SPEC §3.9 and §7.1.
+
+sign --batch walks <dir>/orgs/<slug>/<election>/positions.json, writes
+signed.slate next to each, and emits <dir>/index.json. Bundles whose
+signed.slate already exists are skipped unless --force.
 
 validate is a schema-only check (no crypto) of a complete SlatePayload JSON
 file — useful for CI on hand-authored research data before signing.
@@ -121,6 +129,11 @@ async function cmdPubkey(rest: string[]): Promise<void> {
 
 async function cmdSign(rest: string[]): Promise<void> {
   const { flags, positional } = parseFlags(rest);
+  const batchDir = strFlag(flags, "batch");
+  if (batchDir !== undefined) {
+    await cmdSignBatch(batchDir, flags);
+    return;
+  }
   const keyPath = strFlag(flags, "key");
   if (!keyPath) fail("sign requires --key <identity.json>");
 
@@ -173,6 +186,129 @@ async function cmdSign(rest: string[]): Promise<void> {
   } else {
     console.log(token);
   }
+}
+
+interface IndexEntry {
+  slug: string;
+  election: string;
+  path: string;
+  issuer: { key: string; name?: string; kind?: string };
+  attribution?: SlatePayload["attribution"];
+  positions: number;
+  issued_at: string;
+}
+
+function listSubdirs(dir: string): string[] {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir).filter((name) => {
+    try {
+      return statSync(join(dir, name)).isDirectory();
+    } catch {
+      return false;
+    }
+  });
+}
+
+async function cmdSignBatch(
+  batchDir: string,
+  flags: Record<string, string | boolean>,
+): Promise<void> {
+  const keyPath = strFlag(flags, "key");
+  if (!keyPath) fail("sign --batch requires --key <identity.json>");
+  const force = flags.force === true;
+
+  const orgsDir = join(batchDir, "orgs");
+  if (!existsSync(orgsDir)) fail(`no orgs/ directory under ${batchDir}`);
+
+  const stored = JSON.parse(await readText(keyPath)) as StoredIdentity;
+  const identity = deserializeIdentity(stored);
+  const issuer = identityToIssuer(identity);
+
+  let signed = 0;
+  let skipped = 0;
+  for (const slug of listSubdirs(orgsDir)) {
+    for (const election of listSubdirs(join(orgsDir, slug))) {
+      const bundleDir = join(orgsDir, slug, election);
+      const inputPath = join(bundleDir, "positions.json");
+      const outputPath = join(bundleDir, "signed.slate");
+      if (!existsSync(inputPath)) continue;
+      if (existsSync(outputPath) && !force) {
+        console.error(`skip   ${slug}/${election} (signed.slate exists; --force to re-sign)`);
+        skipped++;
+        continue;
+      }
+
+      const raw = JSON.parse(await Bun.file(inputPath).text()) as {
+        positions?: Position[];
+        endorsed_by?: Reference[];
+        attribution?: Attribution;
+        context?: SlatePayload["context"];
+      };
+      try {
+        const payload = buildSlate({
+          issuer,
+          positions: raw.positions ?? [],
+          endorsedBy: raw.endorsed_by,
+          attribution: raw.attribution,
+          context: raw.context,
+        });
+        const token = signSlate(payload, identity.keyPair.secretKey);
+        await Bun.write(outputPath, `${token}\n`);
+        console.error(`sign   ${slug}/${election}`);
+        signed++;
+      } catch (err) {
+        console.error(
+          `FAIL   ${slug}/${election}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        process.exit(1);
+      }
+    }
+  }
+
+  const entries: IndexEntry[] = [];
+  for (const slug of listSubdirs(orgsDir)) {
+    for (const election of listSubdirs(join(orgsDir, slug))) {
+      const bundleDir = join(orgsDir, slug, election);
+      const slatePath = join(bundleDir, "signed.slate");
+      if (!existsSync(slatePath)) continue;
+      try {
+        const token = (await Bun.file(slatePath).text()).trim();
+        const { payload } = parseSlate(token);
+        entries.push({
+          slug,
+          election,
+          path: `orgs/${slug}/${election}/signed.slate`,
+          issuer: {
+            key: payload.issuer.key,
+            ...(payload.issuer.name ? { name: payload.issuer.name } : {}),
+            ...(payload.issuer.kind ? { kind: payload.issuer.kind } : {}),
+          },
+          ...(payload.attribution ? { attribution: payload.attribution } : {}),
+          positions: payload.positions.length,
+          issued_at: payload.issued_at,
+        });
+      } catch (err) {
+        console.error(
+          `WARN   could not parse ${slug}/${election}/signed.slate: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+  }
+
+  const index = {
+    version: 1,
+    generated_at: new Date().toISOString(),
+    entries: entries.sort(
+      (a, b) => a.slug.localeCompare(b.slug) || a.election.localeCompare(b.election),
+    ),
+  };
+  const indexPath = join(batchDir, "index.json");
+  await Bun.write(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+
+  console.error(
+    `\nbatch: ${signed} signed, ${skipped} skipped, ${entries.length} entries in index.json`,
+  );
+  console.error(`wrote ${indexPath}`);
 }
 
 async function cmdValidate(rest: string[]): Promise<void> {
