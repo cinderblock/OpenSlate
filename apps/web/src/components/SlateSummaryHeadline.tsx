@@ -1,53 +1,30 @@
-import type { Position } from "@openslate/core";
-import { useQueries } from "@tanstack/react-query";
-import { useMemo } from "react";
-import { raceQueryOptions, raceSearchQueryOptions } from "../lib/results";
 import { type Actor, actorPossessive, actorVerbSubject } from "../lib/results-framing";
-import { type SlateSummary, summarizeSlate } from "../lib/slate-summary";
+import type { SlateSummary } from "../lib/slate-summary";
+
+export type OutcomeFilter = "all" | "win" | "loss" | "pending" | "unresolved";
 
 interface SlateSummaryHeadlineProps {
-  positions: Position[];
+  summary: SlateSummary;
   /** Reported entity name for secondhand slates; "you" framing otherwise. */
   attributedTo?: string;
+  filter: OutcomeFilter;
+  onFilterChange: (next: OutcomeFilter) => void;
 }
 
 /**
- * Headline above ResultsForSlate's position list. Aggregates win/loss counts
- * across all positions by running the same search → detail TanStack queries
- * the per-position panels use, so it shares cache and doesn't re-fetch.
- *
- * Note: uses the top auto-match per position. If the user has pinned a
- * different race via "Change race" on a panel, the headline lags behind
- * until the next refresh; the panel itself reflects the override correctly.
- * This is acceptable for a top-of-page summary — the per-position copy is
- * still authoritative.
+ * Presentational headline above ResultsForSlate's position list. Renders
+ * the win-rate copy, the count breakdown, and a filter chip group so
+ * users can drill into wins / losses / pending / unmatched-races. Doesn't
+ * fetch anything itself — the parent owns the data.
  */
-export function SlateSummaryHeadline({ positions, attributedTo }: SlateSummaryHeadlineProps) {
-  const actor: Actor = attributedTo ? { kind: "attributed", name: attributedTo } : { kind: "self" };
-
-  // Fan out searches and race fetches across all positions in parallel.
-  // Cache is shared with the per-position panels (same queryKey shape).
-  const searches = useQueries({
-    queries: positions.map((p) => raceSearchQueryOptions(p.subject)),
-  });
-
-  const raceIds = useMemo(() => searches.map((q) => q.data?.ranked[0]?.race.id), [searches]);
-
-  const details = useQueries({
-    queries: raceIds.map((id) => raceQueryOptions(id)),
-  });
-
-  const summary: SlateSummary = useMemo(
-    () =>
-      summarizeSlate(
-        positions,
-        details.map((q) => q.data),
-      ),
-    [positions, details],
-  );
-
+export function SlateSummaryHeadline({
+  summary,
+  attributedTo,
+  filter,
+  onFilterChange,
+}: SlateSummaryHeadlineProps) {
   if (summary.total === 0) return null;
-
+  const actor: Actor = attributedTo ? { kind: "attributed", name: attributedTo } : { kind: "self" };
   const possessive = actorPossessive(actor);
   const verbSubject = actorVerbSubject(actor);
   const headline = renderHeadline(summary, possessive, verbSubject);
@@ -57,19 +34,72 @@ export function SlateSummaryHeadline({ positions, attributedTo }: SlateSummaryHe
       <div className="card-title">
         <strong>{headline}</strong>
       </div>
-      <p className="hint">
-        {summary.wins} won · {summary.losses} lost · {summary.pending} still being called ·{" "}
-        {summary.unresolved} not yet matched to a race
-        {summary.na > 0 && <> · {summary.na} no win/loss</>}
-      </p>
+      <div className="filter-chips">
+        <FilterChip
+          label={`All (${summary.total})`}
+          active={filter === "all"}
+          onClick={() => onFilterChange("all")}
+        />
+        {summary.wins > 0 && (
+          <FilterChip
+            label={`Wins (${summary.wins})`}
+            active={filter === "win"}
+            onClick={() => onFilterChange(filter === "win" ? "all" : "win")}
+            tone="ok"
+          />
+        )}
+        {summary.losses > 0 && (
+          <FilterChip
+            label={`Losses (${summary.losses})`}
+            active={filter === "loss"}
+            onClick={() => onFilterChange(filter === "loss" ? "all" : "loss")}
+            tone="bad"
+          />
+        )}
+        {summary.pending > 0 && (
+          <FilterChip
+            label={`Still calling (${summary.pending})`}
+            active={filter === "pending"}
+            onClick={() => onFilterChange(filter === "pending" ? "all" : "pending")}
+          />
+        )}
+        {summary.unresolved > 0 && (
+          <FilterChip
+            label={`Not yet matched (${summary.unresolved})`}
+            active={filter === "unresolved"}
+            onClick={() => onFilterChange(filter === "unresolved" ? "all" : "unresolved")}
+          />
+        )}
+        {summary.na > 0 && <span className="hint">· {summary.na} no win/loss</span>}
+      </div>
     </div>
+  );
+}
+
+interface FilterChipProps {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  tone?: "ok" | "bad";
+}
+
+function FilterChip({ label, active, onClick, tone }: FilterChipProps) {
+  const toneClass = tone ? ` ${tone}` : "";
+  return (
+    <button
+      type="button"
+      className={`tag filter-chip${active ? " active" : ""}${toneClass}`}
+      onClick={onClick}
+      aria-pressed={active}
+    >
+      {label}
+    </button>
   );
 }
 
 function renderHeadline(summary: SlateSummary, possessive: string, verbSubject: string): string {
   const Possessive = capitalize(possessive);
   if (summary.winRate === null) {
-    // Nothing decided yet — surface either pending or unresolved leading.
     if (summary.pending > 0) {
       return `${Possessive} ${summary.pending} call${summary.pending === 1 ? "" : "s"} still being counted.`;
     }

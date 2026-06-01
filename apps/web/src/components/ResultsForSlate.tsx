@@ -1,20 +1,32 @@
 import { verifySlate } from "@openslate/core";
 import { useLiveQuery } from "@tanstack/react-db";
 import { Link, useParams } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { slatesCollection } from "../lib/collections";
 import { shortKey } from "../lib/identities";
+import { useResolvedRaces } from "../lib/results";
+import { positionOutcome, summarizeSlate } from "../lib/slate-summary";
 import { subjectKey } from "../lib/subjects";
 import { firsthandSubjectKeys, payloadsFromTokens } from "../lib/supersession";
 import { ResultsPanel } from "./ResultsPanel";
 import { SecondhandBanner } from "./SecondhandBanner";
-import { SlateSummaryHeadline } from "./SlateSummaryHeadline";
+import { type OutcomeFilter, SlateSummaryHeadline } from "./SlateSummaryHeadline";
 
 export function ResultsForSlate() {
   const { token } = useParams({ from: "/results/$token" });
   const { data: allSlates } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
+  const [filter, setFilter] = useState<OutcomeFilter>("all");
 
   const verified = useMemo(() => verifySlate(token), [token]);
+  const positions = useMemo(() => verified.payload?.positions ?? [], [verified.payload]);
+  const subjects = useMemo(() => positions.map((p) => p.subject), [positions]);
+
+  // Single source of truth for race detail — both the headline summary and
+  // the per-position filter read from this. Each ResultsPanel keeps its own
+  // queries too, but they share cache so there's no extra fetch.
+  const races = useResolvedRaces(subjects);
+
+  const summary = useMemo(() => summarizeSlate(positions, races), [positions, races]);
 
   // SPEC §3.9: compute firsthand coverage across the user's local set so we
   // can flag individual positions of a secondhand slate that *could* be cross-
@@ -46,13 +58,17 @@ export function ResultsForSlate() {
   const { payload, valid } = verified;
   const signerDisplay = payload.issuer.name?.trim() || shortKey(payload.issuer.key);
   const attribution = payload.attribution;
-  // For secondhand reports the headline names the *reported* entity; the signer
-  // is shown below in the SecondhandBanner. Firsthand slates use the signer name.
   const headlineSubject = attribution ? attribution.of.name : signerDisplay;
-  // Per-position UserCheck framing in ResultsPanel — pass through so the
-  // copy says "Sierra Club's pick won" not "Your pick won" on a researcher's
-  // scrape of the Sierra Club.
   const attributedTo = attribution?.of.name;
+
+  // Apply the outcome filter using the per-position outcomes derived from `races`.
+  const visiblePositions = positions
+    .map((position, i) => ({ position, race: races[i], index: i }))
+    .filter(({ position, race }) => {
+      if (filter === "all") return true;
+      const outcome = positionOutcome(position, race);
+      return outcome === filter;
+    });
 
   return (
     <section className="panel">
@@ -72,14 +88,23 @@ export function ResultsForSlate() {
 
       {attribution && <SecondhandBanner attribution={attribution} signerDisplay={signerDisplay} />}
 
-      <SlateSummaryHeadline positions={payload.positions} attributedTo={attributedTo} />
+      <SlateSummaryHeadline
+        summary={summary}
+        attributedTo={attributedTo}
+        filter={filter}
+        onFilterChange={setFilter}
+      />
 
-      {payload.positions.length === 0 ? (
+      {positions.length === 0 ? (
         <div className="card">
           <p className="hint">This slate has no positions.</p>
         </div>
+      ) : visiblePositions.length === 0 ? (
+        <div className="card">
+          <p className="hint">No positions match the current filter.</p>
+        </div>
       ) : (
-        payload.positions.map((position, i) => {
+        visiblePositions.map(({ position, index: i }) => {
           const supersedable =
             attribution !== undefined && firstKeys.has(subjectKey(position.subject));
           return (

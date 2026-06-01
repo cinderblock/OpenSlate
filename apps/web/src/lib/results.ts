@@ -8,6 +8,7 @@ import {
   scoreMatch,
   subjectToRaceQuery,
 } from "@openslate/core";
+import { useQueries } from "@tanstack/react-query";
 import { type SubjectRaceMapping, getSubjectRace, putSubjectRace } from "./db";
 import { subjectKey } from "./subjects";
 
@@ -104,6 +105,27 @@ export async function saveSubjectRace(
 
 function isLiveRace(race?: Pick<Race, "percent_reporting">): boolean {
   return race?.percent_reporting !== undefined && race.percent_reporting < 100;
+}
+
+/**
+ * Fan out search + detail queries for every position on a slate, returning a
+ * `Race | undefined` per position (in the same order). Shares the TanStack
+ * cache with each ResultsPanel's own queries, so per-position panels see
+ * warm cache when they mount.
+ *
+ * Uses the top auto-match per subject; pinned manual overrides on individual
+ * panels won't reflow until refresh. That's acceptable for headline / filter
+ * use cases — the per-panel UI is authoritative.
+ */
+export function useResolvedRaces(subjects: Subject[]): (Race | undefined)[] {
+  const searches = useQueries({
+    queries: subjects.map((s) => raceSearchQueryOptions(s)),
+  });
+  const raceIds = searches.map((q) => q.data?.ranked[0]?.race.id);
+  const details = useQueries({
+    queries: raceIds.map((id) => raceQueryOptions(id)),
+  });
+  return details.map((q) => q.data);
 }
 
 export function raceSearchQueryOptions(subject: Subject) {

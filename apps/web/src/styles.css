@@ -816,3 +816,28 @@ footer a:hover {
 .slate-summary .card-title strong {
   font-size: 1.05rem;
 }
+
+/* Filter chip group inside the slate-summary card */
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+.filter-chip {
+  cursor: pointer;
+}
+.filter-chip.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.filter-chip.active.ok {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+.filter-chip.active.bad {
+  background: var(--bad);
+  border-color: var(--bad);
+}
