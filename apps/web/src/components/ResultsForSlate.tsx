@@ -1,14 +1,28 @@
 import { verifySlate } from "@openslate/core";
+import { useLiveQuery } from "@tanstack/react-db";
 import { Link, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { slatesCollection } from "../lib/collections";
 import { shortKey } from "../lib/identities";
+import { subjectKey } from "../lib/subjects";
+import { firsthandSubjectKeys, payloadsFromTokens } from "../lib/supersession";
 import { ResultsPanel } from "./ResultsPanel";
 import { SecondhandBanner } from "./SecondhandBanner";
 
 export function ResultsForSlate() {
   const { token } = useParams({ from: "/results/$token" });
+  const { data: allSlates } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
 
   const verified = useMemo(() => verifySlate(token), [token]);
+
+  // SPEC §3.9: compute firsthand coverage across the user's local set so we
+  // can flag individual positions of a secondhand slate that *could* be cross-
+  // referenced firsthand. Excludes the slate we're viewing itself so it
+  // doesn't self-cover.
+  const firstKeys = useMemo(() => {
+    const tokens = allSlates.map((s) => s.token).filter((t) => t !== token);
+    return firsthandSubjectKeys(payloadsFromTokens(tokens));
+  }, [allSlates, token]);
 
   if (!verified.payload) {
     return (
@@ -62,28 +76,40 @@ export function ResultsForSlate() {
           <p className="hint">This slate has no positions.</p>
         </div>
       ) : (
-        payload.positions.map((position, i) => (
-          <div key={`${position.subject.title}-${i}`}>
-            <h3>{position.subject.title}</h3>
-            <p className="hint">
-              <span className={`stance stance-${position.stance}`}>{position.stance}</span>
-              {position.choice && (
-                <>
-                  {" "}
-                  · <strong>{position.choice}</strong>
-                </>
-              )}
-              {position.subject.jurisdiction && <> · {position.subject.jurisdiction}</>}
-              {position.subject.election && <> · {position.subject.election}</>}
-            </p>
-            <ResultsPanel
-              subject={position.subject}
-              stance={position.stance}
-              choice={position.choice}
-              attributedTo={attributedTo}
-            />
-          </div>
-        ))
+        payload.positions.map((position, i) => {
+          const supersedable =
+            attribution !== undefined && firstKeys.has(subjectKey(position.subject));
+          return (
+            <div key={`${position.subject.title}-${i}`}>
+              <h3>{position.subject.title}</h3>
+              <p className="hint">
+                <span className={`stance stance-${position.stance}`}>{position.stance}</span>
+                {position.choice && (
+                  <>
+                    {" "}
+                    · <strong>{position.choice}</strong>
+                  </>
+                )}
+                {position.subject.jurisdiction && <> · {position.subject.jurisdiction}</>}
+                {position.subject.election && <> · {position.subject.election}</>}
+                {supersedable && (
+                  <span
+                    className="tag warning"
+                    title="SPEC §3.9: a firsthand slate in your collection covers this subject."
+                  >
+                    firsthand available
+                  </span>
+                )}
+              </p>
+              <ResultsPanel
+                subject={position.subject}
+                stance={position.stance}
+                choice={position.choice}
+                attributedTo={attributedTo}
+              />
+            </div>
+          );
+        })
       )}
     </section>
   );

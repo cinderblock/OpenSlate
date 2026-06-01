@@ -4,6 +4,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { slatesCollection } from "../lib/collections";
 import { shortKey } from "../lib/identities";
+import { firsthandSubjectKeys, payloadsFromTokens, supersessionFor } from "../lib/supersession";
 
 // Listing page for /results. The user picks an imported slate (or pastes a
 // token) and we route to /results/$token, where each Position is rendered
@@ -16,16 +17,27 @@ export function ResultsView() {
   const [pasted, setPasted] = useState("");
 
   const rows = useMemo(() => {
+    // SPEC §3.9: surface when a secondhand report has firsthand coverage
+    // available in the user's local set, so they can prefer the authoritative
+    // slate without us auto-hiding the secondhand one (we don't yet have the
+    // trust layer to know which firsthand slate actually belongs to the
+    // reported entity).
+    const tokens = slates.map((s) => s.token);
+    const payloads = payloadsFromTokens(tokens);
+    const firstKeys = firsthandSubjectKeys(payloads);
+
     return slates
       .map(({ token, importedAt }) => {
         const result = verifySlate(token);
+        const payload = result.payload;
         return {
           token,
           importedAt,
-          issuer: result.payload?.issuer,
-          attribution: result.payload?.attribution,
-          positions: result.payload?.positions ?? [],
+          issuer: payload?.issuer,
+          attribution: payload?.attribution,
+          positions: payload?.positions ?? [],
           valid: result.valid,
+          supersession: payload ? supersessionFor(payload, firstKeys) : null,
         };
       })
       .sort((a, b) => (a.importedAt < b.importedAt ? 1 : -1));
@@ -102,6 +114,15 @@ export function ResultsView() {
                         <span className="tag" title="Secondhand report (SPEC §3.9)">
                           secondhand
                         </span>
+                        {row.supersession && row.supersession.coveredFirsthand > 0 && (
+                          <span
+                            className="tag warning"
+                            title="SPEC §3.9: a firsthand slate covers some of these subjects — prefer it for those positions."
+                          >
+                            {row.supersession.coveredFirsthand}/{row.supersession.total} also
+                            firsthand
+                          </span>
+                        )}
                         <div className="hint">
                           reported by {signerName} · {row.attribution.mode} · retrieved{" "}
                           {row.attribution.retrieved_at.slice(0, 10)}
