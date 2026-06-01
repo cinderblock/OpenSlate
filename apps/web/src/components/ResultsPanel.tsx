@@ -310,12 +310,45 @@ interface OverridePickerProps {
 }
 
 function OverridePicker({ subject, hits, currentRaceId, onPick }: OverridePickerProps) {
+  const [query, setQuery] = useState("");
+  const trimmed = query.trim();
+
+  // Build a synthetic Subject that reuses the position's jurisdiction +
+  // election but replaces the title with the user's free-text query, so the
+  // search keeps the geographic / temporal filters from the original.
+  const searchSubject: Subject | null = trimmed ? { ...subject, title: trimmed } : null;
+
+  const manualSearch = useQuery({
+    ...raceSearchQueryOptions(searchSubject ?? subject),
+    enabled: searchSubject !== null,
+  });
+
+  const visibleHits = trimmed ? (manualSearch.data?.ranked ?? []) : hits;
+
   return (
     <div className="card-inset">
       <p className="hint">
         Pick the correct civicAPI race for <strong>{subject.title}</strong>:
       </p>
-      <HitList hits={hits} onPick={onPick} currentRaceId={currentRaceId} />
+      <input
+        type="search"
+        placeholder="Search races by name…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        style={{ width: "100%", marginBottom: "0.5rem" }}
+        aria-label="Search civicAPI races by name"
+      />
+      {trimmed && manualSearch.isFetching && <p className="hint">Searching…</p>}
+      {trimmed && manualSearch.error && (
+        <p className="error">
+          Search failed:{" "}
+          {manualSearch.error instanceof Error ? manualSearch.error.message : "unknown error"}
+        </p>
+      )}
+      {trimmed && !manualSearch.isFetching && visibleHits.length === 0 && (
+        <p className="hint">No matching races for "{trimmed}" in this jurisdiction.</p>
+      )}
+      <HitList hits={visibleHits} onPick={onPick} currentRaceId={currentRaceId} />
     </div>
   );
 }
