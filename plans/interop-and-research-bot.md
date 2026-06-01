@@ -79,20 +79,40 @@ Tracked in TaskList; mirror here for durability.
   ```
   Issuer remains the researcher's key; verifiers MUST surface the
   attribution prominently so consumers see "secondhand by X" not "from Y."
-- [ ] **Researcher identity convention.** Recommend `kind: "researcher"` and
-  document `/.well-known/openslate.json` listing the bot's keys + rotation.
-- [ ] **Scraper skill** — `.claude/skills/endorsement-scraper/`. Given a URL
-  or org, fetch, extract subject↔stance↔choice, draft `positions.json` +
-  `attribution.json` + `evidence/` with human-readable proof. Human in loop
-  before signing.
-- [ ] **Output layout.**
-  `research-bot/orgs/<slug>/<election>/{positions.json, attribution.json,
-  signed.slate, evidence/}`. Republishable anywhere; no central server.
-- [ ] **Batch sign + index.** `openslate sign --batch research-bot/` walks
-  tree, signs each, emits `index.json` (hash → org/election).
-- [ ] **Verify-against-source UX recipe.** Document how verifier apps should
-  display attribution: clearly marked secondhand, with a "supersede when
-  the named entity publishes their own slate" hint.
+### Part 2 — research bot — **DONE**
+
+- [x] **Attribution field on `SlatePayload`** (commit `6c0bd3d`). Added
+  `attribution: { of: { name, uri?, kind? }, mode: scraped|transcribed|inferred,
+  retrieved_at, sources? }` to schema + SPEC §3.9. Amended v1 in place
+  (changelog at §10.1). Folded `attribution.of` consolidates the inputs into
+  a single `of` object instead of separate `positions.json` + `attribution.json`
+  sidecars — simpler and the data lives where the signer reads it.
+- [x] **Attribution conformance vectors** (commit `bc0ce4e`). Positive
+  `attribution-scraped` exercises the field; negative `attribution-bad-mode`
+  exercises closed-enum rejection. 14/14 vectors pass.
+- [x] **CLI sign + verify support** (commit `2217408`). `sign` reads
+  `attribution` from the input JSON wrapper; `verify` prints a
+  `SECONDHAND REPORT` banner.
+- [x] **Researcher identity convention (BYO)** in SPEC §7.1 (commit
+  `7159152`). No project-blessed key. Researchers publish
+  `/.well-known/openslate.json`, use `kind: "researcher"`, rotate per
+  election cycle. Verifiers SHOULD supersede secondhand reports with
+  firsthand slates when the named entity publishes one.
+- [x] **`endorsement-scraper` skill + bundle layout** (commit `16e7565`).
+  `.claude/skills/endorsement-scraper/SKILL.md` walks an AI through
+  fetch → extract → draft → validate → STOP. Layout:
+  `research-bot/orgs/<slug>/<election>/{positions.json, evidence/, signed.slate}`,
+  documented in `research-bot/README.md`. Bundles are self-contained and
+  publishable anywhere.
+- [x] **Batch sign + `index.json`** (commit `2273e68`).
+  `openslate sign --batch <dir> --key <id>` walks the tree, signs each
+  bundle, emits `<dir>/index.json` with one entry per signed.slate
+  (issuer, attribution summary, positions count). Idempotent: skips
+  pre-existing signed.slate unless `--force`.
+
+The earlier sub-bullet about "verify-against-source UX recipe" landed in
+SPEC §3.9 "Consumer requirements" and §7.1 (the supersede rule), plus the
+CLI's `SECONDHAND REPORT` banner. No standalone doc needed.
 
 ## Findings / gotchas
 
@@ -112,14 +132,13 @@ Tracked in TaskList; mirror here for durability.
 ## Progress log
 
 - [x] Read SPEC, core src, CLI, existing schema export to confirm scope.
-- [x] Created TaskList entries for Part 1.
-- [x] Plan doc.
-- [x] Conformance vectors + generator + checker + test wrapper.
-- [x] `openslate validate` CLI command.
-- [x] Combined schema with stable `$id`.
-- [x] `.slate` / `application/openslate+jws` defined in SPEC §11.
-- [x] `docs/PORTING.md`.
-- [ ] **Next: Part 2 — attribution field + scraper skill.** Awaiting go-ahead.
+- [x] Part 1 — interop kit (vectors, validate, schema bundle, .slate, porting).
+- [x] Part 2 — attribution field, researcher identity convention, scraper
+      skill, research-bot/ layout, batch sign + index.
+- [ ] **Next: nothing planned.** Possible follow-ups: a v2 of `endorsed_by`
+      that cross-links researcher slates as soft attestations; a "supersede"
+      lookup helper in `@openslate/core` that, given a slate set, returns the
+      preferred slate per `(election, jurisdiction, subject)`.
 
 ## Open questions for the user
 
