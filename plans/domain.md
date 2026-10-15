@@ -101,7 +101,9 @@ thread's uncommitted edits (telemetry SECRET_KEK, restic CNAME,
 - [x] Availability sweep
 - [x] Domain purchased (`openslate.us`)
 - [x] ops config written + validated + dry-run (staged)
-- [ ] User approves ops commit + push (CI applies)
+- [x] User approved; ops `e3b3455` pushed, Cloudflare CI applied 8 creates + 1 update.
+      Verified live: openslate.us and polls.openslate.us return the 503 empty-worker stub,
+      www → 301 to apex with the path kept, DMARC TXT resolves.
 - [ ] App repo: wire deploys for `openslate-web` and `openslate-poll-cache`
       (wrangler config for apps/web with static assets; remove the
       `polls.openslate.dev` comment in apps/poll-cache/wrangler.toml; no
@@ -115,14 +117,32 @@ thread's uncommitted edits (telemetry SECRET_KEK, restic CNAME,
   `plans/polls-cache-worker.md` says the poll-cache assumes it. Either
   toggle it by hand (it's then unmanaged drift) or add support to ops.
   Not needed for correctness, only for cache hit rate.
+- **Is the Tiered Cache assumption safe? Partly.** Per CF docs ("How the
+  cache works", 2026-10-14): the Cache API is per-datacenter and "not
+  compatible with tiered caching". `fetch()` with `cf.cacheTtl` reads
+  through the Worker zone's cache "even if the URL is for a non-Cloudflare
+  site", and CF recommends fetch for tiered caching. The poll-cache uses
+  fetch + cf.cacheTtl, which is right. The docs don't explicitly say Tiered
+  Cache applies to Worker subrequests to third-party origins
+  (VoteHub/civicAPI/Kalshi). Worst case is per-PoP caching: about 1 origin
+  hit per active PoP per TTL. That's harmless at our scale. Only works on
+  a custom domain in a zone, which polls.openslate.us now is (not
+  workers.dev). Smart Tiered Cache is free-plan.
+- On a curl quirk: Git Bash curl `-o /dev/null -w %{http_code}` prints
+  `000` on this machine even when the request succeeds. Use `-D - -o NUL`.
 
 ## Open questions for the user
 
 1. Approve the ops commit + push for `openslate.yaml`?
 2. Make an offer on `openslate.vote` / `openslate.org`, or skip?
-3. Cloudflare Web Analytics on openslate.us? Left off by default. It's
-   cookieless, but a beacon in a voting tool cuts against the "data stays
-   in your browser" story.
+3. Analytics: user wants *some* anonymized usage tracking with a user
+   opt-out (2026-10-14). Zone-wide auto-inject (`web_analytics: true`)
+   can't be opted out per user. Proposal: ops `web_analytics: manual`
+   (site exists, no edge injection) and the SPA loads the CF beacon itself,
+   only when the user hasn't opted out (Settings toggle, default on, honor
+   GPC). That's page views + web vitals only. For feature-level events
+   (slate imported, ballot printed) use telemetry-collector instead. Awaiting
+   the user's pick.
 
 ## Things not to do
 
