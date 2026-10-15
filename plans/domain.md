@@ -24,6 +24,17 @@ domain root also enables `/.well-known/openslate.json` domain attestation
 - User likes the name "OpenSlate" and would rather keep it. Renaming is on
   the table only if no acceptable domain exists.
 - `openslate.vote` was the user's first choice. It's taken.
+- **`openslate.us` purchased** by the user 2026-10-14 at Cloudflare Registrar
+  (zone in the user's Cloudflare account, NS rob/daisy.ns.cloudflare.com).
+- Hostname layout (staged in ops, see below):
+  - `openslate.us` → worker `openslate-web` (apps/web SPA)
+  - `polls.openslate.us` → worker `openslate-poll-cache` (apps/poll-cache)
+  - `www` → 301 to apex
+  - Catalog stays on GitHub Pages for now.
+- ops pattern: same as empyreangate.org. ops provisions the empty workers
+  (`external: true, provision: true`) and attaches custom domains. The app
+  repo deploys code into them (Workers Builds or its own CI). Worker names
+  must match the app's wrangler config.
 
 ## Findings (availability sweep, 2026-10-14)
 
@@ -74,10 +85,44 @@ WHOIS-privacy contact for the .vote owner.
 `slate.vote` may be registry-premium. Confirm the price at a registrar
 before counting on it.
 
+## ops change (staged, NOT committed — ops requires per-commit approval)
+
+File: `ops/cloudflare/config/projects/openslate.yaml`. `bun run validate`
+passes. A dry-run sync against a clean HEAD worktree plus this file gives
+**8 creates, 1 update, 0 deletes**: two empty workers, two custom domains,
+the www stub AAAA plus a 301 rule, SPF `-all` + DMARC `p=reject` (no mail
+from this domain), and SSL full→strict + always-HTTPS. Running the dry run
+in the shared ops checkout also shows 3 unrelated diffs from another
+thread's uncommitted edits (telemetry SECRET_KEK, restic CNAME,
+*.empyreangate.org delete). Those are not part of this change.
+
+## Progress
+
+- [x] Availability sweep
+- [x] Domain purchased (`openslate.us`)
+- [x] ops config written + validated + dry-run (staged)
+- [ ] User approves ops commit + push (CI applies)
+- [ ] App repo: wire deploys for `openslate-web` and `openslate-poll-cache`
+      (wrangler config for apps/web with static assets; remove the
+      `polls.openslate.dev` comment in apps/poll-cache/wrangler.toml; no
+      `routes` in wrangler, since ops owns the custom domains)
+- [ ] Build web with `VITE_POLLS_BASE/VITE_RESULTS_BASE/VITE_FORECASTS_BASE=https://polls.openslate.us`
+- [ ] README: replace "TBD — not yet deployed" with https://openslate.us
+
+## Findings / gotchas (ops)
+
+- The ops Cloudflare config has no Tiered Cache zone setting, and
+  `plans/polls-cache-worker.md` says the poll-cache assumes it. Either
+  toggle it by hand (it's then unmanaged drift) or add support to ops.
+  Not needed for correctness, only for cache hit rate.
+
 ## Open questions for the user
 
-1. Which domain? (Options and recommendation are in the thread.)
+1. Approve the ops commit + push for `openslate.yaml`?
 2. Make an offer on `openslate.vote` / `openslate.org`, or skip?
+3. Cloudflare Web Analytics on openslate.us? Left off by default. It's
+   cookieless, but a beacon in a voting tool cuts against the "data stays
+   in your browser" story.
 
 ## Things not to do
 
