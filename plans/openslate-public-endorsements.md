@@ -305,7 +305,7 @@ Title conventions (keep cross-org collation working):
 Batches:
 - [ ] A statewide advocacy: sierra-club-california, ca-environmental-voters, courage-california, lwv-california, spur
 - [ ] B statewide parties: ca-democratic-party, ca-republican-assembly, reform-california, peace-and-freedom-party, working-families-party-ca
-- [ ] C SF 1: sf-chronicle, sf-bay-guardian, sf-league-of-pissed-off-voters, sf-yimby, grow-sf
+- [x] C SF 1: sf-chronicle, sf-bay-guardian, sf-league-of-pissed-off-voters, sf-yimby, grow-sf — 227 positions, published `4d9b701`. Re-scrape Chronicle + SF YIMBY later (partly "coming soon"). New title convention: `California Court of Appeal, First District — Retain Justice <Name>` (kind measure, Yes/No), `California Supreme Court — Retain Justice <Name>`.
 - [ ] D SF 2: sf-democratic-party, sf-tenants-union, harvey-milk-club, sierra-club-sf-bay, lwv-san-francisco
 - [ ] E LA/SB: thrive-la, la-forward, sierra-club-angeles, sb-independent, + LA County Fed of Labor (June gap)
 - [ ] F San Diego: the 7 SD orgs
