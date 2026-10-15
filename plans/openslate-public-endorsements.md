@@ -309,7 +309,7 @@ Batches:
 - [x] D SF 2: sf-democratic-party, sf-tenants-union, harvey-milk-club, sierra-club-sf-bay, lwv-san-francisco — 229 positions, published (see endorsements log). SFTU = paid slate mailer, noted.
 - [ ] E LA/SB: thrive-la, la-forward, sierra-club-angeles, sb-independent, + LA County Fed of Labor (June gap)
 - [ ] F San Diego: the 7 SD orgs
-- [ ] G gaps/new: CA Labor Federation, SF Examiner, more SF clubs (sfendorsements.com list), SF Bicycle Coalition, Sierra Club San Diego
+- [x] G gaps/new: CA Labor Federation, SF Examiner, more SF clubs (sfendorsements.com list), SF Bicycle Coalition, Sierra Club San Diego — 8 new orgs, 366 positions, published `11c1e75`. SF Examiner + Bernal Heights Dems: no Nov picks yet. sfbike.org still 403 (used aggregator).
 
 Post-batch cleanup to do once all batches land:
 - [ ] Normalize candidate `choice` spellings across orgs (e.g. "D.J."/"DJ" Brookter, "JR"/"J.R." Eppler, "Joaquín"/"Joaquin" Torres). Use the ballot spelling from the official certified lists.
