@@ -93,15 +93,71 @@ of event names and low-cardinality, non-political dims is fine.
 4. A short "What we collect" note on the Settings page listing exactly
    the events above.
 
+## Decisions (user, 2026-10-15)
+
+- Design approved ("I trust you"). **On by default**; GPC browsers default
+  off. An explicit choice wins.
+- Cut a telemetry-collector release. Use the plain npm names if available
+  (they were): `telemetry-collector`, `-core`, `-cli`.
+- Register an `openslate` app in the telemetry-collector admin UI.
+
+## Implementation notes
+
+- **Hash routing instead of moving params**: `createHashHistory()` puts
+  every route in the fragment. Browsers never send it to a server, so shared
+  `/results/<token>` links never reach Cloudflare's edge logs either. The
+  beacon's URL sanitizer (`ot()` in beacon.min.js, version 2026.10.x) sets
+  `hash=""` and `search=""` on both location and referrer. Read from the
+  live script 2026-10-15.
+- ops: `web_analytics: { auto_install: false }` (zone-level, no injection
+  anywhere in the zone) rather than `manual` (which is auto-install plus a
+  per-host exclusion rule).
+- The page-view route is compile-checked: `const route: RouteTemplate =
+  routeId` fails to typecheck if a new route isn't added to the union.
+
+## Progress
+
+- [x] OpenSlate web: switch, Settings panel, typed events, beacon loader,
+      hash routing (`b9e728a`). Tests 136 pass, typecheck + build green.
+- [x] telemetry-collector: unscoped rename + trusted publishing workflow
+      (`50b7756` in that repo). 221 tests pass.
+- [x] ops `web_analytics: { auto_install: false }` on openslate.us. Clean
+      dry run: 1 create. **Staged, waiting on the user's yes.**
+- [ ] npm: claim the 3 names with a minimal `0.0.0` placeholder. **Needs
+      the user to `npm login` first** (CLI is E401, and Chrome isn't signed
+      in to npmjs.com).
+- [ ] npm: configure a trusted publisher (repo cinderblock/telemetry-collector,
+      workflow `publish.yml`, environment `npm`) on each of the 3 packages.
+- [ ] Bump to 0.1.0, tag `v0.1.0`, CI publishes.
+- [ ] OpenSlate: add `telemetry-collector` dep, wire `setUsageSink` in
+      main.tsx with `VITE_TELEMETRY_ENDPOINT` / `VITE_TELEMETRY_KEY`.
+- [ ] Read the openslate.us beacon token (`bun run web-analytics` in ops)
+      into the web build env `VITE_CF_BEACON_TOKEN`.
+- [ ] **Blocked: telemetry-collector has never been deployed.**
+      telemetry.tomsawyerlabs.com serves ops's 503 stub. Workers Builds
+      "has produced no build across three push events", per ops'
+      `plans/telemetry-collector-cloudflare.md`, which has uncommitted edits
+      from another thread (since 2026-09-25). There's no admin UI to register
+      `openslate` in until it ships, and passkey enrolment needs the user's
+      BOOTSTRAP_TOKEN. Not taking that work over without the user's say-so.
+
+## Findings
+
+- A corrupted file in Bun's global cache
+  (`es-set-tostringtag@2.1.0/package.json`, binary garbage, hardlinked into
+  node_modules) broke `vite build` (the workbox step) with "Invalid package
+  config". Fixed by moving the cache entry aside
+  (`%TEMP%/norm/es-set-tostringtag-corrupt-cache`) and reinstalling.
+
 ## Open questions for the user
 
-1. OK with the design above, including the route change for
-   `/results/$token` and `/race/$key`?
-2. Default on (with GPC respected), or default off (opt-in)?
-3. telemetry-collector SDK: cut a `v*` release of that repo so it lands
-   on npm (preferred), or vendor it into OpenSlate for now?
-4. Register an `openslate` app in the telemetry-collector admin UI (needs
-   your passkey) and tell me the app id.
+1. ~~Design / default / release / register~~ (answered 2026-10-15).
+2. Approve the ops `web_analytics` commit + push?
+3. Run `npm login` so the 3 names can be claimed. Then either sign in to
+   npmjs.com in Chrome (I'll configure trusted publishers) or do that
+   yourself.
+4. telemetry-collector deploy: start a separate thread for it, or pick up
+   the stalled one?
 
 ## Things not to do
 
