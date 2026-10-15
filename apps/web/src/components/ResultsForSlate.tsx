@@ -10,6 +10,7 @@ import { slateToMarkdown } from "../lib/results-markdown";
 import { positionOutcome, summarizeSlate } from "../lib/slate-summary";
 import { subjectKey } from "../lib/subjects";
 import { firsthandSubjectKeys, payloadsFromTokens } from "../lib/supersession";
+import { track } from "../lib/usage";
 import { ResultsPanel } from "./ResultsPanel";
 import { SecondhandBanner } from "./SecondhandBanner";
 import { type OutcomeFilter, SlateSummaryHeadline } from "./SlateSummaryHeadline";
@@ -91,14 +92,24 @@ export function ResultsForSlate() {
       <p className="no-print">
         <Link to="/results">← back to Results</Link>
         {" · "}
-        <button type="button" className="link" onClick={() => window.print()}>
+        <button
+          type="button"
+          className="link"
+          onClick={() => {
+            track({ name: "results.print" });
+            window.print();
+          }}
+        >
           Print
         </button>
         {" · "}
         <button
           type="button"
           className="link"
-          onClick={() => downloadCsv(slateToCsv(payload, races), suggestCsvFilename(payload))}
+          onClick={() => {
+            downloadCsv(slateToCsv(payload, races), suggestCsvFilename(payload));
+            track({ name: "results.export", dims: { format: "csv" } });
+          }}
         >
           Download CSV
         </button>
@@ -110,6 +121,7 @@ export function ResultsForSlate() {
             const md = slateToMarkdown(payload, races);
             try {
               await navigator.clipboard.writeText(md);
+              track({ name: "results.export", dims: { format: "markdown" } });
               setCopyState("copied");
               setTimeout(() => setCopyState("idle"), 2000);
             } catch {

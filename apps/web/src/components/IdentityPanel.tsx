@@ -9,6 +9,7 @@ import {
 import type { KnownIdentity } from "../lib/db";
 import { shortKey, useActiveIdentity, useKnownIdentities } from "../lib/identities";
 import { contactToQrText, parseScanned } from "../lib/qr";
+import { track } from "../lib/usage";
 import { QrDialog, ScanQrButton } from "./Qr";
 
 export function IdentityPanel() {
@@ -57,6 +58,7 @@ export function IdentityPanel() {
       : { kind: "individual" };
     const stored = serializeIdentity(createIdentity(meta));
     addIdentity(stored);
+    track({ name: "identity.create" });
     setGenName("");
     if (!activeKey) setActiveKey(stored.publicKey);
   }
@@ -66,6 +68,7 @@ export function IdentityPanel() {
       const parsed = JSON.parse(importText) as StoredIdentity;
       if (!parsed.secretKey || !parsed.publicKey) throw new Error("missing publicKey/secretKey");
       addIdentity(parsed);
+      track({ name: "identity.import" });
       setImportText("");
       setImportError(null);
       if (!activeKey) setActiveKey(parsed.publicKey);
@@ -82,6 +85,7 @@ export function IdentityPanel() {
     link.href = url;
     link.download = `openslate.identity.${safe}.json`;
     link.click();
+    track({ name: "identity.export" });
     URL.revokeObjectURL(url);
   }
 

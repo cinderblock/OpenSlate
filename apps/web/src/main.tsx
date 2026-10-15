@@ -3,6 +3,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { persister, queryClient } from "./lib/query";
+import { loadBeacon } from "./lib/usage";
 import { router } from "./router";
 import "./styles.css";
 
@@ -18,6 +19,8 @@ if (typeof globalThis.crypto?.randomUUID !== "function") {
     return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
   };
 }
+
+loadBeacon();
 
 const root = document.getElementById("root");
 if (!root) throw new Error("missing #root element");

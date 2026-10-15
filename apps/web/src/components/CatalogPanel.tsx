@@ -10,6 +10,7 @@ import {
   catalogQueryOptions,
   slateFromUrlOptions,
 } from "../lib/query";
+import { track } from "../lib/usage";
 
 /**
  * Shared per-entry import. Used by single-row import buttons and the bulk
@@ -39,6 +40,7 @@ async function importCatalogEntry(
       return { kind: "already-imported", token };
     }
     slatesCollection.insert({ token, importedAt: new Date().toISOString() });
+    track({ name: "slate.import", dims: { source: "catalog" } });
     if (result.issuerKey) {
       upsertKnownIdentity(result.issuerKey, {
         displayName: result.payload?.issuer.name,
@@ -167,6 +169,7 @@ function CatalogTable({
   );
 
   async function importAll() {
+    track({ name: "catalog.import_all" });
     setBulkRunning(true);
     setBulkSummary(null);
     setBulkProgress({ done: 0, total: pending.length });

@@ -1,4 +1,9 @@
-import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import {
+  createHashHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+} from "@tanstack/react-router";
 import { RootLayout } from "./App";
 import { BlockViewerPanel } from "./components/BlockViewerPanel";
 import { CatalogPanel } from "./components/CatalogPanel";
@@ -10,7 +15,8 @@ import { ImportVerifyPanel } from "./components/ImportVerifyPanel";
 import { RacePanel } from "./components/RacePanel";
 import { ResultsForSlate } from "./components/ResultsForSlate";
 import { ResultsView } from "./components/ResultsView";
-import { RoutingPanel } from "./components/RoutingPanel";
+import { SettingsPage } from "./components/SettingsPage";
+import { type RouteTemplate, track } from "./lib/usage";
 
 const rootRoute = createRootRoute({ component: RootLayout });
 
@@ -67,7 +73,7 @@ const resultsForSlateRoute = createRoute({
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
-  component: RoutingPanel,
+  component: SettingsPage,
 });
 
 const routeTree = rootRoute.addChildren([
@@ -84,7 +90,20 @@ const routeTree = rootRoute.addChildren([
   settingsRoute,
 ]);
 
-export const router = createRouter({ routeTree });
+// Hash history keeps route values (a whole signed slate in /results/$token, the
+// race in /race/$key) in the URL fragment, which browsers never send to a server.
+// Shared links therefore never reach a host's request logs, and the Cloudflare
+// analytics beacon (which strips the fragment) only ever sees "/".
+export const router = createRouter({ routeTree, history: createHashHistory() });
+
+// Report the route *template* (e.g. "/results/$token"), never the matched value.
+router.subscribe("onResolved", () => {
+  const routeId = router.state.matches.at(-1)?.routeId;
+  if (routeId && routeId !== "__root__") {
+    const route: RouteTemplate = routeId;
+    track({ name: "page.view", dims: { route } });
+  }
+});
 
 declare module "@tanstack/react-router" {
   interface Register {

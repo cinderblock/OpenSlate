@@ -5,6 +5,7 @@ import { useState } from "react";
 import { slatesCollection, upsertKnownIdentity } from "../lib/collections";
 import { parseScanned } from "../lib/qr";
 import { slateFromUrlOptions } from "../lib/query";
+import { type SlateImportSource, track } from "../lib/usage";
 import { ScanQrButton } from "./Qr";
 
 export function ImportVerifyPanel() {
@@ -14,6 +15,8 @@ export function ImportVerifyPanel() {
   const [url, setUrl] = useState("");
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
+  // Where the current block came from, for the anonymous import count.
+  const [source, setSource] = useState<SlateImportSource>("paste");
 
   function verify(token: string) {
     setSaved(null);
@@ -24,6 +27,7 @@ export function ImportVerifyPanel() {
     try {
       const text = await queryClient.fetchQuery(slateFromUrlOptions(url));
       setInput(text);
+      setSource("url");
       verify(text);
     } catch (err) {
       setResult({
@@ -38,6 +42,7 @@ export function ImportVerifyPanel() {
     if (!file) return;
     const text = (await file.text()).trim();
     setInput(text);
+    setSource("file");
     verify(text);
   }
 
@@ -45,6 +50,7 @@ export function ImportVerifyPanel() {
     const parsed = parseScanned(raw);
     if (parsed.kind === "slate") {
       setInput(parsed.token);
+      setSource("qr");
       verify(parsed.token);
     } else if (parsed.kind === "contact") {
       setResult({
@@ -72,6 +78,7 @@ export function ImportVerifyPanel() {
       return;
     }
     slatesCollection.insert({ token, importedAt: new Date().toISOString() });
+    track({ name: "slate.import", dims: { source } });
     // Auto-register the issuer as a known contact so they show up in the directory
     // and we can recognize their future slates. Only first-time inserts seed a name.
     if (result?.valid && result.issuerKey) {
@@ -99,7 +106,10 @@ export function ImportVerifyPanel() {
             className="token"
             placeholder="paste an OpenSlate block here"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              setSource("paste");
+            }}
           />
         </label>
         <div className="row">
