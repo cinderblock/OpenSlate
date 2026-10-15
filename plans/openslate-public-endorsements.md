@@ -276,3 +276,37 @@ orgs.
    were authored under time pressure for the June 2 deadline. The big
    ones (CRA 94, EnviroVoters 105, LA Forward 36) are most prone to
    transcription error in the long candidate-name lists.
+
+## CA general push (2026-10-14, 20 days before Nov 3)
+
+User go-ahead: re-scrape for `2026-11-03`. **Publish directly to master,
+no review branch** (user, 2026-10-14). Default org scope is the same 31
+orgs plus retries of the June gaps. User didn't name other orgs.
+
+Fan-out: 7 background subagents, each owning a disjoint set of
+`orgs/<slug>/2026-11-03/` dirs in the endorsements repo. Agents write files
+and run `bun scripts/verify-positions.ts`. They don't touch git. I commit
+and push per batch as each one lands; CI signs and publishes.
+
+Title conventions (keep cross-org collation working):
+- Statewide offices and districts reuse the June titles ("Governor of
+  California", "California State Assembly, District 17", "US House of
+  Representatives, California District 11", ...).
+- State props: `California — Proposition <N> (<official SOS title, without
+  the trailing "Initiative Statute." etc.>)`. Qualified list from
+  sos.ca.gov, fetched 2026-10-14: 1, 2, 3, 4, 5, 37–45 (ACA 13 removed
+  2026-06-25). Prop 4 is the Fair Elections Act (the existing LWV-CA slate
+  used a pre-number title and gets retitled).
+- Local measures: `<City/County> — Measure|Proposition <X> (<official short title>)`,
+  as in June.
+- General = top-two finalists only. Drop endorsements of candidates who
+  didn't advance.
+
+Batches:
+- [ ] A statewide advocacy: sierra-club-california, ca-environmental-voters, courage-california, lwv-california, spur
+- [ ] B statewide parties: ca-democratic-party, ca-republican-assembly, reform-california, peace-and-freedom-party, working-families-party-ca
+- [ ] C SF 1: sf-chronicle, sf-bay-guardian, sf-league-of-pissed-off-voters, sf-yimby, grow-sf
+- [ ] D SF 2: sf-democratic-party, sf-tenants-union, harvey-milk-club, sierra-club-sf-bay, lwv-san-francisco
+- [ ] E LA/SB: thrive-la, la-forward, sierra-club-angeles, sb-independent, + LA County Fed of Labor (June gap)
+- [ ] F San Diego: the 7 SD orgs
+- [ ] G gaps/new: CA Labor Federation, SF Examiner, more SF clubs (sfendorsements.com list), SF Bicycle Coalition, Sierra Club San Diego
