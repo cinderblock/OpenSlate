@@ -303,10 +303,14 @@ Title conventions (keep cross-org collation working):
   didn't advance.
 
 Batches:
-- [ ] A statewide advocacy: sierra-club-california, ca-environmental-voters, courage-california, lwv-california, spur
+- [x] A statewide advocacy: sierra-club-california, ca-environmental-voters, courage-california, lwv-california, spur — 372 positions, published `108e6e8`. Courage CA local races skipped (garbled PDF); re-scrape from its county guides.
 - [x] B statewide parties: ca-democratic-party, ca-republican-assembly, reform-california, peace-and-freedom-party, working-families-party-ca, + new ca-republican-party — 601 positions, published `490ae24`. P&F has only 3 (no prop recs yet), re-scrape later. WFP local rows omitted (undated list).
 - [x] C SF 1: sf-chronicle, sf-bay-guardian, sf-league-of-pissed-off-voters, sf-yimby, grow-sf — 227 positions, published `4d9b701`. Re-scrape Chronicle + SF YIMBY later (partly "coming soon"). New title convention: `California Court of Appeal, First District — Retain Justice <Name>` (kind measure, Yes/No), `California Supreme Court — Retain Justice <Name>`.
-- [ ] D SF 2: sf-democratic-party, sf-tenants-union, harvey-milk-club, sierra-club-sf-bay, lwv-san-francisco
+- [x] D SF 2: sf-democratic-party, sf-tenants-union, harvey-milk-club, sierra-club-sf-bay, lwv-san-francisco — 229 positions, published (see endorsements log). SFTU = paid slate mailer, noted.
 - [ ] E LA/SB: thrive-la, la-forward, sierra-club-angeles, sb-independent, + LA County Fed of Labor (June gap)
 - [ ] F San Diego: the 7 SD orgs
 - [ ] G gaps/new: CA Labor Federation, SF Examiner, more SF clubs (sfendorsements.com list), SF Bicycle Coalition, Sierra Club San Diego
+
+Post-batch cleanup to do once all batches land:
+- [ ] Normalize candidate `choice` spellings across orgs (e.g. "D.J."/"DJ" Brookter, "JR"/"J.R." Eppler, "Joaquín"/"Joaquin" Torres). Use the ballot spelling from the official certified lists.
+- [ ] Harmonize San Diego county measure titles (Reform CA guessed the A/B letters).
