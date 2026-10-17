@@ -15,9 +15,11 @@ together" (Cloudflare Web Analytics + telemetry-collector).
 - Web app: `apps/web` (React + Vite SPA, TanStack Router), to be served at
   `https://openslate.us` from the `openslate-web` worker (see
   `plans/domain.md`).
-- telemetry-collector: `github.com/cinderblock/telemetry-collector` (not
-  cloned locally), running at `telemetry.tomsawyerlabs.com` (ops
-  `cloudflare/config/workers/telemetry-collector.yaml`).
+- telemetry-collector: `github.com/cinderblock/telemetry-collector`, cloned
+  at `~/git/Personal Projects/telemetry-collector`. Its hostname is
+  `telemetry.tomsawyerlabs.com` (ops
+  `cloudflare/config/workers/telemetry-collector.yaml`), but no code is
+  deployed there yet.
 - ops `web_analytics` key on a zone entry: `true` (edge auto-inject),
   `manual` (site exists, no injection, app embeds the beacon), `false`.
 
