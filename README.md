@@ -30,7 +30,7 @@ machine, never on a server. The choice below is mostly about what fetches
 
 ### Cloud
 
-The easy path: open the hosted web app at **TBD — not yet deployed**. Your
+The easy path: open the hosted web app at **<https://openslate.us>**. Your
 signing keys and slates live only in your browser; nothing is uploaded. Polls
 and election results are fetched through project-operated Cloudflare Workers.
 Per-address ballot lookup needs a server-side Google Civic key, so it isn't
@@ -136,7 +136,7 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 | [`packages/cli`](./packages/cli) | `@openslate/cli` — `keygen` / `pubkey` / `sign` (incl. `--batch` for research bundles) / `validate` / `verify` / `inspect`. |
 | [`apps/web`](./apps/web) | React + Vite SPA. Manage identity; compose/share/import/verify slates; browse the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/); collate endorsements by race; assemble your own ballot; view live polls, market forecasts, and election results; pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
 | [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + proxies for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic), opinion polls ([VoteHub](https://votehub.com)), election results ([civicAPI](https://civicapi.org)), and market forecasts ([Kalshi](https://kalshi.com)). |
-| [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls, [civicAPI](https://civicapi.org) results, and [Kalshi](https://kalshi.com) forecasts behind permissive CORS. Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, and `/api/forecasts/v2/*` shapes so the web client treats either backend identically. Not yet deployed. |
+| [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls, [civicAPI](https://civicapi.org) results, and [Kalshi](https://kalshi.com) forecasts behind permissive CORS. Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, and `/api/forecasts/v2/*` shapes so the web client treats either backend identically. Runs at `https://polls.openslate.us`. |
 | [`apps/desktop`](./apps/desktop) | [Electrobun](https://blackboard.sh/electrobun) wrapper around the web build (stub). |
 
 ## Hosting topologies
@@ -176,7 +176,7 @@ flowchart LR
     Hono["Hono server<br/>apps/server<br/><i>stateless, no user data</i>"]
   end
 
-  subgraph ProjectInfra["Optional — project-operated (future)"]
+  subgraph ProjectInfra["Optional — project-operated (polls.openslate.us)"]
     Worker["CF Worker poll-cache<br/>apps/poll-cache<br/><i>15min edge cache</i>"]
   end
 
@@ -214,7 +214,7 @@ flowchart LR
 | --- | --- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Pure client** (default) | Web SPA or desktop only | yes | yes (GH Pages) | — | — | manual entry | yes (civicAPI direct) |
 | **+ Self-hosted Hono** | Above + your own `apps/server` | yes | yes | yes (VoteHub) | yes (Kalshi) | yes (needs `GOOGLE_API_KEY`) | yes (cached) |
-| **+ Public Worker** *(future)* | Above + project-operated Worker | yes | yes | yes (cached) | yes (cached) | — | yes (cached) |
+| **+ Public Worker** (what `openslate.us` uses) | Above + project-operated Worker | yes | yes | yes (cached) | yes (cached) | — | yes (cached) |
 
 Modes are not mutually exclusive: run your own Hono for ballot lookup **and**
 point `VITE_POLLS_BASE` at the public Worker for cached polls. The web client
@@ -222,6 +222,41 @@ hits `/api/polls/*` on whichever backend the env var resolves to; the response
 shape is identical either way. `VITE_RESULTS_BASE` and `VITE_FORECASTS_BASE`
 work the same way for civicAPI results (reached directly by default, but
 configurable) and Kalshi forecasts (which always require a proxy).
+
+## Deployment
+
+The hosted app is two Cloudflare Workers, each built and deployed by
+**Cloudflare Workers Builds** on every push to `master`:
+
+| Worker | Serves | Config |
+| --- | --- | --- |
+| `openslate-web` | `https://openslate.us`, the web build as static assets | [`apps/web/wrangler.jsonc`](./apps/web/wrangler.jsonc), build settings in [`apps/web/.env.production`](./apps/web/.env.production) |
+| `openslate-poll-cache` | `https://polls.openslate.us` | [`apps/poll-cache/wrangler.toml`](./apps/poll-cache/wrangler.toml) |
+
+The workers themselves, their custom domains, the `www` redirect, Web
+Analytics and the zone settings are managed in
+[cinderblock/ops](https://github.com/cinderblock/ops)
+(`cloudflare/config/projects/openslate.yaml`). Nothing in this repo holds a
+Cloudflare credential.
+
+`apps/web/.env.production` is committed on purpose: everything in it ships in
+the public bundle anyway. Address-based ballot lookup needs `apps/server` with a
+`GOOGLE_API_KEY`, so the hosted app offers manual entry instead.
+
+Workers Builds settings, one connection per worker, both on this repo with
+production branch `master` and non-production branch builds off:
+
+| Setting | `openslate-web` | `openslate-poll-cache` |
+| --- | --- | --- |
+| Root directory | `apps/web` | `apps/poll-cache` |
+| Build command | `bun install --frozen-lockfile && bun run build` | `bun install --frozen-lockfile` |
+| Deploy command | `bunx wrangler deploy` | `bunx wrangler deploy` |
+| Build watch paths | `apps/web/*`, `packages/core/*`, `bun.lock` | `apps/poll-cache/*`, `bun.lock` |
+| Build variables | `SKIP_DEPENDENCY_INSTALL=1`, `BUN_VERSION=1.4.2` | `SKIP_DEPENDENCY_INSTALL=1`, `BUN_VERSION=1.4.2` |
+
+`SKIP_DEPENDENCY_INSTALL` stops the build image running its own install with a
+different package manager; `BUN_VERSION` should match the Bun that wrote
+`bun.lock` (the image's default Bun is older).
 
 ## Design principles
 

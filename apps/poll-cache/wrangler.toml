@@ -1,10 +1,16 @@
 name = "openslate-poll-cache"
 main = "src/index.ts"
 compatibility_date = "2026-05-01"
-workers_dev = true
 
-# Tiered Cache must be enabled at the zone level for the global cache behavior
-# this Worker assumes; see plans/polls-cache-worker.md.
+# Deployed by Workers Builds on every push to master (see README "Deployment").
+# The worker and its custom domain, polls.openslate.us, belong to
+# github.com/cinderblock/ops (cloudflare/config/projects/openslate.yaml), so no
+# routes here. The name must match the worker ops provisions.
+#
+# Production answers only at polls.openslate.us, not at a workers.dev duplicate.
+workers_dev = false
+preview_urls = false
 
-# Custom route is added per-deployment, e.g.
-# routes = [{ pattern = "polls.openslate.dev/*", custom_domain = true }]
+# Zone-level Tiered Cache would make the cache global rather than per
+# datacenter; it is off, which is harmless at this traffic. See
+# plans/polls-cache-worker.md.

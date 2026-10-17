@@ -1,0 +1,22 @@
+{
+  // The web app at https://openslate.us: the Vite build served as Cloudflare
+  // Workers static assets, with no Worker script. Workers Builds builds and
+  // deploys it on every push to master (see README "Deployment"). The worker
+  // itself, its custom domain, the www redirect and the zone settings belong to
+  // github.com/cinderblock/ops (cloudflare/config/projects/openslate.yaml). The
+  // name here must match the worker ops provisions.
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "openslate-web",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // Every route lives after the "#" (hash history), so the only page is
+    // index.html and any other path is a real miss. Leaving misses as plain
+    // 404s also keeps /api/* (served only by a self-hosted apps/server) from
+    // answering with HTML.
+    "not_found_handling": "none"
+  },
+  // Production answers only at openslate.us, not at a workers.dev duplicate.
+  "workers_dev": false,
+  "preview_urls": false
+}

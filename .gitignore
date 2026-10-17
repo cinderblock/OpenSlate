@@ -20,6 +20,8 @@ coverage/
 .env
 .env.*
 !.env.example
+# The hosted app's public build settings (no secrets; they ship in the bundle).
+!apps/web/.env.production
 
 # private keys / generated identities (contain Ed25519 secret keys)
 *.identity.json
