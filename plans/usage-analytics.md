@@ -123,18 +123,21 @@ of event names and low-cardinality, non-political dims is fine.
       hash routing (`b9e728a`). Tests 136 pass, typecheck + build green.
 - [x] telemetry-collector: unscoped rename + trusted publishing workflow
       (`50b7756` in that repo). 221 tests pass.
-- [x] ops `web_analytics: { auto_install: false }` on openslate.us. Clean
-      dry run: 1 create. **Staged, waiting on the user's yes.**
-- [ ] npm: claim the 3 names with a minimal `0.0.0` placeholder. **Needs
-      the user to `npm login` first** (CLI is E401, and Chrome isn't signed
-      in to npmjs.com).
-- [ ] npm: configure a trusted publisher (repo cinderblock/telemetry-collector,
-      workflow `publish.yml`, environment `npm`) on each of the 3 packages.
-- [ ] Bump to 0.1.0, tag `v0.1.0`, CI publishes.
-- [ ] OpenSlate: add `telemetry-collector` dep, wire `setUsageSink` in
-      main.tsx with `VITE_TELEMETRY_ENDPOINT` / `VITE_TELEMETRY_KEY`.
-- [ ] Read the openslate.us beacon token (`bun run web-analytics` in ops)
-      into the web build env `VITE_CF_BEACON_TOKEN`.
+- [x] ops `web_analytics: { auto_install: false }` on openslate.us, approved
+      2026-10-17, pushed as ops `e5515bd`; Cloudflare CI created the site.
+- [x] Beacon token in `apps/web/.env.production` (`VITE_CF_BEACON_TOKEN`).
+      Cloudflare Web Analytics goes live with the first deploy.
+- [ ] **Parked by the user (2026-10-17): "we'll get back to the telemetry
+      collection".** Everything below waits for that.
+- [ ] Decide how OpenSlate gets the SDK. The user asked why npm at all.
+      Options: vendor the browser client into OpenSlate, a git dependency on a
+      built branch, or an npm release. **An npm release is CI-only, from a
+      protected version tag; no local publish, not even a 0.0.0 name claim.**
+      npm trusted publishing can only be configured on a package that already
+      exists, so a first release would need a one-time token in CI or the
+      user's own first publish. That's their call.
+- [ ] OpenSlate: wire `setUsageSink` in main.tsx with `VITE_TELEMETRY_ENDPOINT`
+      / `VITE_TELEMETRY_KEY`.
 - [ ] **Blocked: telemetry-collector has never been deployed.**
       telemetry.tomsawyerlabs.com serves ops's 503 stub. Workers Builds
       "has produced no build across three push events", per ops'
@@ -154,12 +157,11 @@ of event names and low-cardinality, non-political dims is fine.
 ## Open questions for the user
 
 1. ~~Design / default / release / register~~ (answered 2026-10-15).
-2. Approve the ops `web_analytics` commit + push?
-3. Run `npm login` so the 3 names can be claimed. Then either sign in to
-   npmjs.com in Chrome (I'll configure trusted publishers) or do that
-   yourself.
+2. ~~Approve the ops `web_analytics` commit~~ (done, `e5515bd`).
+3. How OpenSlate should get the telemetry SDK (vendor, git dependency, or a
+   CI-only npm release). Parked.
 4. telemetry-collector deploy: start a separate thread for it, or pick up
-   the stalled one?
+   the stalled one? Parked.
 
 ## Things not to do
 
@@ -169,3 +171,5 @@ of event names and low-cardinality, non-political dims is fine.
   breadcrumbs on.
 - Don't enable zone-wide `web_analytics: true` (auto-inject). It can't
   honor the per-user switch.
+- Never publish an npm package from the dev machine, including a `0.0.0`
+  name claim (user, 2026-10-17). CI after a protected version tag only.

@@ -104,12 +104,22 @@ thread's uncommitted edits (telemetry SECRET_KEK, restic CNAME,
 - [x] User approved; ops `e3b3455` pushed, Cloudflare CI applied 8 creates + 1 update.
       Verified live: openslate.us and polls.openslate.us return the 503 empty-worker stub,
       www → 301 to apex with the path kept, DMARC TXT resolves.
-- [ ] App repo: wire deploys for `openslate-web` and `openslate-poll-cache`
-      (wrangler config for apps/web with static assets; remove the
-      `polls.openslate.dev` comment in apps/poll-cache/wrangler.toml; no
-      `routes` in wrangler, since ops owns the custom domains)
-- [ ] Build web with `VITE_POLLS_BASE/VITE_RESULTS_BASE/VITE_FORECASTS_BASE=https://polls.openslate.us`
-- [ ] README: replace "TBD — not yet deployed" with https://openslate.us
+- [x] User go-ahead to deploy (2026-10-17). Same pattern as empyreangate.org:
+      Workers Builds deploys, ops owns worker + domain, no Cloudflare credential
+      in this repo, no deploy workflow in GitHub Actions.
+- [x] App repo deploy config: `apps/web/wrangler.jsonc` (assets only,
+      `not_found_handling: none` since routes are hash-based), poll-cache
+      `wrangler.toml` without routes, both `workers_dev`/`preview_urls` off
+      (matching ops' stub), wrangler 4 in both. `wrangler deploy --dry-run`
+      passes for both.
+- [x] `apps/web/.env.production` (committed, public values): the three
+      `VITE_*_BASE` at https://polls.openslate.us, plus `VITE_CF_BEACON_TOKEN`.
+- [x] README: Deployment section with the Workers Builds settings; hosted URL.
+- [ ] **← current** The user connects Workers Builds for both workers (dashboard,
+      settings in README "Deployment"). Then verify: openslate.us 200 with the
+      app, polls.openslate.us/api/health 200, polls load in the Race view.
+- [x] ops `web_analytics: { auto_install: false }` pushed as `e5515bd`, CI
+      applied it (1 create; verify run 0/0/0).
 
 ## Findings / gotchas (ops)
 
@@ -133,16 +143,12 @@ thread's uncommitted edits (telemetry SECRET_KEK, restic CNAME,
 
 ## Open questions for the user
 
-1. Approve the ops commit + push for `openslate.yaml`?
+1. ~~Approve the ops commit~~ (done, `e3b3455`).
 2. Make an offer on `openslate.vote` / `openslate.org`, or skip?
-3. Analytics: user wants *some* anonymized usage tracking with a user
-   opt-out (2026-10-14). Zone-wide auto-inject (`web_analytics: true`)
-   can't be opted out per user. Proposal: ops `web_analytics: manual`
-   (site exists, no edge injection) and the SPA loads the CF beacon itself,
-   only when the user hasn't opted out (Settings toggle, default on, honor
-   GPC). That's page views + web vitals only. For feature-level events
-   (slate imported, ballot printed) use telemetry-collector instead. Awaiting
-   the user's pick.
+   Recommendation: skip until after the election.
+3. ~~Analytics~~ (decided; see `plans/usage-analytics.md`).
+4. Tiered Cache by hand? Recommendation: skip (ops can't manage it, and
+   per-datacenter caching is fine at this traffic).
 
 ## Things not to do
 
