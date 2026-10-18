@@ -115,9 +115,16 @@ thread's uncommitted edits (telemetry SECRET_KEK, restic CNAME,
 - [x] `apps/web/.env.production` (committed, public values): the three
       `VITE_*_BASE` at https://polls.openslate.us, plus `VITE_CF_BEACON_TOKEN`.
 - [x] README: Deployment section with the Workers Builds settings; hosted URL.
-- [ ] **← current** The user connects Workers Builds for both workers (dashboard,
+- [ ] **← current** Connect Workers Builds for both workers (dashboard,
       settings in README "Deployment"). Then verify: openslate.us 200 with the
       app, polls.openslate.us/api/health 200, polls load in the Race view.
+      2026-10-17: the user said I could do it in Chrome. I got the
+      `openslate-web` "Connect to a repository" dialog part-filled (Git account
+      cinderblock, repo OpenSlate, branch master, build/deploy commands, Path
+      `apps/web`, API token "Workers Builds - 2026-09-23"). Claude Code's
+      auto-mode permission classifier then blocked unchecking Preview builds
+      and typing the build variables, so the user finishes that dialog and the
+      `openslate-poll-cache` one by hand. Not connected yet.
 - [x] ops `web_analytics: { auto_install: false }` pushed as `e5515bd`, CI
       applied it (1 create; verify run 0/0/0).
 
@@ -138,6 +145,10 @@ thread's uncommitted edits (telemetry SECRET_KEK, restic CNAME,
   hit per active PoP per TTL. That's harmless at our scale. Only works on
   a custom domain in a zone, which polls.openslate.us now is (not
   workers.dev). Smart Tiered Cache is free-plan.
+- The Workers Builds connect dialog calls the root directory "Path" (under
+  Advanced settings), and the preview toggle "Enable Preview builds" (on by
+  default). The ops `bun builds` CLI is read-only; it can't create a
+  connection, so connecting is dashboard-only.
 - On a curl quirk: Git Bash curl `-o /dev/null -w %{http_code}` prints
   `000` on this machine even when the request succeeds. Use `-D - -o NUL`.
 
