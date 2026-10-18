@@ -1,4 +1,4 @@
-# Usage analytics with a user opt-out
+# Usage analytics, opt-in
 
 `plans/usage-analytics.md`
 
@@ -97,8 +97,9 @@ of event names and low-cardinality, non-political dims is fine.
 
 ## Decisions (user, 2026-10-15)
 
-- Design approved ("I trust you"). **On by default**; GPC browsers default
-  off. An explicit choice wins.
+- Design approved ("I trust you"). ~~On by default~~ **Superseded
+  2026-10-17: "make sure it's opt-in. add a toggle in the settings and in
+  the footer".** Off until the user turns it on; GPC needs no special case.
 - Cut a telemetry-collector release. Use the plain npm names if available
   (they were): `telemetry-collector`, `-core`, `-cli`.
 - Register an `openslate` app in the telemetry-collector admin UI.
@@ -127,8 +128,13 @@ of event names and low-cardinality, non-political dims is fine.
       2026-10-17, pushed as ops `e5515bd`; Cloudflare CI created the site.
 - [x] Beacon token in `apps/web/.env.production` (`VITE_CF_BEACON_TOKEN`).
       Cloudflare Web Analytics goes live with the first deploy.
-- [ ] **Parked by the user (2026-10-17): "we'll get back to the telemetry
-      collection".** Everything below waits for that.
+- [x] ~~Parked~~ Unparked 2026-10-17: "let's get the telemetry wired in.
+      make sure it's opt-in. add a toggle in the settings and in the footer".
+- [x] Opt-in + footer toggle (`dd2e429`, live on openslate.us). One
+      subscribable switch shared by Settings and the footer. Turning it off no
+      longer reloads (Compose keeps unsaved work in memory); a note offers
+      "Reload now" if the beacon already ran on this page. Plus the `.row`
+      label fix it exposed (`1aa12f5`).
 - [ ] Decide how OpenSlate gets the SDK. The user asked why npm at all.
       Options: vendor the browser client into OpenSlate, a git dependency on a
       built branch, or an npm release. **An npm release is CI-only, from a
@@ -140,7 +146,17 @@ of event names and low-cardinality, non-political dims is fine.
       Every later version comes from CI.
 - [ ] OpenSlate: wire `setUsageSink` in main.tsx with `VITE_TELEMETRY_ENDPOINT`
       / `VITE_TELEMETRY_KEY`.
-- [ ] **Blocked: telemetry-collector has never been deployed.**
+- [ ] **telemetry-collector has never been deployed.** Findings 2026-10-17:
+      its only Workers Build (deploy@7a2d14e, 2026-09-25) failed with
+      "UnknownLockfileVersion" because the trigger has no `BUN_VERSION` (image
+      Bun 1.2.15 can't read the lockfile; OpenSlate's triggers set
+      `BUN_VERSION=1.4.2` + `SKIP_DEPENDENCY_INSTALL=1`). Trigger has
+      `D1_DATABASE_ID`/`KV_NAMESPACE_ID`. The worker has **no secrets**:
+      SECRET_KEK's ops `generated_secrets` feature is still uncommitted in the
+      shared ops checkout (another thread, untouched since 2026-09-25).
+      `deploy` is at 7a2d14e, master at 50b7756 (fast-forward). GitHub reports
+      `deploy` as **not protected**, though its README says it is.
+      Earlier note:
       telemetry.tomsawyerlabs.com serves ops's 503 stub. Workers Builds
       "has produced no build across three push events", per ops'
       `plans/telemetry-collector-cloudflare.md`, which has uncommitted edits
@@ -156,14 +172,31 @@ of event names and low-cardinality, non-political dims is fine.
   config". Fixed by moving the cache entry aside
   (`%TEMP%/norm/es-set-tostringtag-corrupt-cache`) and reinstalling.
 
+## Path to live events (2026-10-17)
+
+1. Trigger build variables `BUN_VERSION=1.4.2`, `SKIP_DEPENDENCY_INSTALL=1`
+   (dashboard; the Builds API token is read-only).
+2. SECRET_KEK on the worker (ops `generated_secrets`, or by hand).
+3. BOOTSTRAP_TOKEN on the worker (a person types it at enrolment).
+4. `git push origin master:deploy` in telemetry-collector → first deploy.
+5. User enrols a passkey, registers app `openslate`; ingest key via
+   `telemetry-collector-cli key --app openslate --channel <version>`
+   (public value, goes in `apps/web/.env.production`).
+6. SDK into OpenSlate (see question 3), then `setUsageSink` in main.tsx
+   using `init({ endpoint, ingestKey })` and its `track`.
+7. Within 90 days of the first event: `CF_ACCOUNT_ID` / `CF_ANALYTICS_TOKEN`
+   worker secrets, or the daily rollup loses days.
+
 ## Open questions for the user
 
 1. ~~Design / default / release / register~~ (answered 2026-10-15).
 2. ~~Approve the ops `web_analytics` commit~~ (done, `e5515bd`).
-3. How OpenSlate should get the telemetry SDK (vendor, git dependency, or a
-   CI-only npm release). Parked.
-4. telemetry-collector deploy: start a separate thread for it, or pick up
-   the stalled one? Parked.
+3. How OpenSlate gets the SDK. Recommendation: npm, published by the
+   existing `publish.yml` (trusted publishing) on a version tag. Needs a
+   one-time local first publish of the three packages (the only allowed
+   local publish), done with the user's go-ahead and npm login.
+4. SECRET_KEK: finish and commit the stalled ops `generated_secrets` work
+   (in a separate worktree, then ask before commit), or set it by hand?
 
 ## Things not to do
 

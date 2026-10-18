@@ -178,11 +178,13 @@ thread's uncommitted edits (telemetry SECRET_KEK, restic CNAME,
 ## Open questions for the user
 
 1. ~~Approve the ops commit~~ (done, `e3b3455`).
-2. Make an offer on `openslate.vote` / `openslate.org`, or skip?
-   Recommendation: skip until after the election.
+2. ~~Make an offer on `openslate.vote` / `openslate.org`?~~ No (user,
+   2026-10-17: "we're not making an offer on other domains").
 3. ~~Analytics~~ (decided; see `plans/usage-analytics.md`).
-4. Tiered Cache by hand? Recommendation: skip (ops can't manage it, and
-   per-datacenter caching is fine at this traffic).
+4. ~~Tiered Cache?~~ Yes (user, 2026-10-17: "i'm ok with anything that
+   improves performance/reduces cost"). Being added to ops as a managed
+   zone setting (worktree `ops-tiered-cache`), staged for per-commit
+   approval.
 
 ## Things not to do
 
