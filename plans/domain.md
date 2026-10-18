@@ -124,9 +124,14 @@ thread's uncommitted edits (telemetry SECRET_KEK, restic CNAME,
       `apps/poll-cache`, the commands from README "Deployment",
       `SKIP_DEPENDENCY_INSTALL=1` and `BUN_VERSION=1.4.2`.
 - [ ] **← current** First builds. Connecting doesn't start a build; the next
-      push to `master` does. Then verify: openslate.us 200 with the app,
-      polls.openslate.us/api/health 200, polls load in the Race view, www
-      still 301s.
+      push to `master` does. Pushes `95da035` (plans only) and `9c872d0`
+      (empty, which always builds) produced no builds and no GitHub check run.
+      Cause: the "Cloudflare Workers and Pages" GitHub App on cinderblock
+      (github.com/settings/installations/62496988) has "Only select
+      repositories", 5 of them, and OpenSlate isn't one. **Waiting on the
+      user** to add `cinderblock/OpenSlate` there. Then push to `master` and
+      verify: openslate.us 200 with the app, polls.openslate.us/api/health 200,
+      polls load in the Race view, www still 301s.
 - [x] ops `web_analytics: { auto_install: false }` pushed as `e5515bd`, CI
       applied it (1 create; verify run 0/0/0).
 
@@ -152,6 +157,16 @@ thread's uncommitted edits (telemetry SECRET_KEK, restic CNAME,
   default). The ops `bun builds` CLI is read-only; it can't create a
   connection, so connecting is dashboard-only. Connecting doesn't start a
   build; `bun builds <worker>` says "No builds exist" until the next push.
+- The connect dialog lists every public repo, including ones the Cloudflare
+  GitHub App isn't installed on, because public repos are readable without
+  the app. Connecting such a repo succeeds, but GitHub never sends it push
+  events, so nothing builds and no "Workers Builds: …" check appears. A
+  working repo (empyreangate.org) shows that check on every commit. The repo
+  has to be in the app's repository access list.
+- Polling the Cloudflare API in a loop (the ops `bun builds` CLI every 10s)
+  hits error 971 "Please wait and consider throttling" on both CF_API_TOKEN
+  and CF_BUILDS_TOKEN. Check GitHub check runs instead
+  (`gh api repos/cinderblock/OpenSlate/commits/<sha>/check-runs`).
 - On a curl quirk: Git Bash curl `-o /dev/null -w %{http_code}` prints
   `000` on this machine even when the request succeeds. Use `-D - -o NUL`.
 
