@@ -1,4 +1,4 @@
-# Usage analytics, opt-in
+# Usage analytics: opt-in, allowlisted counts only
 
 `plans/usage-analytics.md`
 
@@ -104,6 +104,22 @@ of event names and low-cardinality, non-political dims is fine.
   (they were): `telemetry-collector`, `-core`, `-cli`.
 - Register an `openslate` app in the telemetry-collector admin UI.
 
+- **2026-10-17, user: "make sure it's only sharing usage and
+  sanitizes/cannot leak personal choices/preferences".** Done in `252ae76`:
+  - **Cloudflare Web Analytics beacon removed.** It loads live and
+    unversioned, and its Web Vitals (INP/CLS/LCP) report a CSS selector for
+    the target element, e.g. `button.stance-btn.stance-endorse` (read from
+    beacon.min.js 2026-10-17). Nothing could promise it never carries a
+    choice. (Resource timings: used only for the LCP image and opt-in
+    server-timing, not sent.) Usage = our own events only.
+  - **Runtime allowlist** `sanitizeUsageEvent` in `lib/usage.ts`, driven by
+    the same `USAGE_SCHEMA` as the types: known name, exact dims, closed
+    values, own plain props. 11 tests incl. events forged past the types.
+  - **CSP** `apps/web/public/_headers`: `script-src 'self'` (no third-party
+    or inline script can run, including edge-injected ones),
+    `Referrer-Policy: no-referrer`. Verified locally under `wrangler dev` and
+    live.
+
 ## Implementation notes
 
 - **Hash routing instead of moving params**: `createHashHistory()` puts
@@ -183,7 +199,15 @@ of event names and low-cardinality, non-political dims is fine.
    `telemetry-collector-cli key --app openslate --channel <version>`
    (public value, goes in `apps/web/.env.production`).
 6. SDK into OpenSlate (see question 3), then `setUsageSink` in main.tsx
-   using `init({ endpoint, ingestKey })` and its `track`.
+   using `init({ endpoint, ingestKey })` and its `track`. **Rules for that
+   wiring:** the sink only forwards what `track()` hands it (already
+   sanitized); never call `installBrowserHandlers`, `captureException`,
+   `captureMessage`, `sendFeedback`, `setUser` or `setTags` from OpenSlate
+   (error reports can carry slate text); no `appSecret` in the browser;
+   `release` = app version, `environment` = "production". Add the collector's
+   origin to nothing: CSP `connect-src https:` already allows it. Check the
+   request body in devtools after wiring: `{events:[{event,dims}],release,
+   environment}` and nothing else.
 7. Within 90 days of the first event: `CF_ACCOUNT_ID` / `CF_ANALYTICS_TOKEN`
    worker secrets, or the daily rollup loses days.
 
@@ -217,6 +241,10 @@ trusted publisher (repo cinderblock/telemetry-collector, workflow
    ops worktree `ops-generated-secrets`; diff comes back for a commit yes.
 5. Approve the GitHub protections above (tag ruleset, deploy ruleset, npm
    environment)?
+6. The ops `web_analytics: { auto_install: false }` site for openslate.us is
+   now unused. Remove it from ops (needs a commit yes), or keep it?
+   Recommendation: remove; the CSP would block an auto-injected beacon
+   anyway.
 
 ## Things not to do
 
@@ -225,7 +253,11 @@ trusted publisher (repo cinderblock/telemetry-collector, workflow
 - Don't call telemetry-collector `installBrowserHandlers` with click
   breadcrumbs on.
 - Don't enable zone-wide `web_analytics: true` (auto-inject). It can't
-  honor the per-user switch.
+  honor the per-user switch (and the CSP now blocks it).
+- Don't add any third-party script or analytics to the web app, and don't
+  loosen `script-src` in `apps/web/public/_headers`.
+- Don't add a usage event or dim value that isn't a fixed identifier in
+  `USAGE_SCHEMA`; never free text, never anything derived from a slate.
 - Never publish an npm package from the dev machine (user, 2026-10-17). CI
   after a protected version tag only. The single exception is a brand-new
   package's first publish, which trusted publishing needs. Confirm with the
