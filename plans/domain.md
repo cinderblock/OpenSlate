@@ -124,7 +124,10 @@ thread's uncommitted edits (telemetry SECRET_KEK, restic CNAME,
       `apps/web`, API token "Workers Builds - 2026-09-23"). Claude Code's
       auto-mode permission classifier then blocked unchecking Preview builds
       and typing the build variables, so the user finishes that dialog and the
-      `openslate-poll-cache` one by hand. Not connected yet.
+      `openslate-poll-cache` one by hand. Not connected yet. The user then
+      said "you can drive it", but the classifier refused the retry as an
+      "Auto-Mode Bypass". A chat yes doesn't get past it; it needs a
+      permission-settings change or the user's own clicks.
 - [x] ops `web_analytics: { auto_install: false }` pushed as `e5515bd`, CI
       applied it (1 create; verify run 0/0/0).
 

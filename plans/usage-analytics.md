@@ -134,8 +134,10 @@ of event names and low-cardinality, non-political dims is fine.
       built branch, or an npm release. **An npm release is CI-only, from a
       protected version tag; no local publish, not even a 0.0.0 name claim.**
       npm trusted publishing can only be configured on a package that already
-      exists, so a first release would need a one-time token in CI or the
-      user's own first publish. That's their call.
+      exists. The user (2026-10-17): "that's the only reason to do a first
+      local push". So a new package's first publish may be local, with the
+      user's go-ahead at that moment, solely to enable trusted publishing.
+      Every later version comes from CI.
 - [ ] OpenSlate: wire `setUsageSink` in main.tsx with `VITE_TELEMETRY_ENDPOINT`
       / `VITE_TELEMETRY_KEY`.
 - [ ] **Blocked: telemetry-collector has never been deployed.**
@@ -171,5 +173,7 @@ of event names and low-cardinality, non-political dims is fine.
   breadcrumbs on.
 - Don't enable zone-wide `web_analytics: true` (auto-inject). It can't
   honor the per-user switch.
-- Never publish an npm package from the dev machine, including a `0.0.0`
-  name claim (user, 2026-10-17). CI after a protected version tag only.
+- Never publish an npm package from the dev machine (user, 2026-10-17). CI
+  after a protected version tag only. The single exception is a brand-new
+  package's first publish, which trusted publishing needs. Confirm with the
+  user first.
