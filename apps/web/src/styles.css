@@ -108,6 +108,8 @@ header p {
 
 .row {
   display: flex;
+  /* Explicit: a <label class="row"> would otherwise inherit label's column. */
+  flex-direction: row;
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
