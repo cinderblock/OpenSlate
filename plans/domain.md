@@ -182,9 +182,14 @@ thread's uncommitted edits (telemetry SECRET_KEK, restic CNAME,
    2026-10-17: "we're not making an offer on other domains").
 3. ~~Analytics~~ (decided; see `plans/usage-analytics.md`).
 4. ~~Tiered Cache?~~ Yes (user, 2026-10-17: "i'm ok with anything that
-   improves performance/reduces cost"). Being added to ops as a managed
-   zone setting (worktree `ops-tiered-cache`), staged for per-commit
-   approval.
+   improves performance/reduces cost"). Built and staged in ops worktree
+   `ops-tiered-cache` (new `tiered_cache: smart|off` zone key + provider,
+   11 tests, 187 pass; dry run = 1 update on openslate.us). **Waiting on the
+   user's commit yes.** Risk: every Free zone reports `argo/tiered_caching`
+   `editable: false` (smart topology is editable) although the docs call it
+   free. If CI's write is refused, nothing changes and the error names the
+   setting; then fall back to writing only the smart topology on Free zones.
+   Benefit is polls.openslate.us only (Workers static assets aren't affected).
 
 ## Things not to do
 

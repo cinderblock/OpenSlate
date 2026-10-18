@@ -187,16 +187,36 @@ of event names and low-cardinality, non-political dims is fine.
 7. Within 90 days of the first event: `CF_ACCOUNT_ID` / `CF_ANALYTICS_TOKEN`
    worker secrets, or the daily rollup loses days.
 
+### Release and deploy protection (checked 2026-10-17)
+
+telemetry-collector has **no rulesets**: any pusher can create a `v*` tag
+(which `publish.yml` publishes from) and `deploy` has no required checks,
+though the README says it does. The `npm` environment `publish.yml` names
+doesn't exist yet (only `production`). The user's rule is "publish from CI
+after a protected version tag", so before the first CI release:
+- tag ruleset on `refs/tags/v*`: restrict creation/update/deletion to
+  repo admins;
+- branch ruleset on `deploy`: required checks `check` and
+  `node-matrix (18/20/22/24)`, no force-push, no deletion;
+- environment `npm`: deployments only from `v*` tags.
+Staged as a proposal; GitHub settings changes need the user's yes.
+
+npm first publish: `scripts/guard-publish.ts` (prepublishOnly) allows a
+local publish only at `0.0.0` (name claim) and refuses everything else
+outside CI. Order: core, sdk, cli. Then on npmjs.com, per package, add the
+trusted publisher (repo cinderblock/telemetry-collector, workflow
+`publish.yml`, environment `npm`).
+
 ## Open questions for the user
 
 1. ~~Design / default / release / register~~ (answered 2026-10-15).
 2. ~~Approve the ops `web_analytics` commit~~ (done, `e5515bd`).
-3. How OpenSlate gets the SDK. Recommendation: npm, published by the
-   existing `publish.yml` (trusted publishing) on a version tag. Needs a
-   one-time local first publish of the three packages (the only allowed
-   local publish), done with the user's go-ahead and npm login.
-4. SECRET_KEK: finish and commit the stalled ops `generated_secrets` work
-   (in a separate worktree, then ask before commit), or set it by hand?
+3. ~~How OpenSlate gets the SDK~~ npm via CI (user, 2026-10-17). Needs the
+   user's `npm login` + go-ahead for the 0.0.0 name claims.
+4. ~~SECRET_KEK~~ Finish the ops feature (user, 2026-10-17). In progress in
+   ops worktree `ops-generated-secrets`; diff comes back for a commit yes.
+5. Approve the GitHub protections above (tag ruleset, deploy ruleset, npm
+   environment)?
 
 ## Things not to do
 
