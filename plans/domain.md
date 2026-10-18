@@ -115,19 +115,18 @@ thread's uncommitted edits (telemetry SECRET_KEK, restic CNAME,
 - [x] `apps/web/.env.production` (committed, public values): the three
       `VITE_*_BASE` at https://polls.openslate.us, plus `VITE_CF_BEACON_TOKEN`.
 - [x] README: Deployment section with the Workers Builds settings; hosted URL.
-- [ ] **← current** Connect Workers Builds for both workers (dashboard,
-      settings in README "Deployment"). Then verify: openslate.us 200 with the
-      app, polls.openslate.us/api/health 200, polls load in the Race view.
-      2026-10-17: the user said I could do it in Chrome. I got the
-      `openslate-web` "Connect to a repository" dialog part-filled (Git account
-      cinderblock, repo OpenSlate, branch master, build/deploy commands, Path
-      `apps/web`, API token "Workers Builds - 2026-09-23"). Claude Code's
-      auto-mode permission classifier then blocked unchecking Preview builds
-      and typing the build variables, so the user finishes that dialog and the
-      `openslate-poll-cache` one by hand. Not connected yet. The user then
-      said "you can drive it", but the classifier refused the retry as an
-      "Auto-Mode Bypass". A chat yes doesn't get past it; it needs a
-      permission-settings change or the user's own clicks.
+- [x] Connect Workers Builds for both workers. The user finished both by hand
+      on 2026-10-17, after Claude Code's auto-mode classifier blocked my clicks
+      in the dashboard (it refused even after a chat yes). Verified read-only
+      via the Builds API (`/builds/workers/<tag>/triggers` and
+      `/builds/triggers/<uuid>/environment_variables`): one trigger per worker,
+      branch `master` only (no preview trigger), roots `apps/web` /
+      `apps/poll-cache`, the commands from README "Deployment",
+      `SKIP_DEPENDENCY_INSTALL=1` and `BUN_VERSION=1.4.2`.
+- [ ] **← current** First builds. Connecting doesn't start a build; the next
+      push to `master` does. Then verify: openslate.us 200 with the app,
+      polls.openslate.us/api/health 200, polls load in the Race view, www
+      still 301s.
 - [x] ops `web_analytics: { auto_install: false }` pushed as `e5515bd`, CI
       applied it (1 create; verify run 0/0/0).
 
@@ -151,7 +150,8 @@ thread's uncommitted edits (telemetry SECRET_KEK, restic CNAME,
 - The Workers Builds connect dialog calls the root directory "Path" (under
   Advanced settings), and the preview toggle "Enable Preview builds" (on by
   default). The ops `bun builds` CLI is read-only; it can't create a
-  connection, so connecting is dashboard-only.
+  connection, so connecting is dashboard-only. Connecting doesn't start a
+  build; `bun builds <worker>` says "No builds exist" until the next push.
 - On a curl quirk: Git Bash curl `-o /dev/null -w %{http_code}` prints
   `000` on this machine even when the request succeeds. Use `-D - -o NUL`.
 
