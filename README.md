@@ -264,6 +264,12 @@ different package manager; `BUN_VERSION` should match the Bun that wrote
    optional discovery/convenience, never required for trust.
 2. **No server-side user data.** Your identity and imported slates live in your
    browser (localStorage) or files you control. The backend stores nothing.
+   **Usage statistics are opt-in.** A switch in Settings and in the footer
+   (off until you turn it on) shares anonymous counts: which screen was opened
+   and which features were used, never a candidate, race, measure,
+   organization, slate or location, and no identifier for you. The exact list
+   is in Settings → Usage statistics; the rules are in
+   [`apps/web/src/lib/usage.ts`](./apps/web/src/lib/usage.ts).
 3. **One source of truth.** Signing and the schema live only in `@openslate/core`.
 4. **Reimplementable.** The format is plain JSON + Ed25519 + JCS — easy to build
    in any language. The published JSON Schema helps.

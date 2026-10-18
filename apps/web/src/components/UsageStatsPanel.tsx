@@ -1,41 +1,31 @@
-import { useState } from "react";
-import {
-  USAGE_EVENT_DESCRIPTIONS,
-  globalPrivacyControl,
-  setUsageEnabled,
-  usageChoiceIsExplicit,
-  usageEnabled,
-} from "../lib/usage";
+import { USAGE_EVENT_DESCRIPTIONS, beaconRunning, useUsageEnabled } from "../lib/usage";
 
 /**
  * Settings panel for anonymous usage statistics: one switch, plus an exact
- * list of what is collected. See lib/usage.ts for the rules behind it.
+ * list of what is collected. The footer has the same switch. See
+ * lib/usage.ts for the rules behind it.
  */
 export function UsageStatsPanel() {
-  const [enabled, setEnabled] = useState(usageEnabled);
-  const gpcDefault = globalPrivacyControl() && !usageChoiceIsExplicit();
-
-  function toggle(next: boolean) {
-    setUsageEnabled(next);
-    setEnabled(next);
-  }
+  const [enabled, setEnabled] = useUsageEnabled();
 
   return (
     <section className="panel">
       <h2>Usage statistics</h2>
       <p className="hint">
         To learn which parts of OpenSlate get used, the app can report <strong>anonymous</strong>{" "}
-        counts. Nothing reported says what is on your ballot or in any slate: no candidates, races,
-        measures, organizations, slates or locations, and no identifier for you or this browser.
+        counts, if you turn this on. It's off unless you do. Nothing reported says what is on your
+        ballot or in any slate: no candidates, races, measures, organizations, slates or locations,
+        and no identifier for you or this browser.
       </p>
-      <label className="card">
-        <input type="checkbox" checked={enabled} onChange={(e) => toggle(e.target.checked)} /> Share
-        anonymous usage statistics
-      </label>
-      {gpcDefault && (
-        <p className="hint">
-          Off by default because your browser sends Global Privacy Control. You can still turn it
-          on.
+      <div className="card">
+        <label className="row">
+          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+          <span>Share anonymous usage statistics</span>
+        </label>
+      </div>
+      {!enabled && beaconRunning() && (
+        <p>
+          <BeaconStillRunning />
         </p>
       )}
       <details className="card">
@@ -54,8 +44,23 @@ export function UsageStatsPanel() {
             <li key={name}>{description}</li>
           ))}
         </ul>
-        <p className="hint">Turning this off stops both immediately.</p>
+        <p className="hint">
+          Turning this off stops feature counts immediately. Visit counting, if it already started
+          on this page, stops the next time you open or reload OpenSlate.
+        </p>
       </details>
     </section>
+  );
+}
+
+/** Shown after opting out while the beacon is still loaded on this page. */
+export function BeaconStillRunning() {
+  return (
+    <span className="hint">
+      Visit counting stops when you next load the page.{" "}
+      <button type="button" className="link" onClick={() => location.reload()}>
+        Reload now
+      </button>
+    </span>
   );
 }

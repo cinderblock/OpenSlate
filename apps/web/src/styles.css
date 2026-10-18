@@ -260,6 +260,16 @@ footer a {
 footer a:hover {
   text-decoration: underline;
 }
+.footer-usage {
+  margin-top: 0.4rem;
+}
+.footer-usage label {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: inherit;
+}
 
 /* QR dialog */
 .qr-dialog {

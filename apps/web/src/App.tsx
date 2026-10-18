@@ -1,4 +1,6 @@
 import { Link, Outlet } from "@tanstack/react-router";
+import { BeaconStillRunning } from "./components/UsageStatsPanel";
+import { beaconRunning, useUsageEnabled } from "./lib/usage";
 
 const NAV = [
   { to: "/", label: "Identity" },
@@ -44,7 +46,29 @@ export function RootLayout() {
         <a href="https://github.com/cinderblock/openslate" target="_blank" rel="noreferrer">
           GitHub
         </a>
+        <UsageFooterToggle />
       </footer>
+    </div>
+  );
+}
+
+/** The same opt-in switch as Settings → Usage statistics, on every page. */
+function UsageFooterToggle() {
+  const [enabled, setEnabled] = useUsageEnabled();
+  return (
+    <div className="footer-usage">
+      <label>
+        <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+        <span>Share anonymous usage statistics</span>
+      </label>
+      {" · "}
+      <Link to="/settings">what's collected</Link>
+      {!enabled && beaconRunning() && (
+        <>
+          {" · "}
+          <BeaconStillRunning />
+        </>
+      )}
     </div>
   );
 }
