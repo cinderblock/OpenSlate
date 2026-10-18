@@ -237,8 +237,15 @@ trusted publisher (repo cinderblock/telemetry-collector, workflow
 2. ~~Approve the ops `web_analytics` commit~~ (done, `e5515bd`).
 3. ~~How OpenSlate gets the SDK~~ npm via CI (user, 2026-10-17). Needs the
    user's `npm login` + go-ahead for the 0.0.0 name claims.
-4. ~~SECRET_KEK~~ Finish the ops feature (user, 2026-10-17). In progress in
-   ops worktree `ops-generated-secrets`; diff comes back for a commit yes.
+4. ~~SECRET_KEK~~ Finish the ops feature (user, 2026-10-17). **Staged** in
+   ops worktree `ops-generated-secrets` (11 files; 195 tests pass; dry run =
+   1 create: SECRET_KEK on telemetry-collector, value never shown; 32 random
+   bytes, base64url, matching the worker's `importKek`). Left out of the
+   stalled diff: its Previews removals (would have undone `102fbb9`), the
+   `builds` CLI, a restic DNS record. Added: refuse under `DEBUG=true` (the
+   SDK logs request bodies). **Waiting on the user's commit yes.** Tiered
+   Cache and this both touch config/types/schema, so whichever lands second
+   gets rebased in its worktree first.
 5. Approve the GitHub protections above (tag ruleset, deploy ruleset, npm
    environment)?
 6. The ops `web_analytics: { auto_install: false }` site for openslate.us is
