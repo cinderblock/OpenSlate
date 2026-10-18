@@ -1,4 +1,4 @@
-import { USAGE_EVENT_DESCRIPTIONS, beaconRunning, useUsageEnabled } from "../lib/usage";
+import { USAGE_EVENT_DESCRIPTIONS, useUsageEnabled } from "../lib/usage";
 
 /**
  * Settings panel for anonymous usage statistics: one switch, plus an exact
@@ -23,44 +23,19 @@ export function UsageStatsPanel() {
           <span>Share anonymous usage statistics</span>
         </label>
       </div>
-      {!enabled && beaconRunning() && (
-        <p>
-          <BeaconStillRunning />
-        </p>
-      )}
       <details className="card">
         <summary>What we collect</summary>
         <p className="hint">
-          <strong>Visits</strong> (Cloudflare Web Analytics, no cookies): that the site was loaded,
-          the referring site, your country, and page-load speed. It never sees which screen you are
-          on or anything after the <code>#</code> in the address.
-        </p>
-        <p className="hint">
-          <strong>Feature counts</strong> (our own telemetry-collector; your IP address is not
-          stored):
+          Counts of these events only, sent to our own telemetry-collector, which doesn't store your
+          IP address. No third-party analytics scripts are loaded.
         </p>
         <ul>
           {Object.entries(USAGE_EVENT_DESCRIPTIONS).map(([name, description]) => (
             <li key={name}>{description}</li>
           ))}
         </ul>
-        <p className="hint">
-          Turning this off stops feature counts immediately. Visit counting, if it already started
-          on this page, stops the next time you open or reload OpenSlate.
-        </p>
+        <p className="hint">Turning this off stops them immediately.</p>
       </details>
     </section>
-  );
-}
-
-/** Shown after opting out while the beacon is still loaded on this page. */
-export function BeaconStillRunning() {
-  return (
-    <span className="hint">
-      Visit counting stops when you next load the page.{" "}
-      <button type="button" className="link" onClick={() => location.reload()}>
-        Reload now
-      </button>
-    </span>
   );
 }

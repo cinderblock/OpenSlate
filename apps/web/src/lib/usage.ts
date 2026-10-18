@@ -1,52 +1,75 @@
 /**
  * Anonymous usage statistics, behind one per-browser switch.
  *
- * Two pipes, both gated by the same switch:
- * - Cloudflare Web Analytics (cookieless beacon): visits, referrer *origin*,
- *   country, page-load speed. The app uses hash routing, and the beacon strips
- *   `#…` and `?…` before reporting, so it only ever sees `/`.
- * - telemetry-collector: counts of the fixed events in `UsageEvent` below,
- *   with no user, device or session id.
- *
- * The hard rule (plans/usage-analytics.md): nothing reported may reveal a
- * choice, race, candidate, measure, org, slate or jurisdiction. Every event and
- * every dim value is a closed, non-political set, so anything else is a type
- * error rather than a code-review catch.
- *
  * Opt-in: off until the user turns it on, in Settings or in the footer. Both
  * read the same state (`useUsageEnabled`), so they never disagree.
+ *
+ * What leaves the browser is counts of the fixed events in `USAGE_SCHEMA`
+ * below, sent to our own telemetry-collector, with no user, device or session
+ * id. Nothing else: no third-party analytics script. (A Cloudflare Web
+ * Analytics beacon was tried and removed. It's loaded live and unversioned,
+ * and its Web Vitals report a CSS selector for the element that was clicked,
+ * e.g. `button.stance-btn.stance-endorse`, so nothing could guarantee it never
+ * carries a choice.)
+ *
+ * The hard rule (plans/usage-analytics.md): nothing reported may reveal a
+ * choice, preference, race, candidate, measure, org, slate or jurisdiction.
+ * Two layers enforce it:
+ * - Types: `UsageEvent` is derived from `USAGE_SCHEMA`, so anything outside it
+ *   is a compile error.
+ * - Runtime: `sanitizeUsageEvent` re-checks every event against the same
+ *   schema before it reaches the sink: known name, exactly the declared dims,
+ *   each value from its closed list. A cast, an `any` or a bug can't widen it.
  */
 
 import { useSyncExternalStore } from "react";
 
 /** Route *templates*, never the matched values. */
-export type RouteTemplate =
-  | "/"
-  | "/compose"
-  | "/import"
-  | "/catalog"
-  | "/collate"
-  | "/race/$key"
-  | "/viewer"
-  | "/elections"
-  | "/results"
-  | "/results/$token"
-  | "/settings";
+export const ROUTE_TEMPLATES = [
+  "/",
+  "/compose",
+  "/import",
+  "/catalog",
+  "/collate",
+  "/race/$key",
+  "/viewer",
+  "/elections",
+  "/results",
+  "/results/$token",
+  "/settings",
+] as const;
 
-export type SlateImportSource = "catalog" | "url" | "file" | "qr" | "paste";
+export const SLATE_IMPORT_SOURCES = ["catalog", "url", "file", "qr", "paste"] as const;
 
-export type UsageEvent =
-  | { name: "page.view"; dims: { route: RouteTemplate } }
-  | { name: "slate.import"; dims: { source: SlateImportSource } }
-  | { name: "catalog.import_all" }
-  | { name: "identity.create" }
-  | { name: "identity.import" }
-  | { name: "identity.export" }
-  | { name: "results.print" }
-  | { name: "results.export"; dims: { format: "csv" | "markdown" } };
+/**
+ * Every event that may be sent, and for each, its dims and their only allowed
+ * values. Every value is a fixed, non-political string written here.
+ */
+export const USAGE_SCHEMA = {
+  "page.view": { route: ROUTE_TEMPLATES },
+  "slate.import": { source: SLATE_IMPORT_SOURCES },
+  "catalog.import_all": {},
+  "identity.create": {},
+  "identity.import": {},
+  "identity.export": {},
+  "results.print": {},
+  "results.export": { format: ["csv", "markdown"] },
+} as const satisfies Record<string, Record<string, readonly string[]>>;
+
+type Schema = typeof USAGE_SCHEMA;
+type EventName = keyof Schema;
+
+export type RouteTemplate = (typeof ROUTE_TEMPLATES)[number];
+export type SlateImportSource = (typeof SLATE_IMPORT_SOURCES)[number];
+
+export type UsageEvent = {
+  [N in EventName]: keyof Schema[N] extends never
+    ? { name: N }
+    : { name: N; dims: { [D in keyof Schema[N]]: Schema[N][D][number & keyof Schema[N][D]] } };
+}[EventName];
 
 /** What the Settings page lists under "What we collect". */
-export const USAGE_EVENT_DESCRIPTIONS: Record<UsageEvent["name"], string> = {
+export const USAGE_EVENT_DESCRIPTIONS: Record<EventName, string> = {
   "page.view": "Which screen was opened (e.g. “Results”), never what was on it",
   "slate.import":
     "That a slate was imported, and whether from the catalog, a URL, a file, a QR code or pasted",
@@ -57,6 +80,41 @@ export const USAGE_EVENT_DESCRIPTIONS: Record<UsageEvent["name"], string> = {
   "results.print": "That a results sheet was printed",
   "results.export": "That results were exported, and as CSV or Markdown",
 };
+
+export interface SanitizedUsageEvent {
+  name: EventName;
+  dims?: Record<string, string>;
+}
+
+/**
+ * Returns a fresh copy of the event if it matches `USAGE_SCHEMA` exactly, or
+ * null if anything about it doesn't: unknown name, a missing or extra dim, a
+ * value outside its list, a non-string. Never trims or coerces; a near-miss is
+ * dropped, not repaired.
+ */
+export function sanitizeUsageEvent(name: unknown, dims: unknown): SanitizedUsageEvent | null {
+  if (typeof name !== "string" || !Object.hasOwn(USAGE_SCHEMA, name)) return null;
+  const allowed: Record<string, readonly string[]> = USAGE_SCHEMA[name as EventName];
+  const expected = Object.keys(allowed);
+
+  if (expected.length === 0) {
+    return dims === undefined ? { name: name as EventName } : null;
+  }
+  if (typeof dims !== "object" || dims === null || Array.isArray(dims)) return null;
+  if (Object.getPrototypeOf(dims) !== Object.prototype) return null;
+
+  const given = Object.keys(dims);
+  if (given.length !== expected.length) return null;
+
+  const clean: Record<string, string> = {};
+  for (const key of expected) {
+    if (!Object.hasOwn(dims, key)) return null;
+    const value: unknown = (dims as Record<string, unknown>)[key];
+    if (typeof value !== "string" || !allowed[key]?.includes(value)) return null;
+    clean[key] = value;
+  }
+  return { name: name as EventName, dims: clean };
+}
 
 export interface UsageSink {
   track(name: string, dims?: Record<string, string>): void;
@@ -83,7 +141,6 @@ export function usageEnabled(): boolean {
 }
 
 let sink: UsageSink | null = null;
-let beaconLoaded = false;
 const listeners = new Set<() => void>();
 
 function notify(): void {
@@ -100,12 +157,7 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-/**
- * Turning this off stops feature counts at once. The Cloudflare beacon can't
- * be unloaded, so if it already started on this page it keeps running until
- * the next page load (`beaconRunning()` says when). We don't reload for the
- * user: Compose keeps unsaved work in memory.
- */
+/** Takes effect at once: `track` checks the switch on every call. */
 export function setUsageEnabled(enabled: boolean): void {
   memoryChoice = enabled ? "on" : "off";
   try {
@@ -114,13 +166,7 @@ export function setUsageEnabled(enabled: boolean): void {
     // Storage unavailable (private mode quotas etc.) — the switch then only
     // lasts for this page load, which still honours the choice right now.
   }
-  if (enabled) loadBeacon();
   notify();
-}
-
-/** True when the beacon was loaded on this page and is still running. */
-export function beaconRunning(): boolean {
-  return beaconLoaded;
 }
 
 /** The switch, kept in sync across every component (and tab) that shows it. */
@@ -136,22 +182,10 @@ export function setUsageSink(next: UsageSink | null): void {
 
 export function track(event: UsageEvent): void {
   if (!usageEnabled() || !sink) return;
-  sink.track(event.name, "dims" in event ? event.dims : undefined);
-}
-
-function env(key: string): string | undefined {
-  const value = (import.meta.env as Record<string, string | undefined>)[key];
-  return value?.trim() || undefined;
-}
-
-/** Inject the Cloudflare Web Analytics beacon, if configured and allowed. */
-export function loadBeacon(): void {
-  const token = env("VITE_CF_BEACON_TOKEN");
-  if (beaconLoaded || !token || !usageEnabled()) return;
-  const script = document.createElement("script");
-  script.defer = true;
-  script.src = "https://static.cloudflareinsights.com/beacon.min.js";
-  script.dataset.cfBeacon = JSON.stringify({ token, spa: true });
-  document.head.appendChild(script);
-  beaconLoaded = true;
+  const clean = sanitizeUsageEvent(event.name, "dims" in event ? event.dims : undefined);
+  if (!clean) {
+    if (import.meta.env?.DEV) console.warn("[usage] dropped an event outside USAGE_SCHEMA", event);
+    return;
+  }
+  sink.track(clean.name, clean.dims);
 }

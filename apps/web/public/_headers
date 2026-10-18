@@ -1,0 +1,14 @@
+# Response headers for the hosted app (Workers static assets read this file;
+# it isn't served itself). https://developers.cloudflare.com/workers/static-assets/headers/
+#
+# script-src 'self': only our own bundle runs. No third-party script can load,
+# whether added to the app by mistake or injected at the edge (e.g. a zone's
+# Web Analytics auto-install), so nothing but src/lib/usage.ts's sanitized
+# events can report usage. See plans/usage-analytics.md.
+# connect-src/img-src allow any https origin: catalogs, slate URLs and the
+# civicAPI map are user-chosen or upstream hosts.
+# Referrer-Policy no-referrer: requests to those hosts don't carry our origin.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff

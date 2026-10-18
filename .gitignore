@@ -7,6 +7,8 @@ build/
 .vite/
 packages/*/dist/
 apps/*/dist/
+# wrangler dev state
+.wrangler/
 
 # electrobun
 .electrobun/

@@ -1,6 +1,5 @@
 import { Link, Outlet } from "@tanstack/react-router";
-import { BeaconStillRunning } from "./components/UsageStatsPanel";
-import { beaconRunning, useUsageEnabled } from "./lib/usage";
+import { useUsageEnabled } from "./lib/usage";
 
 const NAV = [
   { to: "/", label: "Identity" },
@@ -63,12 +62,6 @@ function UsageFooterToggle() {
       </label>
       {" · "}
       <Link to="/settings">what's collected</Link>
-      {!enabled && beaconRunning() && (
-        <>
-          {" · "}
-          <BeaconStillRunning />
-        </>
-      )}
     </div>
   );
 }

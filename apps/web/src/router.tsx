@@ -92,8 +92,7 @@ const routeTree = rootRoute.addChildren([
 
 // Hash history keeps route values (a whole signed slate in /results/$token, the
 // race in /race/$key) in the URL fragment, which browsers never send to a server.
-// Shared links therefore never reach a host's request logs, and the Cloudflare
-// analytics beacon (which strips the fragment) only ever sees "/".
+// Shared links therefore never reach a host's request logs.
 export const router = createRouter({ routeTree, history: createHashHistory() });
 
 // Report the route *template* (e.g. "/results/$token"), never the matched value.

@@ -267,8 +267,12 @@ different package manager; `BUN_VERSION` should match the Bun that wrote
    **Usage statistics are opt-in.** A switch in Settings and in the footer
    (off until you turn it on) shares anonymous counts: which screen was opened
    and which features were used, never a candidate, race, measure,
-   organization, slate or location, and no identifier for you. The exact list
-   is in Settings → Usage statistics; the rules are in
+   organization, slate or location, and no identifier for you. Every event is
+   checked against a closed allowlist at runtime as well as by the types, and
+   the hosted app's Content-Security-Policy
+   ([`apps/web/public/_headers`](./apps/web/public/_headers)) only runs our own
+   scripts, so no third-party analytics can load. The exact list is in
+   Settings → Usage statistics; the rules are in
    [`apps/web/src/lib/usage.ts`](./apps/web/src/lib/usage.ts).
 3. **One source of truth.** Signing and the schema live only in `@openslate/core`.
 4. **Reimplementable.** The format is plain JSON + Ed25519 + JCS — easy to build
