@@ -123,15 +123,20 @@ thread's uncommitted edits (telemetry SECRET_KEK, restic CNAME,
       branch `master` only (no preview trigger), roots `apps/web` /
       `apps/poll-cache`, the commands from README "Deployment",
       `SKIP_DEPENDENCY_INSTALL=1` and `BUN_VERSION=1.4.2`.
-- [ ] **← current** First builds. Connecting doesn't start a build; the next
-      push to `master` does. Pushes `95da035` (plans only) and `9c872d0`
-      (empty, which always builds) produced no builds and no GitHub check run.
-      Cause: the "Cloudflare Workers and Pages" GitHub App on cinderblock
-      (github.com/settings/installations/62496988) has "Only select
-      repositories", 5 of them, and OpenSlate isn't one. **Waiting on the
-      user** to add `cinderblock/OpenSlate` there. Then push to `master` and
-      verify: openslate.us 200 with the app, polls.openslate.us/api/health 200,
-      polls load in the Race view, www still 301s.
+- [x] First builds. Connecting doesn't start a build; the next push to
+      `master` does. Pushes `95da035` and `9c872d0` (empty) produced nothing
+      because the "Cloudflare Workers and Pages" GitHub App on cinderblock
+      (github.com/settings/installations/62496988) is limited to selected
+      repos and OpenSlate wasn't one. The user added it on 2026-10-17; the push
+      of `174a9f5` then built and deployed both workers ("Workers Builds:
+      openslate-web" / "…openslate-poll-cache" checks, both success).
+- [x] Verified live 2026-10-17: openslate.us 200 serving the app (title
+      OpenSlate), polls.openslate.us/api/health 200 (`"status":"ok"`), www →
+      301 to apex with path kept. In the deployed app, Catalog loads (69
+      entries from Pages); the Race view calls
+      `https://polls.openslate.us/api/polls?...` and gets 200 with no CORS
+      error. It shows no polls, but that's an app bug in the subject → VoteHub
+      mapping, not the deploy (logged in ISSUES.md, `264f819`).
 - [x] ops `web_analytics: { auto_install: false }` pushed as `e5515bd`, CI
       applied it (1 create; verify run 0/0/0).
 
