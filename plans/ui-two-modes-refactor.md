@@ -128,10 +128,30 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
    `0103dfe` (lib/sources.ts, jurisdictions.ts, collate.ts, localStore.ts, myVote.ts).
 3. ~~Shell: mode switch, nav per mode, redirects, `ROUTE_TEMPLATES`.~~ `f28a7b5`.
 4. ~~My ballot page.~~ `d76ba4e`.
-5. **[current]** Sources page.
-6. Publish: split Compose, move Identity/Verify/Viewer.
-7. Wizard.
-8. README update, typecheck, lint, test, browser walkthrough.
+5. ~~Sources page.~~ `4bb9c0d`.
+6. ~~Publish: move Identity/Verify/Viewer.~~ Done in the shell (`f28a7b5`);
+   Compose mounts the existing ComposePanel unchanged (see Decisions).
+   Contacts moved to Sources (`4bb9c0d`).
+7. ~~Wizard.~~ `79d242a`.
+8. ~~README update, typecheck, lint, test, browser walkthrough.~~ `fbebe24`.
+   Typecheck, 172 tests, Biome (CRLF config) and `bun run build` pass; agent
+   walkthrough in the dev server (first-visit wizard both paths, My ballot,
+   Sources follow/unfollow, catalog, redirects, tab highlighting, phone width,
+   Escape) found no console errors.
+9. **[current]** User walks through it, then merge `ui/two-modes` into master.
+
+## Follow-ups (not started)
+
+- **Compose from My-ballot picks.** Blocked on the other thread's uncommitted
+  ComposePanel / ElectionCombobox / subjects.ts work landing. Then: Compose takes
+  positions from My-ballot picks (keyed by election date), drops its own ballot
+  picker, and its "Identity tab" copy becomes "Identities".
+- **Catalog index should carry each slate's scope** (`context.jurisdiction`) in
+  `openslate-public-endorsements`, so the wizard's area/sources steps don't
+  download the election's ~0.8 MB of slates to learn it.
+- **Race page**: mark which positions come from followed sources. The polls
+  half of the ISSUES.md race-view bug is still open.
+- `bun run lint` on Windows (ISSUES.md).
 
 ## Findings / gotchas
 
@@ -143,6 +163,13 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
   and ~100 locality slugs (`sf`, `los-angeles`, `chula-vista`…). The slate-level
   `context.jurisdiction` is coarser (`us/ca`, `us/ca/sf`, …). All slates total
   1.4 MB; one election's ~0.8 MB.
+- **Publish → Elections** was added to the Publish tabs (not in the mockup): it
+  still sets Compose's active Google election, so it belongs with Compose.
+- **TanStack `Link` adds an `active` class on any prefix match** by default;
+  nav links pass `activeProps={{}}` and compute "active" themselves.
+- **Wizard relevance:** groups based in another locality still endorse statewide
+  races, so "races on your ballot" alone ranked San Diego groups for an SF voter.
+  Locality-scoped groups outside the area fold under "based elsewhere".
 - **Where-you-vote model:** state (implied) + localities + a number per district
   family. Unset district family = its races hidden, but My ballot counts them
   ("Hidden until you set your district: 80 Assembly district races…").
@@ -179,11 +206,13 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
 - [x] Survey current UI and data layer
 - [x] Structure sign-off and open questions answered (2026-10-19)
 - [x] Step 2 data layer, step 3 shell, step 4 My ballot
-- [ ] Steps 5–8
+- [x] Steps 5–8 (Sources, Publish, wizard, README)
+- [ ] User walkthrough and merge to master
 
 ## Open questions for the user
 
-None open.
+1. Walk through `ui/two-modes` (worktree dev server: `bunx vite --port 5199
+   --strictPort` in `apps/web`) and say whether to merge into master.
 
 ## Things not to do
 
