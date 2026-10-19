@@ -123,16 +123,44 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
 ## Plan / steps
 
 1. ~~Get sign-off on the structure and the open questions.~~ Done.
-2. **[current]** Data: "source" identity (firsthand = issuer key; secondhand = `attribution.of`)
-   and per-source follow state. Shared `collate()` helper on `subjectKey()`.
-3. Shell: mode switch, nav per mode, redirects, `ROUTE_TEMPLATES`.
-4. My ballot page.
-5. Sources page.
+2. ~~Data: "source" identity (firsthand = issuer key; secondhand = `attribution.of`)
+   and per-source follow state. Shared `collate()` helper on `subjectKey()`.~~
+   `0103dfe` (lib/sources.ts, jurisdictions.ts, collate.ts, localStore.ts, myVote.ts).
+3. ~~Shell: mode switch, nav per mode, redirects, `ROUTE_TEMPLATES`.~~ `f28a7b5`.
+4. ~~My ballot page.~~ `d76ba4e`.
+5. **[current]** Sources page.
 6. Publish: split Compose, move Identity/Verify/Viewer.
 7. Wizard.
 8. README update, typecheck, lint, test, browser walkthrough.
 
 ## Findings / gotchas
+
+- **Catalog data shape (probed 2026-10-19):** no subject has an `id`; races are
+  keyed by title + jurisdiction + election, and titles are consistent across
+  orgs (380 of 648 November races have 2+ sources). Measures are positions with
+  `choice: "Yes"/"No"` and `stance: "endorse"`. Position jurisdictions are
+  `us/ca` (statewide), `us/ca/<family>-<n>` districts (cd, sd, ad, coa, bart),
+  and ~100 locality slugs (`sf`, `los-angeles`, `chula-vista`…). The slate-level
+  `context.jurisdiction` is coarser (`us/ca`, `us/ca/sf`, …). All slates total
+  1.4 MB; one election's ~0.8 MB.
+- **Where-you-vote model:** state (implied) + localities + a number per district
+  family. Unset district family = its races hidden, but My ballot counts them
+  ("Hidden until you set your district: 80 Assembly district races…").
+- **Performance:** with the whole catalog imported, a pick took ~930 ms:
+  `useKnownIdentities` returned a new array every render (so everything
+  recollated) and all 648 race cards re-rendered. Fixed: memoized hooks,
+  `memo` RaceCard comparing only its own draft rows, and non-statewide sections
+  collapsed (unrendered) while no area is set. Now ~50 ms.
+- **My-ballot picks are keyed by election date** (`2026-11-03|<subjectKey>|<choice>`)
+  in the existing ballot-draft store. Compose still keys by Google election id,
+  so picks don't flow into Compose until the Compose follow-up.
+- **`bun run lint` fails on Windows checkouts** (CRLF vs Biome's default LF;
+  logged in ISSUES.md, `ac56031`). Lint touched files with a CRLF copy of the
+  config: `bunx biome check --config-path=<dir with lineEnding crlf> <files>`.
+- Python/Write edits produce LF; run `biome check --write` with the CRLF config
+  on touched files before committing to keep CRLF.
+- The dev server for this worktree runs on port 5199 (`bunx vite --port 5199
+  --strictPort` in apps/web) to stay clear of the main checkout's 5173.
 
 - Catalog slates all share one signer key, so "follow by issuer key" would
   follow all ~40 orgs at once. Sources must be keyed by `attribution.of` for
@@ -150,7 +178,8 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
 
 - [x] Survey current UI and data layer
 - [x] Structure sign-off and open questions answered (2026-10-19)
-- [ ] Implementation steps 2–8
+- [x] Step 2 data layer, step 3 shell, step 4 My ballot
+- [ ] Steps 5–8
 
 ## Open questions for the user
 
