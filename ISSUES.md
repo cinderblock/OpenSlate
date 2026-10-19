@@ -36,3 +36,14 @@ race page (URL `#/race/Governor%20of%20California|us%2Fca|2026-11-03`) shows:
 
 So the race view is broken for every catalog slate whose subjects carry an
 `id`. Not a deploy problem: the poll-cache answers both queries with 200.
+
+## `bun run lint` fails on every file in a Windows checkout
+
+With `core.autocrlf=true` the working tree is CRLF, but `biome.json` leaves
+`formatter.lineEnding` at its default (`lf`), so `bun run lint` reports ~104
+format errors (`Found 104 errors.`) on untouched files, e.g. `apps/web/src/App.tsx`
+and `biome.json` itself. With `"lineEnding": "crlf"` in a copy of the config
+(`biome check --config-path=<dir>`), `apps/web/src` checks clean. Matters
+because lint can't be used as a gate on Windows, where the user works. Fix
+needs a choice that works on both OSes (e.g. a `.gitattributes` policy, or
+Biome 2's `lineEnding: "auto"`).
