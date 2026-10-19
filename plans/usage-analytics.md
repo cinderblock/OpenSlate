@@ -190,7 +190,11 @@ of event names and low-cardinality, non-political dims is fine.
 ## Path to live events (2026-10-17)
 
 1. Trigger build variables `BUN_VERSION=1.4.2`, `SKIP_DEPENDENCY_INSTALL=1`
-   (dashboard; the Builds API token is read-only).
+   (dashboard; the Builds API token is read-only). Checked 2026-10-18 via
+   the Builds API: still missing. The telemetry-collector trigger has only
+   `D1_DATABASE_ID`/`KV_NAMESPACE_ID`; the two vars exist on the
+   openslate-web and openslate-poll-cache triggers only. The worker's only
+   binding is `SECRET_KEK` (no BOOTSTRAP_TOKEN yet).
 2. ~~SECRET_KEK on the worker~~ Done: ops `54c66ff`, CI created it 2026-10-18.
 3. BOOTSTRAP_TOKEN on the worker (a person types it at enrolment).
 4. `git push origin master:deploy` in telemetry-collector → first deploy.
