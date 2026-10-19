@@ -8,7 +8,12 @@ import { slateFromUrlOptions } from "../lib/query";
 import { type SlateImportSource, track } from "../lib/usage";
 import { ScanQrButton } from "./Qr";
 
-export function ImportVerifyPanel() {
+/**
+ * Paste, load or scan a slate, verify it, and save it. Standalone under
+ * Publish → Verify; `embedded` under Sources → Add sources, where saving it
+ * makes its source show on My ballot.
+ */
+export function ImportVerifyPanel({ embedded = false }: { embedded?: boolean }) {
   const { data: slates } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
   const queryClient = useQueryClient();
   const [input, setInput] = useState("");
@@ -90,12 +95,13 @@ export function ImportVerifyPanel() {
     setSaved("Saved to your collection.");
   }
 
+  const Wrapper = embedded ? "div" : "section";
   return (
-    <section className="panel">
-      <h2>Import &amp; verify</h2>
+    <Wrapper className={embedded ? "import-verify" : "panel"}>
+      {!embedded && <h2>Verify a slate</h2>}
       <p className="hint">
-        Paste a block, load one from a URL, or open a file. Verification is cryptographic and
-        happens entirely in your browser.
+        Paste a block, load one from a URL, open a file or scan a QR code. Verification is
+        cryptographic and happens entirely in your browser.
       </p>
 
       <div className="card">
@@ -117,7 +123,7 @@ export function ImportVerifyPanel() {
             Verify
           </button>
           <button type="button" onClick={save} disabled={!result?.valid}>
-            Save to collection
+            {embedded ? "Add to my sources" : "Save to collection"}
           </button>
           <ScanQrButton onScan={handleQrScan} label="Scan QR slate" />
           <input
@@ -141,7 +147,7 @@ export function ImportVerifyPanel() {
       </div>
 
       {result && <VerifyResultView result={result} token={input.trim()} />}
-    </section>
+    </Wrapper>
   );
 }
 

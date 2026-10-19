@@ -7,7 +7,6 @@ import {
 } from "@tanstack/react-router";
 import { RootLayout } from "./App";
 import { BlockViewerPanel } from "./components/BlockViewerPanel";
-import { CatalogPanel } from "./components/CatalogPanel";
 import { ComposePanel } from "./components/ComposePanel";
 import { ElectionsPanel } from "./components/ElectionsPanel";
 import { IdentityPanel } from "./components/IdentityPanel";
@@ -17,6 +16,7 @@ import { RacePanel } from "./components/RacePanel";
 import { ResultsForSlate } from "./components/ResultsForSlate";
 import { ResultsView } from "./components/ResultsView";
 import { SettingsPage } from "./components/SettingsPage";
+import { SourcesPanel } from "./components/SourcesPanel";
 import { type RouteTemplate, track } from "./lib/usage";
 
 const rootRoute = createRootRoute({ component: RootLayout });
@@ -31,7 +31,7 @@ const ballotRoute = createRoute({
 const sourcesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/sources",
-  component: CatalogPanel,
+  component: SourcesPanel,
 });
 const raceRoute = createRoute({
   getParentRoute: () => rootRoute,

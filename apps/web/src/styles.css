@@ -962,6 +962,92 @@ label.inline-check {
   gap: 0.5rem 1rem;
 }
 
+/* Sources */
+.section-heading {
+  margin: 1.5rem 0 0.5rem;
+}
+.source-list,
+.catalog-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+.source-row,
+.catalog-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--border);
+}
+.catalog-list li.following {
+  background: color-mix(in srgb, var(--ok) 6%, transparent);
+}
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.segmented button {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0.4rem 0.9rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+.segmented button.active {
+  background: var(--surface-2);
+  color: var(--text);
+}
+details.card > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+/* A checkbox drawn as an on/off switch. */
+label.switch {
+  position: relative;
+  flex-direction: row;
+  flex-shrink: 0;
+  width: 2.2rem;
+  height: 1.2rem;
+}
+label.switch input {
+  appearance: none;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+label.switch input::after {
+  content: "";
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.15s;
+}
+label.switch input:checked {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+label.switch input:checked::after {
+  background: #fff;
+  transform: translateX(1rem);
+}
+label.switch input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 @media print {
   body {
     background: #fff !important;
