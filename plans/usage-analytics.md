@@ -195,7 +195,9 @@ of event names and low-cardinality, non-political dims is fine.
    that check the worker's only binding is `SECRET_KEK` (no BOOTSTRAP_TOKEN
    yet).
 2. ~~SECRET_KEK on the worker~~ Done: ops `54c66ff`, CI created it 2026-10-18.
-3. BOOTSTRAP_TOKEN on the worker (a person types it at enrolment).
+3. ~~BOOTSTRAP_TOKEN on the worker~~ Done 2026-10-19 by the user (dashboard;
+   saving it redeployed the ops 503 stub with the new secret, version
+   fb21dd01; no build was started). Bindings now: BOOTSTRAP_TOKEN, SECRET_KEK.
 4. `git push origin master:deploy` in telemetry-collector → first deploy.
 5. User enrols a passkey, registers app `openslate`; ingest key via
    `telemetry-collector-cli key --app openslate --channel <version>`
