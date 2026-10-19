@@ -49,7 +49,7 @@ Elections, Results, Viewer, Settings.
   RacePanel looks up (ISSUES.md, "Race view finds no polls and no
   endorsements"). Using `subjectKey()` everywhere fixes the endorsement half.
 
-## Proposed structure (awaiting user sign-off)
+## Structure (approved 2026-10-19)
 
 Header: `OpenSlate` · mode switch **[My vote | Publish]** · "Get started" (opens
 wizard again) · Settings.
@@ -104,13 +104,26 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
 
 - Two modes, "My vote" emphasized. Wizard exists and is skippable. (User,
   2026-10-19.)
+- **Structure as drawn in the proposal is approved** ("Yes, build it",
+  2026-10-19), old routes redirecting.
+- **Follow toggle per source**, separate from "imported", keyed by source so it
+  carries across elections. (User, 2026-10-19.)
+- **Work on branch `ui/two-modes` in a dedicated T3 worktree**, merge to master
+  when done and walked through. (User, 2026-10-19.)
+- **The uncommitted ComposePanel / ElectionCombobox / subjects.ts edits are
+  still in progress in another thread. Don't adopt or touch them.** So this
+  refactor leaves `ComposePanel.tsx`, `ElectionCombobox.tsx` and
+  `lib/subjects.ts` unedited: new collation code goes in a new module, and
+  Publish → Compose mounts the existing `ComposePanel` as-is. Slimming Compose
+  (taking positions from My-ballot picks) is a follow-up once that thread
+  lands.
 - No central server (memory: project_no_central_server). Everything stays
   client-side; follow state lives in IndexedDB/localStorage.
 
 ## Plan / steps
 
-1. **[current]** Get sign-off on the structure and the open questions below.
-2. Data: "source" identity (firsthand = issuer key; secondhand = `attribution.of`)
+1. ~~Get sign-off on the structure and the open questions.~~ Done.
+2. **[current]** Data: "source" identity (firsthand = issuer key; secondhand = `attribution.of`)
    and per-source follow state. Shared `collate()` helper on `subjectKey()`.
 3. Shell: mode switch, nav per mode, redirects, `ROUTE_TEMPLATES`.
 4. My ballot page.
@@ -136,21 +149,12 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
 ## Progress log
 
 - [x] Survey current UI and data layer
-- [ ] Structure sign-off
+- [x] Structure sign-off and open questions answered (2026-10-19)
 - [ ] Implementation steps 2–8
 
 ## Open questions for the user
 
-1. **What "care about" means.** Recommend a per-source *follow* toggle separate
-   from "imported", keyed by source, so following the Sierra Club carries over to
-   their next election's slate, and a friend's slate can be verified without
-   adding it to the ballot. Alternative: imported = followed (simpler, but
-   "Import all" then floods the ballot).
-2. **The uncommitted Compose/subjects edits.** Recommend I adopt them (commit
-   them as their own commit first, then build on them), since My ballot needs
-   that fallback. Otherwise I work around them.
-3. **Where to work.** Recommend a branch in a dedicated worktree: about 10 files
-   get rewritten, which would clash with whatever else runs in this checkout.
+None open.
 
 ## Things not to do
 
