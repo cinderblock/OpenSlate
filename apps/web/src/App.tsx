@@ -1,5 +1,7 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { WizardHost } from "./components/Wizard";
 import { useUsageEnabled } from "./lib/usage";
+import { openWizard } from "./lib/wizard";
 
 type Mode = "vote" | "publish";
 
@@ -70,15 +72,25 @@ export function RootLayout() {
               to={MODES[key].home}
               className={`mode${mode === key ? " active" : ""}`}
               aria-current={mode === key ? "page" : undefined}
+              activeProps={{}}
             >
               <span aria-hidden="true">{MODES[key].icon}</span> {MODES[key].label}
             </Link>
           ))}
         </nav>
         <span className="grow" />
-        <Link to="/settings" className={`header-link${pathname === "/settings" ? " active" : ""}`}>
-          Settings
-        </Link>
+        <span className="header-links">
+          <button type="button" className="header-link" onClick={() => openWizard()}>
+            Get started
+          </button>
+          <Link
+            to="/settings"
+            className={`header-link${pathname === "/settings" ? " active" : ""}`}
+            activeProps={{}}
+          >
+            Settings
+          </Link>
+        </span>
       </header>
       <p className="tagline">
         {mode === "publish"
@@ -93,6 +105,10 @@ export function RootLayout() {
               key={item.to}
               to={item.to}
               className={`tab${isActive(item, pathname) ? " active" : ""}`}
+              // We decide "active" ourselves. Link's default adds an `active`
+              // class on any prefix match, so Compose (/publish) would light
+              // up on every Publish page.
+              activeProps={{}}
             >
               {item.label}
             </Link>
@@ -103,6 +119,8 @@ export function RootLayout() {
       <main>
         <Outlet />
       </main>
+
+      <WizardHost />
 
       <footer>
         <span>Decentralized — your keys and data stay in this browser.</span>

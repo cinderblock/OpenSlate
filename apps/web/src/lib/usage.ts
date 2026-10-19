@@ -64,6 +64,8 @@ export const USAGE_SCHEMA = {
   "identity.export": {},
   "results.print": {},
   "results.export": { format: ["csv", "markdown"] },
+  "wizard.finish": { path: ["vote", "publish"] },
+  "wizard.skip": {},
 } as const satisfies Record<string, Record<string, readonly string[]>>;
 
 type Schema = typeof USAGE_SCHEMA;
@@ -89,6 +91,9 @@ export const USAGE_EVENT_DESCRIPTIONS: Record<EventName, string> = {
   "identity.export": "That an identity backup was downloaded",
   "results.print": "That a results sheet was printed",
   "results.export": "That results were exported, and as CSV or Markdown",
+  "wizard.finish":
+    "That the getting-started guide was finished, and whether to plan a vote or to publish",
+  "wizard.skip": "That the getting-started guide was skipped",
 };
 
 export interface SanitizedUsageEvent {
