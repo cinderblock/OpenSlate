@@ -1,0 +1,101 @@
+import { useLiveQuery } from "@tanstack/react-db";
+import { useMemo } from "react";
+import { type DecodedSlate, decodeSlates } from "./collate";
+import { slatesCollection } from "./collections";
+import { useKnownIdentities } from "./identities";
+import type { Area } from "./jurisdictions";
+import { EMPTY_AREA } from "./jurisdictions";
+import { createLocalStore, useLocalStore } from "./localStore";
+
+/**
+ * Client-side state for the "My vote" mode. All of it stays in this browser.
+ */
+
+function isRecordOf<T>(raw: unknown, check: (v: unknown) => v is T): raw is Record<string, T> {
+  return (
+    typeof raw === "object" &&
+    raw !== null &&
+    !Array.isArray(raw) &&
+    Object.values(raw).every((v) => check(v))
+  );
+}
+
+const isBoolean = (v: unknown): v is boolean => typeof v === "boolean";
+const isString = (v: unknown): v is string => typeof v === "string";
+
+/** Source id → followed. Missing means followed (see `isFollowed`). */
+export const followsStore = createLocalStore<Record<string, boolean>>(
+  "openslate.follows.v1",
+  {},
+  (raw) => (isRecordOf(raw, isBoolean) ? raw : undefined),
+);
+
+export const useFollows = () => useLocalStore(followsStore);
+
+export function setFollowed(sourceId: string, followed: boolean): void {
+  followsStore.set((current) => ({ ...current, [sourceId]: followed }));
+}
+
+/** Record `false` for sources nobody decided about yet (bulk "import for comparison"). */
+export function defaultToUnfollowed(sourceIds: Iterable<string>): void {
+  followsStore.set((current) => {
+    const next = { ...current };
+    for (const id of sourceIds) if (!(id in next)) next[id] = false;
+    return next;
+  });
+}
+
+/** Where the user votes. */
+export const areaStore = createLocalStore<Area>("openslate.area.v1", EMPTY_AREA, (raw) => {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const { localities, districts } = raw as Partial<Area>;
+  if (!Array.isArray(localities) || !localities.every(isString)) return undefined;
+  if (!isRecordOf(districts, isString)) return undefined;
+  return { localities, districts };
+});
+
+export const useArea = () => useLocalStore(areaStore);
+
+/** The election My ballot shows, as a date (`2026-11-03`). Empty = pick a default. */
+export const myElectionStore = createLocalStore<string>("openslate.myElection.v1", "", (raw) =>
+  isString(raw) ? raw : undefined,
+);
+
+export const useMyElection = () => useLocalStore(myElectionStore);
+
+/** Whether the getting-started wizard has been finished or skipped. */
+export const onboardingStore = createLocalStore<"" | "done" | "skipped">(
+  "openslate.onboarding.v1",
+  "",
+  (raw) => (raw === "" || raw === "done" || raw === "skipped" ? raw : undefined),
+);
+
+export const useOnboarding = () => useLocalStore(onboardingStore);
+
+/** Local "YYYY-MM-DD". UTC would flip election day to "past" mid-afternoon in the Americas. */
+export function localToday(): string {
+  return new Date().toLocaleDateString("en-CA");
+}
+
+/**
+ * Every imported slate, verified and decoded once, with firsthand sources named
+ * by the user's nickname for the issuer when they've set one.
+ */
+export function useDecodedSlates(): { slates: DecodedSlate[]; isReady: boolean } {
+  const { data, isReady } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
+  const contacts = useKnownIdentities();
+  const decoded = useMemo(() => decodeSlates(data), [data]);
+  const slates = useMemo(() => {
+    const nicknames = new Map(
+      contacts
+        .filter((c) => c.displayName?.trim())
+        .map((c) => [c.publicKey, c.displayName?.trim()]),
+    );
+    if (nicknames.size === 0) return decoded;
+    return decoded.map((slate) => {
+      const nickname = slate.source.secondhand ? undefined : nicknames.get(slate.source.signerKey);
+      return nickname ? { ...slate, source: { ...slate.source, name: nickname } } : slate;
+    });
+  }, [decoded, contacts]);
+  return { slates, isReady };
+}

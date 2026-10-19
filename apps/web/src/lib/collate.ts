@@ -1,0 +1,291 @@
+import { type SlatePayload, type Stance, type Subject, verifySlate } from "@openslate/core";
+import {
+  type Area,
+  inArea,
+  jurisdictionLabel,
+  jurisdictionRank,
+  parseJurisdiction,
+} from "./jurisdictions";
+import { type Source, isFollowed, sourceOf } from "./sources";
+import { subjectKey } from "./subjects";
+
+/**
+ * Collation for the "My vote" side: imported slates → races → choices → which
+ * sources back each choice. Pure (no React, no storage); unit-tested in
+ * test/collate.test.ts.
+ *
+ * Races are keyed by `subjectKey()`, the same key RacePanel looks up, so a race
+ * links to its detail page.
+ */
+
+export interface DecodedSlate {
+  token: string;
+  importedAt: string;
+  payload: SlatePayload;
+  valid: boolean;
+  source: Source;
+}
+
+/** Verify and decode imported slates. Unparseable tokens are dropped. */
+export function decodeSlates(rows: Array<{ token: string; importedAt: string }>): DecodedSlate[] {
+  const out: DecodedSlate[] = [];
+  for (const row of rows) {
+    const result = verifySlate(row.token);
+    if (!result.payload) continue;
+    out.push({
+      token: row.token,
+      importedAt: row.importedAt,
+      payload: result.payload,
+      valid: result.valid,
+      source: sourceOf(result.payload),
+    });
+  }
+  return out;
+}
+
+/** The election a position belongs to: its subject's, else the slate's context. */
+export function electionOf(subject: Subject, payload: SlatePayload): string | undefined {
+  return subject.election ?? payload.context?.election;
+}
+
+export type StanceTone = "for" | "against" | "neutral";
+
+export function stanceTone(stance: Stance): StanceTone {
+  if (stance === "endorse" || stance === "lean_for") return "for";
+  if (stance === "oppose" || stance === "lean_against") return "against";
+  return "neutral";
+}
+
+export interface RacePosition {
+  source: Source;
+  stance: Stance;
+  statement?: string;
+  valid: boolean;
+  followed: boolean;
+}
+
+export interface ChoiceGroup {
+  /** Candidate or option; "" for a stance on the subject as a whole. */
+  choice: string;
+  positions: RacePosition[];
+  /** Followed sources for / against this choice. */
+  support: number;
+  opposition: number;
+}
+
+export interface Race {
+  key: string;
+  subject: Subject;
+  election?: string;
+  jurisdiction?: string;
+  choices: ChoiceGroup[];
+  /** Distinct followed sources with a position here. */
+  followedSources: number;
+  totalSources: number;
+}
+
+export interface CollateOptions {
+  follows: Record<string, boolean>;
+  /** Only races in this election (date string as slates use it). */
+  election?: string;
+  /** Only races on the ballot for this area. */
+  area?: Area;
+  /** Keep positions from sources the user doesn't follow (marked `followed: false`). */
+  includeUnfollowed?: boolean;
+}
+
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
+export function collateRaces(slates: DecodedSlate[], options: CollateOptions): Race[] {
+  // A source can have several slates covering the same race (a reissue, or a
+  // firsthand slate imported twice). Only its newest slate speaks for it.
+  const newest = new Map<string, { issuedAt: string; slate: DecodedSlate }>();
+  for (const slate of slates) {
+    for (const position of slate.payload.positions) {
+      const id = `${subjectKey(position.subject)}\u0000${slate.source.id}`;
+      const current = newest.get(id);
+      if (!current || slate.payload.issued_at > current.issuedAt) {
+        newest.set(id, { issuedAt: slate.payload.issued_at, slate });
+      }
+    }
+  }
+
+  const races = new Map<string, Race & { sourceIds: Set<string>; followedIds: Set<string> }>();
+  for (const slate of slates) {
+    const followed = isFollowed(options.follows, slate.source.id);
+    if (!followed && !options.includeUnfollowed) continue;
+    for (const position of slate.payload.positions) {
+      const key = subjectKey(position.subject);
+      if (newest.get(`${key}\u0000${slate.source.id}`)?.slate !== slate) continue;
+      const election = electionOf(position.subject, slate.payload);
+      if (options.election && election !== options.election) continue;
+      const jurisdiction = position.subject.jurisdiction ?? slate.payload.context?.jurisdiction;
+      if (options.area && !inArea(jurisdiction, options.area)) continue;
+
+      let race = races.get(key);
+      if (!race) {
+        race = {
+          key,
+          subject: position.subject,
+          ...(election ? { election } : {}),
+          ...(jurisdiction ? { jurisdiction } : {}),
+          choices: [],
+          followedSources: 0,
+          totalSources: 0,
+          sourceIds: new Set(),
+          followedIds: new Set(),
+        };
+        races.set(key, race);
+      }
+      race.sourceIds.add(slate.source.id);
+      if (followed) race.followedIds.add(slate.source.id);
+
+      const choiceName = position.choice ?? "";
+      let group = race.choices.find((c) => c.choice === choiceName);
+      if (!group) {
+        group = { choice: choiceName, positions: [], support: 0, opposition: 0 };
+        race.choices.push(group);
+      }
+      group.positions.push({
+        source: slate.source,
+        stance: position.stance,
+        ...(position.statement ? { statement: position.statement } : {}),
+        valid: slate.valid,
+        followed,
+      });
+      if (followed) {
+        const tone = stanceTone(position.stance);
+        if (tone === "for") group.support++;
+        else if (tone === "against") group.opposition++;
+      }
+    }
+  }
+
+  return [...races.values()]
+    .map(({ sourceIds, followedIds, ...race }) => ({
+      ...race,
+      followedSources: followedIds.size,
+      totalSources: sourceIds.size,
+      choices: race.choices
+        .map((group) => ({
+          ...group,
+          positions: [...group.positions].sort(
+            (a, b) =>
+              Number(b.followed) - Number(a.followed) ||
+              collator.compare(a.source.name, b.source.name),
+          ),
+        }))
+        .sort(
+          (a, b) =>
+            b.support - a.support ||
+            a.opposition - b.opposition ||
+            collator.compare(a.choice, b.choice),
+        ),
+    }))
+    .sort(compareRaces);
+}
+
+/** Ballot order: by jurisdiction (statewide, districts, local), offices before measures, then title. */
+export function compareRaces(a: Race, b: Race): number {
+  return (
+    jurisdictionRank(a.jurisdiction) - jurisdictionRank(b.jurisdiction) ||
+    collator.compare(jurisdictionLabel(a.jurisdiction), jurisdictionLabel(b.jurisdiction)) ||
+    Number(a.subject.kind === "measure") - Number(b.subject.kind === "measure") ||
+    collator.compare(a.subject.title, b.subject.title)
+  );
+}
+
+export interface ElectionSummary {
+  date: string;
+  races: number;
+  sources: number;
+  followedSources: number;
+}
+
+/** Every election the imported slates cover, oldest first. */
+export function electionsOf(
+  slates: DecodedSlate[],
+  follows: Record<string, boolean>,
+): ElectionSummary[] {
+  const by = new Map<string, { races: Set<string>; sources: Set<string>; followed: Set<string> }>();
+  for (const slate of slates) {
+    for (const position of slate.payload.positions) {
+      const date = electionOf(position.subject, slate.payload);
+      if (!date) continue;
+      const entry = by.get(date) ?? { races: new Set(), sources: new Set(), followed: new Set() };
+      entry.races.add(subjectKey(position.subject));
+      entry.sources.add(slate.source.id);
+      if (isFollowed(follows, slate.source.id)) entry.followed.add(slate.source.id);
+      by.set(date, entry);
+    }
+  }
+  return [...by.entries()]
+    .map(([date, e]) => ({
+      date,
+      races: e.races.size,
+      sources: e.sources.size,
+      followedSources: e.followed.size,
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/**
+ * The election to show when the user hasn't picked one: the next upcoming one
+ * their followed sources cover, else the next upcoming one, else the latest.
+ */
+export function defaultElection(elections: ElectionSummary[], today: string): string | undefined {
+  const upcoming = elections.filter((e) => e.date >= today);
+  return (
+    upcoming.find((e) => e.followedSources > 0)?.date ?? upcoming[0]?.date ?? elections.at(-1)?.date
+  );
+}
+
+export interface AreaOptions {
+  /** Locality paths, sorted by label. */
+  localities: string[];
+  /** `<state>/<family>` → district numbers present, ascending. */
+  districts: Record<string, string[]>;
+}
+
+/** The localities and districts that races in these slates (optionally one election) cover. */
+export function areaOptionsOf(positions: Iterable<{ jurisdiction?: string }>): AreaOptions {
+  const localities = new Set<string>();
+  const districts = new Map<string, Set<string>>();
+  for (const { jurisdiction } of positions) {
+    const part = parseJurisdiction(jurisdiction);
+    if (part.kind === "local") localities.add(part.path);
+    if (part.kind === "district") {
+      const family = `${part.state}/${part.family}`;
+      const set = districts.get(family) ?? new Set();
+      set.add(part.number);
+      districts.set(family, set);
+    }
+  }
+  return {
+    localities: [...localities].sort((a, b) =>
+      collator.compare(jurisdictionLabel(a), jurisdictionLabel(b)),
+    ),
+    districts: Object.fromEntries(
+      [...districts.entries()]
+        .sort(([a], [b]) => jurisdictionRank(`${a}-1`) - jurisdictionRank(`${b}-1`))
+        .map(([family, numbers]) => [family, [...numbers].sort((a, b) => Number(a) - Number(b))]),
+    ),
+  };
+}
+
+/** Position jurisdictions of some slates, for `areaOptionsOf`. */
+export function positionJurisdictions(
+  slates: DecodedSlate[],
+  election?: string,
+): Array<{ jurisdiction?: string }> {
+  const out: Array<{ jurisdiction?: string }> = [];
+  for (const slate of slates) {
+    for (const position of slate.payload.positions) {
+      if (election && electionOf(position.subject, slate.payload) !== election) continue;
+      out.push({
+        jurisdiction: position.subject.jurisdiction ?? slate.payload.context?.jurisdiction,
+      });
+    }
+  }
+  return out;
+}
