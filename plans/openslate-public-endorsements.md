@@ -328,6 +328,54 @@ Re-scrape before Nov 3 (sources said "coming soon" / pending):
 - [ ] la-county-federation-of-labor: guide page 7 (404 at scrape time)
 - [ ] sf-examiner, bernal-heights-dems: no November picks yet
 
+## Round 2 for the Nov 3 general (2026-10-19, 15 days out)
+
+User picked scope (2026-10-19): **finish existing** (the re-scrape list above +
+SD measure titles), **more CA regions**, and **national groups' CA picks**.
+Not other states. Publishing: **push per batch to master** (user reconfirmed
+2026-10-19). Prep commits `6b30df0` + `559ef5c` pushed.
+
+New tool: `scripts/list-subjects.ts <election> [filter]` (endorsements repo
+`6b30df0`) prints every subject title/kind/jurisdiction already in use and
+which orgs use it. Agents MUST reuse existing titles so collation works.
+
+Fan-out: 10 background agents, disjoint `orgs/<slug>/` sets, no git. Same
+rules as round 1.
+
+| Agent | Scope |
+| --- | --- |
+| R1 SF refresh | sf-chronicle, sf-yimby, sierra-club-sf-bay, sf-bicycle-coalition (refresh); sf-examiner, bernal-heights-dems (new if picks are out) |
+| R1b SF clubs | the rest of the sfendorsements.com orgs not yet covered (SF Labor Council, SF GOP, Latinx/Rose Pak/Young Dems clubs, SFHAC, etc.) |
+| R2 SD/LA/P&F | sd-lincoln-club (measures), peace-and-freedom-party (props), la-county-federation-of-labor (p.7); harmonize SD county measure titles across SD orgs; Court of Appeal 4th District jurisdiction `us/ca` → `us/ca/coa-4` |
+| R3 Courage locals | courage-california: the ~150 local races from its county digital guides |
+| N1 Bay Area | Alameda / Santa Clara / San Mateo / Contra Costa / Marin county parties (both), labor councils, Bay Area News Group editorial |
+| N2 Sac + Valley | Sacramento, Fresno, Kern, San Joaquin, Stanislaus: county parties, labor councils, newspapers, Sierra Club Mother Lode |
+| N3 LA County+ | LA County Dem/GOP parties, LA Times, SCNG editorial boards, Ventura County parties |
+| N3b OC + IE | Orange, Riverside, San Bernardino: county parties, OC Labor Fed, Lincoln Club OC, IE labor council, SD Union-Tribune |
+| N4 National | EMILY's List, NRA-PVF, Club for Growth, HRC, LCV Action Fund, Everytown, VoteVets, Our Revolution, Justice Dems, SBA Pro-Life, AIPAC/J Street PACs, US Chamber, etc.: CA entries only |
+| N5 CA interest groups | HJTA, CalChamber, CTA, CFT, SEIU CA, CNA, EQCA, PP Affiliates of CA, PORAC, CA Professional Firefighters, CA YIMBY, CalPIRG, CA ProLife Council, NFIB CA |
+
+Agent brief (shared by all 10): `%TEMP%\os-round2\BRIEF.md`. It is ephemeral.
+The rules that matter are the ones in this plan plus the skill.
+
+Findings before launch:
+- **"No on X" encoding was split.** 29 orgs used `endorse` + `choice: "No"`;
+  8 orgs (round-1 batch G plus sierra-club-san-diego) used `oppose` + `"No"`,
+  which the web app renders as "oppose → No", a double negative. Normalized
+  all 42 positions to `endorse`/`No` in endorsements `559ef5c`. Brief now
+  forbids `oppose` for a No recommendation.
+- Local jurisdictions: county-level contests use the county slug
+  (`us/ca/san-diego`, `us/ca/sf`, `us/ca/los-angeles-county`); new counties
+  get `us/ca/<name>-county`. San Diego is the odd one out (no `-county`).
+  Left as is to avoid churn.
+- Court of Appeal 4th District retention used `us/ca`; 1st and 6th use
+  `us/ca/coa-N`. R2 fixes it.
+
+Progress:
+- [ ] R1 · [ ] R1b · [ ] R2 · [ ] R3 · [ ] N1 · [ ] N2 · [ ] N3 · [ ] N3b · [ ] N4 · [ ] N5
+- [ ] `normalize-choices.ts 2026-11-03` re-run after all land
+- [ ] User OK to publish → commit per batch, push, check CI + Pages
+
 Known review items (details in each bundle's evidence/NOTES.md): SFTU is a
 paid slate mailer; WFP Connolly listed as SD 12 but on the ballot in SD 2
 (encoded SD 2); CAGOP neutral on Props 1 and 37; LWV CA's No on 37/41/42
