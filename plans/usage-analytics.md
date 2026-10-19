@@ -208,6 +208,15 @@ of event names and low-cardinality, non-political dims is fine.
    trigger's deploy command must lose ` --yes` (dashboard, user), then a
    retry or a push of `5e5a053` to `deploy` rebuilds. The same `--yes` is
    in ops `plans/telemetry-collector-cloudflare.md`.
+   **Deployed 2026-10-19** (user removed `--yes`; deploy pushed to `5e5a053`,
+   build b3f866da succeeded): migrations 0001-0003 applied to TELEMETRY_DB,
+   version ecfa33c1 live; `/login` serves "Set up — telemetry-collector".
+   Side effect: wrangler.toml left `workers_dev`/`preview_urls` unset, so
+   wrangler enabled `telemetry-collector.isozilla.workers.dev` and preview
+   URLs (both against production data). It also reset the compatibility
+   date from the dashboard's 2026-09-08 to the repo's 2026-09-01. Fixed in
+   telemetry-collector `664d56d` (both set false, CI green); takes effect on
+   the next push to `deploy`, which needs the user's yes.
 5. User enrols a passkey, registers app `openslate`; ingest key via
    `telemetry-collector-cli key --app openslate --channel <version>`
    (public value, goes in `apps/web/.env.production`).
