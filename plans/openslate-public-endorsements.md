@@ -390,8 +390,13 @@ Progress:
 - [x] N3b (`4e221a9`: 11 orgs, 856 positions: OC Dems/GOP/Labor Fed/Lincoln Club/OCBC, SD U-T, Riverside Dems/GOP, SB Dems, IE Labor Council, IE United. OC supervisors moved `us/ca/orange` → `us/ca/orange-county` in `57abb15`. Gaps: SB County GOP, Sierra Club San Gorgonio, Desert Sun. OC ballot spellings unchecked (registrar list loads only via JS))
 - [x] N5 (`fb7fd29`: 21 orgs, 1,442 positions. Evidence for CalChamber Props 44/45, SEIU BOE D4 and ACLU NorCal Prop 39 was missing from the saved page text; I re-fetched, confirmed live, and appended. CPF republishes IAFF's House picks (kept, attributed to CPF's guide). Gaps: CBRT, NFIB CA (403), CBIA (no stated position), CA Apartment Assn, UFCW WSC, CA Family Council, Consumer Watchdog, CFA)
 - [x] Stance sweep `375ed94`: "No Position/Recommendation/Endorsement" → `abstain`, literal "NEUTRAL" stays `neutral` (SPEC §3.6). 23 positions in 13 orgs. courage-california not yet swept (R3 running)
-- [ ] R3 (Courage locals)
-- [ ] `normalize-choices.ts 2026-11-03` re-run after all land
+- [x] R3 (`8c42885`: courage-california 164 → 329; `pdftotext -raw` fixed the garbling; 14 seat corrections, 12 drops)
+- [x] Collation sweep `eb31430`: 3 one-off jurisdictions merged; no title is now split across jurisdictions
+- [x] `normalize-choices.ts 2026-11-03 --apply` (`309792c`, 143 edits; re-run shows 0)
+
+**Result (2026-10-19): 157 November slates, 8,735 positions, live** (from 39 / 2,903).
+Every publish run passed CI. `orgs/sd-green-party/2026-11-03/` is still held back,
+untracked.
 - [x] User OK to publish (2026-10-19) → commit per batch, push, check CI + Pages
 - [ ] Follow-up pass for search-budget gaps (see N3, R1b) + Sierra Club SF Bay via Chrome
 - [ ] Re-scrape before Nov 3: SCNG + BANG ("so far" / "will be updated"), SF Chronicle remaining
