@@ -167,9 +167,8 @@ of event names and low-cardinality, non-political dims is fine.
       "UnknownLockfileVersion" because the trigger has no `BUN_VERSION` (image
       Bun 1.2.15 can't read the lockfile; OpenSlate's triggers set
       `BUN_VERSION=1.4.2` + `SKIP_DEPENDENCY_INSTALL=1`). Trigger has
-      `D1_DATABASE_ID`/`KV_NAMESPACE_ID`. The worker has **no secrets**:
-      SECRET_KEK's ops `generated_secrets` feature is still uncommitted in the
-      shared ops checkout (another thread, untouched since 2026-09-25).
+      `D1_DATABASE_ID`/`KV_NAMESPACE_ID`. The worker had **no secrets**;
+      SECRET_KEK is now set (ops `54c66ff`, 2026-10-18, see question 4).
       `deploy` is at 7a2d14e, master at 50b7756 (fast-forward). GitHub reports
       `deploy` as **not protected**, though its README says it is.
       Earlier note:
@@ -192,7 +191,7 @@ of event names and low-cardinality, non-political dims is fine.
 
 1. Trigger build variables `BUN_VERSION=1.4.2`, `SKIP_DEPENDENCY_INSTALL=1`
    (dashboard; the Builds API token is read-only).
-2. SECRET_KEK on the worker (ops `generated_secrets`, or by hand).
+2. ~~SECRET_KEK on the worker~~ Done: ops `54c66ff`, CI created it 2026-10-18.
 3. BOOTSTRAP_TOKEN on the worker (a person types it at enrolment).
 4. `git push origin master:deploy` in telemetry-collector → first deploy.
 5. User enrols a passkey, registers app `openslate`; ingest key via
@@ -243,9 +242,15 @@ trusted publisher (repo cinderblock/telemetry-collector, workflow
    bytes, base64url, matching the worker's `importKek`). Left out of the
    stalled diff: its Previews removals (would have undone `102fbb9`), the
    `builds` CLI, a restic DNS record. Added: refuse under `DEBUG=true` (the
-   SDK logs request bodies). **Waiting on the user's commit yes.** Tiered
-   Cache and this both touch config/types/schema, so whichever lands second
-   gets rebased in its worktree first.
+   SDK logs request bodies). **Applied 2026-10-18** (user: "go for it"):
+   ops `54c66ff`, rebased onto Tiered Cache `dec8220` (206 tests pass;
+   dry run still exactly 1 create). CI's apply job logged "Created
+   worker-secret: SECRET_KEK on worker telemetry-collector (generated: 32
+   random bytes, value never shown)", so CI's token can write worker
+   secrets. The verify job then failed twice on Cloudflare's account rate
+   limit (429, code 971, reading tunnels and then a WAF zone), which has
+   nothing to do with this change. A third run, 5 min later, passed: 0/0/0,
+   "Everything is in sync".
 5. Approve the GitHub protections above (tag ruleset, deploy ruleset, npm
    environment)?
 6. The ops `web_analytics: { auto_install: false }` site for openslate.us is
