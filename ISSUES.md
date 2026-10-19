@@ -37,6 +37,12 @@ race page (URL `#/race/Governor%20of%20California|us%2Fca|2026-11-03`) shows:
 So the race view is broken for every catalog slate whose subjects carry an
 `id`. Not a deploy problem: the poll-cache answers both queries with 200.
 
+**Update (branch `ui/two-modes`, 2026-10-19):** the endorsements half is fixed
+there. Collate is gone; My ballot links to `/race/<subjectKey>`, the key
+RacePanel looks up, and the race page lists the endorsements. (Catalog
+subjects carry no `id` today.) The polls half (`subjectToVoteHubKey`) is still
+open.
+
 ## `bun run lint` fails on every file in a Windows checkout
 
 With `core.autocrlf=true` the working tree is CRLF, but `biome.json` leaves

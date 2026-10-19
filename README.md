@@ -11,10 +11,24 @@ recipients can verify it hasn't been altered and who issued it, completely
 offline. Individuals, organizations, and candidates can publish both **who they
 endorsed** and **who endorsed them**.
 
-On the receiving end, the web app collates every endorsement you've imported by
-race, so you can see at a glance how the orgs and people you trust line up on
-each contest — and assemble **your own ballot** from sources you can verify,
-alongside live polls, market forecasts, and (after polls close) results.
+On the receiving end, the web app lines up the endorsements of the sources
+*you* follow, race by race, so you can see at a glance where the orgs and people
+you trust agree and split on each contest, and make **your own picks** from
+sources you can verify, alongside live polls, market forecasts, and (after polls
+close) results.
+
+The web app has two modes:
+
+- **My vote** (the default): *My ballot* shows the races for your election and
+  area with your followed sources' endorsements next to each choice, plus your
+  private picks and notes. *Sources* is where you follow or unfollow sources,
+  browse the public catalog, and add slates from a link, file, QR code or paste.
+- **Publish**: create a signing identity, compose and sign a slate, and verify
+  or inspect any block.
+
+A skippable getting-started guide sets up a first visit: pick an election,
+where you vote, and whose recommendations you trust (or create an identity to
+publish). Reopen it any time from *Get started* in the header.
 
 The goal: give citizens deeper insight into the things they care about, without
 relying solely on simplified endorsements from a single newspaper or org.
@@ -134,7 +148,7 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 | --- | --- |
 | [`packages/core`](./packages/core) | `@openslate/core` — the standard's reference impl: types, schema, canonical JSON, Ed25519 sign/verify, JSON Schema export. Pure TS, minimal audited deps. |
 | [`packages/cli`](./packages/cli) | `@openslate/cli` — `keygen` / `pubkey` / `sign` (incl. `--batch` for research bundles) / `validate` / `verify` / `inspect`. |
-| [`apps/web`](./apps/web) | React + Vite SPA. Manage identity; compose/share/import/verify slates; browse the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/); collate endorsements by race; assemble your own ballot; view live polls, market forecasts, and election results; pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
+| [`apps/web`](./apps/web) | React + Vite SPA. Two modes. *My vote*: a getting-started guide, My ballot (your followed sources' endorsements by race, for your election and area, with private picks), and Sources (follow/unfollow, the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/), import from link/file/QR/paste). *Publish*: identities, compose/sign/share, verify and inspect slates; view live polls, market forecasts, and election results; pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
 | [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + proxies for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic), opinion polls ([VoteHub](https://votehub.com)), election results ([civicAPI](https://civicapi.org)), and market forecasts ([Kalshi](https://kalshi.com)). |
 | [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls, [civicAPI](https://civicapi.org) results, and [Kalshi](https://kalshi.com) forecasts behind permissive CORS. Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, and `/api/forecasts/v2/*` shapes so the web client treats either backend identically. Runs at `https://polls.openslate.us`. |
 | [`apps/desktop`](./apps/desktop) | [Electrobun](https://blackboard.sh/electrobun) wrapper around the web build (stub). |
@@ -151,11 +165,11 @@ the browser.
 Election results (civicAPI) already serve permissive CORS without an API key,
 so the SPA hits civicAPI directly by default. Polls (VoteHub) and forecasts
 (Kalshi) restrict cross-origin access, so the SPA *must* go through a proxy
-for those. The Settings tab lets each user pick direct-vs-proxy per provider
+for those. The Settings page lets each user pick direct-vs-proxy per provider
 where both are possible. The Hono/Worker mirrors also help self-hosters who
 want a uniform fetch surface or edge caching on election night.
 
-The web app's **Catalog** tab additionally imports pre-signed slates from a
+The web app's **Sources** page (and the getting-started guide) additionally imports pre-signed slates from a
 sibling repo, [openslate-public-endorsements][ope] — published as static files
 on GitHub Pages, fetched directly with no server in between.
 
@@ -169,7 +183,7 @@ flowchart LR
   Peer["Another OpenSlate user"]
 
   subgraph Browser["Your browser / desktop"]
-    Client["Web SPA / Electrobun<br/>identity · sign · verify<br/>collate · my ballot · share<br/><i>IndexedDB + localStorage</i>"]
+    Client["Web SPA / Electrobun<br/>identity · sign · verify<br/>my ballot · sources · share<br/><i>IndexedDB + localStorage</i>"]
   end
 
   subgraph SelfHost["Optional — self-hosted"]
