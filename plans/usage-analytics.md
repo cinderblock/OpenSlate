@@ -215,8 +215,10 @@ of event names and low-cardinality, non-political dims is fine.
    wrangler enabled `telemetry-collector.isozilla.workers.dev` and preview
    URLs (both against production data). It also reset the compatibility
    date from the dashboard's 2026-09-08 to the repo's 2026-09-01. Fixed in
-   telemetry-collector `664d56d` (both set false, CI green); takes effect on
-   the next push to `deploy`, which needs the user's yes.
+   telemetry-collector `664d56d` (both set false, CI green), deployed with
+   the user's yes (build 9a539053 succeeded). Verified: subdomain
+   `{"enabled":false,"previews_enabled":false}`, workers.dev `/login` 404,
+   custom domain `/login` 200.
 5. User enrols a passkey, registers app `openslate`; ingest key via
    `telemetry-collector-cli key --app openslate --channel <version>`
    (public value, goes in `apps/web/.env.production`).
@@ -245,7 +247,11 @@ after a protected version tag", so before the first CI release:
 - branch ruleset on `deploy`: required checks `check` and
   `node-matrix (18/20/22/24)`, no force-push, no deletion;
 - environment `npm`: deployments only from `v*` tags.
-Staged as a proposal; GitHub settings changes need the user's yes.
+**Applied 2026-10-19** with the user's yes: ruleset 25377363 "release
+tags: admins only" (creation/update/deletion; bypass: repository admin
+role), ruleset 25377367 "deploy: CI-green fast-forwards only" (no bypass;
+checks bound to GitHub Actions, app 15368), environment `npm` with a single
+`v*` tag deployment policy. Verified via `rules/branches/deploy`.
 
 npm first publish: `scripts/guard-publish.ts` (prepublishOnly) allows a
 local publish only at `0.0.0` (name claim) and refuses everything else
