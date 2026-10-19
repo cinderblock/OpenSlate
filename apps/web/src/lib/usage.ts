@@ -26,17 +26,27 @@ import { useSyncExternalStore } from "react";
 
 /** Route *templates*, never the matched values. */
 export const ROUTE_TEMPLATES = [
+  // My vote
   "/",
+  "/sources",
+  "/race/$key",
+  "/results",
+  "/results/$token",
+  // Publish
+  "/publish",
+  "/publish/identities",
+  "/publish/elections",
+  "/publish/verify",
+  "/publish/viewer",
+  "/settings",
+  // Pre-refactor paths. They only redirect, so they never resolve, but the
+  // route-id union includes them.
   "/compose",
   "/import",
   "/catalog",
   "/collate",
-  "/race/$key",
   "/viewer",
   "/elections",
-  "/results",
-  "/results/$token",
-  "/settings",
 ] as const;
 
 export const SLATE_IMPORT_SOURCES = ["catalog", "url", "file", "qr", "paste"] as const;

@@ -3,6 +3,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  redirect,
 } from "@tanstack/react-router";
 import { RootLayout } from "./App";
 import { BlockViewerPanel } from "./components/BlockViewerPanel";
@@ -20,45 +21,22 @@ import { type RouteTemplate, track } from "./lib/usage";
 
 const rootRoute = createRootRoute({ component: RootLayout });
 
-const identityRoute = createRoute({
+// --- My vote ---
+
+const ballotRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: IdentityPanel,
-});
-const composeRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/compose",
-  component: ComposePanel,
-});
-const importRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/import",
-  component: ImportVerifyPanel,
-});
-const catalogRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/catalog",
-  component: CatalogPanel,
-});
-const collateRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/collate",
   component: CollatePanel,
+});
+const sourcesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/sources",
+  component: CatalogPanel,
 });
 const raceRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/race/$key",
   component: RacePanel,
-});
-const viewerRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/viewer",
-  component: BlockViewerPanel,
-});
-const electionsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/elections",
-  component: ElectionsPanel,
 });
 const resultsIndexRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -70,24 +48,77 @@ const resultsForSlateRoute = createRoute({
   path: "/results/$token",
   component: ResultsForSlate,
 });
+
+// --- Publish ---
+
+const composeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/publish",
+  component: ComposePanel,
+});
+const identitiesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/publish/identities",
+  component: IdentityPanel,
+});
+const electionsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/publish/elections",
+  component: ElectionsPanel,
+});
+const verifyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/publish/verify",
+  component: ImportVerifyPanel,
+});
+const viewerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/publish/viewer",
+  component: BlockViewerPanel,
+});
+
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
   component: SettingsPage,
 });
 
+// --- Pre-refactor paths, kept so bookmarks and shared links still land somewhere sensible ---
+
+type LegacyTarget = "/" | "/sources" | "/publish" | "/publish/elections" | "/publish/viewer";
+
+function legacy<const From extends string>(from: From, to: LegacyTarget) {
+  return createRoute({
+    getParentRoute: () => rootRoute,
+    path: from,
+    beforeLoad: () => {
+      throw redirect({ to, replace: true });
+    },
+  });
+}
+
+const legacyRoutes = [
+  legacy("/compose", "/publish"),
+  legacy("/collate", "/"),
+  legacy("/catalog", "/sources"),
+  legacy("/import", "/sources"),
+  legacy("/elections", "/publish/elections"),
+  legacy("/viewer", "/publish/viewer"),
+] as const;
+
 const routeTree = rootRoute.addChildren([
-  identityRoute,
-  composeRoute,
-  importRoute,
-  catalogRoute,
-  collateRoute,
+  ballotRoute,
+  sourcesRoute,
   raceRoute,
-  viewerRoute,
-  electionsRoute,
   resultsIndexRoute,
   resultsForSlateRoute,
+  composeRoute,
+  identitiesRoute,
+  electionsRoute,
+  verifyRoute,
+  viewerRoute,
   settingsRoute,
+  ...legacyRoutes,
 ]);
 
 // Hash history keeps route values (a whole signed slate in /results/$token, the

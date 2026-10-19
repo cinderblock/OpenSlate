@@ -117,7 +117,7 @@ export function RacePanel() {
   return (
     <section className="panel">
       <p>
-        <Link to="/collate">← back to Collate</Link>
+        <Link to="/">← My ballot</Link>
       </p>
       <h2>{view.title}</h2>
       <p className="hint">

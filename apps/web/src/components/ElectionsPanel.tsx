@@ -99,7 +99,7 @@ export function ElectionsPanel() {
       <h2>Elections</h2>
       <p className="hint">
         Every election we know about — from Google's list, from imported slates' subject IDs, and
-        from your local drafts. Picking one as <em>active</em> drives the Compose tab.
+        from your local drafts. Picking one as <em>active</em> drives Compose.
       </p>
 
       <div className="card">
@@ -178,7 +178,7 @@ function ElectionCard({
             Use as active
           </button>
         )}
-        <Link to="/compose" className="link">
+        <Link to="/publish" className="link">
           Open in Compose →
         </Link>
       </div>

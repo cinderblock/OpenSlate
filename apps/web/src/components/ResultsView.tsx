@@ -95,9 +95,7 @@ export function ResultsView() {
 
       {rows.length === 0 ? (
         <div className="card">
-          <p className="hint">
-            Nothing imported yet. Use the Import &amp; verify tab to add slates.
-          </p>
+          <p className="hint">Nothing imported yet. Add some on the Sources page.</p>
         </div>
       ) : (
         <div className="card">

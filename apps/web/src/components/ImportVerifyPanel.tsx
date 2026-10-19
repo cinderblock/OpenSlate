@@ -55,7 +55,7 @@ export function ImportVerifyPanel() {
     } else if (parsed.kind === "contact") {
       setResult({
         valid: false,
-        errors: ["Scanned a contact key, not a slate — use the Identity tab to add contacts."],
+        errors: ["Scanned a contact key, not a slate — add contacts on the Sources page."],
         warnings: [],
       });
     } else {

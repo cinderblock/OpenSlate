@@ -12,7 +12,7 @@ interface SlateRow {
   issuerKey: string;
   /** Self-asserted name from the slate. */
   issuerName: string;
-  /** Local nickname (if set in Identity tab); takes precedence over issuerName. */
+  /** Local nickname (set on the Sources page); takes precedence over issuerName. */
   nickname: string;
   /** Resolved display: nickname || issuerName || shortKey(issuerKey). */
   displayName: string;
@@ -80,9 +80,7 @@ export function SlatesList() {
   }, [query, rows, fuse, sortKey, sortAsc]);
 
   if (rows.length === 0) {
-    return (
-      <p className="hint">No slates imported yet. Use the Import &amp; verify tab to add some.</p>
-    );
+    return <p className="hint">No slates imported yet. Add some above.</p>;
   }
 
   return (
