@@ -13,3 +13,14 @@ export function formatLocalDate(iso: string | undefined | null): string {
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
+
+/** A `YYYY-MM-DD` election date as "Nov 3, 2026" in the viewer's locale (no timezone shift). */
+export function formatElectionDate(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  if (!y || !m || !d) return date;
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}

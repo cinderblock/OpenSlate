@@ -205,11 +205,13 @@ describe("areaOptionsOf", () => {
           { title: "4", jurisdiction: "us/ca/ad-17" },
           { title: "5", jurisdiction: "us/ca" },
           { title: "6", jurisdiction: "us/ca/chula-vista" },
+          { title: "7", jurisdiction: "us/ca/sf" },
         ],
       }),
     ]);
     expect(areaOptionsOf(positionJurisdictions(slates))).toEqual({
-      localities: ["us/ca/chula-vista", "us/ca/sf"],
+      // San Francisco has more races here, so it leads.
+      localities: ["us/ca/sf", "us/ca/chula-vista"],
       districts: { "us/ca/cd": ["2", "12"], "us/ca/ad": ["17"] },
     });
   });

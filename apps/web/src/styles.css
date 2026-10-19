@@ -23,6 +23,19 @@ body {
   line-height: 1.5;
 }
 
+a {
+  color: var(--accent);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .app {
   max-width: min(1100px, 96vw);
   margin: 0 auto;
@@ -752,6 +765,201 @@ footer a:hover {
 .print-warning {
   color: #b00;
   font-weight: 700;
+}
+
+/* My ballot */
+.ballot-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1.25rem;
+  margin: 0.5rem 0;
+}
+.ballot-election select {
+  min-width: 14rem;
+}
+.ballot-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.ballot-area button.link {
+  text-align: left;
+  font-size: 0.95rem;
+  padding: 0.3rem 0;
+}
+.ballot-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1.25rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0.25rem 0 0.75rem;
+}
+.ballot-stats strong {
+  color: var(--text);
+}
+.ballot-stats a {
+  color: inherit;
+}
+label.inline-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+.ballot-section-title {
+  cursor: pointer;
+  margin: 1.5rem 0 0.25rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.race-card .card-title {
+  flex-wrap: wrap;
+}
+.choice-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.choice-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--border);
+}
+.choice-row.picked .choice-name {
+  color: var(--ok);
+  font-weight: 600;
+}
+.choice-main {
+  flex: 1;
+  min-width: 0;
+}
+.choice-count {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+}
+.source-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+.source-chip {
+  font-size: 0.75rem;
+  border-radius: 5px;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid transparent;
+  cursor: default;
+}
+.source-chip.tone-for {
+  background: color-mix(in srgb, var(--ok) 18%, transparent);
+  border-color: color-mix(in srgb, var(--ok) 40%, transparent);
+}
+.source-chip.tone-against {
+  background: color-mix(in srgb, var(--bad) 18%, transparent);
+  border-color: color-mix(in srgb, var(--bad) 40%, transparent);
+}
+.source-chip.tone-neutral {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--muted);
+}
+.source-chip.unfollowed {
+  opacity: 0.55;
+  border-style: dashed;
+}
+.pick-buttons {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+.race-note summary {
+  font-size: 0.8rem;
+  color: var(--muted);
+  cursor: pointer;
+  margin-top: 0.4rem;
+}
+.race-note textarea {
+  margin-top: 0.4rem;
+  width: 100%;
+}
+.empty-state {
+  padding: 1.5rem;
+}
+.empty-state h3 {
+  margin-top: 0;
+}
+@media (max-width: 600px) {
+  .choice-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+.print-picks ol {
+  padding-left: 1.25rem;
+}
+.print-picks li {
+  margin: 0.35rem 0;
+}
+.print-note {
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+/* Area picker */
+.area-picker fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+.area-picker legend {
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+.area-picker legend a {
+  font-weight: normal;
+  font-size: 0.85rem;
+}
+.area-picker input[type="search"] {
+  margin-bottom: 0.4rem;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+.chip {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.chip:hover {
+  border-color: var(--accent);
+}
+.chip.on {
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+  border-color: var(--accent);
+}
+.district-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.5rem 1rem;
 }
 
 @media print {

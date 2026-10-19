@@ -8,11 +8,11 @@ import {
 import { RootLayout } from "./App";
 import { BlockViewerPanel } from "./components/BlockViewerPanel";
 import { CatalogPanel } from "./components/CatalogPanel";
-import { CollatePanel } from "./components/CollatePanel";
 import { ComposePanel } from "./components/ComposePanel";
 import { ElectionsPanel } from "./components/ElectionsPanel";
 import { IdentityPanel } from "./components/IdentityPanel";
 import { ImportVerifyPanel } from "./components/ImportVerifyPanel";
+import { MyBallotPanel } from "./components/MyBallotPanel";
 import { RacePanel } from "./components/RacePanel";
 import { ResultsForSlate } from "./components/ResultsForSlate";
 import { ResultsView } from "./components/ResultsView";
@@ -26,7 +26,7 @@ const rootRoute = createRootRoute({ component: RootLayout });
 const ballotRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: CollatePanel,
+  component: MyBallotPanel,
 });
 const sourcesRoute = createRoute({
   getParentRoute: () => rootRoute,

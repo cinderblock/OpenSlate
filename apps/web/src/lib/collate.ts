@@ -241,7 +241,7 @@ export function defaultElection(elections: ElectionSummary[], today: string): st
 }
 
 export interface AreaOptions {
-  /** Locality paths, sorted by label. */
+  /** Locality paths, most races first (the big cities lead), then by label. */
   localities: string[];
   /** `<state>/<family>` → district numbers present, ascending. */
   districts: Record<string, string[]>;
@@ -249,11 +249,11 @@ export interface AreaOptions {
 
 /** The localities and districts that races in these slates (optionally one election) cover. */
 export function areaOptionsOf(positions: Iterable<{ jurisdiction?: string }>): AreaOptions {
-  const localities = new Set<string>();
+  const localities = new Map<string, number>();
   const districts = new Map<string, Set<string>>();
   for (const { jurisdiction } of positions) {
     const part = parseJurisdiction(jurisdiction);
-    if (part.kind === "local") localities.add(part.path);
+    if (part.kind === "local") localities.set(part.path, (localities.get(part.path) ?? 0) + 1);
     if (part.kind === "district") {
       const family = `${part.state}/${part.family}`;
       const set = districts.get(family) ?? new Set();
@@ -262,9 +262,12 @@ export function areaOptionsOf(positions: Iterable<{ jurisdiction?: string }>): A
     }
   }
   return {
-    localities: [...localities].sort((a, b) =>
-      collator.compare(jurisdictionLabel(a), jurisdictionLabel(b)),
-    ),
+    localities: [...localities.entries()]
+      .sort(
+        ([a, an], [b, bn]) =>
+          bn - an || collator.compare(jurisdictionLabel(a), jurisdictionLabel(b)),
+      )
+      .map(([path]) => path),
     districts: Object.fromEntries(
       [...districts.entries()]
         .sort(([a], [b]) => jurisdictionRank(`${a}-1`) - jurisdictionRank(`${b}-1`))

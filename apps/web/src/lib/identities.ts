@@ -1,5 +1,6 @@
 import type { StoredIdentity } from "@openslate/core";
 import { useLiveQuery } from "@tanstack/react-db";
+import { useMemo } from "react";
 import { useActiveIdentityKey } from "./address";
 import { identityCollection, knownIdentitiesCollection } from "./collections";
 import type { KnownIdentity } from "./db";
@@ -7,7 +8,10 @@ import type { KnownIdentity } from "./db";
 /** All of the user's own identities (each holds a secret key). */
 export function useMyIdentities(): StoredIdentity[] {
   const { data } = useLiveQuery((q) => q.from({ identity: identityCollection }));
-  return [...data].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+  return useMemo(
+    () => [...data].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "")),
+    [data],
+  );
 }
 
 /**
@@ -30,7 +34,12 @@ export function useActiveIdentity(): {
 /** Live list of known public identities (people you've imported slates from). */
 export function useKnownIdentities(): KnownIdentity[] {
   const { data } = useLiveQuery((q) => q.from({ contact: knownIdentitiesCollection }));
-  return [...data].sort((a, b) => (a.displayName ?? "").localeCompare(b.displayName ?? ""));
+  // Memoized: callers derive maps and collations from this, which must not
+  // recompute on every render.
+  return useMemo(
+    () => [...data].sort((a, b) => (a.displayName ?? "").localeCompare(b.displayName ?? "")),
+    [data],
+  );
 }
 
 /** Look up a known contact by public key (or undefined). */
