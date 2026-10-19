@@ -199,6 +199,15 @@ of event names and low-cardinality, non-political dims is fine.
    saving it redeployed the ops 503 stub with the new secret, version
    fb21dd01; no build was started). Bindings now: BOOTSTRAP_TOKEN, SECRET_KEK.
 4. `git push origin master:deploy` in telemetry-collector → first deploy.
+   Pushed 2026-10-19 (7a2d14e..50b7756, user's yes). Build bf46bdce: the
+   build step passed (Bun 1.4.2, bindings resolved), the **deploy command
+   failed** with `✘ [ERROR] Unknown argument: yes` from
+   `wrangler d1 migrations apply ... --remote --yes`. Wrangler 4.136 has no
+   `--yes`; non-interactive runs skip the prompt and still back up. Nothing
+   migrated or deployed. README fixed (telemetry-collector `5e5a053`). The
+   trigger's deploy command must lose ` --yes` (dashboard, user), then a
+   retry or a push of `5e5a053` to `deploy` rebuilds. The same `--yes` is
+   in ops `plans/telemetry-collector-cloudflare.md`.
 5. User enrols a passkey, registers app `openslate`; ingest key via
    `telemetry-collector-cli key --app openslate --channel <version>`
    (public value, goes in `apps/web/.env.production`).
