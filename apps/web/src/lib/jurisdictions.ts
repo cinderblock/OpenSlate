@@ -155,5 +155,5 @@ export function jurisdictionRank(path: string | undefined): number {
 
 /** Where a state looks up its voters' districts, when we know one. */
 export const DISTRICT_LOOKUP: Record<string, string> = {
-  "us/ca": "https://findmyrep.legislature.ca.gov/",
+  "us/ca": "https://findyourrep.legislature.ca.gov/",
 };
