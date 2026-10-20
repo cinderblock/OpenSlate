@@ -1,5 +1,6 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { WizardHost } from "./components/Wizard";
+import { useDbStatus } from "./lib/dbStatus";
 import { useUsageEnabled } from "./lib/usage";
 import { openWizard } from "./lib/wizard";
 
@@ -116,6 +117,8 @@ export function RootLayout() {
         </nav>
       )}
 
+      <DbStatusBanner />
+
       <main>
         <Outlet />
       </main>
@@ -130,6 +133,36 @@ export function RootLayout() {
         </a>
         <UsageFooterToggle />
       </footer>
+    </div>
+  );
+}
+
+/** Says why nothing loads when this browser's database can't be opened. */
+function DbStatusBanner() {
+  const status = useDbStatus();
+  if (status.state === "ok") return null;
+  return (
+    <div className="card db-status-banner" role="alert">
+      {status.state === "blocked" && (
+        <p>
+          OpenSlate was updated, and it's still open in another tab running the old version. Close
+          or reload that tab and this one will finish loading.
+        </p>
+      )}
+      {status.state === "outdated" && (
+        <p>
+          A newer version of OpenSlate opened in another tab. Reload this tab to keep going.{" "}
+          <button type="button" onClick={() => window.location.reload()}>
+            Reload
+          </button>
+        </p>
+      )}
+      {status.state === "failed" && (
+        <p>
+          This browser's storage couldn't be opened, so your sources, picks and keys can't load (
+          {status.message}).
+        </p>
+      )}
     </div>
   );
 }

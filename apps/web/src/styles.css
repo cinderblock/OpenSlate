@@ -1072,6 +1072,14 @@ label.wizard-option input {
   margin: 0.25rem 0;
 }
 
+.db-status-banner {
+  border-left: 4px solid var(--warn);
+  background: color-mix(in oklab, var(--surface), var(--warn) 6%);
+}
+.db-status-banner p {
+  margin: 0;
+}
+
 /* civicAPI per-region breakdown */
 .region-breakdown {
   margin-top: 1rem;

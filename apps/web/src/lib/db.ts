@@ -1,5 +1,6 @@
 import type { StoredIdentity } from "@openslate/core";
 import { type IDBPDatabase, openDB } from "idb";
+import { setDbStatus } from "./dbStatus";
 
 export interface ImportedSlate {
   token: string;
@@ -72,7 +73,36 @@ function db(): Promise<IDBPDatabase> {
           database.createObjectStore("published", { keyPath: "token" });
         }
       },
-    });
+      // Another tab still runs an older version with the database open. The
+      // open waits (without this, silently and forever) until that tab lets go.
+      blocked() {
+        setDbStatus({ state: "blocked" });
+      },
+      // A newer version opened in another tab and needs to upgrade. Let go so
+      // it can; this tab's code is now stale, so it has to reload.
+      blocking() {
+        void dbPromise?.then((database) => database.close());
+        setDbStatus({ state: "outdated" });
+      },
+      // The browser closed the connection (storage cleared, disk trouble).
+      // Open afresh on the next call.
+      terminated() {
+        dbPromise = null;
+      },
+    }).then(
+      (database) => {
+        setDbStatus({ state: "ok" });
+        return database;
+      },
+      (error: unknown) => {
+        dbPromise = null;
+        setDbStatus({
+          state: "failed",
+          message: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+      },
+    );
   }
   return dbPromise;
 }

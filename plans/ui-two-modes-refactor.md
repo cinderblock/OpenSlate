@@ -315,6 +315,15 @@ numbers and options considered are in the Findings.
   `…/place:san_francisco`) that map straight onto the Area model; it also needs a
   key (unkeyed calls get 403 "unregistered callers"). It has no Court of Appeal
   or BART districts.
+- **Bumping `DB_VERSION` hangs the app while an old tab is open** (found
+  2026-10-20 after `b3f9ed9` went 4 → 5): the old tab's code had no
+  `versionchange` handling, so the new tab's `openDB` waited forever and My
+  ballot sat on "Loading your ballot…". `db.ts` now handles `blocked` /
+  `blocking` / `terminated` / open failure and the shell shows a banner
+  (`lib/dbStatus.ts`). Tabs from before that fix still never let go on their
+  own; the banner tells the user to close them. Reproduced and verified on
+  `127.0.0.1:5173` (its own IndexedDB) with a non-app page holding a raw v4
+  connection.
 - The dev server for this worktree runs on port 5199 (`bunx vite --port 5199
   --strictPort` in apps/web) to stay clear of the main checkout's 5173.
 
