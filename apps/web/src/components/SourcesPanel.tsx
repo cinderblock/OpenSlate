@@ -179,7 +179,7 @@ function SourceRow({ group }: { group: SourceGroup }) {
         )}
         <div className="hint">
           {group.elections.map(formatElectionDate).join(", ") || "no election date"} ·{" "}
-          {group.positions} positions ·{" "}
+          {group.positions} {group.ballot ? "ballot lines" : "positions"} ·{" "}
           {source.secondhand ? (
             <span title={`Signed by ${source.signerKey}. ${source.name} did not sign this.`}>
               reported by {source.signerName ?? "a researcher"}
