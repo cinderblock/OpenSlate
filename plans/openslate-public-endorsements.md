@@ -398,8 +398,65 @@ Progress:
 Every publish run passed CI. `orgs/sd-green-party/2026-11-03/` is still held back,
 untracked.
 - [x] User OK to publish (2026-10-19) → commit per batch, push, check CI + Pages
-- [ ] Follow-up pass for search-budget gaps (see N3, R1b) + Sierra Club SF Bay via Chrome
-- [ ] Re-scrape before Nov 3: SCNG + BANG ("so far" / "will be updated"), SF Chronicle remaining
+- [x] Follow-up pass for search-budget gaps + Sierra Club via Chrome (round 2b, below)
+- [ ] Re-scrape before Nov 3: **scheduled** for 2026-10-28 09:00 (T3 scheduled task "OpenSlate endorsements: pre-election re-scrape (Oct 28)", fires Wednesdays, date-guarded; deletes itself after Nov 3)
+
+## Round 2b (2026-10-19 evening): gap pass, Chrome pass, adopts
+
+User answers (2026-10-19): Chrome pass OK; gap pass OK; Oct 28 re-scrape OK;
+"if they published it, they published it" (keep odd-looking picks as printed,
+e.g. Fresno GOP No on 41/42/45; collation shows the discrepancies); aggregator-only
+bundles are fine as long as attribution/sources let everything be verified and
+updated; **don't duplicate republished positions** → adopt by reference
+(`plans/adopt-by-reference.md`), with tooling that lets publishers choose copy,
+reference, or reference + snapshot.
+
+- [x] Chrome: Sierra Club SF Bay refresh `0eb5398` (+SD 10 Sakakihara); Redwood (23)
+  and San Gorgonio (20, PDF decoded in-page) `7f2e435`. Not reachable: Loma Prieta
+  (June list only), Santa Lucia (Imperva blocks the Nov page even in T3's browser;
+  needs Chrome), Ventana/Mother Lode/Tehipite/Kern-Kaweah/Los Padres (no 2026 page).
+- [x] G3 statewide/national/SF `329fad9`: 9 orgs, 455 positions (IAFF, AIPAC PAC, NFIB
+  props, CFA, UFCW WSC, Home Sharers Dems, SF AHA, Consumer Watchdog, CBIA). CPF's 51
+  IAFF House picks removed from CPF `a90de93`.
+- [x] G1 SoCal `76b3b74`: 11 orgs, 809 positions (DSA-LA, UNITE HERE 11, Stonewall, LA
+  Chamber, SB County GOP, ACT Pasadena, Central Coast CLC, SB County Dems + GOP, 2 Long
+  Beach clubs via Blue Voter Guide). Santa Barbara county-level contests moved to
+  `us/ca/santa-barbara-county` `d468c35`.
+- [x] G2 NorCal/Valley `3acf2ba`: 16 orgs, 553 positions. Key find: the Labor Fed's
+  per-council CSV `https://calaborfed.org/wp-content/uploads/2026/10/2026G-CLC-web-endorsements-2.csv`.
+- [x] Pin bumped to OpenSlate `7d8ce98` + `scripts/adopt.ts` `43ac6cc`. Adoptions:
+  `4b1c4b3` (CPF→IAFF 51, Redwood→SC CA 13, San Gorgonio→SC CA 12, SB GOP→CAGOP 21,
+  Central Coast CLC→Labor Fed 31) and `d44382f` (Santa Cruz Dems→CADEM 149, Contra
+  Costa/Sacramento/Kern labor councils→Labor Fed 18/12/4, Press Democrat→BANG 1).
+- [x] Normalize spellings `bf7a549` (10). No title split across jurisdictions.
+
+**Result: 195 November slates, 10,545 positions live; 10 slates adopt 312 positions
+by reference** (CI green on the new pin; `verify --resolve` on a live slate resolves).
+
+### Deferred until the web app expands adopts (after `ui/two-modes` merges)
+Converting these *existing copies* to `adopts` now would hide picks from voters on
+openslate.us (it accepts `adopts` but doesn't expand them yet):
+- sierra-club-sf-bay / -angeles / -san-diego copies of Sierra Club California's
+  statewide + prop picks
+- ventura-county-democratic-party's 15 CADEM statewide picks (stored `lean_for`)
+- alameda-county-republican-party (CAGOP template), la-county-republican-party
+  ("CAGOP"-badged statewide picks)
+- sf-police-officers-association ↔ sf-firefighters-local-798 joint statement
+- Not adoptable yet (no bundle): DSA-LA → California DSA; Santa Cruz YIMBY → YIMBY
+  Action; SB County GOP judges → Craig Huey / Reform CA (inferred colours)
+
+### Needs a real browser (Chrome) next pass
+Santa Lucia SC chapter Nov page; NFIB CA legislative + FedPAC
+(nfib.com, Cloudflare); VC Star + Desert Sun (402); Napa/Placer/El Dorado registrar
+measure lists (Placer A/D/F/G/H/I/P are placeholder titles); San Benito candidate
+list (SBLC San Benito picks); Rose Pak Dem Club and Long Beach clubs' FB/IG posts.
+
+### Review items added in 2b
+AIPAC PAC portal recipients encoded `endorse`; Consumer Watchdog staff picks
+`lean_for`; IAFF sourced from CPF's guide (IAFF publishes no list); SF AHA is a paid
+slate mailer (asterisks kept); Pasadena City College Area 7 subject in 3–4 bundles but
+no such contest on the LA list; SOS `cert-raw.txt` sometimes prints a district heading
+after its candidates (use `cert.txt`).
 
 Known review items (details in each bundle's evidence/NOTES.md): SFTU is a
 paid slate mailer; WFP Connolly listed as SD 12 but on the ballot in SD 2

@@ -102,13 +102,13 @@ CLI:
 
 1. ~~Spec + core~~ `b3d28b9` (worktree `~/.t3/worktrees/OpenSlate/adopts`, branch `adopts`).
 2. ~~CLI~~ `2708f8c`: `adopt --mode copy|reference|embed`, sign/verify/index passthrough, 3 tests.
-3. **[current]** Merged to local master (fast-forward). Push OpenSlate (needs the user's OK: master also carries
+3. ~~Merged + pushed~~ `7d8ce98` (user OK 2026-10-19); openslate.us redeployed (Workers Builds green). Was: push OpenSlate (needs the user's OK: master also carries
    other threads' unpushed plan commits).
 4. Web (after `ui/two-modes` merges): resolve adoptions in collation/sources,
    show "via <org>", and have the catalog import pull adopted slates.
    **Deploy before any published slate uses `adopts`** (closed schema: older
    clients reject the field).
-5. Endorsements repo: bump `.openslate-version`, add `scripts/adopt.ts`, and
+5. **[partly done]** Endorsements repo: bump `.openslate-version`, add `scripts/adopt.ts`, and
    migrate the duplicates listed in NOTES "Republished" sections (CPF→IAFF,
    SFPOA↔798, Ventura Dems→CADEM, Alameda GOP→CAGOP, Sierra chapters→SC
    California, including the existing SF Bay/Angeles/SD copies).
@@ -130,16 +130,15 @@ CLI:
 - [x] Design written (this doc).
 - [x] Spec + core (`b3d28b9`: 63 core tests, 16 vectors)
 - [x] CLI (`2708f8c`: e2e-checked against the live CADEM slate: reference, embed, copy, verify --resolve)
-- [ ] Merge + push (user OK)
+- [x] Merge + push (`7d8ce98`, deployed)
 - [ ] Web (after ui/two-modes)
-- [ ] Endorsements migration
+- [~] Endorsements: pin `7d8ce98` + `scripts/adopt.ts` (`43ac6cc`); 10 slates adopt 312 positions (`4b1c4b3`, `d44382f`). Remaining conversions of *existing copies* wait for web support (list in the catalog plan, "Deferred until the web app expands adopts")
 - [ ] Compose UI
 
 ## Open questions for the user
 
-1. OK to push OpenSlate master when step 3 lands? It also carries other
-   threads' unpushed plan commits (`5b397cf`, `b3334cc`). My recommendation:
-   yes; they're plan docs.
+1. ~~OK to push?~~ Yes (2026-10-19).
+2. Web step 4 needs `ui/two-modes` merged first: that's waiting on your walkthrough of the UI refactor.
 
 ## Things not to do
 
