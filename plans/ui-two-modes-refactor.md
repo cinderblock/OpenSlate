@@ -147,7 +147,54 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
    walkthrough in the dev server (first-visit wizard both paths, My ballot,
    Sources follow/unfollow, catalog, redirects, tab highlighting, phone width,
    Escape) found no console errors.
-9. **[current]** User walks through it, then merge `ui/two-modes` into master.
+9. ~~User walks through it, then merge~~ → superseded: the walkthrough produced
+   round 2 below (user feedback 2026-10-19). Merge moves to step 18.
+
+### Round 2: not address-centred, not a blind list, picks → endorsements
+
+10. [x] Adopt the other thread's Compose edits (`1cf282c`). Those files are
+    ours now.
+11. **[current]** Ballot sources in the data model. An official candidate list
+    is a slate like any other: `attribution.of.kind = "election-authority"`
+    (the SoS, a county registrar), one `neutral` position per candidate with
+    `choice`, measures as `neutral` on "Yes"/"No". Collate: a source whose
+    positions are all neutral is a *ballot source*: never filtered by follows,
+    not counted as an endorsement source, its choices become `race.candidates`,
+    and its chips don't render. Sources page lists them under "Ballot data".
+    No format change; signing/import/verify all reuse the catalog pipeline.
+12. My ballot cards show the field: every candidate anyone names (ballot
+    source first, then any imported source, unfollowed muted), with "your
+    sources cover 1 of 5". Races listed = those a followed source covers (or
+    all, with the checkbox, which becomes "Show races only unfollowed sources
+    cover"). Candidates with no endorsement are plain rows with pick buttons.
+13. Address moves to My vote. Where-you-vote gets "Use my address": calls
+    `/api/ballot`, which the server extends to pass each contest's
+    `district.scope` + `district.id` (Civic gives e.g. scope `stateUpper`, id
+    `"34"`; `congressional`→cd, `stateUpper`→sd, `stateLower`→ad,
+    `citywide`/`countywide` + name → locality). The client maps those onto the
+    Area and keeps the contests as a local ballot source for that election
+    (`openslate.civicBallot.v1`, so it survives offline). Hidden when the
+    server returns 501/doesn't answer. Can't be live-tested here: no
+    `GOOGLE_API_KEY`; test the mapping against a recorded response fixture.
+14. Compose from picks. Election by date (what My ballot uses); positions =
+    draft rows for that date + off-ballot entries. Remove the address field,
+    `ElectionCombobox`, `BallotComposer` and the ballot export from Compose.
+    Export (JSON/CSV) moves to My ballot over the collated races. "Add any
+    race" stays (SubjectPicker + free-form). Copy: "Identity tab" →
+    "Identities". Ranked-choice ordering (`useBallotRanking`, SF uses RCV):
+    keep it as a follow-up on My ballot cards that have a candidate list.
+15. Published slates are remembered: new IndexedDB store `published`
+    (token, publishedAt), written when Compose signs. My ballot card shows
+    "You published: X" with a Compose link; Identities lists "My slates".
+16. Endorsements repo: ballot sources for 2026-11-03. CA SoS certified list
+    (PDF, 8/27/2026: `elections.cdn.sos.ca.gov/statewide-elections/2026-general/cert-list-candidates.pdf`)
+    → statewide, Congress, Senate, Assembly. SF Dept of Elections
+    (`sf.gov/reports--candidates-nov-3-2026-general-election`,
+    `sf.gov/qualified-ballot-measures`) → SF local. Race keys must match the
+    catalog's existing titles/jurisdictions or the field won't line up with
+    the endorsements. Separate repo, separate commits.
+17. README + plan + ISSUES current; walkthrough round 2.
+18. Merge `ui/two-modes` into master.
 
 ## Follow-ups (not started)
 
@@ -255,15 +302,12 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
 
 ## Open questions for the user
 
-1. Walk through `ui/two-modes` (worktree dev server: `bunx vite --port 5199
-   --strictPort` in `apps/web`) and say whether to merge into master.
-2. Where do opponents come from (follow-up "Opponents on My ballot")?
-   Recommendation: layer 1 now in this branch; then (b) official candidate
-   lists in the endorsements repo, with (a) Civic-by-address as a self-hosted
-   extra. Needs a yes because (b) widens the endorsements repo's scope.
-3. Is the other thread's Compose work (uncommitted in the main checkout)
-   finished, so this thread can take ComposePanel / ElectionCombobox /
-   subjects.ts for the "Compose from picks" follow-up?
+1. (after round 2) Walk through `ui/two-modes` again (dev server on port
+   5199) and say whether to merge into master.
+
+Answered 2026-10-19: opponents come from official candidate lists in the
+endorsements repo plus Civic-by-address when self-hosted; this thread adopts
+the other thread's Compose files (both "Recommended" options).
 
 ## Things not to do
 
