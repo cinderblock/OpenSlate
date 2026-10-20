@@ -63,12 +63,16 @@ extend the kit in `apps/web/src/components/ui/`.
 2. [x] Kit foundation + `Switch` + `Checkbox`; convert their sites. (`2047908`)
 3. [x] `RadioGroup`; convert. (`c1cf284`)
 4. [x] `Select` + `ComboBox` + `Segmented`; convert. (`c492e27`)
-5. [ ] `TextField` / `SearchField` / `TextArea`; convert.  ← current
-6. [ ] `TokenField` / `TokenBox`; convert paste and read-only token sites.
-7. [ ] `FileDrop` / `FileTrigger` / `Slider`; convert.
-8. [ ] Remove dead native-control CSS (`label.switch input`, global
-   `select`/`textarea` rules, `.identity-radio` etc.); grep confirms zero bare
-   native controls; full check; browser walkthrough of every converted screen.
+5. [x] `TextField` / `SearchField` / `UrlField` / `TextArea`, plus
+   `PublicKeyField`; convert. (`f91d8d7`)
+6. [x] `TokenField` / `TokenBox`; convert paste and read-only token sites. (`fe2f7eb`)
+7. [x] `FileDrop` / `FileTrigger` / `Slider`; convert. (`4291ea2`)
+8. [x] Dead native-control CSS removed, React Aria locales trimmed to en-US
+   (`c25e0bd`); grep finds no `<input>`/`<select>`/`<textarea>` outside the
+   kit's comments; typecheck, 197 tests, lint (CRLF config) and `vite build`
+   pass; browser walkthrough done (see Progress).
+9. [ ] Merge to `master` and push: waiting on the user (pushing master
+   deploys the hosted app).  ← current
 
 ## Findings / gotchas
 
@@ -92,6 +96,24 @@ extend the kit in `apps/web/src/components/ui/`.
   as a direct dependency) pointing at the dialog.
 - Edit scripts: open files with `encoding="utf-8"`; Windows Python defaults to
   cp1252 and choked on `Wizard.tsx`.
+- **Vite's watcher can miss the second of two quick writes to a file** (an edit
+  script that replaces JSX, then adds the import): the dev server kept serving
+  the first version and the page crashed with "TokenField is not defined"
+  while `tsc` passed. `touch` the files after scripted edits.
+- RAC `SliderFill` sets `height: 100%` inline and `SliderThumb` centres itself
+  with an inline `transform`. Draw the 4px fill bar as a background gradient,
+  and use `scale:` (not `transform:`) for the thumb's hover growth.
+- TokenField works by stacking a transparent textarea on a coloured mirror;
+  both need identical font metrics, so the font is set explicitly on both
+  (checked: same height, 2742px, for a 20 KB block).
+- Drag-and-drop can't be fully tested with synthetic events: `dragover`
+  lights the zone (`data-drop-target`), but the drop gets no file because the
+  browser never fills a synthetic `DataTransfer`. Opening by button works.
+- **Bundle size:** main JS gzip 288 KB on `e07192b` → 386 KB with RAC →
+  361 KB after `@react-aria/optimize-locales-plugin` (en-US only). The rest is
+  React Aria's core (interactions 24 KB, utils 25, selection 19, overlays 18,
+  collections 15, focus 10 raw), not optional extras. The app ships as one
+  chunk; route-level code splitting would be the lever if it matters.
 
 ## Progress log
 
@@ -101,10 +123,27 @@ extend the kit in `apps/web/src/components/ui/`.
 - [x] Switch/Checkbox, RadioGroup, Select/ComboBox/Segmented built, converted and
   checked in the browser (wizard, My ballot, districts, Identities, Compose,
   Sources).
+- [x] Text fields: key field (prefix, tick, error), URL error, search clear,
+  textarea growth checked in the browser.
+- [x] Token field colours and alignment, TokenBox in Compose and the QR dialog,
+  file open on Import & verify (verified VALID), slider (click + arrow keys,
+  mounted standalone: no results timeline has data before Nov 3), mobile
+  width on Compose.
+- [ ] A real file drag onto Import & verify (needs a human; see Findings).
+- [ ] Results timeline slider and region sort on real results data (none of
+  the imported slates have past results yet).
 
 ## Open questions for the user
 
-(none yet)
+1. **Merge and push?** The branch is 11 commits on top of `e07192b`, not
+   pushed. Recommendation: merge to `master` and push once you've had a look.
+2. **Bundle size** (+73 KB gzipped, see Findings): accept it, or follow up
+   with route-level code splitting? Recommendation: accept; log code
+   splitting as a separate task if load time on phones matters.
+3. Another thread is on `feat/find-my-districts`. It touches
+   `apps/web/package.json`, `bun.lock` and `vite.config.ts` too (small merge),
+   and will probably add district/location UI: it should use the kit, not
+   native inputs.
 
 ## Things not to do
 
