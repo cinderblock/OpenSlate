@@ -37,6 +37,7 @@ import { track } from "../lib/usage";
 import { closeWizard, openWizard, useWizardOpen } from "../lib/wizard";
 import { AreaPicker } from "./AreaPicker";
 import { isBallotEntry } from "./CatalogBrowser";
+import { Checkbox } from "./ui/Checkbox";
 
 type Step = "welcome" | "election" | "area" | "sources" | "importing" | "identity";
 
@@ -590,8 +591,7 @@ function SourcesStep({
     const on = selected.has(entry.path);
     const name = entry.attribution?.of.name ?? entry.slug;
     return (
-      <label key={entry.path} className={`wizard-option${on ? " on" : ""}`}>
-        <input type="checkbox" checked={on} onChange={() => toggle(entry.path)} />
+      <Checkbox key={entry.path} variant="card" isSelected={on} onChange={() => toggle(entry.path)}>
         <span className="grow">
           <strong>{name}</strong>
           {entry.attribution?.of.uri && (
@@ -612,7 +612,7 @@ function SourcesStep({
           {item.races} race{item.races === 1 ? "" : "s"}
           {isAreaSet(area) ? " on your ballot" : ""}
         </span>
-      </label>
+      </Checkbox>
     );
   }
 

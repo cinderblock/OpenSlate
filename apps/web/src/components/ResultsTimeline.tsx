@@ -9,6 +9,7 @@ interface ResultsTimelineProps {
 }
 
 import { baseUrlFor } from "../lib/routing";
+import { Switch } from "./ui/Switch";
 
 type MapFormat = "svg" | "png";
 
@@ -69,14 +70,9 @@ export function ResultsTimeline({ raceId, hasMap }: ResultsTimelineProps) {
       <div className="timeline-controls">
         <strong>Timeline</strong>
         <span className="tag">{timestamps.length} snapshots</span>
-        <label className="hint" style={{ flexDirection: "row", gap: "0.25rem" }}>
-          <input
-            type="checkbox"
-            checked={liveFollow}
-            onChange={(e) => setLiveFollow(e.target.checked)}
-          />
+        <Switch className="hint" isSelected={liveFollow} onChange={setLiveFollow}>
           Live
-        </label>
+        </Switch>
         {hasMap && (
           <>
             <button type="button" className="link" onClick={() => setShowMap((v) => !v)}>

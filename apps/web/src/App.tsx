@@ -1,5 +1,6 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { WizardHost } from "./components/Wizard";
+import { Switch } from "./components/ui/Switch";
 import { useDbStatus } from "./lib/dbStatus";
 import { useUsageEnabled } from "./lib/usage";
 import { openWizard } from "./lib/wizard";
@@ -172,10 +173,9 @@ function UsageFooterToggle() {
   const [enabled, setEnabled] = useUsageEnabled();
   return (
     <div className="footer-usage">
-      <label>
-        <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-        <span>Share anonymous usage statistics</span>
-      </label>
+      <Switch isSelected={enabled} onChange={setEnabled}>
+        Share anonymous usage statistics
+      </Switch>
       {" · "}
       <Link to="/settings">what's collected</Link>
     </div>

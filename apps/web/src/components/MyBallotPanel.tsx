@@ -30,6 +30,8 @@ import { track } from "../lib/usage";
 import { openWizard } from "../lib/wizard";
 import { AddressLookup } from "./AddressLookup";
 import { AreaPicker, describeArea } from "./AreaPicker";
+import { Checkbox } from "./ui/Checkbox";
+import { Switch } from "./ui/Switch";
 
 /** The user's own picks. Private: kept in this browser, only shared if they publish. */
 const PICKS: Array<{ stance: Stance; label: string; title: string }> = [
@@ -253,14 +255,9 @@ export function MyBallotPanel() {
             picks and statements.
           </p>
           <div className="row export-options">
-            <label>
-              <input
-                type="checkbox"
-                checked={exportNotes}
-                onChange={(e) => setExportNotes(e.target.checked)}
-              />{" "}
+            <Checkbox isSelected={exportNotes} onChange={setExportNotes}>
               Include my private notes
-            </label>
+            </Checkbox>
             <button type="button" onClick={() => exportBallot("json")}>
               Download JSON
             </button>
@@ -286,14 +283,9 @@ export function MyBallotPanel() {
             <strong>{followedCount}</strong> of {sourceIds.size} sources followed
           </Link>
         </span>
-        <label className="inline-check">
-          <input
-            type="checkbox"
-            checked={showUnfollowed}
-            onChange={(e) => setShowUnfollowed(e.target.checked)}
-          />
+        <Switch isSelected={showUnfollowed} onChange={setShowUnfollowed}>
           Include races only unfollowed sources cover
-        </label>
+        </Switch>
       </div>
 
       {summary && summary.followedSources === 0 && !showUnfollowed && (

@@ -22,6 +22,7 @@ import { track } from "../lib/usage";
 import { RawInspector } from "./ImportVerifyPanel";
 import { QrDialog } from "./Qr";
 import { SubjectPicker } from "./SubjectPicker";
+import { Checkbox } from "./ui/Checkbox";
 
 const STANCE_LABEL: Record<Stance, string> = {
   endorse: "Endorse",
@@ -387,8 +388,7 @@ function PickRow({
   const place = jurisdictionLabel(row.subject.jurisdiction);
   return (
     <li className={`pick-row${included ? "" : " left-out"}`}>
-      <label className="pick-include">
-        <input type="checkbox" checked={included} onChange={onToggle} />
+      <Checkbox className="pick-include" isSelected={included} onChange={onToggle}>
         <span>
           <Link
             to="/race/$key"
@@ -407,7 +407,7 @@ function PickRow({
             <em> (as a whole)</em>
           )}
         </span>
-      </label>
+      </Checkbox>
       <select
         className="pick-stance"
         value={row.stance ?? "endorse"}

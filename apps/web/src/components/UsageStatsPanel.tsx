@@ -1,4 +1,5 @@
 import { USAGE_EVENT_DESCRIPTIONS, useUsageEnabled } from "../lib/usage";
+import { Switch } from "./ui/Switch";
 
 /**
  * Settings panel for anonymous usage statistics: one switch, plus an exact
@@ -18,10 +19,9 @@ export function UsageStatsPanel() {
         and no identifier for you or this browser.
       </p>
       <div className="card">
-        <label className="row">
-          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-          <span>Share anonymous usage statistics</span>
-        </label>
+        <Switch isSelected={enabled} onChange={setEnabled}>
+          Share anonymous usage statistics
+        </Switch>
       </div>
       <details className="card">
         <summary>What we collect</summary>
