@@ -6,7 +6,7 @@ import {
   jurisdictionRank,
   parseJurisdiction,
 } from "./jurisdictions";
-import { type Source, isFollowed, sourceOf } from "./sources";
+import { type Source, isBallotSource, isFollowed, sourceOf } from "./sources";
 import { subjectKey } from "./subjects";
 
 /**
@@ -67,10 +67,15 @@ export interface RacePosition {
 export interface ChoiceGroup {
   /** Candidate or option; "" for a stance on the subject as a whole. */
   choice: string;
+  /** Endorsement-type positions, followed sources first. Ballot listings aren't positions. */
   positions: RacePosition[];
   /** Followed sources for / against this choice. */
   support: number;
   opposition: number;
+  /** Listed by a ballot source: this choice is on the ballot even if nobody backs it. */
+  onBallot: boolean;
+  /** What the ballot source says about the choice (party, ballot designation). */
+  ballotNote?: string;
 }
 
 export interface Race {
@@ -78,8 +83,11 @@ export interface Race {
   subject: Subject;
   election?: string;
   jurisdiction?: string;
+  /** Ballot order when a ballot source lists the race, else most-backed first. */
   choices: ChoiceGroup[];
-  /** Distinct followed sources with a position here. */
+  /** A ballot source lists this race, so `choices` is the whole field. */
+  onBallot: boolean;
+  /** Distinct followed sources with a position here (ballot sources excluded). */
   followedSources: number;
   totalSources: number;
 }
@@ -90,12 +98,21 @@ export interface CollateOptions {
   election?: string;
   /** Only races on the ballot for this area. */
   area?: Area;
-  /** Keep positions from sources the user doesn't follow (marked `followed: false`). */
+  /**
+   * Also list races that only unfollowed sources cover. Positions from
+   * unfollowed sources always stay on a listed race (marked `followed: false`),
+   * so a race never hides part of its field.
+   */
   includeUnfollowed?: boolean;
 }
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
+/**
+ * Imported slates → races → choices → who backs each. Ballot sources (election
+ * authorities) contribute the field and its order but never count as sources;
+ * follow state doesn't apply to them.
+ */
 export function collateRaces(slates: DecodedSlate[], options: CollateOptions): Race[] {
   // A source can have several slates covering the same race (a reissue, or a
   // firsthand slate imported twice). Only its newest slate speaks for it.
@@ -110,10 +127,16 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
     }
   }
 
-  const races = new Map<string, Race & { sourceIds: Set<string>; followedIds: Set<string> }>();
+  interface Building extends Race {
+    sourceIds: Set<string>;
+    followedIds: Set<string>;
+    /** Choice → position on the ballot, for ballot order. */
+    ballotOrder: Map<string, number>;
+  }
+  const races = new Map<string, Building>();
   for (const slate of slates) {
-    const followed = isFollowed(options.follows, slate.source.id);
-    if (!followed && !options.includeUnfollowed) continue;
+    const ballot = isBallotSource(slate.source);
+    const followed = ballot || isFollowed(options.follows, slate.source.id);
     for (const position of slate.payload.positions) {
       const key = subjectKey(position.subject);
       if (newest.get(`${key}\u0000${slate.source.id}`)?.slate !== slate) continue;
@@ -130,22 +153,34 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
           ...(election ? { election } : {}),
           ...(jurisdiction ? { jurisdiction } : {}),
           choices: [],
+          onBallot: false,
           followedSources: 0,
           totalSources: 0,
           sourceIds: new Set(),
           followedIds: new Set(),
+          ballotOrder: new Map(),
         };
         races.set(key, race);
       }
-      race.sourceIds.add(slate.source.id);
-      if (followed) race.followedIds.add(slate.source.id);
 
       const choiceName = position.choice ?? "";
       let group = race.choices.find((c) => c.choice === choiceName);
       if (!group) {
-        group = { choice: choiceName, positions: [], support: 0, opposition: 0 };
+        group = { choice: choiceName, positions: [], support: 0, opposition: 0, onBallot: false };
         race.choices.push(group);
       }
+
+      if (ballot) {
+        race.onBallot = true;
+        group.onBallot = true;
+        if (position.statement && !group.ballotNote) group.ballotNote = position.statement;
+        if (!race.ballotOrder.has(choiceName))
+          race.ballotOrder.set(choiceName, race.ballotOrder.size);
+        continue;
+      }
+
+      race.sourceIds.add(slate.source.id);
+      if (followed) race.followedIds.add(slate.source.id);
       group.positions.push({
         source: slate.source,
         stance: position.stance,
@@ -162,7 +197,8 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
   }
 
   return [...races.values()]
-    .map(({ sourceIds, followedIds, ...race }) => ({
+    .filter((race) => race.onBallot || race.followedIds.size > 0 || options.includeUnfollowed)
+    .map(({ sourceIds, followedIds, ballotOrder, ...race }) => ({
       ...race,
       followedSources: followedIds.size,
       totalSources: sourceIds.size,
@@ -179,6 +215,8 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
           (a, b) =>
             b.support - a.support ||
             a.opposition - b.opposition ||
+            (ballotOrder.get(a.choice) ?? Number.POSITIVE_INFINITY) -
+              (ballotOrder.get(b.choice) ?? Number.POSITIVE_INFINITY) ||
             collator.compare(a.choice, b.choice),
         ),
     }))
@@ -202,20 +240,23 @@ export interface ElectionSummary {
   followedSources: number;
 }
 
-/** Every election the imported slates cover, oldest first. */
+/** Every election the imported slates cover, oldest first. Ballot sources count as races, not sources. */
 export function electionsOf(
   slates: DecodedSlate[],
   follows: Record<string, boolean>,
 ): ElectionSummary[] {
   const by = new Map<string, { races: Set<string>; sources: Set<string>; followed: Set<string> }>();
   for (const slate of slates) {
+    const ballot = isBallotSource(slate.source);
     for (const position of slate.payload.positions) {
       const date = electionOf(position.subject, slate.payload);
       if (!date) continue;
       const entry = by.get(date) ?? { races: new Set(), sources: new Set(), followed: new Set() };
       entry.races.add(subjectKey(position.subject));
-      entry.sources.add(slate.source.id);
-      if (isFollowed(follows, slate.source.id)) entry.followed.add(slate.source.id);
+      if (!ballot) {
+        entry.sources.add(slate.source.id);
+        if (isFollowed(follows, slate.source.id)) entry.followed.add(slate.source.id);
+      }
       by.set(date, entry);
     }
   }

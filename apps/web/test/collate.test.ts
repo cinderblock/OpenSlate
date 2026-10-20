@@ -22,11 +22,13 @@ interface P {
 
 function slate(input: {
   of?: string;
+  /** `attribution.of.kind`, e.g. "election-authority". */
+  ofKind?: string;
   name?: string;
   keyPair?: KeyPair;
   election?: string;
   issuedAt?: string;
-  positions: P[];
+  positions: Array<P & { statement?: string }>;
 }): { token: string; importedAt: string } {
   const token = createSlate({
     keyPair: input.keyPair ?? (input.of ? researcher : generateKeyPair()),
@@ -42,11 +44,12 @@ function slate(input: {
       },
       stance: p.stance ?? "endorse",
       ...(p.choice ? { choice: p.choice } : {}),
+      ...(p.statement ? { statement: p.statement } : {}),
     })),
     ...(input.of
       ? {
           attribution: {
-            of: { name: input.of },
+            of: { name: input.of, ...(input.ofKind ? { kind: input.ofKind } : {}) },
             mode: "scraped" as const,
             retrieved_at: "2026-01-01T00:00:00Z",
           },
@@ -57,6 +60,21 @@ function slate(input: {
 }
 
 const E = "2026-11-03";
+
+/** The Secretary of State's list: every candidate, in ballot order, no opinion. */
+const ballot = slate({
+  of: "Secretary of State",
+  ofKind: "election-authority",
+  election: E,
+  // Same title + jurisdiction + election as the endorsements, or it's another race.
+  positions: [
+    { title: "Governor", choice: "C", stance: "neutral", statement: "Green · Teacher" },
+    { title: "Governor", choice: "A", stance: "neutral", statement: "Democratic · Attorney" },
+    { title: "Governor", choice: "B", stance: "neutral" },
+    { title: "Treasurer", choice: "T1", stance: "neutral" },
+    { title: "Treasurer", choice: "T2", stance: "neutral" },
+  ].map((p) => ({ ...p, election: E, jurisdiction: "us/ca" })),
+});
 
 describe("collateRaces", () => {
   const slates = decodeSlates([
@@ -93,19 +111,56 @@ describe("collateRaces", () => {
     ]);
   });
 
-  test("unfollowed sources drop out, or stay marked when asked for", () => {
+  test("unfollowed sources stay on a race's choices, marked, without counting", () => {
     const follows = { "of:growsf": false };
-    const followedOnly = collateRaces(slates, { follows });
-    const prop = followedOnly.find((r) => r.subject.title === "Prop 1");
-    expect(prop?.choices.map((c) => c.choice)).toEqual(["Yes"]);
-
-    const all = collateRaces(slates, { follows, includeUnfollowed: true });
-    const propAll = all.find((r) => r.subject.title === "Prop 1");
-    expect(propAll?.totalSources).toBe(2);
-    expect(propAll?.followedSources).toBe(1);
-    const no = propAll?.choices.find((c) => c.choice === "No");
+    const races = collateRaces(slates, { follows });
+    const prop = races.find((r) => r.subject.title === "Prop 1");
+    expect(prop?.choices.map((c) => c.choice)).toEqual(["Yes", "No"]);
+    expect(prop?.totalSources).toBe(2);
+    expect(prop?.followedSources).toBe(1);
+    const no = prop?.choices.find((c) => c.choice === "No");
     expect(no?.support).toBe(0);
     expect(no?.positions[0]?.followed).toBe(false);
+  });
+
+  test("races only unfollowed sources cover are listed on request", () => {
+    const follows = { "of:growsf": false };
+    const extra = decodeSlates([
+      slate({
+        of: "GrowSF",
+        positions: [{ title: "Sheriff", choice: "S", election: E, jurisdiction: "us/ca" }],
+      }),
+    ]);
+    const withGrowSF = [...slates, ...extra];
+    expect(collateRaces(withGrowSF, { follows }).map((r) => r.subject.title)).toEqual([
+      "Governor",
+      "Prop 1",
+    ]);
+    expect(
+      collateRaces(withGrowSF, { follows, includeUnfollowed: true }).map((r) => r.subject.title),
+    ).toEqual(["Governor", "Sheriff", "Prop 1"]);
+  });
+
+  test("a ballot source supplies the field in ballot order, without being a source", () => {
+    const races = collateRaces([...slates, ...decodeSlates([ballot])], {
+      follows: { "of:secretary of state": false },
+    });
+    const governor = races.find((r) => r.subject.title === "Governor");
+    expect(governor?.onBallot).toBe(true);
+    // Backed choices first, then the rest of the field as the ballot lists it.
+    expect(governor?.choices.map((c) => [c.choice, c.onBallot, c.positions.length])).toEqual([
+      ["A", true, 3],
+      ["B", true, 1],
+      ["C", true, 0],
+    ]);
+    expect(governor?.choices[0]?.ballotNote).toBe("Democratic · Attorney");
+    expect(governor?.followedSources).toBe(3);
+    expect(governor?.totalSources).toBe(3);
+
+    // A race nobody endorsed is still on the ballot.
+    const treasurer = races.find((r) => r.subject.title === "Treasurer");
+    expect(treasurer?.choices.map((c) => c.choice)).toEqual(["T1", "T2"]);
+    expect(treasurer?.followedSources).toBe(0);
   });
 
   test("offices sort before measures", () => {
@@ -174,6 +229,13 @@ describe("elections", () => {
       { date: "2026-06-02", races: 1, sources: 1, followedSources: 1 },
       { date: E, races: 1, sources: 1, followedSources: 0 },
     ]);
+  });
+
+  test("a ballot source adds races but isn't a source", () => {
+    const summary = electionsOf([...slates, ...decodeSlates([ballot])], {}).find(
+      (e) => e.date === E,
+    );
+    expect(summary).toEqual({ date: E, races: 3, sources: 1, followedSources: 1 });
   });
 
   test("defaults to the next upcoming election with followed sources", () => {

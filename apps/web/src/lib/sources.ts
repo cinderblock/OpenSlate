@@ -76,6 +76,18 @@ export function sourceOf(input: SourceInput | SlatePayload): Source {
 }
 
 /**
+ * The entity kind of an election authority (a Secretary of State, a county
+ * registrar). Its slates are *ballot sources*: one `neutral` position per
+ * candidate on the ballot, so a race shows its whole field rather than only the
+ * names someone endorsed. Not a recommendation, so never a matter of following.
+ */
+export const ELECTION_AUTHORITY = "election-authority";
+
+export function isBallotSource(source: Pick<Source, "kind">): boolean {
+  return source.kind === ELECTION_AUTHORITY;
+}
+
+/**
  * Whether a source is followed. A source nobody has decided about is followed:
  * importing a slate is usually a sign you want it. Bulk imports that shouldn't
  * land on the ballot record an explicit `false`.
