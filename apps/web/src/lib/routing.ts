@@ -45,7 +45,7 @@ export interface ProviderInfo {
  * Read a Vite env var without TypeScript narrowing it away. Falls back to a
  * provided default. Trailing slashes stripped so callers can concat cleanly.
  */
-function envBase(key: string, fallback: string): string {
+export function envBase(key: string, fallback: string): string {
   const env = import.meta.env as Record<string, string | undefined>;
   const raw = env[key] ?? fallback;
   return raw.replace(/\/+$/, "");
