@@ -252,12 +252,12 @@ function MapPanel({
   return (
     <div className="find-panel">
       <Segmented
-        label="Show"
+        aria-label="Boundaries to show"
         value={layer}
         onChange={setLayer}
         options={[
           { id: "cd", label: "Congress" },
-          { id: "sd", label: "State Senate" },
+          { id: "sd", label: "Senate" },
           { id: "ad", label: "Assembly" },
           { id: "county", label: "Counties" },
         ]}

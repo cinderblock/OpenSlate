@@ -663,6 +663,8 @@ footer a:hover {
   border: none;
   padding: 0;
   margin: 0 0 1rem;
+  /* Fieldsets default to min-content width and would overflow a phone screen. */
+  min-width: 0;
 }
 .area-picker legend {
   font-weight: 600;
@@ -705,6 +707,7 @@ footer a:hover {
 
 /* Find your districts (FindDistricts.tsx, DistrictMap.tsx) */
 .find-methods {
+  min-width: 0;
   border: none;
   padding: 0;
   margin: 0 0 0.75rem;
