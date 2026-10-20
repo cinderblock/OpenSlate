@@ -24,105 +24,159 @@ election; only even-numbered seats are up") rather than hiding it, which
 ## Environment / context
 
 - Worktree `C:\Users\camer\.t3\worktrees\OpenSlate\feat-find-my-districts`,
-  branch `feat/find-my-districts`, from local master `e07192b`.
-- Web app `apps/web` (React 18, Vite 6, TanStack Router/DB/Query). Area model
-  and helpers: `src/lib/jurisdictions.ts` (Area = localities + district number
-  per `<state>/<family>`), `src/lib/collate.ts` (`areaOptionsOf`),
-  `src/components/AreaPicker.tsx`, `AddressLookup.tsx` (self-hosted Civic),
-  `src/lib/civicArea.ts`, wizard area step in `Wizard.tsx`, My ballot's
-  "Hidden until you set your district" in `MyBallotPanel.tsx`.
+  branch `feat/find-my-districts`, from local master `e07192b`. **Contains a
+  merge of `ui/custom-controls` (`5882942`)**, the other thread's finished
+  custom-controls kit, which this UI is built on.
+- Web app `apps/web`. New: `src/lib/geo.ts` (boundaries + lookup),
+  `src/lib/lookups.ts` (consent + Nominatim/Census clients),
+  `src/lib/projection.ts` (Albers), `src/components/FindDistricts.tsx`,
+  `DistrictMap.tsx`, `AddressLookupsPanel.tsx` (Settings). Changed:
+  `AreaPicker.tsx`, `MyBallotPanel.tsx`, `Wizard.tsx`, `jurisdictions.ts`
+  (`DISTRICT_COUNTS`, `allDistricts`, `noRaceReason`; `DISTRICT_LOOKUP`
+  removed). `AddressLookup.tsx` deleted (folded into FindDistricts).
+- Data: `apps/web/public/geo/us-ca.topo.json`, built by
+  `bun run --filter '@openslate/web' geo` (`apps/web/scripts/build-geo.ts`;
+  `--check` reports accuracy, `--refresh` refetches). Service worker keeps it
+  (stale-while-revalidate) once used; not precached.
 - Worker `apps/poll-cache` (Cloudflare, `https://polls.openslate.us`, deployed
-  by Workers Builds on every push to master). Hosted build points at it via
-  `apps/web/.env.production` (`VITE_POLLS_BASE`).
+  by Workers Builds on every push to master): new `src/geocode.ts`,
+  `POST /api/geocode/census`. `apps/server` mounts the same handler
+  (workspace dep `@openslate/poll-cache/geocode`).
 - Hosted CSP (`apps/web/public/_headers`): `script-src 'self'`,
-  `connect-src 'self' https:`, `img-src … https:`, `Referrer-Policy:
-  no-referrer`.
-- Census: TIGERweb `tigerWMS_Current` MapServer layers 54 (120th
-  Congressional Districts), 56 (2026 State Legislative Districts – Upper),
-  58 (– Lower), 82 (Counties), 28 (Incorporated Places). Geocoder:
-  `geocoding.geo.census.gov/geocoder/geographies/onelineaddress` (keyless,
-  no CORS, JSONP only).
+  `connect-src 'self' https:`, `Referrer-Policy: no-referrer`. Unchanged.
+- Census: TIGERweb `tigerWMS_Current` layers 54 (120th Congressional
+  Districts), 56 (2026 SLD Upper), 58 (2026 SLD Lower), 82 (Counties),
+  28 (Incorporated Places); "January 1, 2026 vintage". Geocoder:
+  `geocoding.geo.census.gov/geocoder/geographies/onelineaddress`, keyless,
+  no CORS, 100-character address limit.
 - Checks: `bun run typecheck`, `bun test`, Biome with a CRLF config copy
-  (`bunx biome check --config-path=<dir with lineEnding crlf> <files>`),
-  `bun run build`. Dev server for this worktree: port **5201**.
+  (`bunx biome check --config-path="$TEMP/biome-crlf" apps packages`),
+  `bun run build`.
+- Local testing: dev server on port **5201**. Port 8787 is held by something
+  outside this worktree (left alone), so the server ran as
+  `PORT=8791 bun run apps/server/src/index.ts` and Vite with
+  `VITE_POLLS_BASE=http://localhost:8791`.
 
 ## Decisions already made (don't re-ask)
 
 - **Support all the options, each with a clear opt-in** (user, 2026-10-20).
   Online methods name the recipient and what is sent before first use; the
-  consent is remembered per method and revocable.
+  button reads "Allow X and look up"; consent is remembered per service and
+  revocable (Settings → Address lookups, or "Stop allowing" in place).
 - **On-device options are wanted** (user): map picker and "use my location"
   match against boundary data shipped with the app.
 - **Use our worker** for the Census lookup (user: "we do have workers
-  server"). No JSONP: CSP `script-src 'self'` stays, it backs the usage
+  server"). No JSONP: CSP `script-src 'self'` stays; it backs the usage
   telemetry guarantee (plans/usage-analytics.md).
 - **Show a district with no race; don't hide it** (user).
 - **A map of California to pick from** (user).
-- **No native form controls** (user memory, 2026-10-20). Another thread is
-  building the kit on `ui/custom-controls` (react-aria-components,
-  `apps/web/src/components/ui/`). New controls here use that kit; this branch
-  merges it in once its Select/TextField land rather than duplicating it.
+- **No native form controls** (user memory, 2026-10-20): built on the
+  `ui/custom-controls` kit, merged into this branch.
 - Don't push without asking: a push to master deploys the worker.
+- Relay is **POST** so the address never sits in a URL or request log.
 
 ## Plan / steps
 
-1. [ ] Plan doc (this).
-2. [ ] Geo data: `apps/web/scripts/build-geo.ts` fetches the five TIGERweb
-   layers for CA, simplifies topologically, quantizes, writes
-   `apps/web/public/geo/us-ca.topo.json` (lazy-loaded, not precached by the
-   PWA). Records source vintages in the file.
-3. [ ] `src/lib/geo.ts`: load + decode, point-in-polygon per layer, distance
-   to nearest boundary (near-line warning), county → Court of Appeal district,
-   places/counties → known locality slugs → an `Area`. Unit tests.
-4. [ ] Districts: every real district per family (`DISTRICT_COUNTS`), "no race
-   this election" in the picker and on My ballot, parity explanation derived
-   from the data.
-5. [ ] Worker: `/api/geocode/census?address=` relay (no-store, no logging of
-   the address, trimmed response), tests.
-6. [ ] Clients: Nominatim (direct, `referrerPolicy: "origin"`, 1 req/s,
-   attribution) and Census relay; consent store (localStorage, revocable in
-   Settings).
-7. [ ] UI: "Find my districts" box (map, my location, address with provider
-   choice, self-hosted Civic) in AreaPicker, so the wizard gets it too. Map:
-   SVG of our polygons, pan/zoom, click → districts. Uses the custom-controls
-   kit.
-8. [ ] README, ISSUES, full checks, browser walkthrough.
+1. [x] Plan doc (`21de6f8`).
+2. [x] Geo data + build script (`bb61833`).
+3. [x] `lib/geo.ts` lookup, near-line warning, COA from county, locality
+   slugs, merge into an existing area; tests against Census answers
+   (`bb61833`).
+4. [x] Every real district, `noRaceReason` (`711e644`); picker badges and
+   My-ballot "no race" sections (`d6faa46`).
+5. [x] Worker relay (`187bfee`), same route in apps/server (`5150c5c`).
+6. [x] Clients + consent store (`0e0e2c3`; server/Google entry in `d6faa46`).
+7. [x] UI: FindDistricts + DistrictMap in AreaPicker, so the wizard gets it
+   (`d6faa46`); Settings panel (`2553f4a`); phone-width fix.
+8. [x] README, ISSUES, plan; checks; browser walkthrough.
+9. [ ] **Your call:** merge to master and push (deploys the web app and the
+   worker). See Open questions.
 
 ## Findings / gotchas
 
 - **SD 13 isn't missing by mistake:** California elects odd-numbered Senate
-  seats in presidential years; on 2026-11-03 only even ones are up. The
-  catalog has `us/ca/sd-2` … `sd-40`, all even. The picker only offered
-  districts with endorsements, so 13 wasn't listed, and "not set" then claimed
-  Senate races were hidden.
-- **Census geocoder** for SF City Hall: CD 11, SD 11, AD 17, San Francisco
-  city/county. Layers named "120th Congressional Districts" and "2026 State
-  Legislative Districts", the maps in force for the Nov 2026 election.
+  seats in presidential years; on 2026-11-03 only even ones are up (Const.
+  art. IV §2). The catalog has `us/ca/sd-2` … `sd-40`, all even. The picker
+  only offered districts with endorsements, so 13 wasn't listed, and "not
+  set" then claimed Senate races were hidden. `noRaceReason` uses that rule
+  for the Senate and infers staggering from the data elsewhere.
+- **The maps are the post-Prop 50 ones:** Census places Santa Rosa in CD 1
+  and Palm Springs in CD 48 (both moved under Prop 50); SF City Hall is
+  CD 11 / SD 11 / AD 17, Palo Alto City Hall CD 16 / SD 13 / AD 23, LA City
+  Hall CD 34 / SD 26 / AD 54. These five are unit tests on the shipped file.
 - **Census geocoder has no CORS** (no `Access-Control-Allow-Origin`, OPTIONS
   answers without it); it only offers JSONP, which our CSP blocks. Hence the
-  relay.
-- **TIGERweb sizes (CA, `maxAllowableOffset` 0.0002°):** CD 1.29 MB, SD 1.09,
-  AD 1.33, counties 1.04, places (483) 1.70 MB of GeoJSON. As one TopoJSON
-  quantized 1e5: 1.64 MB, 499 KB gzipped. But the server-side offset
-  simplifies each polygon alone, so shared borders stop coinciding; simplify
-  topologically after building the topology instead.
+  relay. **Nominatim does send `Access-Control-Allow-Origin: *`.**
+- **Simplification trade-off (measured with `--check`, 20,000 random points
+  inside cities per layer):** Visvalingam weight 5e-10 → 3.08 MB, 0–3 misses;
+  1e-8 → 2.56 MB, 4–5; **1e-7 → 1.76 MB (594 KB gzipped), 4–5 misses (≈1 in
+  4,000), chosen**; 1e-6 → 1.15 MB, 10–13. TIGERweb's own
+  `maxAllowableOffset` simplifies each polygon alone (borders stop
+  coinciding), so the script fetches at ~1 m and simplifies topologically.
+- Catalog locality slugs: counties `<name>-county` (sometimes bare, e.g.
+  `marin`, `contra-costa`), cities by name (sometimes `city-of-<name>`), SF
+  `sf`. `localityCandidates` tries each; only slugs some imported race uses
+  are set.
+- Court of Appeal district comes from the county (Gov. Code §69100–69106);
+  a test checks all 58 counties map exactly once.
+- BART, EBMUD and other special districts aren't in the boundary data; the
+  result says "Not found this way: BART district" and keeps whatever was set.
+- **Git Bash `sed -i` rewrote CRLF files as LF** in this checkout; edit with
+  Python (`newline=''`) or run Biome with the CRLF config afterwards.
+- Biome 1.9: a `biome-ignore` for a JSX attribute rule must be a `//`
+  comment on the line before the attribute, inside the tag.
+- Fieldsets default to `min-inline-size: min-content`; the area picker
+  overflowed a 390 px screen until `min-width: 0`.
+- `@cloudflare/workers-types` default entry is the oldest compat date; the
+  worker now uses `/latest` (fetch's `cache: "no-store"`).
+- Headless preview: clicking a kit Segmented's hidden radio times out; click
+  the `.ui-segment` label instead.
 
 ## Progress log
 
 - [x] Diagnosis (SD 13 parity, hosted app never had a lookup, CSP blocks JSONP)
-- [ ] Steps 2–8
+- [x] Steps 1–8
+- [x] Walkthrough on `localhost:5201` (2026-10-20): wizard → map click on Palo
+      Alto City Hall → CD 16, SD 13 "no race … only even-numbered seats are
+      up", AD 23, COA 6, Palo Alto + Santa Clara County chips; Census
+      address lookup (real relay → census.gov) and OpenStreetMap lookup both
+      gave the same districts, consent stored per service; location with a
+      stubbed fix at SF City Hall → CD 11 / SD 11 / AD 17 / COA 1; declined
+      permission shows a message; My ballot shows "State Senate district 11 ·
+      no race" between Congress and Assembly; Settings lists both consents
+      and the remembered address; phone width (390 px) fits.
+- [x] Checks: 5 packages typecheck, 225 tests, Biome clean, build OK.
+- [ ] Merge + push (waiting on the user).
 
 ## Open questions for the user
 
-(none yet)
+1. **Merge and push?** Pushing `master` deploys both workers through Workers
+   Builds: the web app (new UI and the 1.76 MB boundary file) and the
+   poll-cache worker (new `POST /api/geocode/census`). Recommendation: merge
+   `ui/custom-controls` first (this branch already contains it, so either
+   order merges cleanly), then this branch, then push.
+2. **Pin Workers Logs off for poll-cache?** The address is in the POST body,
+   which invocation logs don't record, and the worker never logs it. Adding
+   `[observability] enabled = false` to `apps/poll-cache/wrangler.toml` would
+   make "logs nothing" explicit, but it changes a Worker setting on deploy,
+   so it needs your yes. Recommendation: yes.
+
+## Follow-ups (not started)
+
+- Opt-in OpenStreetMap basemap under the map (tiles reveal roughly where you
+  look, so it needs its own consent).
+- BART and other special-district boundaries (BART publishes them).
+- Region containment (`us/ca/bay-area` ⊃ SF) from the county the lookup
+  finds; see plans/ui-two-modes-refactor.md.
+- Other states: `GEO_FILES` and the build script are per state.
 
 ## Things not to do
 
 - Don't loosen CSP `script-src` (no JSONP, no third-party scripts).
-- Don't cache or log addresses in the worker (`Cache-Control: no-store`, no
-  `cf.cacheTtl` on the geocode route).
+- Don't cache or log addresses in the worker (`Cache-Control: no-store`,
+  `cache: "no-store"` upstream, POST only).
 - Don't send anything to an online lookup before the user opted in to that
-  method.
-- Don't add usage events that reveal a location, district or method choice
-  combined with anything identifying (plans/usage-analytics.md).
+  service.
+- Don't add usage events that reveal a location, district or lookup choice.
 - Don't build a second form-control kit; use `ui/custom-controls`'.
+- Don't touch whatever holds port 8787 on this machine.

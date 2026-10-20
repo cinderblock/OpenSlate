@@ -13,8 +13,9 @@ instead of showing an error (or not call the endpoints when no server is
 configured).
 
 **Update (branch `ui/two-modes`, 2026-10-20):** Compose no longer calls either
-endpoint (it signs My-ballot picks), and *Use my address* on My ballot only
-renders when `/api/health` reports `ballotLookup: true`, so the ballot half is
+endpoint (it signs My-ballot picks), and the Google address lookup (*Your
+server* under Find your districts, since `feat/find-my-districts`) only
+appears when `/api/health` reports `ballotLookup: true`, so the ballot half is
 moot. The Elections page (`ElectionsPanel.tsx`) still calls `/api/elections`
 and shows "Google elections list unavailable — HTTP 404" on the hosted app.
 

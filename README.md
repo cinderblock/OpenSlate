@@ -50,9 +50,14 @@ machine, never on a server. The choice below is mostly about what fetches
 The easy path: open the hosted web app at **<https://openslate.us>**. Your
 signing keys and slates live only in your browser; nothing is uploaded. Polls
 and election results are fetched through project-operated Cloudflare Workers.
-Filling in *Where you vote* from a street address needs a server-side Google
-Civic key, so it isn't enabled in the hosted mode — set your area by hand, or
-self-host the Hono backend below.
+*Where you vote* fills itself in: pick your home on a map of California, or
+use your device's location (both matched on your device, against district
+boundaries shipped with the app), or type your address and pick who looks it
+up: the US Census Bureau (through the project's relay, which keeps nothing) or
+OpenStreetMap (straight from your browser). Each address service asks before
+its first use and can be switched off in Settings. A district with no race
+this election (e.g. an odd-numbered State Senate seat in 2026) says so on My
+ballot.
 
 ### Your Own Servers
 
@@ -89,9 +94,16 @@ bun run dev:web      # Vite SPA       — http://localhost:5173
 bun run dev:server   # Hono backend   — http://localhost:8787 (optional)
 ```
 
-To enable address lookup (*Use my address* under Where you vote), copy
-`.env.example` → `.env` and set `GOOGLE_API_KEY`. Vite proxies `/api` → `localhost:8787` so the SPA finds the
+The backend also relays the Census address lookup (`POST /api/geocode/census`,
+the same route as the public Worker). To add Google's lookup as a third address
+service under Where you vote, copy `.env.example` → `.env` and set
+`GOOGLE_API_KEY`. Vite proxies `/api` → `localhost:8787` so the SPA finds the
 backend automatically.
+
+The district boundaries (`apps/web/public/geo/us-ca.topo.json`, ~600 KB
+gzipped, fetched only when someone opens the finder) are built from Census
+TIGERweb by `bun run --filter '@openslate/web' geo`; rerun it after
+redistricting.
 
 The same install gets you the CLI, for scripting or headless workflows:
 
@@ -158,7 +170,7 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 | [`packages/cli`](./packages/cli) | `@openslate/cli` — `keygen` / `pubkey` / `sign` (incl. `--batch` for research bundles) / `validate` / `verify` / `inspect` / `adopt` (copy or reference another slate's positions). |
 | [`apps/web`](./apps/web) | React + Vite SPA. Two modes. *My vote*: a getting-started guide, My ballot (your followed sources' endorsements by race, for your election and area, with private picks), and Sources (follow/unfollow, the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/), import from link/file/QR/paste). *Publish*: identities, sign your picks (or any race) as a slate and share it, verify and inspect slates; view live polls, market forecasts, and election results; pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
 | [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + proxies for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic), opinion polls ([VoteHub](https://votehub.com)), election results ([civicAPI](https://civicapi.org)), and market forecasts ([Kalshi](https://kalshi.com)). |
-| [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls, [civicAPI](https://civicapi.org) results, and [Kalshi](https://kalshi.com) forecasts behind permissive CORS. Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, and `/api/forecasts/v2/*` shapes so the web client treats either backend identically. Runs at `https://polls.openslate.us`. |
+| [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls, [civicAPI](https://civicapi.org) results, and [Kalshi](https://kalshi.com) forecasts behind permissive CORS, and relays opt-in address lookups to the [Census geocoder](https://geocoding.geo.census.gov/) (`POST /api/geocode/census`; nothing cached, logged or stored). Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, `/api/forecasts/v2/*` and `/api/geocode/census` shapes so the web client treats either backend identically. Runs at `https://polls.openslate.us`. |
 | [`apps/desktop`](./apps/desktop) | [Electrobun](https://blackboard.sh/electrobun) wrapper around the web build (stub). |
 
 ## Hosting topologies
@@ -203,6 +215,8 @@ flowchart LR
   end
 
   GCI[("Google Civic Info<br/>VIP ballot data")]:::ext
+  CEN[("US Census geocoder<br/>address → districts")]:::ext
+  OSM[("OpenStreetMap Nominatim<br/>address → point")]:::ext
   VH[("VoteHub<br/>opinion polls<br/>CC BY 4.0")]:::ext
   CA[("civicAPI<br/>election results")]:::ext
   KS[("Kalshi<br/>market forecasts")]:::ext
@@ -217,14 +231,19 @@ flowchart LR
   Client -.->|"/api/forecasts/v2/*"| Worker
   Client -->|"direct (default)"| CA
   Client -->|"index.json · signed.slate"| OPE
+  Client -.->|"address, opt-in"| OSM
+  Client -.->|"POST /api/geocode/census, opt-in"| Worker
+  Client -.->|"POST /api/geocode/census, opt-in"| Hono
 
   Hono -->|"address (forwarded, not stored)"| GCI
+  Hono -->|"address (forwarded, not stored)"| CEN
   Hono -->|"subject filter"| VH
   Hono -->|"race id / search"| CA
   Hono -->|"market lookup"| KS
   Worker -->|"upstream fetch"| VH
   Worker -->|"upstream fetch"| CA
   Worker -->|"upstream fetch"| KS
+  Worker -->|"address (forwarded, not stored)"| CEN
 
   Client <-.->|"text block · URL · email · QR · file"| Peer
 
@@ -234,9 +253,9 @@ flowchart LR
 
 | Mode | What runs | Sign & verify | Catalog | Polls | Forecasts | Ballot lookup | Results |
 | --- | --- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Pure client** (default) | Web SPA or desktop only | yes | yes (GH Pages) | — | — | manual entry | yes (civicAPI direct) |
-| **+ Self-hosted Hono** | Above + your own `apps/server` | yes | yes | yes (VoteHub) | yes (Kalshi) | yes (needs `GOOGLE_API_KEY`) | yes (cached) |
-| **+ Public Worker** (what `openslate.us` uses) | Above + project-operated Worker | yes | yes | yes (cached) | yes (cached) | — | yes (cached) |
+| **Pure client** (default) | Web SPA or desktop only | yes | yes (GH Pages) | — | — | map, location, OpenStreetMap | yes (civicAPI direct) |
+| **+ Self-hosted Hono** | Above + your own `apps/server` | yes | yes | yes (VoteHub) | yes (Kalshi) | + Census; + Google with `GOOGLE_API_KEY` | yes (cached) |
+| **+ Public Worker** (what `openslate.us` uses) | Above + project-operated Worker | yes | yes | yes (cached) | yes (cached) | + Census | yes (cached) |
 
 Modes are not mutually exclusive: run your own Hono for ballot lookup **and**
 point `VITE_POLLS_BASE` at the public Worker for cached polls. The web client
@@ -262,8 +281,9 @@ Analytics and the zone settings are managed in
 Cloudflare credential.
 
 `apps/web/.env.production` is committed on purpose: everything in it ships in
-the public bundle anyway. Address lookup needs `apps/server` with a
-`GOOGLE_API_KEY`, so the hosted app has you set your area by hand instead.
+the public bundle anyway. The hosted app's address lookups are the Census
+relay on `polls.openslate.us` and OpenStreetMap; Google's needs `apps/server`
+with a `GOOGLE_API_KEY`.
 
 Workers Builds settings, one connection per worker, both on this repo with
 production branch `master` and non-production branch builds off:
