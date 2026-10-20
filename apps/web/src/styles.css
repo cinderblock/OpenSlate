@@ -1394,3 +1394,10 @@ button.tag.active {
   border-color: var(--accent);
   color: #fff;
 }
+
+/* What the ballot source says about a candidate: party, ballot designation. */
+.ballot-note {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 400;
+}

@@ -36,6 +36,7 @@ import { subjectKey } from "../lib/subjects";
 import { track } from "../lib/usage";
 import { closeWizard, openWizard, useWizardOpen } from "../lib/wizard";
 import { AreaPicker } from "./AreaPicker";
+import { isBallotEntry } from "./CatalogBrowser";
 
 type Step = "welcome" | "election" | "area" | "sources" | "importing" | "identity";
 
@@ -112,7 +113,8 @@ function Wizard() {
   async function followSelected(entries: CatalogEntry[]) {
     areaStore.set(area);
     myElectionStore.set(election);
-    const chosen = entries.filter((e) => selected.has(e.path));
+    // Official candidate lists always come along: they're the ballot itself.
+    const chosen = entries.filter((e) => selected.has(e.path) || isBallotEntry(e));
     if (chosen.length === 0) {
       finish("vote");
       return;
@@ -125,7 +127,7 @@ function Wizard() {
       const result = await importCatalogEntry(entry, CATALOG_URL, known, queryClient);
       if (result.kind === "error") {
         errors.push(`${entry.attribution?.of.name ?? entry.slug}: ${result.error}`);
-      } else {
+      } else if (!isBallotEntry(entry)) {
         setFollowed(sourceIdOf(entry), true);
       }
       setProgress({ done: i + 1, total: chosen.length });
@@ -330,9 +332,14 @@ function ElectionStep({
 }) {
   const today = localToday();
   const elections = useMemo(() => {
+    // Organizations per election; a ballot list keeps the election on the menu
+    // without counting as one.
     const counts = new Map<string, number>();
     for (const entry of entries ?? []) {
-      counts.set(entry.election, (counts.get(entry.election) ?? 0) + 1);
+      counts.set(
+        entry.election,
+        (counts.get(entry.election) ?? 0) + (isBallotEntry(entry) ? 0 : 1),
+      );
     }
     // Upcoming first (soonest first), then past (latest first).
     return [...counts.entries()].sort(([a], [b]) => {
@@ -528,14 +535,18 @@ function SourcesStep({
 
   // Each organization with how many races on *your* ballot it weighs in on,
   // grouped by where it publishes for (statewide, a city…).
+  const ballots = loaded.entries.filter((l) => isBallotEntry(l.entry));
   const { groups, others } = useMemo(() => {
-    const scored = loaded.entries.map(({ entry, payload }) => {
-      const races = new Set<string>();
-      payload?.positions.forEach((position, i) => {
-        if (inArea(positionJurisdiction(payload, i), area)) races.add(subjectKey(position.subject));
+    const scored = loaded.entries
+      .filter((l) => !isBallotEntry(l.entry))
+      .map(({ entry, payload }) => {
+        const races = new Set<string>();
+        payload?.positions.forEach((position, i) => {
+          if (inArea(positionJurisdiction(payload, i), area))
+            races.add(subjectKey(position.subject));
+        });
+        return { entry, races: races.size, scope: payload?.context?.jurisdiction };
       });
-      return { entry, races: races.size, scope: payload?.context?.jurisdiction };
-    });
     // A group that publishes for another city still weighs in on statewide
     // races, but it isn't "yours": list it under "based elsewhere".
     const elsewhere = (s: (typeof scored)[number]) => {
@@ -641,6 +652,14 @@ function SourcesStep({
       <p className="hint">
         These are secondhand reports: a researcher's signed record of what each organization
         published. Have a slate from a friend? Add it on the Sources page afterwards.
+        {ballots.length > 0 && (
+          <>
+            {" "}
+            The official candidate list from{" "}
+            {ballots.map((l) => l.entry.attribution?.of.name ?? l.entry.slug).join(" and ")} is
+            included, so every race shows its whole field.
+          </>
+        )}
       </p>
       <WizardFooter onBack={onBack} onSkip={onSkip}>
         <button type="button" className="primary" onClick={onNext}>

@@ -22,7 +22,7 @@ import {
   parseJurisdiction,
 } from "../lib/jurisdictions";
 import { localToday, useArea, useDecodedSlates, useFollows, useMyElection } from "../lib/myVote";
-import { isFollowed } from "../lib/sources";
+import { isBallotSource, isFollowed } from "../lib/sources";
 import { openWizard } from "../lib/wizard";
 import { AreaPicker, describeArea } from "./AreaPicker";
 
@@ -112,7 +112,10 @@ export function MyBallotPanel() {
     myRows.some((row) => row.id.startsWith(`${election}|${race.key}|`) && row.stance === "endorse"),
   ).length;
 
-  const sourceIds = new Set(slates.map((s) => s.source.id));
+  // Ballot sources (official candidate lists) aren't recommendations to follow.
+  const sourceIds = new Set(
+    slates.filter((s) => !isBallotSource(s.source)).map((s) => s.source.id),
+  );
   const followedCount = [...sourceIds].filter((id) => isFollowed(follows, id)).length;
   const summary = elections.find((e) => e.date === election);
 
@@ -213,7 +216,7 @@ export function MyBallotPanel() {
             checked={showUnfollowed}
             onChange={(e) => setShowUnfollowed(e.target.checked)}
           />
-          Show sources I don't follow
+          Include races only unfollowed sources cover
         </label>
       </div>
 
@@ -221,7 +224,8 @@ export function MyBallotPanel() {
         <div className="card">
           <p>
             None of the sources you follow cover this election.{" "}
-            <Link to="/sources">Follow some</Link>, or tick “Show sources I don't follow”.
+            <Link to="/sources">Follow some</Link>, or tick “Include races only unfollowed sources
+            cover”.
           </p>
         </div>
       )}
@@ -329,6 +333,13 @@ function RaceCardInner({
   const [note, setNote] = useState(noteRow?.privateNote ?? "");
   const top = race.choices[0];
   const contested = race.choices.filter((c) => c.support > 0).length > 1;
+  const verdict =
+    top && top.support > 0 && !contested
+      ? `your sources agree: ${top.choice || "for"}`
+      : contested
+        ? "your sources split"
+        : "";
+  const field = fieldHint(race);
 
   return (
     <div className="card race-card">
@@ -339,11 +350,9 @@ function RaceCardInner({
         {race.subject.kind === "measure" && <span className="tag">measure</span>}
         <span className="grow" />
         <span className="hint">
-          {top && top.support > 0 && !contested
-            ? `your sources agree: ${top.choice || "for"}`
-            : contested
-              ? "your sources split"
-              : ""}
+          {verdict}
+          {verdict && field && " · "}
+          {field && <span title={field.title}>{field.text}</span>}
         </span>
       </div>
       <ul className="choice-list">
@@ -374,6 +383,28 @@ function RaceCardInner({
   );
 }
 
+/**
+ * How much of the race your sources speak to. Without a ballot source the
+ * endorsements only name who someone backed, so say so rather than pass a
+ * one-name list off as the race.
+ */
+function fieldHint(race: Race): { text: string; title: string } | null {
+  if (race.subject.kind === "measure") return null;
+  if (race.onBallot) {
+    const field = race.choices.filter((c) => c.onBallot);
+    const covered = field.filter((c) => c.support > 0 || c.opposition > 0).length;
+    return {
+      text: `${covered} of ${field.length} candidates covered`,
+      title: "Candidates from the official ballot list; how many your sources have a position on",
+    };
+  }
+  return {
+    text: "field unknown",
+    title:
+      "Only the names your sources mention. The official candidate list for this race isn't imported, so there may be others.",
+  };
+}
+
 function ChoiceRow({
   group,
   race,
@@ -388,6 +419,8 @@ function ChoiceRow({
   patch: Patch;
 }) {
   const choice = group.choice || undefined;
+  const followed = group.positions.filter((p) => p.followed);
+  const others = group.positions.filter((p) => !p.followed);
   return (
     <li className={`choice-row${row?.stance === "endorse" ? " picked" : ""}`}>
       <div className="choice-main">
@@ -398,31 +431,45 @@ function ChoiceRow({
             {group.support > 0 && group.opposition > 0 && " · "}
             {group.opposition > 0 && `${group.opposition} against`}
           </span>
+          {group.ballotNote && <span className="ballot-note hint">{group.ballotNote}</span>}
         </div>
-        <div className="source-chips">
-          {group.positions.map((position) => (
-            <span
-              key={position.source.id}
-              className={`source-chip tone-${stanceTone(position.stance)}${position.followed ? "" : " unfollowed"}`}
-              title={[
-                `${position.source.name} ${STANCE_WORD[position.stance]} ${group.choice || race.subject.title}`,
-                position.source.secondhand
-                  ? `Reported by ${position.source.signerName ?? "a researcher"}, not signed by ${position.source.name}`
-                  : "",
-                position.statement ? `“${position.statement}”` : "",
-                position.valid ? "" : "Signature did not verify",
-                position.followed ? "" : "You don't follow this source",
-              ]
-                .filter(Boolean)
-                .join("\n")}
-            >
-              {stanceTone(position.stance) === "against" && "✗ "}
-              {position.stance === "lean_for" && "~ "}
-              {position.source.name}
-              {!position.valid && " ⚠"}
-            </span>
-          ))}
-        </div>
+        {(followed.length > 0 || others.length > 0) && (
+          <div className="source-chips">
+            {followed.map((position) => (
+              <span
+                key={position.source.id}
+                className={`source-chip tone-${stanceTone(position.stance)}`}
+                title={[
+                  `${position.source.name} ${STANCE_WORD[position.stance]} ${group.choice || race.subject.title}`,
+                  position.source.secondhand
+                    ? `Reported by ${position.source.signerName ?? "a researcher"}, not signed by ${position.source.name}`
+                    : "",
+                  position.statement ? `“${position.statement}”` : "",
+                  position.valid ? "" : "Signature did not verify",
+                ]
+                  .filter(Boolean)
+                  .join("\n")}
+              >
+                {stanceTone(position.stance) === "against" && "✗ "}
+                {position.stance === "lean_for" && "~ "}
+                {position.source.name}
+                {!position.valid && " ⚠"}
+              </span>
+            ))}
+            {others.length > 0 && (
+              // Sources you don't follow are summarised, not shown: comparing
+              // isn't trusting. The race page lists them all.
+              <span
+                className="source-chip tone-neutral unfollowed"
+                title={others
+                  .map((p) => `${p.source.name} ${STANCE_WORD[p.stance]} (not followed)`)
+                  .join("\n")}
+              >
+                +{others.length} {followed.length > 0 ? "more " : ""}you don't follow
+              </span>
+            )}
+          </div>
+        )}
       </div>
       <fieldset className="pick-buttons no-print">
         <legend className="sr-only">My pick: {group.choice || race.subject.title}</legend>

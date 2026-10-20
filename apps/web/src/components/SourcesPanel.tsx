@@ -3,7 +3,7 @@ import { type DecodedSlate, electionOf } from "../lib/collate";
 import { slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
 import { followsStore, setFollowed, useDecodedSlates, useFollows } from "../lib/myVote";
-import { type Source, isFollowed } from "../lib/sources";
+import { type Source, isBallotSource, isFollowed } from "../lib/sources";
 import { CatalogBrowser } from "./CatalogBrowser";
 import { ContactsCard } from "./ContactsCard";
 import { ImportVerifyPanel } from "./ImportVerifyPanel";
@@ -15,6 +15,8 @@ interface SourceGroup {
   elections: string[];
   positions: number;
   followed: boolean;
+  /** An official candidate list, not a recommendation. */
+  ballot: boolean;
 }
 
 function groupBySource(slates: DecodedSlate[], follows: Record<string, boolean>): SourceGroup[] {
@@ -26,6 +28,7 @@ function groupBySource(slates: DecodedSlate[], follows: Record<string, boolean>)
       elections: [],
       positions: 0,
       followed: isFollowed(follows, slate.source.id),
+      ballot: isBallotSource(slate.source),
     };
     group.slates.push(slate);
     group.positions += slate.payload.positions.length;
@@ -46,8 +49,9 @@ export function SourcesPanel() {
   const { slates, isReady } = useDecodedSlates();
   const [follows] = useFollows();
   const groups = useMemo(() => groupBySource(slates, follows), [slates, follows]);
-  const following = groups.filter((g) => g.followed);
-  const notFollowing = groups.filter((g) => !g.followed);
+  const ballots = groups.filter((g) => g.ballot);
+  const following = groups.filter((g) => !g.ballot && g.followed);
+  const notFollowing = groups.filter((g) => !g.ballot && !g.followed);
   const [addTab, setAddTab] = useState<AddTab>("catalog");
 
   return (
@@ -58,7 +62,22 @@ export function SourcesPanel() {
         My ballot; the rest stay imported so you can compare on race pages.
       </p>
 
-      {isReady && groups.length > 0 && (
+      {isReady && ballots.length > 0 && (
+        <div className="card">
+          <h3>Ballot data</h3>
+          <p className="hint">
+            Official candidate lists. They aren't recommendations, so there's nothing to follow;
+            they give each race its whole field.
+          </p>
+          <ul className="source-list">
+            {ballots.map((group) => (
+              <SourceRow key={group.source.id} group={group} />
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {isReady && groups.length > ballots.length && (
         <div className="card">
           <h3>Following ({following.length})</h3>
           {following.length === 0 ? (
@@ -140,14 +159,16 @@ function SourceRow({ group }: { group: SourceGroup }) {
 
   return (
     <li className="source-row">
-      <label className="switch" title={group.followed ? "Following" : "Not following"}>
-        <input
-          type="checkbox"
-          checked={group.followed}
-          onChange={(e) => setFollowed(source.id, e.target.checked)}
-        />
-        <span className="sr-only">Follow {source.name}</span>
-      </label>
+      {!group.ballot && (
+        <label className="switch" title={group.followed ? "Following" : "Not following"}>
+          <input
+            type="checkbox"
+            checked={group.followed}
+            onChange={(e) => setFollowed(source.id, e.target.checked)}
+          />
+          <span className="sr-only">Follow {source.name}</span>
+        </label>
+      )}
       <div className="grow">
         {source.uri ? (
           <a href={source.uri} target="_blank" rel="noreferrer">

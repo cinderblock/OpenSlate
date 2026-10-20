@@ -15,11 +15,16 @@ import {
   DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
   catalogQueryOptions,
 } from "../lib/query";
-import { isFollowed, sourceIdOf } from "../lib/sources";
+import { ELECTION_AUTHORITY, isFollowed, sourceIdOf } from "../lib/sources";
 import { track } from "../lib/usage";
 
 function entryKey(entry: CatalogEntry): string {
   return `${entry.slug}/${entry.election}`;
+}
+
+/** An official candidate list: imported like a slate, but not something to follow. */
+export function isBallotEntry(entry: CatalogEntry): boolean {
+  return entry.attribution?.of.kind === ELECTION_AUTHORITY;
 }
 
 /**
@@ -73,8 +78,11 @@ export function CatalogBrowser() {
     return (catalog?.entries ?? [])
       .filter((entry) => !activeElection || entry.election === activeElection)
       .filter((entry) => !q || (entry.attribution?.of.name ?? entry.slug).toLowerCase().includes(q))
-      .sort((a, b) =>
-        (a.attribution?.of.name ?? a.slug).localeCompare(b.attribution?.of.name ?? b.slug),
+      .sort(
+        (a, b) =>
+          // Ballot lists first: they're the frame the endorsements hang on.
+          Number(isBallotEntry(b)) - Number(isBallotEntry(a)) ||
+          (a.attribution?.of.name ?? a.slug).localeCompare(b.attribution?.of.name ?? b.slug),
       );
   }, [catalog, activeElection, search]);
 
@@ -98,7 +106,7 @@ export function CatalogBrowser() {
     });
     if (result.kind === "error") {
       setErrors((prev) => ({ ...prev, [key]: result.error }));
-    } else {
+    } else if (!isBallotEntry(entry)) {
       setFollowed(sourceId, true);
     }
   }
@@ -110,7 +118,10 @@ export function CatalogBrowser() {
     const alreadyImported = new Set(slates.map((s) => s.source.id));
     // Sources new to this browser start unfollowed: comparing isn't trusting.
     defaultToUnfollowed(
-      pending.map(sourceIdOf).filter((id) => !alreadyImported.has(id) && !(id in follows)),
+      pending
+        .filter((entry) => !isBallotEntry(entry))
+        .map(sourceIdOf)
+        .filter((id) => !alreadyImported.has(id) && !(id in follows)),
     );
     setBulkSummary(null);
     setBulk({ done: 0, total: pending.length });
@@ -176,7 +187,8 @@ export function CatalogBrowser() {
               const key = entryKey(entry);
               const sourceId = sourceIdOf(entry);
               const has = isImported(entry);
-              const following = has && isFollowed(follows, sourceId);
+              const ballot = isBallotEntry(entry);
+              const following = has && (ballot || isFollowed(follows, sourceId));
               const name = entry.attribution?.of.name ?? entry.slug;
               return (
                 <li key={key} className={following ? "following" : ""}>
@@ -188,15 +200,29 @@ export function CatalogBrowser() {
                     ) : (
                       name
                     )}
+                    {ballot && <span className="tag tag-inline">official candidate list</span>}
                     <div className="hint">
-                      {entry.positions} positions · reported by{" "}
+                      {entry.positions} {ballot ? "candidates" : "positions"} · reported by{" "}
                       <span title={entry.issuer.key}>{entry.issuer.name ?? "a researcher"}</span>
                       {entry.attribution &&
                         ` · ${entry.attribution.mode} ${formatLocalDate(entry.attribution.retrieved_at)}`}
                     </div>
                     {errors[key] && <div className="error">{errors[key]}</div>}
                   </div>
-                  {following ? (
+                  {ballot ? (
+                    has ? (
+                      <span className="hint">✓ Added</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => follow(entry)}
+                        disabled={busy.has(key) || bulk !== null}
+                        title="Import the official candidate list so every race shows its whole field"
+                      >
+                        {busy.has(key) ? "Importing…" : "+ Add"}
+                      </button>
+                    )
+                  ) : following ? (
                     <button
                       type="button"
                       className="link"
