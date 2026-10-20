@@ -108,6 +108,24 @@ const LOCALITY_NAMES: Record<string, string> = {
   "san-dieguito-uhsd": "San Dieguito Union High School District",
 };
 
+/**
+ * The locality path a place name maps to: `localityPathFor("us/ca", "San
+ * Francisco")` → `us/ca/sf`. Named localities map back through their label;
+ * anything else is slugified.
+ */
+export function localityPathFor(state: string, name: string): string {
+  const wanted = name.trim().toLowerCase();
+  const named = Object.entries(LOCALITY_NAMES).find(([, label]) => label.toLowerCase() === wanted);
+  const slug =
+    named?.[0] ??
+    wanted
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  return `${state}/${slug}`;
+}
+
 function titleCase(slug: string): string {
   return slug
     .split("-")

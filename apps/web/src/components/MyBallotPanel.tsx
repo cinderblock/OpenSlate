@@ -24,6 +24,7 @@ import {
 import { localToday, useArea, useDecodedSlates, useFollows, useMyElection } from "../lib/myVote";
 import { isBallotSource, isFollowed } from "../lib/sources";
 import { openWizard } from "../lib/wizard";
+import { AddressLookup } from "./AddressLookup";
 import { AreaPicker, describeArea } from "./AreaPicker";
 
 /** The user's own picks. Private: kept in this browser, only shared if they publish. */
@@ -184,6 +185,7 @@ export function MyBallotPanel() {
 
       {editingArea && (
         <div className="card no-print">
+          <AddressLookup options={areaOptions} onFound={setArea} />
           <AreaPicker options={areaOptions} area={area} onChange={setArea} />
           <div className="row">
             <button type="button" className="primary" onClick={() => setEditingArea(false)}>

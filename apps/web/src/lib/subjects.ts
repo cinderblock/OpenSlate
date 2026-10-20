@@ -58,7 +58,7 @@ export function useBallotContests(
 } {
   const query = useQuery(ballotQueryOptions(address, electionId));
   return {
-    contests: query.data ?? [],
+    contests: query.data?.contests ?? [],
     isLoading: query.isFetching && query.fetchStatus !== "idle",
     error: query.error ?? null,
     enabled: address.trim().length > 0,

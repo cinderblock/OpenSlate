@@ -17,7 +17,14 @@ const app = new Hono();
 app.use("/api/*", cors());
 
 app.get("/api/health", (c) =>
-  c.json({ status: "ok", service: "openslate", version: VERSION, storesUserData: false }),
+  c.json({
+    status: "ok",
+    service: "openslate",
+    version: VERSION,
+    storesUserData: false,
+    // Lets the web app show "Use my address" only when a lookup can answer.
+    ballotLookup: ballot !== null,
+  }),
 );
 
 // Convenience for thin clients. Stateless: the token is verified and the result
@@ -41,7 +48,7 @@ app.get("/api/ballot", async (c) => {
   if (!address) return c.json({ error: "address query param required" }, 400);
   if (!ballot) return c.json({ error: "ballot lookup not configured (set GOOGLE_API_KEY)" }, 501);
   try {
-    return c.json({ contests: await ballot.lookup(address, electionId) });
+    return c.json(await ballot.lookup(address, electionId));
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : "ballot lookup failed" }, 502);
   }

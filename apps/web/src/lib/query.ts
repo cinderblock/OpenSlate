@@ -88,6 +88,30 @@ export interface BallotContest {
   candidates: Candidate[];
   /** "Vote for up to N" — if set, the user may select at most N candidates/responses. */
   voteFor?: number;
+  /** Civic Info's district: `scope` (`congressional`, `stateUpper`, …) and number `id` ("34"). */
+  district?: { name?: string; scope?: string; id?: string };
+}
+
+export interface BallotLookup {
+  contests: BallotContest[];
+  /** Two-letter state of the normalized address, lowercased ("ca"). */
+  state?: string;
+}
+
+/** Whether a self-hosted OpenSlate server answers behind `/api`. */
+export function serverHealthOptions() {
+  return {
+    queryKey: ["server-health"] as const,
+    queryFn: async (): Promise<{ ballotLookup: boolean }> => {
+      // The dev proxy answers 500 when no server runs; static hosts 404.
+      const response = await fetch("/api/health").catch(() => null);
+      if (!response?.ok) return { ballotLookup: false };
+      const body = (await response.json().catch(() => null)) as { ballotLookup?: boolean } | null;
+      return { ballotLookup: body?.ballotLookup === true };
+    },
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: false,
+  };
 }
 
 /** Fetch the list of elections the Civic Information API currently exposes. */
@@ -122,7 +146,7 @@ export function ballotQueryOptions(address: string, electionId?: string) {
   const addr = address.trim();
   return {
     queryKey: ["ballot", addr, electionId ?? ""] as const,
-    queryFn: async (): Promise<BallotContest[]> => {
+    queryFn: async (): Promise<BallotLookup> => {
       const params = new URLSearchParams({ address: addr });
       if (electionId) params.set("electionId", electionId);
       const response = await fetch(`/api/ballot?${params.toString()}`);
@@ -135,8 +159,7 @@ export function ballotQueryOptions(address: string, electionId?: string) {
         const body = (await response.json().catch(() => null)) as { error?: string } | null;
         throw new Error(body?.error ?? `Ballot lookup failed: HTTP ${response.status}`);
       }
-      const data = (await response.json()) as { contests: BallotContest[] };
-      return data.contests;
+      return (await response.json()) as BallotLookup;
     },
     enabled: addr.length > 0,
     staleTime: 1000 * 60 * 60,

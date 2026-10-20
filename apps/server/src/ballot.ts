@@ -10,11 +10,24 @@ export interface BallotContest {
   candidates: Candidate[];
   /** "Vote for up to N" — how many selections are allowed on this contest. */
   voteFor?: number;
+  /**
+   * The electoral district as Civic Info reports it: `scope` is one of its
+   * fixed values (`congressional`, `stateUpper`, `stateLower`, `citywide`, …)
+   * and `id` is the district number relative to that scope ("34"). Enough for
+   * the client to work out where the voter votes.
+   */
+  district?: { name?: string; scope?: string; id?: string };
+}
+
+export interface BallotLookup {
+  contests: BallotContest[];
+  /** Two-letter state of the normalized address, lowercased ("ca"). */
+  state?: string;
 }
 
 export interface BallotSource {
   /** Resolve an address (+ optional election) to ballot contests with candidates. */
-  lookup(address: string, electionId?: string): Promise<BallotContest[]>;
+  lookup(address: string, electionId?: string): Promise<BallotLookup>;
 }
 
 export interface Election {
@@ -78,7 +91,7 @@ export function createBallotSource(): BallotSource | null {
   if (!config) return null;
 
   return {
-    async lookup(address: string, electionId?: string): Promise<BallotContest[]> {
+    async lookup(address: string, electionId?: string): Promise<BallotLookup> {
       const url = new URL(`${config.base}/voterinfo`);
       url.searchParams.set("address", address);
       url.searchParams.set("key", config.apiKey);
@@ -106,16 +119,25 @@ interface VipContest {
   referendumBallotResponses?: string[];
 }
 
-interface VipVoterInfo {
+export interface VipVoterInfo {
   contests?: VipContest[];
   election?: { id?: string; name?: string; electionDay?: string };
+  normalizedInput?: { state?: string };
 }
 
 // Civic Info contests carry no stable per-contest id, so we synthesize a
 // deterministic one from the election id, district, and office/title. Anyone
 // normalizing the same contest (with the same electionId) derives the same id,
 // which is what lets endorsements from different issuers line up on one race.
-function normalize(data: VipVoterInfo): BallotContest[] {
+export function normalize(data: VipVoterInfo): BallotLookup {
+  const state = data.normalizedInput?.state?.trim().toLowerCase();
+  return {
+    contests: normalizeContests(data),
+    ...(state ? { state } : {}),
+  };
+}
+
+function normalizeContests(data: VipVoterInfo): BallotContest[] {
   const electionId = data.election?.id ?? "";
   const electionDay = data.election?.electionDay ?? data.election?.id;
 
@@ -148,6 +170,14 @@ function normalize(data: VipVoterInfo): BallotContest[] {
     const result: BallotContest = { subject, candidates: finalChoices };
     if (typeof contest.numberVotingFor === "number" && contest.numberVotingFor > 0) {
       result.voteFor = contest.numberVotingFor;
+    }
+    if (contest.district) {
+      const { name, scope, id } = contest.district;
+      result.district = {
+        ...(name ? { name } : {}),
+        ...(scope ? { scope } : {}),
+        ...(id ? { id } : {}),
+      };
     }
     return result;
   });
