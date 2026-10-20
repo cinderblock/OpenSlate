@@ -13,7 +13,7 @@ import {
   positionJurisdictions,
   stanceTone,
 } from "../lib/collate";
-import { formatElectionDate } from "../lib/dates";
+import { formatElectionDate, formatLocalDate } from "../lib/dates";
 import { downloadText } from "../lib/download";
 import {
   EMPTY_AREA,
@@ -24,6 +24,7 @@ import {
   parseJurisdiction,
 } from "../lib/jurisdictions";
 import { localToday, useArea, useDecodedSlates, useFollows, useMyElection } from "../lib/myVote";
+import { type MyPosition, useMyPositionsByRace } from "../lib/published";
 import { isBallotSource, isFollowed } from "../lib/sources";
 import { track } from "../lib/usage";
 import { openWizard } from "../lib/wizard";
@@ -46,12 +47,27 @@ const STANCE_WORD: Record<Stance, string> = {
   abstain: "abstains on",
 };
 
+/** First person, for "You endorsed X". */
+const MY_STANCE_WORD: Record<Stance, string> = {
+  endorse: "endorsed",
+  oppose: "opposed",
+  lean_for: "lean towards",
+  lean_against: "lean against",
+  neutral: "are neutral on",
+  abstain: "abstain on",
+};
+
+function describeMine(position: MyPosition): string {
+  return `${MY_STANCE_WORD[position.stance]} ${position.choice || "it"}`;
+}
+
 export function MyBallotPanel() {
   const { slates, isReady } = useDecodedSlates();
   const [follows] = useFollows();
   const [area, setArea] = useArea();
   const [chosenElection, setChosenElection] = useMyElection();
   const draft = useBallotDraft();
+  const mine = useMyPositionsByRace();
   const [showUnfollowed, setShowUnfollowed] = useState(false);
   const [editingArea, setEditingArea] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -315,6 +331,7 @@ export function MyBallotPanel() {
           election={election ?? ""}
           rows={draft.rows}
           patch={draft.patch}
+          mine={mine}
         />
       ))}
 
@@ -337,6 +354,7 @@ function BallotSection({
   election,
   rows,
   patch,
+  mine,
 }: {
   label: string;
   races: Race[];
@@ -344,6 +362,7 @@ function BallotSection({
   election: string;
   rows: Record<string, DraftRow>;
   patch: Patch;
+  mine: Map<string, MyPosition[]>;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -354,7 +373,14 @@ function BallotSection({
       {/* Closed sections render nothing: a statewide ballot can run to 600+ races. */}
       {open &&
         races.map((race) => (
-          <RaceCard key={race.key} race={race} election={election} rows={rows} patch={patch} />
+          <RaceCard
+            key={race.key}
+            race={race}
+            election={election}
+            rows={rows}
+            patch={patch}
+            mine={mine.get(race.key)}
+          />
         ))}
     </details>
   );
@@ -375,6 +401,7 @@ const RaceCard = memo(
     prev.race === next.race &&
     prev.election === next.election &&
     prev.patch === next.patch &&
+    prev.mine === next.mine &&
     raceRowIds(next.race, next.election).every((id) => prev.rows[id] === next.rows[id]),
 );
 
@@ -383,11 +410,14 @@ function RaceCardInner({
   election,
   rows,
   patch,
+  mine,
 }: {
   race: Race;
   election: string;
   rows: Record<string, DraftRow>;
   patch: Patch;
+  /** What I've signed on this race, if anything. */
+  mine?: MyPosition[];
 }) {
   const noteRow = rows[rowIdFor(election, race.subject, NOTE_CHOICE)];
   const [note, setNote] = useState(noteRow?.privateNote ?? "");
@@ -415,6 +445,12 @@ function RaceCardInner({
           {field && <span title={field.title}>{field.text}</span>}
         </span>
       </div>
+      {mine && mine.length > 0 && (
+        <p className="my-slate hint no-print">
+          ✍ You {mine.map(describeMine).join("; ")} · signed {formatLocalDate(mine[0]?.publishedAt)}{" "}
+          · <Link to="/publish">Compose</Link>
+        </p>
+      )}
       <ul className="choice-list">
         {race.choices.map((group) => (
           <ChoiceRow

@@ -18,6 +18,14 @@ export interface KnownIdentity {
   addedAt: string;
 }
 
+/** A slate the user signed in this browser. */
+export interface PublishedSlate {
+  token: string;
+  /** ed25519:<base58> of the identity that signed it. */
+  issuerKey: string;
+  publishedAt: string;
+}
+
 export interface SubjectRaceMapping {
   /** Canonicalised subject key — see `subjectKey` in lib/results.ts. */
   subjectKey: string;
@@ -31,7 +39,7 @@ export interface SubjectRaceMapping {
 }
 
 const DB_NAME = "openslate";
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -57,6 +65,11 @@ function db(): Promise<IDBPDatabase> {
         // manual user overrides (which auto re-resolution must not clobber).
         if (!database.objectStoreNames.contains("subjectRaceMap")) {
           database.createObjectStore("subjectRaceMap", { keyPath: "subjectKey" });
+        }
+        // Slates the user signed here, keyed by token, so My vote can show
+        // what they've already put their name to on a race.
+        if (!database.objectStoreNames.contains("published")) {
+          database.createObjectStore("published", { keyPath: "token" });
         }
       },
     });
@@ -110,4 +123,16 @@ export async function putSubjectRace(record: SubjectRaceMapping): Promise<void> 
 
 export async function deleteSubjectRace(subjectKey: string): Promise<void> {
   await (await db()).delete("subjectRaceMap", subjectKey);
+}
+
+export async function allPublished(): Promise<PublishedSlate[]> {
+  return (await db()).getAll("published") as Promise<PublishedSlate[]>;
+}
+
+export async function putPublished(record: PublishedSlate): Promise<void> {
+  await (await db()).put("published", record);
+}
+
+export async function deletePublished(token: string): Promise<void> {
+  await (await db()).delete("published", token);
 }

@@ -20,12 +20,14 @@ close) results.
 The web app has two modes:
 
 - **My vote** (the default): *My ballot* shows the races for your election and
-  area with your followed sources' endorsements next to each choice, plus your
-  private picks and notes. *Sources* is where you follow or unfollow sources,
-  browse the public catalog, and add slates from a link, file, QR code or paste.
+  area: the official candidate list where one is imported, your followed
+  sources' endorsements next to each choice, your private picks and notes, and
+  what you've already signed. *Sources* is where you follow or unfollow
+  sources, browse the public catalog, and add slates from a link, file, QR
+  code or paste.
 - **Publish**: create a signing identity, sign your My-ballot picks (plus any
-  other race or issue, on your ballot or not) as a slate, and verify or
-  inspect any block.
+  other race or issue, on your ballot or not) as a slate, see the slates you've
+  signed, and verify or inspect any block.
 
 A skippable getting-started guide sets up a first visit: pick an election,
 where you vote, and whose recommendations you trust (or create an identity to

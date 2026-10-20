@@ -2,14 +2,18 @@ import { createCollection } from "@tanstack/react-db";
 import { z } from "zod";
 import {
   type KnownIdentity,
+  type PublishedSlate,
   allIdentities,
   allKnownIdentities,
+  allPublished,
   allSlates,
   deleteIdentity,
   deleteKnownIdentity,
+  deletePublished,
   deleteSlate,
   putIdentity,
   putKnownIdentity,
+  putPublished,
   putSlate,
 } from "./db";
 
@@ -224,4 +228,68 @@ export function upsertKnownIdentity(
 
 export function removeKnownIdentity(publicKey: string): void {
   if (knownIdentitiesCollection.has(publicKey)) knownIdentitiesCollection.delete(publicKey);
+}
+
+// --- Slates the user signed here ---
+
+const publishedSlateSchema = z.object({
+  token: z.string(),
+  issuerKey: z.string(),
+  publishedAt: z.string(),
+});
+
+let confirmPublishedInsert: ((value: PublishedSlate) => void) | null = null;
+let confirmPublishedDelete: ((key: string) => void) | null = null;
+
+export const publishedCollection = createCollection({
+  id: "published",
+  schema: publishedSlateSchema,
+  getKey: (entry) => entry.token,
+  sync: {
+    sync: (params) => {
+      confirmPublishedInsert = (value) => {
+        params.begin();
+        params.write({ type: "insert", value });
+        params.commit();
+      };
+      confirmPublishedDelete = (key) => {
+        params.begin();
+        params.write({ type: "delete", key });
+        params.commit();
+      };
+      void (async () => {
+        try {
+          params.begin();
+          for (const value of await allPublished()) params.write({ type: "insert", value });
+          params.commit();
+        } finally {
+          params.markReady();
+        }
+      })();
+      return () => {};
+    },
+  },
+  onInsert: async ({ transaction }) => {
+    const mutation = transaction.mutations[0];
+    if (!mutation) return;
+    await putPublished(mutation.modified);
+    confirmPublishedInsert?.(mutation.modified);
+  },
+  onDelete: async ({ transaction }) => {
+    const mutation = transaction.mutations[0];
+    if (!mutation) return;
+    const key = String(mutation.key);
+    await deletePublished(key);
+    confirmPublishedDelete?.(key);
+  },
+});
+
+/** Remember a slate the user just signed (no-op if the same token is already kept). */
+export function rememberPublished(entry: PublishedSlate): void {
+  if (publishedCollection.has(entry.token)) return;
+  publishedCollection.insert(entry);
+}
+
+export function forgetPublished(token: string): void {
+  if (publishedCollection.has(token)) publishedCollection.delete(token);
 }

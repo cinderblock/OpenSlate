@@ -1186,3 +1186,8 @@ button.tag.active {
 .pick-statement {
   flex: 1 1 14rem;
 }
+
+/* My ballot: what I've already signed on this race. */
+.my-slate {
+  margin: 0 0 0.4rem;
+}

@@ -1,8 +1,10 @@
 import { type StoredIdentity, createIdentity, serializeIdentity } from "@openslate/core";
 import { useState } from "react";
-import { addIdentity, forgetIdentity } from "../lib/collections";
-import { useActiveIdentity } from "../lib/identities";
+import { addIdentity, forgetIdentity, forgetPublished } from "../lib/collections";
+import { formatElectionDate, formatLocalDate } from "../lib/dates";
+import { shortKey, useActiveIdentity } from "../lib/identities";
 import { downloadIdentityBackup } from "../lib/identityBackup";
+import { usePublishedSlates } from "../lib/published";
 import { contactToQrText } from "../lib/qr";
 import { track } from "../lib/usage";
 import { QrDialog } from "./Qr";
@@ -130,9 +132,67 @@ export function IdentityPanel() {
         </details>
       </div>
 
+      <MySlatesCard identities={myIdentities} />
+
       {qrShare && (
         <QrDialog text={qrShare.text} label={qrShare.label} onClose={() => setQrShare(null)} />
       )}
     </section>
+  );
+}
+
+/** Slates signed in this browser, newest first. */
+function MySlatesCard({ identities }: { identities: StoredIdentity[] }) {
+  const { slates, isReady } = usePublishedSlates();
+  const [copied, setCopied] = useState<string | null>(null);
+  if (!isReady) return null;
+
+  const nameOf = (key: string) =>
+    identities.find((i) => i.publicKey === key)?.name ?? shortKey(key);
+
+  async function copy(token: string) {
+    await navigator.clipboard.writeText(token);
+    setCopied(token);
+    setTimeout(() => setCopied(null), 1500);
+  }
+
+  return (
+    <div className="card">
+      <h3>My slates</h3>
+      {slates.length === 0 ? (
+        <p className="hint">Nothing signed yet. Compose turns your My-ballot picks into a slate.</p>
+      ) : (
+        <>
+          <p className="hint">
+            Signed in this browser, newest first. On any race, your newest slate is the one that
+            speaks for you.
+          </p>
+          <ul className="position-list">
+            {slates.map((slate) => (
+              <li key={slate.token}>
+                <span className="position-subject">
+                  <strong>{nameOf(slate.issuerKey)}</strong> · {formatLocalDate(slate.publishedAt)}
+                  {slate.payload.context?.election &&
+                    ` · ${formatElectionDate(slate.payload.context.election)}`}
+                  {" · "}
+                  {slate.payload.positions.length} position
+                  {slate.payload.positions.length === 1 ? "" : "s"}
+                </span>
+                <button type="button" onClick={() => void copy(slate.token)}>
+                  {copied === slate.token ? "Copied!" : "Copy"}
+                </button>
+                <button
+                  type="button"
+                  className="link danger"
+                  onClick={() => forgetPublished(slate.token)}
+                >
+                  forget
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
   );
 }

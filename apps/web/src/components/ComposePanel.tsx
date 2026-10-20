@@ -12,6 +12,7 @@ import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { type DraftRow, NOTE_CHOICE, useBallotDraft } from "../lib/ballotDraft";
 import { type ElectionSummary, defaultElection, electionsOf } from "../lib/collate";
+import { rememberPublished } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
 import { useActiveIdentity } from "../lib/identities";
 import { jurisdictionLabel, jurisdictionRank } from "../lib/jurisdictions";
@@ -175,7 +176,13 @@ export function ComposePanel() {
         ...(election ? { context: { election } } : {}),
         positions,
       });
-      setToken(signSlate(payload, id.keyPair.secretKey));
+      const signed = signSlate(payload, id.keyPair.secretKey);
+      setToken(signed);
+      rememberPublished({
+        token: signed,
+        issuerKey: payload.issuer.key,
+        publishedAt: new Date().toISOString(),
+      });
       track({ name: "slate.sign" });
       setError(null);
     } catch (err) {
@@ -343,6 +350,9 @@ export function ComposePanel() {
             Shareable block
             <textarea readOnly rows={6} value={token} className="token" />
           </label>
+          <p className="hint">
+            Kept in this browser (Identities → My slates); My ballot shows it on each race.
+          </p>
           <div className="row">
             <button type="button" onClick={copyToken}>
               {copied ? "Copied!" : "Copy"}
