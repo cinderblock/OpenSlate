@@ -258,6 +258,43 @@ local publish only at `0.0.0` (name claim) and refuses everything else
 outside CI. Order: core, sdk, cli. Then on npmjs.com, per package, add the
 trusted publisher (repo cinderblock/telemetry-collector, workflow
 `publish.yml`, environment `npm`).
+2026-10-19: user enrolled the passkey and ran `npm login` (whoami
+cinderblock; all three names still free). Workspace ranges resolved in the
+working tree, built, `npm pack --dry-run` clean (dist + package.json only).
+`npm publish` from an agent shell fails with `EOTP` (account 2FA needs a
+browser auth that only an interactive terminal waits for), so the user runs
+the three publishes; afterwards revert the two `workspace:*` rewrites in
+packages/sdk and packages/cli package.json.
+Done 2026-10-19: all three names now exist on npm, owned by cinderblock
+(read-write). The registry shows only npm's staged-publishing stub
+`0.0.0-stage` ("Temporary package placeholder for staged publishing"),
+not 0.0.0, and `npm stage list <pkg>` reports no staged versions for any of
+them. The stub is enough for trusted publishing; `latest` moves when CI
+publishes v0.1.0. Watch whether that CI publish also lands as staged and
+needs approval (npm docs: staged publishing works with trusted publishers,
+and approval needs 2FA). Temporary edits reverted; the tree is clean
+(LF endings restored).
+Trusted publisher: npmjs.com offers "Allow npm publish" with the warning
+"Not recommended … leave this unchecked to require staged publishing".
+Recommended unchecked (stage-only). `publish.yml` now runs
+`npm stage publish` (telemetry-collector `d84934e`), which works under
+either setting. Each release then needs the user's 2FA approval per
+package on npmjs.com (Staged Packages tab), core first.
+User configured stage-only trusted publishers on all three (2026-10-19;
+`npm trust list` needs 2FA, so not independently verified). "Allow npm
+dist-tag" left off: dist-tag moves bypass staged approval. 0.1.0 bump
+committed as telemetry-collector `b3a3f7a` (SDK_VERSION was a stray
+literal 0.0.0; a test now ties it to package.json), CI green. Next: push
+tag `v0.1.0` (needs the user's yes), then the user approves the three
+staged packages, core first.
+Tagged 2026-10-19 (user's yes); Publish run 39372921613 succeeded and
+staged all three with provenance: core 503aff45, sdk 815a6b51, cli
+d574f70b. npm 12.2.0 warned the cli `bin` "was invalid and removed"; its
+source (@npmcli/package-json normalize.js) shows that message fires on
+mere `./` normalization and the entry is kept. Confirmed by
+`npm stage download` of all three tarballs: cli bin present, shebang
+intact, deps `^0.1.0`. Path normalized for future releases (`371a262`).
+Waiting on the user's approvals.
 
 ## Open questions for the user
 

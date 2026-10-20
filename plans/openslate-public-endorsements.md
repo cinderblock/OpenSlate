@@ -313,7 +313,7 @@ Batches:
 
 Post-batch cleanup to do once all batches land:
 - [x] (`ce6d305`, 59 edits; reusable `scripts/normalize-choices.ts <election>`) Normalize candidate `choice` spellings across orgs (e.g. "D.J."/"DJ" Brookter, "JR"/"J.R." Eppler, "Joaquín"/"Joaquin" Torres). Use the ballot spelling from the official certified lists.
-- [ ] Harmonize San Diego county measure titles (Reform CA guessed the A/B letters).
+- [x] Harmonize San Diego county measure titles: audited 2026-10-19 (R2), already consistent and Reform CA letters confirmed.
 
 **Result (2026-10-15): 39 November slates, 2,903 positions, live** at
 https://cinderblock.github.io/openslate-public-endorsements/index.json.
@@ -327,6 +327,136 @@ Re-scrape before Nov 3 (sources said "coming soon" / pending):
 - [ ] courage-california: ~150 local races from its county digital guides (PDF was garbled)
 - [ ] la-county-federation-of-labor: guide page 7 (404 at scrape time)
 - [ ] sf-examiner, bernal-heights-dems: no November picks yet
+
+## Round 2 for the Nov 3 general (2026-10-19, 15 days out)
+
+User picked scope (2026-10-19): **finish existing** (the re-scrape list above +
+SD measure titles), **more CA regions**, and **national groups' CA picks**.
+Not other states. Publishing: **push per batch to master** (user reconfirmed
+2026-10-19). Prep commits `6b30df0` + `559ef5c` pushed.
+
+New tool: `scripts/list-subjects.ts <election> [filter]` (endorsements repo
+`6b30df0`) prints every subject title/kind/jurisdiction already in use and
+which orgs use it. Agents MUST reuse existing titles so collation works.
+
+Fan-out: 10 background agents, disjoint `orgs/<slug>/` sets, no git. Same
+rules as round 1.
+
+| Agent | Scope |
+| --- | --- |
+| R1 SF refresh | sf-chronicle, sf-yimby, sierra-club-sf-bay, sf-bicycle-coalition (refresh); sf-examiner, bernal-heights-dems (new if picks are out) |
+| R1b SF clubs | the rest of the sfendorsements.com orgs not yet covered (SF Labor Council, SF GOP, Latinx/Rose Pak/Young Dems clubs, SFHAC, etc.) |
+| R2 SD/LA/P&F | sd-lincoln-club (measures), peace-and-freedom-party (props), la-county-federation-of-labor (p.7); harmonize SD county measure titles across SD orgs; Court of Appeal 4th District jurisdiction `us/ca` → `us/ca/coa-4` |
+| R3 Courage locals | courage-california: the ~150 local races from its county digital guides |
+| N1 Bay Area | Alameda / Santa Clara / San Mateo / Contra Costa / Marin county parties (both), labor councils, Bay Area News Group editorial |
+| N2 Sac + Valley | Sacramento, Fresno, Kern, San Joaquin, Stanislaus: county parties, labor councils, newspapers, Sierra Club Mother Lode |
+| N3 LA County+ | LA County Dem/GOP parties, LA Times, SCNG editorial boards, Ventura County parties |
+| N3b OC + IE | Orange, Riverside, San Bernardino: county parties, OC Labor Fed, Lincoln Club OC, IE labor council, SD Union-Tribune |
+| N4 National | EMILY's List, NRA-PVF, Club for Growth, HRC, LCV Action Fund, Everytown, VoteVets, Our Revolution, Justice Dems, SBA Pro-Life, AIPAC/J Street PACs, US Chamber, etc.: CA entries only |
+| N5 CA interest groups | HJTA, CalChamber, CTA, CFT, SEIU CA, CNA, EQCA, PP Affiliates of CA, PORAC, CA Professional Firefighters, CA YIMBY, CalPIRG, CA ProLife Council, NFIB CA |
+
+Agent brief (shared by all 10): `%TEMP%\os-round2\BRIEF.md`. It is ephemeral.
+The rules that matter are the ones in this plan plus the skill.
+
+Findings before launch:
+- **"No on X" encoding was split.** 29 orgs used `endorse` + `choice: "No"`;
+  8 orgs (round-1 batch G plus sierra-club-san-diego) used `oppose` + `"No"`,
+  which the web app renders as "oppose → No", a double negative. Normalized
+  all 42 positions to `endorse`/`No` in endorsements `559ef5c`. Brief now
+  forbids `oppose` for a No recommendation.
+- Local jurisdictions: county-level contests use the county slug
+  (`us/ca/san-diego`, `us/ca/sf`, `us/ca/los-angeles-county`); new counties
+  get `us/ca/<name>-county`. San Diego is the odd one out (no `-county`).
+  Left as is to avoid churn.
+- **"Recommend" rule:** use `lean_for` only when the org itself separates "endorsed" from "recommended" tiers (LA Forward, DSA SF). When "recommends" is the org's only word for its picks (Westside Forward), it is `endorse`.
+- **Web-search budget is shared** (~200 searches per turn across agents). Late agents ran out, which left gaps. A follow-up pass can pick them up.
+- **Neutral vs abstain (SPEC §3.6):** `neutral` only when the source literally says "neutral". "No Position", "No Recommendation", "No Endorsement" and "No consensus" are `abstain`.
+- **Perl gotcha:** a `\x{2019}`-style escape in a `perl -pi` replacement upgrades the string to wide characters and double-encodes every existing UTF-8 character in the file ("Stateâ€™s"). Use plain UTF-8 bytes in the pattern, or edit with Bun/Python. Hit once (CalChamber evidence) and repaired.
+- A quote checker (`%TEMP%\os-round2\quotecheck.ts`) flags statements not found in the evidence. Most hits are list lines with different separators; the real misses were truncated evidence files (see N5).
+- List-line statements are sometimes reformatted (e.g. "GOVERNOR — X" for "GOVERNOR: X", table rows joined with "|"). The content is in the evidence; accepted.
+- Each publish run succeeds in CI (checked via `gh run list`).
+- Court of Appeal 4th District retention used `us/ca`; 1st and 6th use
+  `us/ca/coa-N`. R2 fixes it.
+
+Progress:
+- [x] R1 (`6b42331`: Chronicle 48→53, SF YIMBY 20→24, SF Bike first-party; Sierra Club SF Bay behind an Incapsula bot wall, so it needs a Chrome pass; SF Examiner + Bernal Dems still have no Nov picks)
+- [x] R2 (`25889da`: P&F 3→22 from its Oct 17 guide; CoA 4th → `us/ca/coa-4`; SD measure titles were already consistent, so the earlier "harmonize SD titles" item is closed; Lincoln Club measure picks + LA Fed p.7 still unpublished)
+- [x] R1b (`a25ca40`: 23 new SF orgs, 718 positions; BART D8 jurisdiction aligned in `093baed`. Gaps: SF Young Dems (June only), Rose Pak (empty embed), Latinx Dems + Berniecrats (sites down). Unchecked: Affordable Housing Alliance, Home Sharers Dems, Tech Workers guide)
+- [x] N1 (`d4c2779`: 20 orgs, 1,091 positions. Gaps: Contra Costa Labor Council (no live site), SV@Home (projects only), SVO (defunct). It overwrote N2's `north-bay-labor-council`; N2 was told to restore it, so that dir is NOT committed yet)
+- [x] N3 (`2d207ea`: 8 orgs, 579 positions. The search budget ran out, so Tri-Counties CLC, VC Star, Stonewall Dems, LA Chamber, DSA-LA, Long Beach groups and UNITE HERE 11 were not attempted. LA Times has only No on 40)
+- [x] Title fixes `ab608d6`: la-forward Burbank C, Cudahy H, Hawthorne O (Registrar letters); Oro Loma Area 5; Ontario H = "Transactions and Use Tax"
+- [x] N4 (`1cabc70`: 23 national orgs, 401 CA positions. Gaps: SBA + NRLC (no CA picks), Heritage (scorecards only), AIPAC/UDP (script-only portal), NFIB federal (bot wall), No Labels. Review: VoteVets remapped old district numbers; RJC Valadao card has no year)
+- [x] N2 (`29cb4d4`: 12 orgs, 562 positions; north-bay-labor-council restored and merged with N1's Marin picks. Gaps: Kern GOP, Sac + 3 Valley labor councils (no sites), Sierra Club Mother Lode/Tehipite/Redwood (Incapsula, so they need Chrome), Bakersfield Californian, Stockton Record, Press Democrat, Sac YIMBY, Yolo/SJ/Stanislaus/Placer other parties. Sac Bee: 6 articles unfetchable. Fresno GOP No on 41/42/45 as printed)
+- [x] N3b (`4e221a9`: 11 orgs, 856 positions: OC Dems/GOP/Labor Fed/Lincoln Club/OCBC, SD U-T, Riverside Dems/GOP, SB Dems, IE Labor Council, IE United. OC supervisors moved `us/ca/orange` → `us/ca/orange-county` in `57abb15`. Gaps: SB County GOP, Sierra Club San Gorgonio, Desert Sun. OC ballot spellings unchecked (registrar list loads only via JS))
+- [x] N5 (`fb7fd29`: 21 orgs, 1,442 positions. Evidence for CalChamber Props 44/45, SEIU BOE D4 and ACLU NorCal Prop 39 was missing from the saved page text; I re-fetched, confirmed live, and appended. CPF republishes IAFF's House picks (kept, attributed to CPF's guide). Gaps: CBRT, NFIB CA (403), CBIA (no stated position), CA Apartment Assn, UFCW WSC, CA Family Council, Consumer Watchdog, CFA)
+- [x] Stance sweep `375ed94`: "No Position/Recommendation/Endorsement" → `abstain`, literal "NEUTRAL" stays `neutral` (SPEC §3.6). 23 positions in 13 orgs. courage-california not yet swept (R3 running)
+- [x] R3 (`8c42885`: courage-california 164 → 329; `pdftotext -raw` fixed the garbling; 14 seat corrections, 12 drops)
+- [x] Collation sweep `eb31430`: 3 one-off jurisdictions merged; no title is now split across jurisdictions
+- [x] `normalize-choices.ts 2026-11-03 --apply` (`309792c`, 143 edits; re-run shows 0)
+
+**Result (2026-10-19): 157 November slates, 8,735 positions, live** (from 39 / 2,903).
+Every publish run passed CI. `orgs/sd-green-party/2026-11-03/` is still held back,
+untracked.
+- [x] User OK to publish (2026-10-19) → commit per batch, push, check CI + Pages
+- [x] Follow-up pass for search-budget gaps + Sierra Club via Chrome (round 2b, below)
+- [ ] Re-scrape before Nov 3: **scheduled** for 2026-10-28 09:00 (T3 scheduled task "OpenSlate endorsements: pre-election re-scrape (Oct 28)", fires Wednesdays, date-guarded; deletes itself after Nov 3)
+
+## Round 2b (2026-10-19 evening): gap pass, Chrome pass, adopts
+
+User answers (2026-10-19): Chrome pass OK; gap pass OK; Oct 28 re-scrape OK;
+"if they published it, they published it" (keep odd-looking picks as printed,
+e.g. Fresno GOP No on 41/42/45; collation shows the discrepancies); aggregator-only
+bundles are fine as long as attribution/sources let everything be verified and
+updated; **don't duplicate republished positions** → adopt by reference
+(`plans/adopt-by-reference.md`), with tooling that lets publishers choose copy,
+reference, or reference + snapshot.
+
+- [x] Chrome: Sierra Club SF Bay refresh `0eb5398` (+SD 10 Sakakihara); Redwood (23)
+  and San Gorgonio (20, PDF decoded in-page) `7f2e435`. Not reachable: Loma Prieta
+  (June list only), Santa Lucia (Imperva blocks the Nov page even in T3's browser;
+  needs Chrome), Ventana/Mother Lode/Tehipite/Kern-Kaweah/Los Padres (no 2026 page).
+- [x] G3 statewide/national/SF `329fad9`: 9 orgs, 455 positions (IAFF, AIPAC PAC, NFIB
+  props, CFA, UFCW WSC, Home Sharers Dems, SF AHA, Consumer Watchdog, CBIA). CPF's 51
+  IAFF House picks removed from CPF `a90de93`.
+- [x] G1 SoCal `76b3b74`: 11 orgs, 809 positions (DSA-LA, UNITE HERE 11, Stonewall, LA
+  Chamber, SB County GOP, ACT Pasadena, Central Coast CLC, SB County Dems + GOP, 2 Long
+  Beach clubs via Blue Voter Guide). Santa Barbara county-level contests moved to
+  `us/ca/santa-barbara-county` `d468c35`.
+- [x] G2 NorCal/Valley `3acf2ba`: 16 orgs, 553 positions. Key find: the Labor Fed's
+  per-council CSV `https://calaborfed.org/wp-content/uploads/2026/10/2026G-CLC-web-endorsements-2.csv`.
+- [x] Pin bumped to OpenSlate `7d8ce98` + `scripts/adopt.ts` `43ac6cc`. Adoptions:
+  `4b1c4b3` (CPF→IAFF 51, Redwood→SC CA 13, San Gorgonio→SC CA 12, SB GOP→CAGOP 21,
+  Central Coast CLC→Labor Fed 31) and `d44382f` (Santa Cruz Dems→CADEM 149, Contra
+  Costa/Sacramento/Kern labor councils→Labor Fed 18/12/4, Press Democrat→BANG 1).
+- [x] Normalize spellings `bf7a549` (10). No title split across jurisdictions.
+
+**Result: 195 November slates, 10,545 positions live; 10 slates adopt 312 positions
+by reference** (CI green on the new pin; `verify --resolve` on a live slate resolves).
+
+### Deferred until the web app expands adopts (after `ui/two-modes` merges)
+Converting these *existing copies* to `adopts` now would hide picks from voters on
+openslate.us (it accepts `adopts` but doesn't expand them yet):
+- sierra-club-sf-bay / -angeles / -san-diego copies of Sierra Club California's
+  statewide + prop picks
+- ventura-county-democratic-party's 15 CADEM statewide picks (stored `lean_for`)
+- alameda-county-republican-party (CAGOP template), la-county-republican-party
+  ("CAGOP"-badged statewide picks)
+- sf-police-officers-association ↔ sf-firefighters-local-798 joint statement
+- Not adoptable yet (no bundle): DSA-LA → California DSA; Santa Cruz YIMBY → YIMBY
+  Action; SB County GOP judges → Craig Huey / Reform CA (inferred colours)
+
+### Needs a real browser (Chrome) next pass
+Santa Lucia SC chapter Nov page; NFIB CA legislative + FedPAC
+(nfib.com, Cloudflare); VC Star + Desert Sun (402); Napa/Placer/El Dorado registrar
+measure lists (Placer A/D/F/G/H/I/P are placeholder titles); San Benito candidate
+list (SBLC San Benito picks); Rose Pak Dem Club and Long Beach clubs' FB/IG posts.
+
+### Review items added in 2b
+AIPAC PAC portal recipients encoded `endorse`; Consumer Watchdog staff picks
+`lean_for`; IAFF sourced from CPF's guide (IAFF publishes no list); SF AHA is a paid
+slate mailer (asterisks kept); Pasadena City College Area 7 subject in 3–4 bundles but
+no such contest on the LA list; SOS `cert-raw.txt` sometimes prints a district heading
+after its candidates (use `cert.txt`).
 
 Known review items (details in each bundle's evidence/NOTES.md): SFTU is a
 paid slate mailer; WFP Connolly listed as SD 12 but on the ballot in SD 2

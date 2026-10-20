@@ -56,6 +56,21 @@ Ask the user for whatever you don't already have:
    endorse"), pick `lean_for` over `endorse`. When in doubt, ask the user
    or omit the position entirely and note it in `evidence/NOTES.md`.
 
+   **Republished picks.** If the page merely republishes another entity's
+   list (a county party reposting the state party's statewide picks, a
+   state affiliate reposting its national union's House list, a joint
+   statement), don't copy those positions. If a bundle for the other entity
+   exists, adopt them by reference instead (SPEC §3.10):
+
+   ```sh
+   bun run packages/cli/src/index.ts adopt <other-entity-signed.slate-url> \
+     --mode reference --match "Governor,Proposition" \
+     --source <this-entity's-page> --into research-bot/orgs/<slug>/<election>/positions.json
+   ```
+
+   Otherwise, list them in `evidence/NOTES.md` under `## Republished from
+   <entity>` so they can be adopted once that bundle exists.
+
 3. **Write `positions.json`.** Wrap the extracted positions in the sign
    input shape the CLI expects:
 
