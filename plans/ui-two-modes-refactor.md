@@ -200,9 +200,12 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
     the endorsements. Separate repo, separate commits.
 17. [x] README (modes, address lookup, ballot sources), ISSUES.md (hosted
     404 entry updated), this plan. Walkthrough script in Open questions.
-18. **[current]** Merge `ui/two-modes` into master, after the user's
-    round-2 walkthrough and yes. Then push the endorsements repo so the
-    public catalog carries the ballot bundles.
+18. [x] (2026-10-20, "let's just publish": walkthrough skipped by the
+    user) Merged master into the branch (`96735a9`, one README conflict,
+    CLI `adopt` line + our web line), all four packages typecheck, 197
+    tests pass, pushed `ui/two-modes:master` (fast-forward,
+    `81f90d7..96735a9`). Endorsements repo pushed (`6f256a3..0193108`),
+    CI `publish` run signs the ballot bundles.
 
 ## Follow-ups (not started)
 
@@ -216,9 +219,6 @@ numbers and options considered are in the Findings.
   don't match catalog race keys ("Governor of California"), so the address
   lookup only fills districts/city today. Needs same-race matching
   (jurisdiction + office family) before its candidates can join the field.
-- **Push `openslate-public-endorsements`** (`b9e20a8`, `0193108`): CI signs
-  and the catalog gets the two ballot bundles and canonical spellings.
-  Until then ballot sources only exist as the local test-signed slates.
 - **Same-person matching in the app** (choice spellings that differ only by
   initials/nicknames collapse onto the ballot's spelling), for firsthand
   slates the catalog's normalizer never sees.
@@ -342,14 +342,20 @@ numbers and options considered are in the Findings.
       cards, address lookup on Where-you-vote, Compose from picks, signed
       slates remembered (`1cf282c`…`b3f9ed9`)
 - [x] Step 17: README / ISSUES / plan current
-- [ ] Round 2 walkthrough, then merge to master (step 18)
-- [ ] Push the endorsements repo (user's call; two commits waiting)
+- [x] Step 18: merged and pushed to `origin/master` (`96735a9`), walkthrough
+      skipped at the user's request
+- [x] Endorsements repo pushed; CI signs the ballot bundles into the catalog
+- [ ] The main checkout (`~/git/Personal Projects/OpenSlate`) is still on
+      `81f90d7` with uncommitted ComposePanel / ElectionCombobox / subjects.ts
+      edits (already adopted in `1cf282c`), so `git merge --ff-only` refused.
+      Snapshot in `stash@{0}`; the user decides what to do with the edits.
 
 ## Open questions for the user
 
-1. **Round-2 walkthrough** on `http://localhost:5199` (branch
-   `ui/two-modes`, dev server already running), then say whether to merge
-   into master. What to look at:
+1. ~~Round-2 walkthrough, then merge.~~ Merged and pushed on the user's
+   "let's just publish" (2026-10-20). The script below still describes what
+   changed, for a later look on `https://openslate.us` once Workers Builds
+   deploys master:
    - *Sources*: a "Ballot data" card for the official candidate lists. The
      public catalog doesn't carry them until the endorsements repo is pushed;
      the preview browser has test-signed copies (`$TEMP/sos.slate`,
@@ -367,9 +373,10 @@ numbers and options considered are in the Findings.
    - Back on *My ballot*, the race says "✍ You endorsed X · signed <date> ·
      Compose". *Identities → My slates* lists what you signed (copy /
      forget). *Elections → Use as active* sets the same election by date.
-2. Push `openslate-public-endorsements` (two commits, `b9e20a8` and
-   `0193108`)? Recommendation: yes, after the walkthrough; CI signs and the
-   hosted catalog gains the ballot bundles.
+2. ~~Push `openslate-public-endorsements`?~~ Pushed 2026-10-20.
+3. The main checkout's uncommitted Compose/ElectionCombobox/subjects.ts
+   edits (see Progress log): they're the ones adopted in `1cf282c` and since
+   rewritten, so they're safe to discard, but that's your call.
 
 Answered 2026-10-19: opponents come from official candidate lists in the
 endorsements repo plus Civic-by-address when self-hosted; this thread adopts
