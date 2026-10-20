@@ -60,10 +60,10 @@ extend the kit in `apps/web/src/components/ui/`.
 ## Plan / steps
 
 1. [x] Plan doc; add `react-aria-components`; record the rule in README.
-2. [ ] Kit foundation + `Switch` + `Checkbox`; convert their sites.  ← current
-3. [ ] `RadioGroup`; convert.
-4. [ ] `Select` + `ComboBox`; convert.
-5. [ ] `TextField` / `SearchField` / `TextArea`; convert.
+2. [x] Kit foundation + `Switch` + `Checkbox`; convert their sites. (`2047908`)
+3. [x] `RadioGroup`; convert. (`c1cf284`)
+4. [x] `Select` + `ComboBox` + `Segmented`; convert. (`c492e27`)
+5. [ ] `TextField` / `SearchField` / `TextArea`; convert.  ← current
 6. [ ] `TokenField` / `TokenBox`; convert paste and read-only token sites.
 7. [ ] `FileDrop` / `FileTrigger` / `Slider`; convert.
 8. [ ] Remove dead native-control CSS (`label.switch input`, global
@@ -77,12 +77,30 @@ extend the kit in `apps/web/src/components/ui/`.
   `"lineEnding": "crlf"` in `$TEMP/biome-crlf/`, run with `--config-path`.
   Baseline on `e07192b`: `apps/web/src` checks clean that way.
 - Baseline: typecheck clean, 197 tests pass.
+- **RAC ComboBox: pass `defaultItems`, not `items`.** `items` means "already
+  filtered by you"; with it, typing filtered nothing (all 265 subjects stayed
+  listed). `defaultItems` lets RAC apply `defaultFilter`.
+- RAC Select's `selectedKey`/`onSelectionChange` are deprecated in 1.22; use
+  `value`/`onChange`.
+- Browser automation: clicking `role=switch`/`role=checkbox` times out, because
+  the real `<input>` is visually hidden. Click the label text (what a user
+  clicks) or focus the input and press Space.
+- RAC Popover portals to `document.body`. Inside a modal `<dialog>` (Wizard,
+  QR dialog: both use `showModal()`) it would sit under the top layer. No
+  Select/ComboBox is inside a dialog today; if one is added, wrap the dialog
+  content in `UNSAFE_PortalProvider` (from `react-aria`, which would need adding
+  as a direct dependency) pointing at the dialog.
+- Edit scripts: open files with `encoding="utf-8"`; Windows Python defaults to
+  cp1252 and choked on `Wizard.tsx`.
 
 ## Progress log
 
 - [x] Survey: 53 native sites in 21 files (9 checkbox, 4 radio, 13 select,
   ~16 text/search/url, 9 textarea, 2 file, 1 range).
 - [x] Worktree + dependency.
+- [x] Switch/Checkbox, RadioGroup, Select/ComboBox/Segmented built, converted and
+  checked in the browser (wizard, My ballot, districts, Identities, Compose,
+  Sources).
 
 ## Open questions for the user
 
