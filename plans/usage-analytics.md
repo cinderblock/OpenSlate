@@ -280,6 +280,13 @@ Recommended unchecked (stage-only). `publish.yml` now runs
 `npm stage publish` (telemetry-collector `d84934e`), which works under
 either setting. Each release then needs the user's 2FA approval per
 package on npmjs.com (Staged Packages tab), core first.
+User configured stage-only trusted publishers on all three (2026-10-19;
+`npm trust list` needs 2FA, so not independently verified). "Allow npm
+dist-tag" left off: dist-tag moves bypass staged approval. 0.1.0 bump
+committed as telemetry-collector `b3a3f7a` (SDK_VERSION was a stray
+literal 0.0.0; a test now ties it to package.json), CI green. Next: push
+tag `v0.1.0` (needs the user's yes), then the user approves the three
+staged packages, core first.
 
 ## Open questions for the user
 
