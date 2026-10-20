@@ -175,3 +175,70 @@ export function jurisdictionRank(path: string | undefined): number {
 export const DISTRICT_LOOKUP: Record<string, string> = {
   "us/ca": "https://findyourrep.legislature.ca.gov/",
 };
+
+/**
+ * How many districts each family has. Someone's district is theirs whether or
+ * not it has a race this election, so the picker offers all of them.
+ */
+export const DISTRICT_COUNTS: Record<string, number> = {
+  "us/ca/cd": 52,
+  "us/ca/sd": 40,
+  "us/ca/ad": 80,
+  "us/ca/coa": 6,
+  "us/ca/bart": 9,
+};
+
+const DISTRICT_OFFICES: Record<string, string> = {
+  cd: "Congressional",
+  sd: "State Senate",
+  ad: "Assembly",
+  coa: "Court of Appeal",
+  bart: "BART board",
+};
+
+/** Every district number of a family (`us/ca/sd`), plus any the data uses beyond the known count. */
+export function allDistricts(family: string, present: readonly string[]): string[] {
+  const count = DISTRICT_COUNTS[family] ?? 0;
+  const numbers = new Set(present);
+  for (let n = 1; n <= count; n++) numbers.add(String(n));
+  return [...numbers].sort((a, b) => Number(a) - Number(b));
+}
+
+/**
+ * Staggered terms: which half of a family's seats a regular election in a
+ * given year fills. California's Senate (Const. art. IV §2): even-numbered
+ * districts in gubernatorial years (2026), odd ones in presidential years.
+ */
+const SEATS_UP: Record<string, (year: number) => "even" | "odd"> = {
+  "us/ca/sd": (year) => (year % 4 === 2 ? "even" : "odd"),
+};
+
+/**
+ * Why a district has no race on this ballot. Where terms are staggered, say
+ * whose turn it is: from the known rule for the election's year, or else from
+ * the data, when every district that has a race is even (or odd) and they
+ * cover about half the family.
+ */
+export function noRaceReason(
+  family: string,
+  number: string,
+  present: readonly string[],
+  election?: string,
+): string {
+  const kind = family.split("/").pop() ?? family;
+  const office = DISTRICT_OFFICES[kind] ?? kind.toUpperCase();
+  const year = election ? Number(election.slice(0, 4)) : Number.NaN;
+  const rule = SEATS_UP[family];
+  let up: "even" | "odd" | undefined = rule && Number.isFinite(year) ? rule(year) : undefined;
+  if (!up) {
+    const parities = new Set(present.map((n) => Number(n) % 2));
+    const count = DISTRICT_COUNTS[family] ?? 0;
+    if (present.length >= 3 && parities.size === 1 && present.length * 2 >= count - 1) {
+      up = parities.has(0) ? "even" : "odd";
+    }
+  }
+  if (up && Number(number) % 2 !== (up === "even" ? 0 : 1)) {
+    return `No ${office} race in district ${number} this election; only ${up}-numbered seats are up.`;
+  }
+  return `Nothing you've imported has a ${office} race in district ${number} this election.`;
+}

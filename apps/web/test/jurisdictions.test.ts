@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
   EMPTY_AREA,
+  allDistricts,
   inArea,
   jurisdictionLabel,
   jurisdictionRank,
+  noRaceReason,
   parseJurisdiction,
 } from "../src/lib/jurisdictions";
 
@@ -68,5 +70,36 @@ describe("labels and ranks", () => {
     expect(jurisdictionRank("us/ca")).toBeLessThan(jurisdictionRank("us/ca/cd-1"));
     expect(jurisdictionRank("us/ca/cd-1")).toBeLessThan(jurisdictionRank("us/ca/ad-1"));
     expect(jurisdictionRank("us/ca/ad-1")).toBeLessThan(jurisdictionRank("us/ca/sf"));
+  });
+});
+
+describe("districts with no race", () => {
+  test("allDistricts lists every district, plus any extra the data uses", () => {
+    expect(allDistricts("us/ca/sd", ["2", "4"])).toHaveLength(40);
+    expect(allDistricts("us/ca/coa", ["7"])).toEqual(["1", "2", "3", "4", "5", "6", "7"]);
+    expect(allDistricts("us/xx/cd", ["3", "1"])).toEqual(["1", "3"]);
+  });
+
+  const even = Array.from({ length: 20 }, (_, i) => String(2 * i + 2));
+  test("the Senate's staggered terms, from the election year", () => {
+    expect(noRaceReason("us/ca/sd", "13", [], "2026-11-03")).toBe(
+      "No State Senate race in district 13 this election; only even-numbered seats are up.",
+    );
+    expect(noRaceReason("us/ca/sd", "14", [], "2028-11-07")).toBe(
+      "No State Senate race in district 14 this election; only odd-numbered seats are up.",
+    );
+  });
+  test("staggering worked out from the data when there is no rule", () => {
+    const family = "us/ca/bart";
+    expect(noRaceReason(family, "3", ["2", "4", "6", "8"])).toContain("only even-numbered");
+    expect(noRaceReason(family, "3", ["2", "4"])).toBe(
+      "Nothing you've imported has a BART board race in district 3 this election.",
+    );
+    expect(noRaceReason("us/ca/sd", "13", even)).toContain("only even-numbered");
+  });
+  test("an even district with no race, in an even year, is a gap in the data", () => {
+    expect(noRaceReason("us/ca/sd", "12", even.slice(1), "2026-11-03")).toBe(
+      "Nothing you've imported has a State Senate race in district 12 this election.",
+    );
   });
 });
