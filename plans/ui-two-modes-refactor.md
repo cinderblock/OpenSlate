@@ -186,6 +186,19 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
   config: `bunx biome check --config-path=<dir with lineEnding crlf> <files>`.
 - Python/Write edits produce LF; run `biome check --write` with the CRLF config
   on touched files before committing to keep CRLF.
+- **The "look yours up" link was made up** (`findmyrep.legislature.ca.gov`
+  returns ENOTFOUND). The real one is `findyourrep.legislature.ca.gov` (title
+  "Find Your California Representatives"); fixed in `5d0b88d`. Its TLS chain is
+  incomplete (`curl` says "unable to verify the first certificate"), but browsers
+  load it.
+- **Address lookup already exists, server-side only.** `apps/server` proxies
+  Google Civic `voterinfo` (and `elections`) when `GOOGLE_API_KEY` is set. Only
+  Compose uses it, through `/api/ballot` → `lib/subjects.ts`. No key is configured
+  in this checkout, and openslate.us doesn't offer it (README "Cloud"). Civic's
+  `divisionsByAddress` returns OCD ids (`…/cd:11`, `…/sldu:11`, `…/sldl:17`,
+  `…/place:san_francisco`) that map straight onto the Area model; it also needs a
+  key (unkeyed calls get 403 "unregistered callers"). It has no Court of Appeal
+  or BART districts.
 - The dev server for this worktree runs on port 5199 (`bunx vite --port 5199
   --strictPort` in apps/web) to stay clear of the main checkout's 5173.
 
@@ -213,6 +226,13 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
 
 1. Walk through `ui/two-modes` (worktree dev server: `bunx vite --port 5199
    --strictPort` in `apps/web`) and say whether to merge into master.
+2. Fill "Where you vote" from an address? Recommendation: add a "Use my
+   address" option that calls Civic `divisionsByAddress` through the optional
+   self-hosted server (new `/api/divisions`, same `GOOGLE_API_KEY`), and hide it
+   when the server isn't there. That keeps openslate.us free of any server.
+   Alternative: the browser calls Google directly with a referrer-restricted key
+   built into the app. That works on openslate.us, but someone has to own the
+   key, and every address goes to Google.
 
 ## Things not to do
 
