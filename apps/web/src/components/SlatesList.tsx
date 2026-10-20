@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { slatesCollection } from "../lib/collections";
 import { formatLocalDate } from "../lib/dates";
 import { shortKey, useKnownIdentities } from "../lib/identities";
+import { SearchField } from "./ui/TextField";
 
 interface SlateRow {
   token: string;
@@ -85,20 +86,11 @@ export function SlatesList() {
 
   return (
     <div className="slates-list">
-      <div className="row">
-        <input
-          type="search"
-          className="grow"
-          placeholder={`search ${rows.length} slate(s) by issuer name, key, or election…`}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        {query && (
-          <button type="button" className="link" onClick={() => setQuery("")}>
-            clear
-          </button>
-        )}
-      </div>
+      <SearchField
+        placeholder={`search ${rows.length} slate(s) by issuer name, key, or election…`}
+        value={query}
+        onChange={setQuery}
+      />
       <table>
         <thead>
           <tr>

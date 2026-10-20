@@ -19,6 +19,7 @@ import { ELECTION_AUTHORITY, isFollowed, sourceIdOf } from "../lib/sources";
 import { track } from "../lib/usage";
 import { electionOptions } from "./electionOptions";
 import { Select } from "./ui/Select";
+import { SearchField, UrlField } from "./ui/TextField";
 
 function entryKey(entry: CatalogEntry): string {
   return `${entry.slug}/${entry.election}`;
@@ -171,15 +172,13 @@ export function CatalogBrowser() {
                 today,
               )}
             />
-            <label className="grow">
-              Search
-              <input
-                type="search"
-                placeholder="organization name…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </label>
+            <SearchField
+              className="grow"
+              label="Search"
+              placeholder="organization name…"
+              value={search}
+              onChange={setSearch}
+            />
           </div>
 
           <ul className="catalog-list">
@@ -267,11 +266,11 @@ export function CatalogBrowser() {
       <details>
         <summary>Use a different catalog</summary>
         <div className="row">
-          <input
-            type="url"
+          <UrlField
             className="grow"
+            aria-label="Catalog URL"
             value={pendingUrl}
-            onChange={(e) => setPendingUrl(e.target.value)}
+            onChange={setPendingUrl}
             placeholder="https://example.org/index.json"
           />
           <button

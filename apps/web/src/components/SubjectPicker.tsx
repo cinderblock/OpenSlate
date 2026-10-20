@@ -5,6 +5,7 @@ import { jurisdictionLabel } from "../lib/jurisdictions";
 import type { KnownSubject } from "../lib/subjects";
 import { Segmented } from "./ui/Segmented";
 import { ComboBox, type SelectOption } from "./ui/Select";
+import { TextField } from "./ui/TextField";
 
 const FREE = "__free__";
 const FREE_TEXT = "New subject";
@@ -103,15 +104,12 @@ export function SubjectPicker({
 
       {showFree && (
         <div className="grid subject-free">
-          <label>
-            Title
-            <input
-              type="text"
-              placeholder="e.g. Mayor of Springfield"
-              value={freeTitle}
-              onChange={(e) => updateFreeTitle(e.target.value)}
-            />
-          </label>
+          <TextField
+            label="Title"
+            placeholder="e.g. Mayor of Springfield"
+            value={freeTitle}
+            onChange={updateFreeTitle}
+          />
           <Segmented
             layout="stacked"
             label="Kind"

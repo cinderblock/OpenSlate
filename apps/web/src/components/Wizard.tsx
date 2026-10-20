@@ -39,6 +39,7 @@ import { AreaPicker } from "./AreaPicker";
 import { isBallotEntry } from "./CatalogBrowser";
 import { Checkbox } from "./ui/Checkbox";
 import { Radio, RadioGroup } from "./ui/Radio";
+import { TextField } from "./ui/TextField";
 
 type Step = "welcome" | "election" | "area" | "sources" | "importing" | "identity";
 
@@ -717,15 +718,12 @@ function IdentityStep({
               straight to Compose, or make another.
             </p>
           )}
-          <label>
-            Name people will see (optional)
-            <input
-              type="text"
-              value={name}
-              placeholder="e.g. Jamie Rivera, or Elm Street Tenants Association"
-              onChange={(e) => setName(e.target.value)}
-            />
-          </label>
+          <TextField
+            label="Name people will see (optional)"
+            value={name}
+            placeholder="e.g. Jamie Rivera, or Elm Street Tenants Association"
+            onChange={setName}
+          />
           <RadioGroup
             aria-label="Who is publishing"
             className="wizard-kind"

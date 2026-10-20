@@ -25,6 +25,7 @@ import { SubjectPicker } from "./SubjectPicker";
 import { electionOptions } from "./electionOptions";
 import { Checkbox } from "./ui/Checkbox";
 import { Select, type SelectOption } from "./ui/Select";
+import { TextArea, TextField } from "./ui/TextField";
 
 const STANCE_LABEL: Record<Stance, string> = {
   endorse: "Endorse",
@@ -295,25 +296,19 @@ export function ComposePanel() {
             onChange={setOtherStance}
             options={STANCE_OPTIONS}
           />
-          <label>
-            Choice (optional)
-            <input
-              type="text"
-              placeholder="e.g. A. Candidate"
-              value={otherChoice}
-              onChange={(e) => setOtherChoice(e.target.value)}
-            />
-          </label>
-        </div>
-        <label>
-          Public statement (optional)
-          <textarea
-            rows={2}
-            placeholder="why you take this position"
-            value={otherStatement}
-            onChange={(e) => setOtherStatement(e.target.value)}
+          <TextField
+            label="Choice (optional)"
+            placeholder="e.g. A. Candidate"
+            value={otherChoice}
+            onChange={setOtherChoice}
           />
-        </label>
+        </div>
+        <TextArea
+          label="Public statement (optional)"
+          placeholder="why you take this position"
+          value={otherStatement}
+          onChange={setOtherStatement}
+        />
         <button type="button" onClick={addOther} disabled={!pickedSubject}>
           Add position
         </button>
@@ -413,13 +408,12 @@ function PickRow({
         aria-label={`Stance on ${row.choice || row.subject.title}`}
         options={STANCE_OPTIONS}
       />
-      <input
-        type="text"
+      <TextField
         className="pick-statement"
         placeholder="public statement (optional)"
         value={statement}
-        disabled={!included}
-        onChange={(e) => setStatement(e.target.value)}
+        isDisabled={!included}
+        onChange={setStatement}
         onBlur={() => {
           if ((row.statement ?? "") !== statement) onChange({ statement: statement || undefined });
         }}

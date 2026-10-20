@@ -9,6 +9,7 @@ import { contactToQrText } from "../lib/qr";
 import { track } from "../lib/usage";
 import { QrDialog } from "./Qr";
 import { Radio, RadioGroup } from "./ui/Radio";
+import { TextArea, TextField } from "./ui/TextField";
 
 export function IdentityPanel() {
   const { all: myIdentities, activeKey, setActiveKey } = useActiveIdentity();
@@ -109,12 +110,12 @@ export function IdentityPanel() {
         )}
 
         <div className="row">
-          <input
-            type="text"
+          <TextField
             className="grow"
+            aria-label="Display name for a new identity"
             placeholder="display name (optional)"
             value={genName}
-            onChange={(e) => setGenName(e.target.value)}
+            onChange={setGenName}
           />
           <button type="button" onClick={generate}>
             + Generate new identity
@@ -122,11 +123,13 @@ export function IdentityPanel() {
         </div>
         <details>
           <summary>Import an existing identity (backup JSON)</summary>
-          <textarea
-            rows={5}
+          <TextArea
+            monospace
+            rows={4}
+            aria-label="Identity backup JSON"
             placeholder="paste identity JSON (contains secret key)"
             value={importText}
-            onChange={(e) => setImportText(e.target.value)}
+            onChange={setImportText}
           />
           <button type="button" onClick={importIdentity} disabled={!importText.trim()}>
             Import

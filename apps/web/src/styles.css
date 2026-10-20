@@ -633,9 +633,8 @@ footer a:hover {
   cursor: pointer;
   margin-top: 0.4rem;
 }
-.race-note textarea {
+.race-note .ui-field {
   margin-top: 0.4rem;
-  width: 100%;
 }
 .empty-state {
   padding: 1.5rem;
@@ -674,7 +673,7 @@ footer a:hover {
   font-weight: normal;
   font-size: 0.85rem;
 }
-.area-picker input[type="search"] {
+.area-search {
   margin-bottom: 0.4rem;
 }
 .chips {
@@ -1621,4 +1620,119 @@ button.tag.active {
 }
 .subject-free {
   margin-top: 0.5rem;
+}
+
+/* Text fields */
+.ui-affix {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.ui-search-icon,
+.ui-link-icon {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ui-search-clear {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  margin-right: -0.25rem;
+}
+.ui-search-clear svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  stroke: var(--muted);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.ui-search-clear[data-hovered] {
+  background: var(--border);
+}
+.ui-search-clear[data-hovered] svg {
+  stroke: var(--text);
+}
+.ui-searchfield[data-empty] .ui-search-clear {
+  visibility: hidden;
+}
+.ui-field[data-invalid] .ui-input-group,
+.ui-field[data-invalid] .ui-textarea {
+  border-color: var(--bad);
+}
+.ui-field[data-disabled] {
+  opacity: 0.5;
+}
+.ui-mono .ui-input,
+.ui-mono .ui-textarea {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.85rem;
+}
+.key-prefix {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.85rem;
+  border-right: 1px solid var(--border);
+  margin-right: 0.15rem;
+  padding: 0.1rem 0.4rem 0.1rem 0;
+}
+
+/* Quiet: no box until hovered or focused, for editing in place in a list. */
+.ui-quiet .ui-input-group {
+  border-color: transparent;
+  background: transparent;
+  padding: 0 0.35rem;
+  margin: 0 -0.35rem;
+}
+.ui-quiet .ui-input {
+  padding: 0.2rem 0;
+}
+.ui-quiet .ui-input-group:hover {
+  border-color: var(--border);
+}
+.ui-quiet .ui-input-group:focus-within {
+  background: var(--surface-2);
+}
+
+.ui-textarea {
+  width: 100%;
+  resize: none;
+  line-height: 1.45;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.ui-textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.8;
+}
+.ui-textarea:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+.ui-textarea[data-focused] {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.contact-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.contact-name {
+  flex: 0 1 20rem;
+}
+.race-search {
+  margin-bottom: 0.5rem;
 }

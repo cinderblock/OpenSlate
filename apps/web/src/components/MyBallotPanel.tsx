@@ -34,6 +34,7 @@ import { electionOptions } from "./electionOptions";
 import { Checkbox } from "./ui/Checkbox";
 import { Select } from "./ui/Select";
 import { Switch } from "./ui/Switch";
+import { TextArea } from "./ui/TextField";
 
 /** The user's own picks. Private: kept in this browser, only shared if they publish. */
 const PICKS: Array<{ stance: Stance; label: string; title: string }> = [
@@ -455,11 +456,11 @@ function RaceCardInner({
       </ul>
       <details className="race-note no-print">
         <summary>{noteRow?.privateNote ? "My note ✎" : "Add a private note"}</summary>
-        <textarea
-          rows={2}
+        <TextArea
+          aria-label={`Private note on ${race.subject.title}`}
           placeholder="Only you see this. It stays in this browser."
           value={note}
-          onChange={(e) => setNote(e.target.value)}
+          onChange={setNote}
           onBlur={() =>
             patch(election, race.subject, NOTE_CHOICE, { privateNote: note.trim() || undefined })
           }

@@ -7,6 +7,7 @@ import { parseScanned } from "../lib/qr";
 import { slateFromUrlOptions } from "../lib/query";
 import { type SlateImportSource, track } from "../lib/usage";
 import { ScanQrButton } from "./Qr";
+import { UrlField } from "./ui/TextField";
 
 /**
  * Paste, load or scan a slate, verify it, and save it. Standalone under
@@ -133,11 +134,12 @@ export function ImportVerifyPanel({ embedded = false }: { embedded?: boolean }) 
           />
         </div>
         <div className="row">
-          <input
-            type="url"
+          <UrlField
+            className="grow"
+            aria-label="Slate URL"
             placeholder="https://example.org/my-slate.txt"
             value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            onChange={setUrl}
           />
           <button type="button" onClick={loadFromUrl} disabled={!url.trim()}>
             Load from URL

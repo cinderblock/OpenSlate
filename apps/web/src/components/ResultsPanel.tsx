@@ -11,6 +11,7 @@ import {
 import { type Actor, outcomeLine, pendingLine } from "../lib/results-framing";
 import { RegionBreakdown } from "./RegionBreakdown";
 import { ResultsTimeline } from "./ResultsTimeline";
+import { SearchField } from "./ui/TextField";
 
 interface ResultsPanelProps {
   subject: Subject;
@@ -375,12 +376,11 @@ function OverridePicker({ subject, hits, currentRaceId, onPick }: OverridePicker
       <p className="hint">
         Pick the correct civicAPI race for <strong>{subject.title}</strong>:
       </p>
-      <input
-        type="search"
+      <SearchField
+        className="race-search"
         placeholder="Search races by name…"
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        style={{ width: "100%", marginBottom: "0.5rem" }}
+        onChange={setQuery}
         aria-label="Search civicAPI races by name"
       />
       {trimmed && manualSearch.isFetching && <p className="hint">Searching…</p>}

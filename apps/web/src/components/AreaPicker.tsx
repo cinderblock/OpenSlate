@@ -8,6 +8,7 @@ import {
   parseJurisdiction,
 } from "../lib/jurisdictions";
 import { Select } from "./ui/Select";
+import { SearchField } from "./ui/TextField";
 
 /** Above this many localities, show a filter box instead of every chip. */
 const CHIP_LIMIT = 16;
@@ -72,11 +73,11 @@ export function AreaPicker({
         <fieldset>
           <legend>City, county or local area</legend>
           {options.localities.length > CHIP_LIMIT && (
-            <input
-              type="search"
+            <SearchField
+              className="area-search"
               placeholder={`search ${options.localities.length} areas…`}
               value={filter}
-              onChange={(e) => setFilter(e.target.value)}
+              onChange={setFilter}
             />
           )}
           <div className="chips">
