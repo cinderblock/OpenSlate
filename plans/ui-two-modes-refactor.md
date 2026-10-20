@@ -119,6 +119,15 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
   lands.
 - No central server (memory: project_no_central_server). Everything stays
   client-side; follow state lives in IndexedDB/localStorage.
+- **Publishing is not centred on where you live** (user, 2026-10-19): anyone
+  can endorse in any race. The address / "where you vote" belongs to My vote
+  only; Compose must not be driven by an address lookup. Compose starts from
+  My-ballot picks and lets you add any race.
+- **My vote links to my endorsements** (user, 2026-10-19): a race card shows
+  what I've already published for it and leads to Compose.
+- **My ballot must not be a blind list** (user, 2026-10-19): a race should show
+  the field, not just the names your sources endorsed. See follow-up
+  "Opponents on My ballot".
 
 ## Plan / steps
 
@@ -142,10 +151,32 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
 
 ## Follow-ups (not started)
 
+- **Opponents on My ballot.** The endorsement data alone can't show the field:
+  across all 69 November sources, 729 of 1,412 office races name exactly one
+  candidate, 572 name two, and only 32 carry any `oppose` (counted
+  2026-10-19 over `orgs/*/2026-11-03/positions.json`). Layers, cheapest first:
+  1. Show every imported source's choices on each card (unfollowed ones
+     muted) and say plainly "your sources cover 1 of ? candidates".
+  2. A candidate-list source. Options: (a) Civic `voterinfo` by address when
+     self-hosted (it returns contests with candidates *and* OCD district ids,
+     so it also fills Where-you-vote; coverage is spotty per the other thread);
+     (b) official candidate lists (CA SoS certified list for state/federal,
+     county registrars such as sfelections.org election data for local)
+     published as a signed secondhand report next to the endorsements catalog,
+     keyed by the same title|jurisdiction|election race key; no server, works
+     on openslate.us. Both can coexist: (b) as the base, (a) on top.
+- **Address moves to My vote.** `openslate.address.v1` (`lib/address.ts`)
+  already exists and is used by Compose only. Where-you-vote gets an optional
+  "Use my address" that, when the self-hosted server answers, fills districts
+  and the ballot from `voterinfo`; otherwise the manual area picker as now.
 - **Compose from My-ballot picks.** Blocked on the other thread's uncommitted
   ComposePanel / ElectionCombobox / subjects.ts work landing. Then: Compose takes
-  positions from My-ballot picks (keyed by election date), drops its own ballot
-  picker, and its "Identity tab" copy becomes "Identities".
+  positions from My-ballot picks (keyed by election date), drops its own
+  address/ballot lookup (per the decision above), keeps "add any race" (search
+  imported subjects + free-form), and its "Identity tab" copy becomes
+  "Identities".
+- **My ballot ↔ my endorsements.** A race card shows my published stance when
+  one of my own identities' slates covers the race, with a link to Compose.
 - **Catalog index should carry each slate's scope** (`context.jurisdiction`) in
   `openslate-public-endorsements`, so the wizard's area/sources steps don't
   download the election's ~0.8 MB of slates to learn it.
@@ -226,13 +257,13 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
 
 1. Walk through `ui/two-modes` (worktree dev server: `bunx vite --port 5199
    --strictPort` in `apps/web`) and say whether to merge into master.
-2. Fill "Where you vote" from an address? Recommendation: add a "Use my
-   address" option that calls Civic `divisionsByAddress` through the optional
-   self-hosted server (new `/api/divisions`, same `GOOGLE_API_KEY`), and hide it
-   when the server isn't there. That keeps openslate.us free of any server.
-   Alternative: the browser calls Google directly with a referrer-restricted key
-   built into the app. That works on openslate.us, but someone has to own the
-   key, and every address goes to Google.
+2. Where do opponents come from (follow-up "Opponents on My ballot")?
+   Recommendation: layer 1 now in this branch; then (b) official candidate
+   lists in the endorsements repo, with (a) Civic-by-address as a self-hosted
+   extra. Needs a yes because (b) widens the endorsements repo's scope.
+3. Is the other thread's Compose work (uncommitted in the main checkout)
+   finished, so this thread can take ComposePanel / ElectionCombobox /
+   subjects.ts for the "Compose from picks" follow-up?
 
 ## Things not to do
 
