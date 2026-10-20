@@ -87,6 +87,11 @@ bun run --filter '@openslate/cli' start -- sign positions.json --key me.identity
 
 # verify a block someone shared
 bun run --filter '@openslate/cli' start -- verify "<paste block>"
+
+# take on another slate's positions: copy them, or adopt them by reference
+# (a live link, or with an embedded snapshot); see SPEC §3.10
+bun run --filter '@openslate/cli' start -- adopt https://example.org/party.slate \
+  --mode reference --match "Governor,Proposition" --into positions.json
 ```
 
 Other useful scripts: `bun test`, `bun run typecheck`, `bun run schema`
@@ -133,7 +138,7 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 | Package | What it is |
 | --- | --- |
 | [`packages/core`](./packages/core) | `@openslate/core` — the standard's reference impl: types, schema, canonical JSON, Ed25519 sign/verify, JSON Schema export. Pure TS, minimal audited deps. |
-| [`packages/cli`](./packages/cli) | `@openslate/cli` — `keygen` / `pubkey` / `sign` (incl. `--batch` for research bundles) / `validate` / `verify` / `inspect`. |
+| [`packages/cli`](./packages/cli) | `@openslate/cli` — `keygen` / `pubkey` / `sign` (incl. `--batch` for research bundles) / `validate` / `verify` / `inspect` / `adopt` (copy or reference another slate's positions). |
 | [`apps/web`](./apps/web) | React + Vite SPA. Manage identity; compose/share/import/verify slates; browse the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/); collate endorsements by race; assemble your own ballot; view live polls, market forecasts, and election results; pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
 | [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + proxies for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic), opinion polls ([VoteHub](https://votehub.com)), election results ([civicAPI](https://civicapi.org)), and market forecasts ([Kalshi](https://kalshi.com)). |
 | [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls, [civicAPI](https://civicapi.org) results, and [Kalshi](https://kalshi.com) forecasts behind permissive CORS. Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, and `/api/forecasts/v2/*` shapes so the web client treats either backend identically. Runs at `https://polls.openslate.us`. |

@@ -2,20 +2,25 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import {
+  type Adoption,
   type Attribution,
   type Position,
   type Reference,
   type SlatePayload,
   type StoredIdentity,
+  type Subject,
   buildSlate,
   createIdentity,
   decodeToken,
   deserializeIdentity,
   identityToIssuer,
   parseSlate,
+  resolveAdoptions,
   serializeIdentity,
   signSlate,
+  slateEntity,
   slatePayloadSchema,
+  subjectIdentity,
   verifySlate,
 } from "@openslate/core";
 
@@ -27,12 +32,26 @@ Usage:
   openslate sign <positions.json|-> --key <identity.json> [--election E] [--jurisdiction J] [-o out.txt]
   openslate sign --batch <dir> --key <identity.json> [--force]
   openslate validate <payload.json|->
-  openslate verify <token|file|->
+  openslate verify <token|file|url|-> [--resolve]
   openslate inspect <token|file|->
+  openslate adopt <token|file|url> --mode copy|reference|embed [--uri U] [--subjects file.json]
+                  [--match TEXT] [--source U] [--into positions.json]
 
 A <positions.json> is either a JSON array of Position objects, or an object
-{ "positions": [...], "endorsed_by": [...], "attribution": {...}, "context": {...} }.
+{ "positions": [...], "endorsed_by": [...], "attribution": {...}, "adopts": [...],
+  "context": {...} }.
 Use "-" for stdin.
+
+adopt takes on another slate's positions, three ways (SPEC §3.10):
+  copy       append the positions themselves to "positions"
+  reference  add an "adopts" entry pointing at the slate's uri (a live link)
+  embed      add an "adopts" entry that embeds the token (a snapshot), plus
+             the uri when one is known
+--subjects is a JSON array of Subjects to take (default: all); --match keeps
+subjects whose title contains TEXT (repeatable as a comma list). --source is
+where the adopting entity published the adoption. Without --into, the result
+is printed. verify --resolve fetches each adoption's uri and reports what it
+resolves to.
 
 When publishing a SECONDHAND report of another entity's public stance,
 include "attribution" and sign with a researcher key (kind: "researcher").
@@ -95,9 +114,25 @@ async function readText(pathOrDash: string): Promise<string> {
 
 async function resolveToken(arg: string): Promise<string> {
   if (arg === "-") return (await Bun.stdin.text()).trim();
+  if (/^https?:\/\//.test(arg)) return await fetchToken(arg);
   const file = Bun.file(arg);
   if (await file.exists()) return (await file.text()).trim();
   return arg.trim();
+}
+
+async function fetchToken(url: string): Promise<string> {
+  const response = await fetch(url);
+  if (!response.ok) fail(`could not fetch ${url}: HTTP ${response.status}`);
+  return (await response.text()).trim();
+}
+
+/** The parts of a positions.json input `sign` understands. */
+interface SignInput {
+  positions?: Position[];
+  endorsed_by?: Reference[];
+  attribution?: Attribution;
+  adopts?: Adoption[];
+  context?: SlatePayload["context"];
 }
 
 async function cmdKeygen(rest: string[]): Promise<void> {
@@ -145,19 +180,16 @@ async function cmdSign(rest: string[]): Promise<void> {
   let positions: Position[] = [];
   let endorsedBy: Reference[] | undefined;
   let attribution: Attribution | undefined;
+  let adopts: Adoption[] | undefined;
   let context: SlatePayload["context"];
   if (Array.isArray(raw)) {
     positions = raw as Position[];
   } else if (raw && typeof raw === "object") {
-    const obj = raw as {
-      positions?: Position[];
-      endorsed_by?: Reference[];
-      attribution?: Attribution;
-      context?: SlatePayload["context"];
-    };
+    const obj = raw as SignInput;
     positions = obj.positions ?? [];
     endorsedBy = obj.endorsed_by;
     attribution = obj.attribution;
+    adopts = obj.adopts;
     context = obj.context;
   }
 
@@ -173,7 +205,7 @@ async function cmdSign(rest: string[]): Promise<void> {
 
   let token: string;
   try {
-    const payload = buildSlate({ issuer, positions, endorsedBy, attribution, context });
+    const payload = buildSlate({ issuer, positions, endorsedBy, attribution, adopts, context });
     token = signSlate(payload, identity.keyPair.secretKey);
   } catch (err) {
     fail(`could not build slate: ${err instanceof Error ? err.message : String(err)}`);
@@ -195,6 +227,8 @@ interface IndexEntry {
   issuer: { key: string; name?: string; kind?: string };
   attribution?: SlatePayload["attribution"];
   positions: number;
+  /** Adoptions by reference (SPEC §3.10): which entities' positions this slate takes on. */
+  adopts?: { issuer: string; of?: string; election?: string; uri?: string; subjects?: number }[];
   issued_at: string;
 }
 
@@ -238,18 +272,14 @@ async function cmdSignBatch(
         continue;
       }
 
-      const raw = JSON.parse(await Bun.file(inputPath).text()) as {
-        positions?: Position[];
-        endorsed_by?: Reference[];
-        attribution?: Attribution;
-        context?: SlatePayload["context"];
-      };
+      const raw = JSON.parse(await Bun.file(inputPath).text()) as SignInput;
       try {
         const payload = buildSlate({
           issuer,
           positions: raw.positions ?? [],
           endorsedBy: raw.endorsed_by,
           attribution: raw.attribution,
+          adopts: raw.adopts,
           context: raw.context,
         });
         const token = signSlate(payload, identity.keyPair.secretKey);
@@ -285,6 +315,17 @@ async function cmdSignBatch(
           },
           ...(payload.attribution ? { attribution: payload.attribution } : {}),
           positions: payload.positions.length,
+          ...(payload.adopts?.length
+            ? {
+                adopts: payload.adopts.map((a) => ({
+                  issuer: a.issuer,
+                  ...(a.of ? { of: a.of } : {}),
+                  ...(a.election ? { election: a.election } : {}),
+                  ...(a.uri ? { uri: a.uri } : {}),
+                  ...(a.subjects ? { subjects: a.subjects.length } : {}),
+                })),
+              }
+            : {}),
           issued_at: payload.issued_at,
         });
       } catch (err) {
@@ -327,6 +368,7 @@ async function cmdValidate(rest: string[]): Promise<void> {
     if (result.data.endorsed_by?.length) {
       console.log(`endorsed_by: ${result.data.endorsed_by.length}`);
     }
+    if (result.data.adopts?.length) console.log(`adopts:    ${result.data.adopts.length}`);
   } else {
     console.log("INVALID");
     for (const issue of result.error.issues) {
@@ -336,8 +378,52 @@ async function cmdValidate(rest: string[]): Promise<void> {
   }
 }
 
+function describeAdoption(adoption: Adoption): string {
+  const who = adoption.of ? `${adoption.of} (signed by ${adoption.issuer})` : adoption.issuer;
+  const what = adoption.subjects ? `${adoption.subjects.length} subject(s)` : "all positions";
+  const where = [adoption.slate ? "embedded snapshot" : "", adoption.uri ?? ""]
+    .filter(Boolean)
+    .join(" + ");
+  return `${what} from ${who}${adoption.election ? ` for ${adoption.election}` : ""} [${where}]`;
+}
+
+async function printAdoptions(payload: SlatePayload, resolve: boolean): Promise<void> {
+  const adopts = payload.adopts ?? [];
+  if (adopts.length === 0) return;
+  console.log(`adopts:    ${adopts.length}`);
+  for (const adoption of adopts) console.log(`  - ${describeAdoption(adoption)}`);
+  // Embedded snapshots resolve offline; --resolve also fetches each uri once.
+  const fetched = new Map<string, string>();
+  if (resolve) {
+    for (const adoption of adopts) {
+      if (!adoption.uri || fetched.has(adoption.uri)) continue;
+      try {
+        const response = await fetch(adoption.uri);
+        if (response.ok) fetched.set(adoption.uri, (await response.text()).trim());
+        else console.log(`warning:   ${adoption.uri}: HTTP ${response.status}`);
+      } catch (err) {
+        console.log(`warning:   ${adoption.uri}: ${err instanceof Error ? err.message : err}`);
+      }
+    }
+  }
+  const resolved = resolveAdoptions(payload, (a) => {
+    const token = a.uri ? fetched.get(a.uri) : undefined;
+    return token ? [token] : [];
+  });
+  const byVia = new Map<string, number>();
+  for (const { via } of resolved.positions) {
+    const name = via.map((hop) => hop.entity.name ?? hop.entity.issuerKey).join(" → ");
+    byVia.set(name, (byVia.get(name) ?? 0) + 1);
+  }
+  for (const [name, count] of byVia) console.log(`adopted:   ${count} position(s) via ${name}`);
+  for (const { adoption, depth } of resolved.unresolved) {
+    const hint = resolve || adoption.slate ? "" : " (use --resolve to fetch)";
+    console.log(`unresolved: depth ${depth}: ${describeAdoption(adoption)}${hint}`);
+  }
+}
+
 async function cmdVerify(rest: string[]): Promise<void> {
-  const { positional } = parseFlags(rest);
+  const { flags, positional } = parseFlags(rest);
   const token = await resolveToken(positional[0] ?? "-");
   const result = verifySlate(token);
   if (result.valid) {
@@ -353,6 +439,7 @@ async function cmdVerify(rest: string[]): Promise<void> {
       console.log(`  retrieved_at:    ${attr.retrieved_at}`);
     }
     console.log(`positions: ${result.payload?.positions.length ?? 0}`);
+    if (result.payload) await printAdoptions(result.payload, flags.resolve === true);
     for (const warning of result.warnings) console.log(`warning:   ${warning}`);
   } else {
     console.log("INVALID");
@@ -370,6 +457,91 @@ async function cmdInspect(rest: string[]): Promise<void> {
     console.log(JSON.stringify({ header, payload }, null, 2));
   } catch (err) {
     fail(`could not decode token: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
+const ADOPT_MODES = ["copy", "reference", "embed"] as const;
+type AdoptMode = (typeof ADOPT_MODES)[number];
+
+async function cmdAdopt(rest: string[]): Promise<void> {
+  const { flags, positional } = parseFlags(rest);
+  const target = positional[0];
+  const mode = strFlag(flags, "mode") as AdoptMode | undefined;
+  if (!target || !mode || !ADOPT_MODES.includes(mode)) {
+    fail(
+      "usage: openslate adopt <token|file|url> --mode copy|reference|embed [--uri U] " +
+        "[--subjects file.json] [--match TEXT] [--source U] [--into positions.json]",
+    );
+  }
+  const token = await resolveToken(target);
+  const verified = verifySlate(token);
+  if (!verified.valid || !verified.payload) {
+    fail(`the slate to adopt does not verify:\n  ${verified.errors.join("\n  ")}`);
+  }
+  const adopted = verified.payload;
+  const uri = strFlag(flags, "uri") ?? (/^https?:\/\//.test(target) ? target : undefined);
+  if (mode === "reference" && !uri) fail("--mode reference needs a uri: pass --uri or a URL");
+
+  // Which positions: an explicit subject list and/or title substrings, else all of them.
+  let positions = adopted.positions;
+  const subjectsPath = strFlag(flags, "subjects");
+  if (subjectsPath) {
+    const wanted = new Set(
+      (JSON.parse(await readText(subjectsPath)) as Subject[]).map(subjectIdentity),
+    );
+    positions = positions.filter((p) => wanted.has(subjectIdentity(p.subject)));
+  }
+  const match = strFlag(flags, "match");
+  if (match) {
+    const needles = match.split(",").map((s) => s.trim().toLowerCase());
+    positions = positions.filter((p) =>
+      needles.some((n) => p.subject.title.toLowerCase().includes(n)),
+    );
+  }
+  if (positions.length === 0) fail("no positions selected");
+  const selectedAll = positions.length === adopted.positions.length;
+  const source = strFlag(flags, "source");
+
+  const into = strFlag(flags, "into");
+  const input: SignInput =
+    into && (await Bun.file(into).exists())
+      ? (JSON.parse(await Bun.file(into).text()) as SignInput)
+      : {};
+  const entity = slateEntity(adopted);
+  if (mode === "copy") {
+    input.positions = [...(input.positions ?? []), ...positions];
+  } else {
+    const subjects = [
+      ...new Map(positions.map((p) => [subjectIdentity(p.subject), p.subject])).values(),
+    ];
+    const adoption: Adoption = {
+      issuer: adopted.issuer.key,
+      ...(entity.secondhand && entity.name ? { of: entity.name } : {}),
+      ...(adopted.context?.election ? { election: adopted.context.election } : {}),
+      ...(uri ? { uri } : {}),
+      ...(mode === "embed" ? { slate: token } : {}),
+      ...(selectedAll ? {} : { subjects }),
+      ...(source ? { source } : {}),
+    };
+    input.adopts = [...(input.adopts ?? []), adoption];
+  }
+
+  const check = slatePayloadSchema.safeParse({
+    v: 1,
+    issuer: { key: "ed25519:check" },
+    issued_at: new Date().toISOString(),
+    positions: input.positions ?? [],
+    ...(input.adopts ? { adopts: input.adopts } : {}),
+  });
+  if (!check.success) fail(`result does not validate: ${check.error.issues[0]?.message}`);
+
+  const text = `${JSON.stringify(into ? input : mode === "copy" ? positions : input.adopts?.at(-1), null, 2)}\n`;
+  const label = entity.name ?? entity.issuerKey;
+  if (into) {
+    await Bun.write(into, text);
+    console.error(`${mode}: ${positions.length} position(s) from ${label} → ${into}`);
+  } else {
+    process.stdout.write(text);
   }
 }
 
@@ -393,6 +565,9 @@ switch (command) {
     break;
   case "inspect":
     await cmdInspect(rest);
+    break;
+  case "adopt":
+    await cmdAdopt(rest);
     break;
   case "help":
   case "--help":
