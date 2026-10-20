@@ -181,14 +181,14 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
     (`openslate.civicBallot.v1`, so it survives offline). Hidden when the
     server returns 501/doesn't answer. Can't be live-tested here: no
     `GOOGLE_API_KEY`; test the mapping against a recorded response fixture.
-14. **[current]** Compose from picks. Election by date (what My ballot uses); positions =
+14. [x] (`71a33e9`) Compose from picks. Election by date (what My ballot uses); positions =
     draft rows for that date + off-ballot entries. Remove the address field,
     `ElectionCombobox`, `BallotComposer` and the ballot export from Compose.
     Export (JSON/CSV) moves to My ballot over the collated races. "Add any
     race" stays (SubjectPicker + free-form). Copy: "Identity tab" →
     "Identities". Ranked-choice ordering (`useBallotRanking`, SF uses RCV):
     keep it as a follow-up on My ballot cards that have a candidate list.
-15. Published slates are remembered: new IndexedDB store `published`
+15. **[current]** Published slates are remembered: new IndexedDB store `published`
     (token, publishedAt), written when Compose signs. My ballot card shows
     "You published: X" with a Compose link; Identities lists "My slates".
 16. [x] (endorsements repo `b9e20a8` bundles + scripts + README, `0193108`
@@ -275,8 +275,15 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
   `memo` RaceCard comparing only its own draft rows, and non-statewide sections
   collapsed (unrendered) while no area is set. Now ~50 ms.
 - **My-ballot picks are keyed by election date** (`2026-11-03|<subjectKey>|<choice>`)
-  in the existing ballot-draft store. Compose still keys by Google election id,
-  so picks don't flow into Compose until the Compose follow-up.
+  in the existing ballot-draft store. Since `71a33e9` Compose reads the same
+  rows for the same election (shared `myElectionStore`), so picks flow
+  straight through. Rows keyed by a Google election id (pre-refactor drafts)
+  are ignored by Compose; the Elections page still counts them.
+- **Compose signs `context.election`** (the date), so a slate signed from
+  picks says which election it is for even where positions carry no date.
+- **Big Bash heredocs with quotes fail to parse in this harness** ("unexpected
+  EOF while looking for matching quote" at the script's last line). Write
+  multi-file edit scripts to `$TEMP/*.py` with the Write tool and run them.
 - **`bun run lint` fails on Windows checkouts** (CRLF vs Biome's default LF;
   logged in ISSUES.md, `ac56031`). Lint touched files with a CRLF copy of the
   config: `bunx biome check --config-path=<dir with lineEnding crlf> <files>`.
