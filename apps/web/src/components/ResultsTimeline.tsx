@@ -10,6 +10,7 @@ interface ResultsTimelineProps {
 
 import { baseUrlFor } from "../lib/routing";
 import { Segmented } from "./ui/Segmented";
+import { Slider } from "./ui/Slider";
 import { Switch } from "./ui/Switch";
 
 type MapFormat = "svg" | "png";
@@ -95,16 +96,14 @@ export function ResultsTimeline({ raceId, hasMap }: ResultsTimelineProps) {
         )}
       </div>
 
-      <input
+      <Slider
         className="timeline-scrubber"
-        type="range"
         min={0}
         max={timestamps.length - 1}
-        step={1}
         value={index ?? 0}
-        onChange={(e) => {
+        onChange={(next) => {
           setLiveFollow(false);
-          setIndex(Number(e.target.value));
+          setIndex(next);
         }}
         aria-label="History scrubber"
       />

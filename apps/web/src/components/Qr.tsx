@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Button, FileTrigger } from "react-aria-components";
 import { scanImageFile, toQrSvg } from "../lib/qr";
 import { TokenBox } from "./ui/Token";
 
@@ -98,22 +99,16 @@ export function ScanQrButton({
 
   return (
     <>
-      <button
-        type="button"
-        className={className}
-        onClick={() => inputRef.current?.click()}
-        disabled={busy}
-      >
-        {busy ? "Scanning…" : label}
-      </button>
-      <input
+      <FileTrigger
         ref={inputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        hidden
-        onChange={(e) => pickFile(e.target.files?.[0])}
-      />
+        acceptedFileTypes={["image/*"]}
+        defaultCamera="environment"
+        onSelect={(files) => pickFile(files?.[0])}
+      >
+        <Button className={className} isDisabled={busy}>
+          {busy ? "Scanning…" : label}
+        </Button>
+      </FileTrigger>
       {error && <p className="error">{error}</p>}
     </>
   );

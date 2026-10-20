@@ -7,6 +7,7 @@ import { parseScanned } from "../lib/qr";
 import { slateFromUrlOptions } from "../lib/query";
 import { type SlateImportSource, track } from "../lib/usage";
 import { ScanQrButton } from "./Qr";
+import { FileDrop } from "./ui/FileDrop";
 import { UrlField } from "./ui/TextField";
 import { TokenField } from "./ui/Token";
 
@@ -125,10 +126,9 @@ export function ImportVerifyPanel({ embedded = false }: { embedded?: boolean }) 
             {embedded ? "Add to my sources" : "Save to collection"}
           </button>
           <ScanQrButton onScan={handleQrScan} label="Scan QR slate" />
-          <input
-            type="file"
-            accept=".txt,.json,application/json,text/plain"
-            onChange={(e) => loadFromFile(e.target.files?.[0])}
+          <FileDrop
+            accept={[".txt", ".json", ".slate", "application/json", "text/plain"]}
+            onFile={(file) => void loadFromFile(file)}
           />
         </div>
         <div className="row">
