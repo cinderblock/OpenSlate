@@ -154,7 +154,7 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
 
 10. [x] Adopt the other thread's Compose edits (`1cf282c`). Those files are
     ours now.
-11. **[current]** Ballot sources in the data model. An official candidate list
+11. [x] (`ad16ad9`) Ballot sources in the data model. An official candidate list
     is a slate like any other: `attribution.of.kind = "election-authority"`
     (the SoS, a county registrar), one `neutral` position per candidate with
     `choice`, measures as `neutral` on "Yes"/"No". Collate: a source whose
@@ -162,12 +162,17 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
     not counted as an endorsement source, its choices become `race.candidates`,
     and its chips don't render. Sources page lists them under "Ballot data".
     No format change; signing/import/verify all reuse the catalog pipeline.
-12. My ballot cards show the field: every candidate anyone names (ballot
+12. [x] (`0559c2a`, verified in the browser with test-signed ballot slates:
+    "1 of 4 candidates covered", full field with pick buttons, race page
+    lists everyone and marks unfollowed) My ballot cards show the field: every candidate anyone names (ballot
     source first, then any imported source, unfollowed muted), with "your
     sources cover 1 of 5". Races listed = those a followed source covers (or
     all, with the checkbox, which becomes "Show races only unfollowed sources
     cover"). Candidates with no endorsement are plain rows with pick buttons.
-13. Address moves to My vote. Where-you-vote gets "Use my address": calls
+13. [x] (`dd5ad9e`; scoped 2026-10-19: districts and city only. Civic's
+    contest titles — "Governor" — don't match the catalog's race keys —
+    "Governor of California" — so feeding its candidates into the field
+    needs same-race matching; follow-up.) Address moves to My vote. Where-you-vote gets "Use my address": calls
     `/api/ballot`, which the server extends to pass each contest's
     `district.scope` + `district.id` (Civic gives e.g. scope `stateUpper`, id
     `"34"`; `congressional`→cd, `stateUpper`→sd, `stateLower`→ad,
@@ -176,7 +181,7 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
     (`openslate.civicBallot.v1`, so it survives offline). Hidden when the
     server returns 501/doesn't answer. Can't be live-tested here: no
     `GOOGLE_API_KEY`; test the mapping against a recorded response fixture.
-14. Compose from picks. Election by date (what My ballot uses); positions =
+14. **[current]** Compose from picks. Election by date (what My ballot uses); positions =
     draft rows for that date + off-ballot entries. Remove the address field,
     `ElectionCombobox`, `BallotComposer` and the ballot export from Compose.
     Export (JSON/CSV) moves to My ballot over the collated races. "Add any
@@ -186,7 +191,10 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
 15. Published slates are remembered: new IndexedDB store `published`
     (token, publishedAt), written when Compose signs. My ballot card shows
     "You published: X" with a Compose link; Identities lists "My slates".
-16. Endorsements repo: ballot sources for 2026-11-03. CA SoS certified list
+16. [x] (endorsements repo `b9e20a8` bundles + scripts + README, `0193108`
+    698 spelling edits; **not pushed**, so the public catalog doesn't carry
+    them until the user pushes and CI signs) Endorsements repo: ballot
+    sources for 2026-11-03. CA SoS certified list
     (PDF, 8/27/2026: `elections.cdn.sos.ca.gov/statewide-elections/2026-general/cert-list-candidates.pdf`)
     → statewide, Congress, Senate, Assembly. SF Dept of Elections
     (`sf.gov/reports--candidates-nov-3-2026-general-election`,
@@ -224,6 +232,16 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
   "Identities".
 - **My ballot ↔ my endorsements.** A race card shows my published stance when
   one of my own identities' slates covers the race, with a link to Compose.
+- **Same-person matching in the app** (choice spellings that differ only by
+  initials/nicknames collapse onto the ballot's spelling), for firsthand
+  slates the catalog's normalizer never sees.
+- **Jurisdiction containment:** `us/ca/bay-area` measures should show for an
+  SF voter. Needs a region → localities map (or the catalog to settle on one
+  jurisdiction per regional measure; see Findings).
+- **Catalog data drift** (RTM and BART 8 keyed under several jurisdictions)
+  needs a one-off fix in the endorsements repo.
+- **Ranked choice** on My ballot cards with a candidate list (SF uses RCV);
+  `useBallotRanking` exists.
 - **Catalog index should carry each slate's scope** (`context.jurisdiction`) in
   `openslate-public-endorsements`, so the wizard's area/sources steps don't
   download the election's ~0.8 MB of slates to learn it.
@@ -269,6 +287,29 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
   "Find Your California Representatives"); fixed in `5d0b88d`. Its TLS chain is
   incomplete (`curl` says "unable to verify the first certificate"), but browsers
   load it.
+- **Certified list parsing (2026-10-19):** the SoS PDF's text layer (pypdf)
+  is "Office heading / Name[*] Party / ballot designation" triples; Senate
+  pages are headed "State Senate District N" (not "State Senator"), which
+  silently fed 20 Senate races into House District 52 until a two-line
+  designation guard caught it. Judicial retention is "• For <office> Shall
+  [role] NAME be elected…" with ALL-CAPS names; title-casing them matched
+  every catalog retention title. After the Senate fix, 258 of 260 catalog
+  races in scope matched by title|jurisdiction; the two misses are BART
+  districts 2 and 4 (outside SF, no bundle yet).
+- **Candidate spellings:** the catalog mostly drops middle initials ("Malia
+  Cohen" ×59 vs the ballot's "Malia M. Cohen"); 55 names differed. Fixed at
+  the data level: `normalize-choices.ts` now makes an election authority's
+  spelling canonical (698 edits). Firsthand slates from individuals will
+  still spell names freely; app-side same-person matching is a follow-up.
+- **Catalog jurisdiction drift:** the regional transit measure appears as
+  `us/ca` ×3, `us/ca/bay-area` ×5 and `us/ca/sf` ×2, and BART 8 as both
+  `us/ca/bart-8` and `us/ca/sf`, so one race splits into several keys. The
+  SF ballot bundle uses `us/ca/bay-area` and `us/ca/bart-8`. A regional
+  measure at `us/ca/bay-area` is hidden for an SF voter because areas are
+  flat; containment (bay-area ⊃ sf) is a follow-up.
+- Test-signing locally: `bun .openslate/packages/cli/src/index.ts keygen …`
+  then `sign <positions.json> --key … -o x.slate`; serve with CORS
+  (`$TEMP/serve-slates.ts`, port 5198) and import by URL on Sources.
 - **Address lookup already exists, server-side only.** `apps/server` proxies
   Google Civic `voterinfo` (and `elections`) when `GOOGLE_API_KEY` is set. Only
   Compose uses it, through `/api/ballot` → `lib/subjects.ts`. No key is configured
