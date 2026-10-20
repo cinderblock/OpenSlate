@@ -1,3 +1,5 @@
+import { GEOCODE_PATH, handleGeocode } from "./geocode";
+
 const POLLS_UPSTREAM = "https://api.votehub.com";
 const RESULTS_UPSTREAM = "https://civicapi.org/api/v2";
 const FORECASTS_UPSTREAM = "https://api.elections.kalshi.com/trade-api/v2";
@@ -55,6 +57,12 @@ function corsHeaders(): HeadersInit {
 
 export default {
   async fetch(req: Request): Promise<Response> {
+    // The address relay is the one POST route; it keeps nothing (see geocode.ts).
+    if (new URL(req.url).pathname === GEOCODE_PATH) {
+      const cors = { ...corsHeaders(), "Access-Control-Allow-Methods": "POST, OPTIONS" };
+      if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+      return handleGeocode(req, cors);
+    }
     if (req.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders() });
     }
@@ -72,6 +80,7 @@ export default {
           polls_upstream: POLLS_UPSTREAM,
           results_upstream: RESULTS_UPSTREAM,
           forecasts_upstream: FORECASTS_UPSTREAM,
+          geocode: GEOCODE_PATH,
         },
         { headers: corsHeaders() },
       );

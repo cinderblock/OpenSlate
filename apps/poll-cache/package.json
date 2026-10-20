@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "type": "module",
   "private": true,
-  "description": "Cloudflare Worker that caches VoteHub poll data behind permissive CORS. Stateless pass-through; no user data, no logs.",
+  "description": "Cloudflare Worker that caches public election data (VoteHub polls, civicAPI results, Kalshi forecasts) behind permissive CORS, and relays opt-in address lookups to the Census geocoder. Stateless; stores and logs nothing.",
   "license": "MIT",
   "scripts": {
     "dev": "wrangler dev",
