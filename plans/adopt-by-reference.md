@@ -100,10 +100,9 @@ CLI:
 
 ## Plan / steps
 
-1. **[current]** Spec + core: schema, helpers, tests, JSON schema, vectors. Branch
-   `adopts` in a worktree off master.
-2. CLI: sign/verify passthrough + `adopt` command + tests. README.
-3. Merge to master. Push OpenSlate (needs the user's OK: master also carries
+1. ~~Spec + core~~ `b3d28b9` (worktree `~/.t3/worktrees/OpenSlate/adopts`, branch `adopts`).
+2. ~~CLI~~ `2708f8c`: `adopt --mode copy|reference|embed`, sign/verify/index passthrough, 3 tests.
+3. **[current]** Merged to local master (fast-forward). Push OpenSlate (needs the user's OK: master also carries
    other threads' unpushed plan commits).
 4. Web (after `ui/two-modes` merges): resolve adoptions in collation/sources,
    show "via <org>", and have the catalog import pull adopted slates.
@@ -117,6 +116,9 @@ CLI:
 
 ## Findings / gotchas
 
+- `vectors:generate` writes LF; this checkout is CRLF. The regenerated vector files show as modified but have no content change; `git add` normalizes them (no diff staged).
+- Biome on this checkout needs `--line-ending=crlf` (ISSUES: "biome lint fails on CRLF checkouts"; ui/two-modes carries a config fix).
+
 - The current master web app's Collate labels entries with `issuer.name`, so
   every catalog slate shows as "OpenSlate Public Endorsements". `ui/two-modes`
   fixes this (source = `attribution.of`). Don't fix it again on master.
@@ -126,8 +128,8 @@ CLI:
 ## Progress log
 
 - [x] Design written (this doc).
-- [ ] Spec + core
-- [ ] CLI
+- [x] Spec + core (`b3d28b9`: 63 core tests, 16 vectors)
+- [x] CLI (`2708f8c`: e2e-checked against the live CADEM slate: reference, embed, copy, verify --resolve)
 - [ ] Merge + push (user OK)
 - [ ] Web (after ui/two-modes)
 - [ ] Endorsements migration
