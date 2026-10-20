@@ -1910,3 +1910,7 @@ button.tag.active {
 .ui-slider-thumb[data-focus-visible] {
   box-shadow: var(--focus-ring);
 }
+
+.subject-picker {
+  margin-bottom: 0.5rem;
+}

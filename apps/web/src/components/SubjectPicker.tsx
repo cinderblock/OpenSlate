@@ -87,7 +87,7 @@ export function SubjectPicker({
   const showFree = selected === FREE;
 
   return (
-    <div>
+    <div className="subject-picker">
       <ComboBox
         label="Subject"
         placeholder={
