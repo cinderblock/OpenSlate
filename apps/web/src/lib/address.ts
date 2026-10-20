@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 /**
  * Tiny localStorage-backed string preference. Used for small user-controlled
- * settings (address, selected election) that don't justify the IndexedDB-backed
+ * settings (address, active identity) that don't justify the IndexedDB-backed
  * TanStack DB collection plumbing. Address is forwarded to the server's ballot
  * proxy on demand but never persisted server-side.
  */
@@ -27,9 +27,6 @@ function usePersistedString(key: string): [string, (next: string) => void] {
 
 export const useAddress = (): [string, (next: string) => void] =>
   usePersistedString("openslate.address.v1");
-
-export const useElectionId = (): [string, (next: string) => void] =>
-  usePersistedString("openslate.electionId.v1");
 
 export const useActiveIdentityKey = (): [string, (next: string) => void] =>
   usePersistedString("openslate.activeIdentityKey.v1");

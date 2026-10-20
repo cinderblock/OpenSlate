@@ -393,174 +393,7 @@ footer a:hover {
   font-size: 0.9rem;
 }
 
-/* Combobox (election picker) */
-.combobox {
-  position: relative;
-  flex: 1;
-}
-.combobox-selected {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-2);
-}
-.combobox-selected > span {
-  flex: 1;
-}
-.combobox-list {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  list-style: none;
-  padding: 0.25rem 0;
-  margin: 0.25rem 0 0;
-  max-height: 22rem;
-  overflow-y: auto;
-  z-index: 20;
-  border-radius: 8px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-}
-.combobox-option {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  padding: 0.5rem 0.75rem;
-  background: none;
-  border: none;
-  border-radius: 0;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  color: var(--text);
-}
-.combobox-option:hover {
-  background: var(--surface-2);
-  border-color: var(--border);
-}
-.combobox-status {
-  padding: 0.5rem 0.75rem;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-/* Ballot composer */
-.ballot {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.ballot-row {
-  border-top: 1px solid var(--border);
-  padding: 0.5rem 0;
-}
-.ballot-row:first-of-type {
-  border-top: none;
-}
-.ballot-row-main {
-  display: grid;
-  grid-template-columns: auto minmax(10rem, 1.4fr) minmax(0, 8rem) auto auto;
-  gap: 0.5rem;
-  align-items: center;
-}
-.ballot-drag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  cursor: grab;
-  user-select: none;
-  color: var(--muted);
-  padding: 0.1rem 0.3rem;
-  border-radius: 4px;
-  touch-action: none;
-}
-.ballot-drag:hover {
-  background: var(--surface-2);
-  color: var(--text);
-}
-.ballot-drag:active {
-  cursor: grabbing;
-}
-.drag-grip {
-  font-size: 1.1em;
-  line-height: 1;
-}
-.ballot-rank {
-  font-weight: 600;
-  color: var(--text);
-  min-width: 1.5em;
-  text-align: right;
-}
-.ballot-drag-placeholder {
-  width: 0;
-}
-.ballot-row.top-n {
-  background: rgba(46, 204, 113, 0.06);
-  border-left: 3px solid var(--ok);
-  padding-left: 0.5rem;
-  margin-left: -0.5rem;
-}
-.ballot-row.sortable {
-  /* No hover transform; sortable transform comes from dnd-kit inline style. */
-}
-.ballot-row-label {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-.ballot-row-party {
-  font-size: 0.75rem;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-@media (max-width: 720px) {
-  .ballot-row-main {
-    grid-template-columns: 1fr;
-  }
-}
-.ballot-row-notes {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  margin-top: 0.4rem;
-  padding-left: 0.5rem;
-  border-left: 2px solid var(--border);
-}
-
-.stance-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-}
-.stance-select {
-  display: none;
-  min-width: 9rem;
-}
-.stance-select.has-stance.stance-endorse {
-  color: var(--ok);
-  border-color: var(--ok);
-}
-.stance-select.has-stance.stance-oppose {
-  color: var(--bad);
-  border-color: var(--bad);
-}
-@media (max-width: 720px) {
-  .stance-buttons {
-    display: none;
-  }
-  .stance-select {
-    display: inline-block;
-  }
-}
+/* Pick buttons (My ballot) */
 .stance-btn {
   font-size: 0.75rem;
   padding: 0.25rem 0.55rem;
@@ -692,86 +525,6 @@ footer a:hover {
 .print-only {
   display: none;
 }
-.print-summary h1 {
-  margin: 0 0 0.25rem;
-}
-.print-summary h2 {
-  margin-top: 1rem;
-  border-bottom: 1px solid #999;
-  padding-bottom: 0.2rem;
-}
-.print-list {
-  list-style: none;
-  padding: 0;
-}
-.print-list li {
-  margin: 0.4rem 0;
-  padding: 0.4rem 0;
-  border-top: 1px solid #ccc;
-}
-.print-list li:first-child {
-  border-top: none;
-}
-.print-contest {
-  page-break-inside: avoid;
-  margin: 0.6rem 0 0.9rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid #ddd;
-}
-.print-contest h3 {
-  margin: 0.4rem 0 0.1rem;
-  font-size: 1.05rem;
-}
-.print-contest-meta {
-  margin: 0;
-  font-size: 0.85rem;
-  color: #555;
-}
-.print-ballot {
-  list-style: none;
-  padding: 0;
-  margin: 0.3rem 0 0;
-}
-.print-ballot li {
-  padding: 0.15rem 0;
-  font-size: 1rem;
-  line-height: 1.4;
-}
-.print-mark {
-  display: inline-block;
-  width: 1.2em;
-  font-family: ui-monospace, monospace;
-  font-size: 1.1em;
-}
-.print-mark.checked {
-  font-weight: 700;
-}
-.print-rank {
-  display: inline-block;
-  min-width: 1.8em;
-  font-family: ui-monospace, monospace;
-  color: #555;
-}
-.print-pick {
-  color: #1a7f37;
-  margin-right: 0.2em;
-}
-.print-top-n {
-  font-weight: 700;
-}
-.print-top-n .print-rank {
-  color: #1a7f37;
-}
-.print-annotation {
-  color: #666;
-  font-size: 0.85em;
-  font-style: italic;
-}
-.print-warning {
-  color: #b00;
-  font-weight: 700;
-}
-
 /* My ballot */
 .ballot-toolbar {
   display: flex;
@@ -1400,4 +1153,36 @@ button.tag.active {
   display: block;
   font-size: 0.8rem;
   font-weight: 400;
+}
+
+/* Compose: picks from My ballot, one line each. */
+.pick-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+.pick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.45rem 0;
+  border-top: 1px solid var(--border);
+}
+.pick-row.left-out {
+  opacity: 0.55;
+}
+.pick-include {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 18rem;
+  color: var(--text);
+}
+.pick-stance {
+  min-width: 8rem;
+}
+.pick-statement {
+  flex: 1 1 14rem;
 }

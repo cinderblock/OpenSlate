@@ -12,8 +12,11 @@ The README says the hosted mode is manual entry, so the UI should say that
 instead of showing an error (or not call the endpoints when no server is
 configured).
 
-Note: `ComposePanel.tsx` and `ElectionCombobox.tsx` had uncommitted edits from
-another thread on 2026-10-17; check with whoever owns them first.
+**Update (branch `ui/two-modes`, 2026-10-20):** Compose no longer calls either
+endpoint (it signs My-ballot picks), and *Use my address* on My ballot only
+renders when `/api/health` reports `ballotLookup: true`, so the ballot half is
+moot. The Elections page (`ElectionsPanel.tsx`) still calls `/api/elections`
+and shows "Google elections list unavailable — HTTP 404" on the hosted app.
 
 ## Race view finds no polls and no endorsements for catalog slates
 

@@ -3,9 +3,10 @@ import { useLiveQuery } from "@tanstack/react-db";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useElectionId } from "../lib/address";
 import { useBallotDraft } from "../lib/ballotDraft";
 import { slatesCollection } from "../lib/collections";
+import { formatElectionDate } from "../lib/dates";
+import { localToday, useMyElection } from "../lib/myVote";
 import { electionsQueryOptions } from "../lib/query";
 
 interface ElectionEntry {
@@ -18,13 +19,16 @@ interface ElectionEntry {
   past: boolean | undefined;
 }
 
-const TODAY = new Date().toISOString().slice(0, 10);
+const TODAY = localToday();
+
+/** Draft rows are keyed by election date; older ones carried a Google election id. */
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function ElectionsPanel() {
   const electionsQuery = useQuery(electionsQueryOptions());
   const { data: slates } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
   const draft = useBallotDraft();
-  const [activeElectionId, setActiveElectionId] = useElectionId();
+  const [myElection, setMyElection] = useMyElection();
   const [showPast, setShowPast] = useState(false);
 
   const entries = useMemo<ElectionEntry[]>(() => {
@@ -68,11 +72,18 @@ export function ElectionsPanel() {
       if (!row.electionId) continue;
       draftCounts.set(row.electionId, (draftCounts.get(row.electionId) ?? 0) + 1);
     }
-    for (const [id, count] of draftCounts) {
-      const existing = map.get(id);
-      if (existing) existing.sources.drafts = count;
-      else
-        map.set(id, { id, sources: { google: false, slates: 0, drafts: count }, past: undefined });
+    for (const [key, count] of draftCounts) {
+      const existing = map.get(key) ?? [...map.values()].find((e) => e.electionDay === key);
+      if (existing) existing.sources.drafts += count;
+      else {
+        const dated = DATE.test(key);
+        map.set(key, {
+          id: key,
+          ...(dated ? { electionDay: key } : {}),
+          sources: { google: false, slates: 0, drafts: count },
+          past: dated ? key < TODAY : undefined,
+        });
+      }
     }
 
     return [...map.values()];
@@ -99,7 +110,8 @@ export function ElectionsPanel() {
       <h2>Elections</h2>
       <p className="hint">
         Every election we know about — from Google's list, from imported slates' subject IDs, and
-        from your local drafts. Picking one as <em>active</em> drives Compose.
+        from your local drafts. Picking one as <em>active</em> sets the election My ballot and
+        Compose show.
       </p>
 
       <div className="card">
@@ -131,8 +143,8 @@ export function ElectionsPanel() {
           <ElectionCard
             key={entry.id}
             entry={entry}
-            isActive={entry.id === activeElectionId}
-            setActive={() => setActiveElectionId(entry.id)}
+            isActive={entry.electionDay !== undefined && entry.electionDay === myElection}
+            setActive={entry.electionDay ? () => setMyElection(entry.electionDay ?? "") : undefined}
           />
         ))
       )}
@@ -147,13 +159,19 @@ function ElectionCard({
 }: {
   entry: ElectionEntry;
   isActive: boolean;
-  setActive: () => void;
+  /** Absent when the election has no date to key My ballot by. */
+  setActive?: () => void;
 }) {
   const isTest = entry.id === "2000";
   return (
     <div className={`card election-card${entry.past ? " election-past" : ""}`}>
       <div className="card-title">
-        <strong>{entry.name ?? `Election ${entry.id}`}</strong>
+        <strong>
+          {entry.name ??
+            (entry.electionDay === entry.id
+              ? formatElectionDate(entry.id)
+              : `Election ${entry.id}`)}
+        </strong>
         {entry.past === true && <span className="tag">past</span>}
         {entry.past === undefined && <span className="tag">unknown date</span>}
         {isTest && <span className="tag">test</span>}
@@ -173,7 +191,7 @@ function ElectionCard({
         {entry.sources.drafts > 0 && ` · ${entry.sources.drafts} draft row(s)`}
       </p>
       <div className="row">
-        {!isActive && (
+        {!isActive && setActive && (
           <button type="button" onClick={setActive}>
             Use as active
           </button>

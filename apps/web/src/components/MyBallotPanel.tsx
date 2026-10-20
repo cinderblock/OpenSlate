@@ -1,7 +1,8 @@
 import type { Stance } from "@openslate/core";
 import { Link } from "@tanstack/react-router";
 import { memo, useMemo, useState } from "react";
-import { type DraftRow, rowIdFor, useBallotDraft } from "../lib/ballotDraft";
+import { type DraftRow, NOTE_CHOICE, rowIdFor, useBallotDraft } from "../lib/ballotDraft";
+import { ballotFileName, ballotToCsv, ballotToJson } from "../lib/ballotExport";
 import {
   type ChoiceGroup,
   type Race,
@@ -13,6 +14,7 @@ import {
   stanceTone,
 } from "../lib/collate";
 import { formatElectionDate } from "../lib/dates";
+import { downloadText } from "../lib/download";
 import {
   EMPTY_AREA,
   districtFamilyLabel,
@@ -23,6 +25,7 @@ import {
 } from "../lib/jurisdictions";
 import { localToday, useArea, useDecodedSlates, useFollows, useMyElection } from "../lib/myVote";
 import { isBallotSource, isFollowed } from "../lib/sources";
+import { track } from "../lib/usage";
 import { openWizard } from "../lib/wizard";
 import { AddressLookup } from "./AddressLookup";
 import { AreaPicker, describeArea } from "./AreaPicker";
@@ -51,6 +54,8 @@ export function MyBallotPanel() {
   const draft = useBallotDraft();
   const [showUnfollowed, setShowUnfollowed] = useState(false);
   const [editingArea, setEditingArea] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportNotes, setExportNotes] = useState(false);
 
   const today = localToday();
   const elections = useMemo(() => electionsOf(slates, follows), [slates, follows]);
@@ -120,6 +125,23 @@ export function MyBallotPanel() {
   const followedCount = [...sourceIds].filter((id) => isFollowed(follows, id)).length;
   const summary = elections.find((e) => e.date === election);
 
+  function exportBallot(format: "json" | "csv") {
+    const input = {
+      election,
+      area: isAreaSet(area) ? describeArea(area) : "",
+      races,
+      rows: draft.rows,
+      exportedAt: new Date().toISOString(),
+    };
+    const options = { privateNotes: exportNotes };
+    downloadText(
+      ballotFileName(election, format),
+      format === "json" ? ballotToJson(input, options) : ballotToCsv(input, options),
+      format === "json" ? "application/json" : "text/csv",
+    );
+    track({ name: "ballot.export", dims: { format } });
+  }
+
   if (!isReady) {
     return (
       <section className="panel">
@@ -178,6 +200,14 @@ export function MyBallotPanel() {
           </button>
         </div>
         <span className="grow" />
+        <button
+          type="button"
+          aria-expanded={exporting}
+          onClick={() => setExporting((v) => !v)}
+          disabled={races.length === 0}
+        >
+          Export
+        </button>
         <button type="button" onClick={() => window.print()} disabled={decided === 0}>
           Print my picks
         </button>
@@ -196,6 +226,34 @@ export function MyBallotPanel() {
                 show every area
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {exporting && (
+        <div className="card no-print">
+          <p className="hint">
+            This ballot as a file: every race listed here with its field, who backs whom, and your
+            picks and statements.
+          </p>
+          <div className="row export-options">
+            <label>
+              <input
+                type="checkbox"
+                checked={exportNotes}
+                onChange={(e) => setExportNotes(e.target.checked)}
+              />{" "}
+              Include my private notes
+            </label>
+            <button type="button" onClick={() => exportBallot("json")}>
+              Download JSON
+            </button>
+            <button type="button" onClick={() => exportBallot("csv")}>
+              Download CSV
+            </button>
+            <button type="button" className="link" onClick={() => setExporting(false)}>
+              close
+            </button>
           </div>
         </div>
       )}
@@ -331,7 +389,7 @@ function RaceCardInner({
   rows: Record<string, DraftRow>;
   patch: Patch;
 }) {
-  const noteRow = rows[rowIdFor(election, race.subject, "\u0000note")];
+  const noteRow = rows[rowIdFor(election, race.subject, NOTE_CHOICE)];
   const [note, setNote] = useState(noteRow?.privateNote ?? "");
   const top = race.choices[0];
   const contested = race.choices.filter((c) => c.support > 0).length > 1;
@@ -377,7 +435,7 @@ function RaceCardInner({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           onBlur={() =>
-            patch(election, race.subject, "\u0000note", { privateNote: note.trim() || undefined })
+            patch(election, race.subject, NOTE_CHOICE, { privateNote: note.trim() || undefined })
           }
         />
       </details>
@@ -515,7 +573,7 @@ function PrintPicks({
       picks: rows.filter(
         (row) => row.id.startsWith(`${election}|${race.key}|`) && row.stance === "endorse",
       ),
-      note: rows.find((row) => row.id === `${election}|${race.key}|\u0000note`)?.privateNote,
+      note: rows.find((row) => row.id === `${election}|${race.key}|${NOTE_CHOICE}`)?.privateNote,
     }))
     .filter((entry) => entry.picks.length > 0);
   return (

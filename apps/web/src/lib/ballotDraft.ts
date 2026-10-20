@@ -60,6 +60,9 @@ function persistRankings(map: RankingMap): void {
   }
 }
 
+/** The `choice` of a race's private-note row; no candidate can be named this. */
+export const NOTE_CHOICE = "\u0000note";
+
 export function rowIdFor(electionId: string, subject: Subject, choice: string | undefined): string {
   return `${electionId}|${subjectKey(subject)}|${choice ?? ""}`;
 }

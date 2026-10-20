@@ -1,5 +1,7 @@
 import type { Subject } from "@openslate/core";
 import { useState } from "react";
+import { formatElectionDate } from "../lib/dates";
+import { jurisdictionLabel } from "../lib/jurisdictions";
 import type { KnownSubject } from "../lib/subjects";
 
 const FREE = "__free__";
@@ -9,8 +11,8 @@ const SUBJECT_KINDS = ["race", "measure", "candidate", "option"] as const;
 
 /**
  * Pick a subject from the user's imported slates, or enter a free-text one.
- * Used for the "off-ballot" add-position flow in Compose. Ballot subjects are
- * rendered inline by BallotComposer, not in this picker.
+ * Used for Compose's "Other positions". The same title can occur in several
+ * places and elections, so each option says where and when.
  */
 export function SubjectPicker({
   imported,
@@ -58,6 +60,9 @@ export function SubjectPicker({
               {imported.map((entry) => (
                 <option key={entry.key} value={entry.key}>
                   {entry.subject.title}
+                  {entry.subject.jurisdiction &&
+                    ` · ${jurisdictionLabel(entry.subject.jurisdiction)}`}
+                  {entry.subject.election && ` · ${formatElectionDate(entry.subject.election)}`}
                   {entry.endorserCount > 0 ? ` · ${entry.endorserCount} issuer(s)` : ""}
                 </option>
               ))}

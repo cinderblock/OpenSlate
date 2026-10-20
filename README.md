@@ -23,8 +23,9 @@ The web app has two modes:
   area with your followed sources' endorsements next to each choice, plus your
   private picks and notes. *Sources* is where you follow or unfollow sources,
   browse the public catalog, and add slates from a link, file, QR code or paste.
-- **Publish**: create a signing identity, compose and sign a slate, and verify
-  or inspect any block.
+- **Publish**: create a signing identity, sign your My-ballot picks (plus any
+  other race or issue, on your ballot or not) as a slate, and verify or
+  inspect any block.
 
 A skippable getting-started guide sets up a first visit: pick an election,
 where you vote, and whose recommendations you trust (or create an identity to
@@ -47,9 +48,9 @@ machine, never on a server. The choice below is mostly about what fetches
 The easy path: open the hosted web app at **<https://openslate.us>**. Your
 signing keys and slates live only in your browser; nothing is uploaded. Polls
 and election results are fetched through project-operated Cloudflare Workers.
-Per-address ballot lookup needs a server-side Google Civic key, so it isn't
-enabled in the hosted mode — enter races manually, or self-host the Hono
-backend below.
+Filling in *Where you vote* from a street address needs a server-side Google
+Civic key, so it isn't enabled in the hosted mode — set your area by hand, or
+self-host the Hono backend below.
 
 ### Your Own Servers
 
@@ -86,8 +87,8 @@ bun run dev:web      # Vite SPA       — http://localhost:5173
 bun run dev:server   # Hono backend   — http://localhost:8787 (optional)
 ```
 
-To enable per-address ballot lookup, copy `.env.example` → `.env` and set
-`GOOGLE_API_KEY`. Vite proxies `/api` → `localhost:8787` so the SPA finds the
+To enable address lookup (*Use my address* under Where you vote), copy
+`.env.example` → `.env` and set `GOOGLE_API_KEY`. Vite proxies `/api` → `localhost:8787` so the SPA finds the
 backend automatically.
 
 The same install gets you the CLI, for scripting or headless workflows:
@@ -148,7 +149,7 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 | --- | --- |
 | [`packages/core`](./packages/core) | `@openslate/core` — the standard's reference impl: types, schema, canonical JSON, Ed25519 sign/verify, JSON Schema export. Pure TS, minimal audited deps. |
 | [`packages/cli`](./packages/cli) | `@openslate/cli` — `keygen` / `pubkey` / `sign` (incl. `--batch` for research bundles) / `validate` / `verify` / `inspect`. |
-| [`apps/web`](./apps/web) | React + Vite SPA. Two modes. *My vote*: a getting-started guide, My ballot (your followed sources' endorsements by race, for your election and area, with private picks), and Sources (follow/unfollow, the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/), import from link/file/QR/paste). *Publish*: identities, compose/sign/share, verify and inspect slates; view live polls, market forecasts, and election results; pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
+| [`apps/web`](./apps/web) | React + Vite SPA. Two modes. *My vote*: a getting-started guide, My ballot (your followed sources' endorsements by race, for your election and area, with private picks), and Sources (follow/unfollow, the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/), import from link/file/QR/paste). *Publish*: identities, sign your picks (or any race) as a slate and share it, verify and inspect slates; view live polls, market forecasts, and election results; pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
 | [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + proxies for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic), opinion polls ([VoteHub](https://votehub.com)), election results ([civicAPI](https://civicapi.org)), and market forecasts ([Kalshi](https://kalshi.com)). |
 | [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls, [civicAPI](https://civicapi.org) results, and [Kalshi](https://kalshi.com) forecasts behind permissive CORS. Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, and `/api/forecasts/v2/*` shapes so the web client treats either backend identically. Runs at `https://polls.openslate.us`. |
 | [`apps/desktop`](./apps/desktop) | [Electrobun](https://blackboard.sh/electrobun) wrapper around the web build (stub). |
@@ -254,8 +255,8 @@ Analytics and the zone settings are managed in
 Cloudflare credential.
 
 `apps/web/.env.production` is committed on purpose: everything in it ships in
-the public bundle anyway. Address-based ballot lookup needs `apps/server` with a
-`GOOGLE_API_KEY`, so the hosted app offers manual entry instead.
+the public bundle anyway. Address lookup needs `apps/server` with a
+`GOOGLE_API_KEY`, so the hosted app has you set your area by hand instead.
 
 Workers Builds settings, one connection per worker, both on this repo with
 production branch `master` and non-production branch builds off:
