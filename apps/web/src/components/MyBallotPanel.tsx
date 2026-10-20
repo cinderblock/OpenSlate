@@ -21,6 +21,7 @@ import {
   isAreaSet,
   jurisdictionLabel,
   jurisdictionRank,
+  noRaceReason,
   parseJurisdiction,
 } from "../lib/jurisdictions";
 import { localToday, useArea, useDecodedSlates, useFollows, useMyElection } from "../lib/myVote";
@@ -28,13 +29,15 @@ import { type MyPosition, useMyPositionsByRace } from "../lib/published";
 import { isBallotSource, isFollowed } from "../lib/sources";
 import { track } from "../lib/usage";
 import { openWizard } from "../lib/wizard";
-import { AddressLookup } from "./AddressLookup";
 import { AreaPicker, describeArea } from "./AreaPicker";
 import { electionOptions } from "./electionOptions";
 import { Checkbox } from "./ui/Checkbox";
 import { Select } from "./ui/Select";
 import { Switch } from "./ui/Switch";
 import { TextArea } from "./ui/TextField";
+
+/** Same order as `compareRaces`: numbers in labels sort numerically. */
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
 /** The user's own picks. Private: kept in this browser, only shared if they publish. */
 const PICKS: Array<{ stance: Stance; label: string; title: string }> = [
@@ -121,15 +124,29 @@ export function MyBallotPanel() {
   }, [slates, follows, election, area, showUnfollowed]);
 
   const sections = useMemo(() => {
-    const out: Array<{ label: string; rank: number; races: Race[] }> = [];
+    const out: Array<{ label: string; rank: number; races: Race[]; noRace?: string }> = [];
     for (const race of races) {
       const label = jurisdictionLabel(race.jurisdiction);
       const last = out.at(-1);
       if (last?.label === label) last.races.push(race);
       else out.push({ label, rank: jurisdictionRank(race.jurisdiction), races: [race] });
     }
-    return out;
-  }, [races]);
+    // The user's districts with nothing on this ballot get a section saying so
+    // (e.g. an odd-numbered Senate district in 2026), in ballot order, rather
+    // than silently going missing.
+    for (const [family, n] of Object.entries(area.districts)) {
+      const present = areaOptions.districts[family] ?? [];
+      if (present.includes(n)) continue;
+      const path = `${family}-${n}`;
+      out.push({
+        label: jurisdictionLabel(path),
+        rank: jurisdictionRank(path),
+        races: [],
+        noRace: noRaceReason(family, n, present, election),
+      });
+    }
+    return out.sort((a, b) => a.rank - b.rank || collator.compare(a.label, b.label));
+  }, [races, area.districts, areaOptions, election]);
 
   const myRows = useMemo(
     () => Object.values(draft.rows).filter((row) => row.electionId === election),
@@ -232,8 +249,7 @@ export function MyBallotPanel() {
 
       {editingArea && (
         <div className="card no-print">
-          <AddressLookup options={areaOptions} onFound={setArea} />
-          <AreaPicker options={areaOptions} area={area} onChange={setArea} />
+          <AreaPicker options={areaOptions} area={area} election={election} onChange={setArea} />
           <div className="row">
             <button type="button" className="primary" onClick={() => setEditingArea(false)}>
               Done
@@ -310,21 +326,30 @@ export function MyBallotPanel() {
         </p>
       )}
 
-      {sections.map((section) => (
-        <BallotSection
-          // Remount when the area changes, so "open by default" re-applies.
-          key={`${section.label}|${isAreaSet(area)}`}
-          label={section.label}
-          races={section.races}
-          // With no area set the ballot covers the whole state: hundreds of
-          // district and local races. Start those closed.
-          defaultOpen={isAreaSet(area) || section.rank < 2}
-          election={election ?? ""}
-          rows={draft.rows}
-          patch={draft.patch}
-          mine={mine}
-        />
-      ))}
+      {sections.map((section) =>
+        section.noRace ? (
+          <div key={section.label} className="ballot-section ballot-section-empty">
+            <div className="ballot-section-title">
+              {section.label} <span className="hint">· no race</span>
+            </div>
+            <p className="hint">{section.noRace}</p>
+          </div>
+        ) : (
+          <BallotSection
+            // Remount when the area changes, so "open by default" re-applies.
+            key={`${section.label}|${isAreaSet(area)}`}
+            label={section.label}
+            races={section.races}
+            // With no area set the ballot covers the whole state: hundreds of
+            // district and local races. Start those closed.
+            defaultOpen={isAreaSet(area) || section.rank < 2}
+            election={election ?? ""}
+            rows={draft.rows}
+            patch={draft.patch}
+            mine={mine}
+          />
+        ),
+      )}
 
       <PrintPicks
         election={election}

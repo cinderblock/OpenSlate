@@ -703,6 +703,201 @@ footer a:hover {
   gap: 0.5rem 1rem;
 }
 
+/* Find your districts (FindDistricts.tsx, DistrictMap.tsx) */
+.find-methods {
+  border: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.5rem;
+}
+.find-method {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  text-align: left;
+  padding: 0.6rem 0.8rem;
+}
+.find-method.on {
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface-2));
+  border-color: var(--accent);
+}
+.find-method-title {
+  font-weight: 600;
+}
+.find-method-privacy {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.find-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+.find-panel > .hint,
+.find-panel > p {
+  margin: 0;
+}
+.consent {
+  border-left: 3px solid var(--warn);
+  padding: 0.4rem 0.75rem;
+  background: var(--surface-2);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.9rem;
+}
+.consent.granted {
+  border-left-color: var(--ok);
+}
+.consent p {
+  margin: 0 0 0.25rem;
+}
+.find-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.find-choice {
+  text-align: left;
+}
+.find-found {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  margin: 0.5rem 0 1rem;
+}
+.find-found p {
+  margin: 0.25rem 0;
+}
+.find-found-list {
+  margin: 0.25rem 0;
+  padding-left: 1.2rem;
+}
+.district-map {
+  position: relative;
+}
+.district-map-svg {
+  display: block;
+  width: 100%;
+  height: 26rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  touch-action: none;
+  cursor: crosshair;
+  user-select: none;
+}
+.district-map-svg:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.map-counties path {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+.map-places path {
+  fill: color-mix(in srgb, var(--accent) 9%, transparent);
+  stroke: none;
+}
+.map-top path {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-opacity: 0.8;
+}
+.map-highlight {
+  fill: color-mix(in srgb, var(--accent) 28%, transparent);
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+.map-highlight-place {
+  fill: color-mix(in srgb, var(--ok) 14%, transparent);
+  stroke: none;
+}
+.map-labels text {
+  fill: var(--text);
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 0.25em;
+  stroke-linejoin: round;
+}
+.map-labels .map-label-place {
+  fill: var(--muted);
+  font-style: italic;
+}
+.map-marker {
+  fill: var(--bad);
+  stroke: #fff;
+  stroke-width: 2;
+}
+.map-crosshair {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  display: none;
+}
+.district-map-svg:focus-visible .map-crosshair {
+  display: inline;
+}
+.district-map-controls {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.district-map-controls button {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  line-height: 1;
+}
+.district-map-readout {
+  position: absolute;
+  left: 0.5rem;
+  bottom: 0.5rem;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.15rem 0.7rem;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+@media (max-width: 560px) {
+  .district-map-svg {
+    height: 20rem;
+  }
+}
+.district-field {
+  display: flex;
+  flex-direction: column;
+}
+.district-no-race .ui-option-label {
+  color: var(--muted);
+}
+.district-no-race-note {
+  margin: 0.25rem 0 0;
+}
+.ballot-section-empty .ballot-section-title {
+  cursor: default;
+  /* Line up with the other sections' titles, which follow a disclosure marker. */
+  padding-left: 0.85rem;
+}
+.ballot-section-empty > .hint {
+  padding-left: 0.85rem;
+}
+.ballot-section-empty > .hint {
+  margin: 0.25rem 0 0.5rem;
+}
+
 /* Sources */
 .section-heading {
   margin: 1.5rem 0 0.5rem;

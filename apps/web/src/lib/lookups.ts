@@ -9,7 +9,7 @@ import { envBase } from "./routing";
  * us and live in geo.ts. See plans/find-my-districts.md.
  */
 
-export type OnlineLookup = "osm" | "census";
+export type OnlineLookup = "osm" | "census" | "server";
 
 export interface OnlineLookupInfo {
   key: OnlineLookup;
@@ -23,6 +23,15 @@ export interface OnlineLookupInfo {
   policyUrl: string;
 }
 
+/** The relay's host when it's a separate origin (the public worker), else "" (same origin). */
+const relayHost = (() => {
+  try {
+    return new URL(envBase("VITE_POLLS_BASE", "")).host;
+  } catch {
+    return "";
+  }
+})();
+
 export const ONLINE_LOOKUPS: Record<OnlineLookup, OnlineLookupInfo> = {
   osm: {
     key: "osm",
@@ -34,10 +43,18 @@ export const ONLINE_LOOKUPS: Record<OnlineLookup, OnlineLookupInfo> = {
   census: {
     key: "census",
     name: "US Census Bureau",
-    recipient:
-      "OpenSlate's relay (polls.openslate.us), which passes it to the US Census Bureau geocoder",
+    recipient: relayHost
+      ? `OpenSlate's relay (${relayHost}), which passes it to the US Census Bureau geocoder`
+      : "this site's OpenSlate server, which passes it to the US Census Bureau geocoder",
     how: "The Census Bureau matches the address to its official district maps. Our relay only forwards it: nothing is stored, logged or cached.",
     policyUrl: "https://www.census.gov/about/policies/privacy.html",
+  },
+  server: {
+    key: "server",
+    name: "Your server (Google)",
+    recipient: "your self-hosted OpenSlate server, which asks Google's Civic Information API",
+    how: "Google returns the contests on that address's ballot; their districts fill in yours. Only offered when your own server has a Google key.",
+    policyUrl: "https://policies.google.com/privacy",
   },
 };
 

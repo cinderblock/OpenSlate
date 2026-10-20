@@ -218,6 +218,7 @@ function Wizard() {
               <AreaStep
                 headingRef={headingRef}
                 loaded={loaded}
+                election={election}
                 area={area}
                 setArea={setArea}
                 onBack={() => setStep("election")}
@@ -462,6 +463,7 @@ function positionJurisdiction(payload: SlatePayload, index: number): string | un
 function AreaStep({
   headingRef,
   loaded,
+  election,
   area,
   setArea,
   onBack,
@@ -470,6 +472,7 @@ function AreaStep({
 }: {
   headingRef: HeadingRef;
   loaded: Loaded;
+  election: string;
   area: Area;
   setArea: (next: Area) => void;
   onBack: () => void;
@@ -501,7 +504,7 @@ function AreaStep({
           Loading endorsements… {loaded.done} of {loaded.total}
         </p>
       ) : (
-        <AreaPicker options={options} area={area} onChange={setArea} />
+        <AreaPicker options={options} area={area} election={election} onChange={setArea} />
       )}
       <WizardFooter onBack={onBack} onSkip={onSkip}>
         <button type="button" className="primary" onClick={onNext}>

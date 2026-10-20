@@ -2,31 +2,39 @@ import { useMemo, useState } from "react";
 import type { AreaOptions } from "../lib/collate";
 import {
   type Area,
-  DISTRICT_LOOKUP,
+  allDistricts,
   districtFamilyLabel,
   jurisdictionLabel,
+  jurisdictionRank,
+  noRaceReason,
   parseJurisdiction,
 } from "../lib/jurisdictions";
+import { FindDistricts } from "./FindDistricts";
 import { Select } from "./ui/Select";
 import { SearchField } from "./ui/TextField";
 
 /** Above this many localities, show a filter box instead of every chip. */
 const CHIP_LIMIT = 16;
 
-/**
- * "Where do you vote?": the localities and district numbers the user's ballot
- * covers. Offers only what the imported (or catalog) races actually use.
- */
 /** The district Select's "clear it" option. */
 const NOT_SET = "__not_set__";
 
+/**
+ * "Where do you vote?": the localities and district numbers the user's ballot
+ * covers. "Find your districts" fills it in (map, location or address); by
+ * hand, localities are the ones imported races use, and every real district is
+ * offered, marked when it has no race this election.
+ */
 export function AreaPicker({
   options,
   area,
+  election,
   onChange,
 }: {
   options: AreaOptions;
   area: Area;
+  /** The election `options` describe (`2026-11-03`), for saying why a district has no race. */
+  election?: string;
   onChange: (next: Area) => void;
 }) {
   const [filter, setFilter] = useState("");
@@ -41,14 +49,6 @@ export function AreaPicker({
       options.localities.length > CHIP_LIMIT && !q ? matching.slice(0, CHIP_LIMIT) : matching;
     return { selected, shown, hidden: matching.length - shown.length };
   }, [options.localities, area.localities, filter]);
-
-  const states = useMemo(() => {
-    const set = new Set<string>();
-    for (const family of Object.keys(options.districts)) {
-      set.add(family.split("/").slice(0, 2).join("/"));
-    }
-    return [...set];
-  }, [options.districts]);
 
   function toggleLocality(path: string) {
     const has = area.localities.includes(path);
@@ -65,10 +65,19 @@ export function AreaPicker({
     onChange({ ...area, districts });
   }
 
-  const familyEntries = Object.entries(options.districts);
+  // Families the races use, plus any the user has set (a district with no race
+  // this election still belongs on the list).
+  const families = [
+    ...new Set([...Object.keys(options.districts), ...Object.keys(area.districts)]),
+  ].sort((a, b) => jurisdictionRank(`${a}-1`) - jurisdictionRank(`${b}-1`));
 
   return (
     <div className="area-picker">
+      <fieldset>
+        <legend>Find your districts</legend>
+        <FindDistricts options={options} area={area} election={election} onChange={onChange} />
+      </fieldset>
+
       {options.localities.length > 0 && (
         <fieldset>
           <legend>City, county or local area</legend>
@@ -102,40 +111,44 @@ export function AreaPicker({
         </fieldset>
       )}
 
-      {familyEntries.length > 0 && (
+      {families.length > 0 && (
         <fieldset>
-          <legend>
-            Your districts{" "}
-            {states.map((state) =>
-              DISTRICT_LOOKUP[state] ? (
-                <a key={state} href={DISTRICT_LOOKUP[state]} target="_blank" rel="noreferrer">
-                  (look yours up)
-                </a>
-              ) : null,
-            )}
-          </legend>
+          <legend>Your districts</legend>
           <div className="district-grid">
-            {familyEntries.map(([family, numbers]) => {
+            {families.map((family) => {
               const part = parseJurisdiction(`${family}-1`);
               const label = part.kind === "district" ? districtFamilyLabel(part.family) : family;
+              const present = options.districts[family] ?? [];
+              const current = area.districts[family];
+              const numbers = allDistricts(family, current ? [...present, current] : present);
               return (
-                <Select
-                  key={family}
-                  label={label}
-                  placeholder="not set"
-                  value={area.districts[family] ?? null}
-                  onChange={(n) => setDistrict(family, n === NOT_SET ? "" : n)}
-                  options={[
-                    { id: NOT_SET, label: "not set", className: "ui-option-quiet" },
-                    ...numbers.map((n) => ({ id: n, label: n })),
-                  ]}
-                />
+                <div key={family} className="district-field">
+                  <Select
+                    label={label}
+                    placeholder="not set"
+                    value={current ?? null}
+                    onChange={(n) => setDistrict(family, n === NOT_SET ? "" : n)}
+                    options={[
+                      { id: NOT_SET, label: "not set", className: "ui-option-quiet" },
+                      ...numbers.map((n) =>
+                        present.includes(n)
+                          ? { id: n, label: n }
+                          : { id: n, label: n, badge: "no race", className: "district-no-race" },
+                      ),
+                    ]}
+                  />
+                  {current && !present.includes(current) && (
+                    <p className="hint district-no-race-note">
+                      {noRaceReason(family, current, present, election)}
+                    </p>
+                  )}
+                </div>
               );
             })}
           </div>
           <p className="hint">
-            Only districts that have endorsements are listed. Races in a kind of district you
-            haven't set stay hidden.
+            Races in a kind of district you haven't set stay hidden. “No race” means nothing on this
+            ballot is filed under that district.
           </p>
         </fieldset>
       )}

@@ -23,7 +23,7 @@ export const GEO_FILES: Record<string, string> = {
 
 type Rings = Position[][];
 
-interface Shape {
+export interface GeoShape {
   id: string;
   /** Polygons, each an outer ring then holes. */
   polygons: Rings[];
@@ -33,14 +33,14 @@ interface Shape {
 
 export interface StateGeo {
   state: string;
-  layers: Record<GeoLayer, Shape[]>;
+  layers: Record<GeoLayer, GeoShape[]>;
   /** [minX, minY, maxX, maxY] of the whole state. */
   bbox: [number, number, number, number];
   /** Where the data came from, for the map's footnote. */
   vintage: string;
 }
 
-function shapeOf(f: Feature<Polygon | MultiPolygon>): Shape {
+function shapeOf(f: Feature<Polygon | MultiPolygon>): GeoShape {
   const polygons =
     f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
   let [x0, y0, x1, y1] = [
@@ -63,7 +63,7 @@ function shapeOf(f: Feature<Polygon | MultiPolygon>): Shape {
 
 /** Decode a state's topology into per-layer shapes. */
 export function decodeStateGeo(state: string, topology: Topology): StateGeo {
-  const layers = {} as Record<GeoLayer, Shape[]>;
+  const layers = {} as Record<GeoLayer, GeoShape[]>;
   for (const name of ["cd", "sd", "ad", "county", "place"] as const) {
     const object = topology.objects[name] as GeometryCollection | undefined;
     if (!object) throw new Error(`boundary data has no ${name} layer`);
@@ -107,7 +107,7 @@ function ringContains(ring: Position[], x: number, y: number): boolean {
   return inside;
 }
 
-function shapeContains(shape: Shape, x: number, y: number): boolean {
+function shapeContains(shape: GeoShape, x: number, y: number): boolean {
   const [x0, y0, x1, y1] = shape.bbox;
   if (x < x0 || x > x1 || y < y0 || y > y1) return false;
   return shape.polygons.some(
@@ -120,7 +120,7 @@ const METERS_PER_DEGREE_LAT = 110_574;
 const METERS_PER_DEGREE_LON_AT_EQUATOR = 111_320;
 
 /** Distance in metres from a point to the nearest edge of a shape (small-area approximation). */
-function distanceToEdge(shape: Shape, x: number, y: number): number {
+function distanceToEdge(shape: GeoShape, x: number, y: number): number {
   const kx = METERS_PER_DEGREE_LON_AT_EQUATOR * Math.cos((y * Math.PI) / 180);
   const ky = METERS_PER_DEGREE_LAT;
   let best = Number.POSITIVE_INFINITY;
@@ -146,6 +146,16 @@ function distanceToEdge(shape: Shape, x: number, y: number): number {
     }
   }
   return best;
+}
+
+/** The shape of one layer that contains a point, if any. */
+export function shapeAt(
+  geo: StateGeo,
+  layer: GeoLayer,
+  lon: number,
+  lat: number,
+): GeoShape | undefined {
+  return geo.layers[layer].find((s) => shapeContains(s, lon, lat));
 }
 
 export interface GeoHit {
@@ -177,7 +187,7 @@ export function locate(
   const found: Partial<Record<GeoLayer, string>> = {};
   const nearLine: GeoLayer[] = [];
   for (const layer of ["county", "cd", "sd", "ad", "place"] as const) {
-    const shape = geo.layers[layer].find((s) => shapeContains(s, lon, lat));
+    const shape = shapeAt(geo, layer, lon, lat);
     if (!shape) {
       if (layer === "county") return null;
       continue;

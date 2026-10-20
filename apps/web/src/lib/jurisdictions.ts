@@ -171,11 +171,6 @@ export function jurisdictionRank(path: string | undefined): number {
   }
 }
 
-/** Where a state looks up its voters' districts, when we know one. */
-export const DISTRICT_LOOKUP: Record<string, string> = {
-  "us/ca": "https://findyourrep.legislature.ca.gov/",
-};
-
 /**
  * How many districts each family has. Someone's district is theirs whether or
  * not it has a race this election, so the picker offers all of them.
