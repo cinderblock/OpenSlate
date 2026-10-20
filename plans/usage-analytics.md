@@ -274,6 +274,12 @@ publishes v0.1.0. Watch whether that CI publish also lands as staged and
 needs approval (npm docs: staged publishing works with trusted publishers,
 and approval needs 2FA). Temporary edits reverted; the tree is clean
 (LF endings restored).
+Trusted publisher: npmjs.com offers "Allow npm publish" with the warning
+"Not recommended … leave this unchecked to require staged publishing".
+Recommended unchecked (stage-only). `publish.yml` now runs
+`npm stage publish` (telemetry-collector `d84934e`), which works under
+either setting. Each release then needs the user's 2FA approval per
+package on npmjs.com (Staged Packages tab), core first.
 
 ## Open questions for the user
 
