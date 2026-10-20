@@ -265,6 +265,15 @@ working tree, built, `npm pack --dry-run` clean (dist + package.json only).
 browser auth that only an interactive terminal waits for), so the user runs
 the three publishes; afterwards revert the two `workspace:*` rewrites in
 packages/sdk and packages/cli package.json.
+Done 2026-10-19: all three names now exist on npm, owned by cinderblock
+(read-write). The registry shows only npm's staged-publishing stub
+`0.0.0-stage` ("Temporary package placeholder for staged publishing"),
+not 0.0.0, and `npm stage list <pkg>` reports no staged versions for any of
+them. The stub is enough for trusted publishing; `latest` moves when CI
+publishes v0.1.0. Watch whether that CI publish also lands as staged and
+needs approval (npm docs: staged publishing works with trusted publishers,
+and approval needs 2FA). Temporary edits reverted; the tree is clean
+(LF endings restored).
 
 ## Open questions for the user
 
