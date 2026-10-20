@@ -345,10 +345,13 @@ numbers and options considered are in the Findings.
 - [x] Step 18: merged and pushed to `origin/master` (`96735a9`), walkthrough
       skipped at the user's request
 - [x] Endorsements repo pushed; CI signs the ballot bundles into the catalog
-- [ ] The main checkout (`~/git/Personal Projects/OpenSlate`) is still on
-      `81f90d7` with uncommitted ComposePanel / ElectionCombobox / subjects.ts
-      edits (already adopted in `1cf282c`), so `git merge --ff-only` refused.
-      Snapshot in `stash@{0}`; the user decides what to do with the edits.
+- [x] Main checkout (`~/git/Personal Projects/OpenSlate`) fast-forwarded to
+      `origin/master` (2026-10-20, "finish it and commit"). Its uncommitted
+      ComposePanel / ElectionCombobox / subjects.ts edits differed from the
+      adopted `1cf282c` only by formatter line wrapping, so they were parked
+      as `6b5d75d` on branch `wip/compose-fallback-pre-adopt` (safe to
+      delete) instead of being discarded. `stash@{0}` is the same content
+      and can be dropped.
 
 ## Open questions for the user
 
@@ -374,9 +377,9 @@ numbers and options considered are in the Findings.
      Compose". *Identities → My slates* lists what you signed (copy /
      forget). *Elections → Use as active* sets the same election by date.
 2. ~~Push `openslate-public-endorsements`?~~ Pushed 2026-10-20.
-3. The main checkout's uncommitted Compose/ElectionCombobox/subjects.ts
-   edits (see Progress log): they're the ones adopted in `1cf282c` and since
-   rewritten, so they're safe to discard, but that's your call.
+3. ~~The main checkout's uncommitted edits?~~ Parked on
+   `wip/compose-fallback-pre-adopt` (`6b5d75d`) and master fast-forwarded,
+   2026-10-20. Delete that branch and `stash@{0}` whenever you like.
 
 Answered 2026-10-19: opponents come from official candidate lists in the
 endorsements repo plus Civic-by-address when self-hosted; this thread adopts
