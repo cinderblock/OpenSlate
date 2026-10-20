@@ -8,6 +8,7 @@ import { usePublishedSlates } from "../lib/published";
 import { contactToQrText } from "../lib/qr";
 import { track } from "../lib/usage";
 import { QrDialog } from "./Qr";
+import { Radio, RadioGroup } from "./ui/Radio";
 
 export function IdentityPanel() {
   const { all: myIdentities, activeKey, setActiveKey } = useActiveIdentity();
@@ -72,23 +73,25 @@ export function IdentityPanel() {
         {myIdentities.length === 0 ? (
           <p className="hint">No identities yet — generate one below.</p>
         ) : (
-          <ul className="identity-list">
+          <RadioGroup
+            aria-label="Sign as"
+            value={effectiveActive || null}
+            onChange={setActiveKey}
+            className="identity-list"
+          >
             {myIdentities.map((identity) => (
-              <li key={identity.publicKey} className="identity-row">
-                <label className="identity-radio">
-                  <input
-                    type="radio"
-                    name="active-identity"
-                    checked={effectiveActive === identity.publicKey}
-                    onChange={() => setActiveKey(identity.publicKey)}
-                  />
+              <div key={identity.publicKey} className="identity-row">
+                <Radio value={identity.publicKey} variant="card" className="identity-radio">
                   <span className="grow">
                     <strong>{identity.name ?? "(unnamed)"}</strong>{" "}
                     <span className="tag">{identity.kind ?? "individual"}</span>
+                    {effectiveActive === identity.publicKey && (
+                      <span className="tag tag-inline tag-on">signing as</span>
+                    )}
                     <br />
                     <code className="key">{identity.publicKey}</code>
                   </span>
-                </label>
+                </Radio>
                 <div className="row">
                   <button type="button" onClick={() => shareIdentity(identity)}>
                     Share QR
@@ -100,9 +103,9 @@ export function IdentityPanel() {
                     Forget
                   </button>
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </RadioGroup>
         )}
 
         <div className="row">

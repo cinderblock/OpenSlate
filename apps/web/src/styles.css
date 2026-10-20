@@ -448,10 +448,12 @@ footer a:hover {
   border-top: none;
 }
 .identity-radio {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
   flex: 1 1 24rem;
+  width: auto;
+  align-items: flex-start;
+}
+.identity-radio .ui-radio-dot {
+  margin-top: 0.2rem;
 }
 .signing-as {
   background: var(--surface-2);
@@ -551,12 +553,6 @@ footer a:hover {
 }
 .ballot-stats a {
   color: inherit;
-}
-label.inline-check {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.9rem;
 }
 .ballot-section-title {
   cursor: pointer;
@@ -833,24 +829,6 @@ dialog.wizard::backdrop {
   flex-direction: column;
   gap: 0.35rem;
 }
-label.wizard-option {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  font-size: 0.95rem;
-  cursor: pointer;
-}
-label.wizard-option.on {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-}
-label.wizard-option input {
-  margin: 0;
-}
 .wizard-scroll {
   max-height: 50vh;
   overflow-y: auto;
@@ -876,12 +854,11 @@ label.wizard-option input {
   letter-spacing: normal;
   font-size: 0.9rem;
 }
-.wizard-kind {
-  border: none;
-  padding: 0;
+.ui-radio-group.wizard-kind {
   margin: 0.75rem 0;
-  display: flex;
-  gap: 1.25rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
 }
 .wizard-footer {
   display: flex;
@@ -1287,4 +1264,57 @@ button.tag.active {
 .ui-option-card[data-focus-visible] .ui-checkbox-box,
 .ui-option-card[data-focus-visible] .ui-radio-dot {
   box-shadow: none;
+}
+
+/* Radio */
+.ui-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.ui-group-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.ui-radio {
+  position: relative;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: inherit;
+  color: var(--text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ui-radio-dot {
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--muted);
+  background: var(--surface-2);
+  transition: border-width 0.12s, border-color 0.12s;
+}
+.ui-radio[data-hovered] .ui-radio-dot {
+  border-color: var(--accent);
+}
+.ui-radio[data-selected] .ui-radio-dot {
+  border: 0.32rem solid var(--accent);
+  background: #fff;
+}
+.ui-radio[data-focus-visible] .ui-radio-dot {
+  box-shadow: var(--focus-ring);
+}
+.ui-radio[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ui-option-note {
+  display: block;
+  font-weight: normal;
+}
+.tag-on {
+  color: var(--accent);
+  border-color: var(--accent);
 }

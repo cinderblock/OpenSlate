@@ -38,6 +38,7 @@ import { closeWizard, openWizard, useWizardOpen } from "../lib/wizard";
 import { AreaPicker } from "./AreaPicker";
 import { isBallotEntry } from "./CatalogBrowser";
 import { Checkbox } from "./ui/Checkbox";
+import { Radio, RadioGroup } from "./ui/Radio";
 
 type Step = "welcome" | "election" | "area" | "sources" | "importing" | "identity";
 
@@ -371,23 +372,22 @@ function ElectionStep({
         </>
       )}
       {elections.length > 0 && (
-        <div className="wizard-options" role="radiogroup" aria-label="Election">
+        <RadioGroup
+          aria-label="Election"
+          className="wizard-options"
+          value={election}
+          onChange={setElection}
+        >
           {elections.map(([date, count]) => (
-            <label key={date} className={`wizard-option${election === date ? " on" : ""}`}>
-              <input
-                type="radio"
-                name="wizard-election"
-                checked={election === date}
-                onChange={() => setElection(date)}
-              />
+            <Radio key={date} value={date} variant="card">
               <span className="grow">
                 <strong>{formatElectionDate(date)}</strong>
                 {date < today && <span className="tag tag-inline">past</span>}
               </span>
               <span className="hint">{count} organizations</span>
-            </label>
+            </Radio>
           ))}
-        </div>
+        </RadioGroup>
       )}
       <WizardFooter onBack={onBack} onSkip={onSkip}>
         {error ? (
@@ -726,27 +726,26 @@ function IdentityStep({
               onChange={(e) => setName(e.target.value)}
             />
           </label>
-          <fieldset className="wizard-kind">
-            <legend className="sr-only">Who is publishing</legend>
-            <label className="inline-check">
-              <input
-                type="radio"
-                name="wizard-kind"
-                checked={kind === "individual"}
-                onChange={() => setKind("individual")}
-              />
-              Just me
-            </label>
-            <label className="inline-check">
-              <input
-                type="radio"
-                name="wizard-kind"
-                checked={kind === "organization"}
-                onChange={() => setKind("organization")}
-              />
-              An organization
-            </label>
-          </fieldset>
+          <RadioGroup
+            aria-label="Who is publishing"
+            className="wizard-kind"
+            orientation="horizontal"
+            value={kind}
+            onChange={(value) => setKind(value as typeof kind)}
+          >
+            <Radio value="individual" variant="card">
+              <span>
+                <strong>Just me</strong>
+                <span className="hint ui-option-note">My own recommendations</span>
+              </span>
+            </Radio>
+            <Radio value="organization" variant="card">
+              <span>
+                <strong>An organization</strong>
+                <span className="hint ui-option-note">A group's endorsements</span>
+              </span>
+            </Radio>
+          </RadioGroup>
           <WizardFooter onBack={onBack} onSkip={onSkip}>
             {all.length > 0 && (
               <button type="button" onClick={onDone}>
