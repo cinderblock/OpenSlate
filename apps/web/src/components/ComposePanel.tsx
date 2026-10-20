@@ -22,7 +22,12 @@ import {
 import { slatesCollection } from "../lib/collections";
 import { useActiveIdentity } from "../lib/identities";
 import { type BallotContest, electionsQueryOptions } from "../lib/query";
-import { subjectKey, useBallotContests, useImportedSubjects } from "../lib/subjects";
+import {
+  subjectKey,
+  useBallotContests,
+  useImportedBallotContests,
+  useImportedSubjects,
+} from "../lib/subjects";
 import { BallotComposer } from "./BallotComposer";
 import { ElectionCombobox } from "./ElectionCombobox";
 import { RawInspector } from "./ImportVerifyPanel";
@@ -55,6 +60,16 @@ export function ComposePanel() {
   const electionsQuery = useQuery(electionsQueryOptions());
   const imported = useImportedSubjects();
   const ballot = useBallotContests(address, electionId || undefined);
+  const selectedElectionDay =
+    electionsQuery.data?.find((e) => e.id === electionId)?.electionDay ?? "";
+  const importedContests = useImportedBallotContests(selectedElectionDay);
+  // Civic Info's VIP feed is spotty (often empty for valid addresses near
+  // primaries). Fall back to a ballot synthesized from imported endorsements so
+  // the user can still stance-button their way through the proper ballot UI.
+  const usingFallback =
+    !ballot.isLoading && ballot.contests.length === 0 && importedContests.length > 0;
+  const effectiveContests = ballot.contests.length > 0 ? ballot.contests : importedContests;
+  const effectiveEnabled = ballot.enabled || importedContests.length > 0;
   const draft = useBallotDraft();
   const ranking = useBallotRanking();
 
@@ -414,7 +429,7 @@ export function ComposePanel() {
             />
           </div>
           {selectedElection?.electionDay &&
-            selectedElection.electionDay < new Date().toISOString().slice(0, 10) && (
+            selectedElection.electionDay < new Date().toLocaleDateString("en-CA") && (
               <p className="warning">
                 ⚠ This is a <strong>past election</strong> ({selectedElection.electionDay}). Any
                 ballot data + your draft selections are historical.
@@ -431,16 +446,24 @@ export function ComposePanel() {
           </p>
         </div>
 
+        {usingFallback && (
+          <p className="hint" style={{ marginTop: "0.5em" }}>
+            ⓘ Civic Info had no contests for this address + election (their VIP coverage is
+            incomplete). Showing <strong>{importedContests.length}</strong> race
+            {importedContests.length === 1 ? "" : "s"} synthesized from your imported endorsements
+            instead — stance away.
+          </p>
+        )}
         <BallotComposer
-          contests={ballot.contests}
+          contests={effectiveContests}
           electionId={electionId}
           rows={draft.rows}
           patch={draft.patch}
           rankings={ranking.rankings}
           setRanking={ranking.setRanking}
           isLoading={ballot.isLoading}
-          error={ballot.error}
-          enabled={ballot.enabled}
+          error={usingFallback ? null : ballot.error}
+          enabled={effectiveEnabled}
         />
 
         <div className="card">

@@ -3,7 +3,11 @@ import { useMemo, useState } from "react";
 import type { Election } from "../lib/query";
 
 const MAX_RESULTS = 80;
-const TODAY = new Date().toISOString().slice(0, 10);
+// Local-time "YYYY-MM-DD". en-CA's locale date format happens to be ISO. Using
+// UTC here would treat the day of an election as past starting at midnight UTC,
+// which for Pacific users is 5pm local — election-day voters would get their
+// election hidden mid-afternoon. Must use local.
+const TODAY = new Date().toLocaleDateString("en-CA");
 
 export function ElectionCombobox({
   value,
