@@ -1,0 +1,2 @@
+# Generated boundary data (apps/web/scripts/build-geo.ts): one long line, not worth diffing.
+apps/web/public/geo/*.json -diff linguist-generated=true

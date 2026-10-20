@@ -33,6 +33,16 @@ export default defineConfig({
         // Query's IndexedDB persister, not by the service worker.
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],
+        // Boundary data for finding your districts on this device (src/lib/geo.ts):
+        // too big to precache for everyone, kept (and refreshed in the background)
+        // once someone has used it, so the map and "Use my location" work offline.
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith("/geo/"),
+            handler: "StaleWhileRevalidate",
+            options: { cacheName: "openslate-geo", expiration: { maxEntries: 8 } },
+          },
+        ],
       },
     }),
   ],

@@ -1,0 +1,198 @@
+import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import type { Topology } from "topojson-specification";
+import {
+  COURT_OF_APPEAL_BY_COUNTY,
+  areaFromHit,
+  decodeStateGeo,
+  localityCandidates,
+  locate,
+  mergeFoundArea,
+} from "../src/lib/geo";
+
+// The real shipped file: these points are checked against the Census
+// geocoder's answers for the same addresses (2026-10-20).
+const topology = JSON.parse(
+  readFileSync(join(import.meta.dir, "..", "public", "geo", "us-ca.topo.json"), "utf8"),
+) as Topology;
+const geo = decodeStateGeo("us/ca", topology);
+
+describe("locate (shipped California boundaries)", () => {
+  const cases = [
+    [
+      "SF City Hall",
+      -122.41831,
+      37.778536,
+      { cd: "11", sd: "11", ad: "17" },
+      "San Francisco",
+      "San Francisco",
+    ],
+    [
+      "Santa Rosa (CD 1 since Prop 50)",
+      -122.712414,
+      38.438218,
+      { cd: "1", sd: "2", ad: "2" },
+      "Sonoma",
+      "Santa Rosa",
+    ],
+    [
+      "Palm Springs",
+      -116.511784,
+      33.823239,
+      { cd: "48", sd: "19", ad: "47" },
+      "Riverside",
+      "Palm Springs",
+    ],
+    [
+      "Palo Alto (SD 13)",
+      -122.160542,
+      37.444812,
+      { cd: "16", sd: "13", ad: "23" },
+      "Santa Clara",
+      "Palo Alto",
+    ],
+    [
+      "LA City Hall",
+      -118.245594,
+      34.051623,
+      { cd: "34", sd: "26", ad: "54" },
+      "Los Angeles",
+      "Los Angeles",
+    ],
+  ] as const;
+  for (const [name, lon, lat, districts, county, place] of cases) {
+    test(name, () => {
+      const hit = locate(geo, lon, lat);
+      expect(hit?.districts).toEqual(districts);
+      expect(hit?.county).toBe(county);
+      expect(hit?.place).toBe(place);
+    });
+  }
+
+  test("has every district", () => {
+    expect(geo.layers.cd).toHaveLength(52);
+    expect(geo.layers.sd).toHaveLength(40);
+    expect(geo.layers.ad).toHaveLength(80);
+    expect(geo.layers.county).toHaveLength(58);
+  });
+
+  test("outside the state is null", () => {
+    expect(locate(geo, -125.5, 36)).toBeNull(); // Pacific
+    expect(locate(geo, -115, 36.2)).toBeNull(); // Las Vegas
+  });
+
+  test("unincorporated land has a county but no city", () => {
+    // Inyo County, far from any city.
+    const hit = locate(geo, -117.6, 36.6);
+    expect(hit?.county).toBe("Inyo");
+    expect(hit?.place).toBeUndefined();
+  });
+});
+
+// A tiny synthetic state: two districts side by side, split at x = 1.
+const square = (x0: number, x1: number) => [
+  [x0, 0],
+  [x1, 0],
+  [x1, 1],
+  [x0, 1],
+  [x0, 0],
+];
+const tiny = decodeStateGeo("us/xx", {
+  type: "Topology",
+  bbox: [0, 0, 2, 1],
+  arcs: [square(0, 1), square(1, 2), square(0, 2)],
+  objects: Object.fromEntries(
+    (["cd", "sd", "ad", "county", "place"] as const).map((layer) => [
+      layer,
+      {
+        type: "GeometryCollection",
+        geometries:
+          layer === "cd"
+            ? [
+                { type: "Polygon", arcs: [[0]], id: "1" },
+                { type: "Polygon", arcs: [[1]], id: "2" },
+              ]
+            : [{ type: "Polygon", arcs: [[2]], id: layer === "county" ? "Somewhere" : "7" }],
+      },
+    ]),
+  ),
+} as unknown as Topology);
+
+describe("locate (synthetic)", () => {
+  test("near a line is flagged, the middle isn't", () => {
+    // 0.0003° of longitude at the equator is ~33 m from the x = 1 line.
+    expect(locate(tiny, 0.9997, 0.5)?.nearLine).toContain("cd");
+    expect(locate(tiny, 0.5, 0.5)?.nearLine).toEqual([]);
+    expect(locate(tiny, 1.5, 0.5)?.districts.cd).toBe("2");
+  });
+});
+
+describe("areaFromHit", () => {
+  const known = {
+    localities: ["us/ca/sf", "us/ca/los-angeles", "us/ca/los-angeles-county", "us/ca/marin"],
+    districts: { "us/ca/cd": ["11"], "us/ca/sd": ["12"], "us/ca/bart": ["8"] },
+  };
+
+  test("sets every district (with no race too), the Court of Appeal, and known localities", () => {
+    const sf = areaFromHit(
+      {
+        districts: { cd: "11", sd: "11", ad: "17" },
+        county: "San Francisco",
+        place: "San Francisco",
+        nearLine: [],
+      },
+      "us/ca",
+      known,
+    );
+    expect(sf.area).toEqual({
+      localities: ["us/ca/sf"],
+      districts: { "us/ca/cd": "11", "us/ca/sd": "11", "us/ca/ad": "17", "us/ca/coa": "1" },
+    });
+    expect(sf.notCovered).toEqual(["us/ca/bart"]);
+    expect(sf.places).toEqual(["San Francisco"]);
+
+    const la = areaFromHit(
+      { districts: { cd: "34" }, county: "Los Angeles", place: "Los Angeles", nearLine: [] },
+      "us/ca",
+      known,
+    );
+    expect(la.area.localities).toEqual(["us/ca/los-angeles", "us/ca/los-angeles-county"]);
+    expect(la.area.districts["us/ca/coa"]).toBe("2");
+    expect(la.places).toEqual(["Los Angeles", "Los Angeles County"]);
+  });
+
+  test("a county filed under its bare name still matches", () => {
+    const hit = { districts: {}, county: "Marin", nearLine: [] };
+    expect(areaFromHit(hit, "us/ca", known).area.localities).toEqual(["us/ca/marin"]);
+  });
+});
+
+test("localityCandidates", () => {
+  expect(localityCandidates("us/ca", "county", "San Mateo")).toEqual([
+    "us/ca/san-mateo-county",
+    "us/ca/san-mateo",
+  ]);
+  expect(localityCandidates("us/ca", "place", "Alameda")).toEqual([
+    "us/ca/alameda",
+    "us/ca/city-of-alameda",
+  ]);
+  expect(localityCandidates("us/ca", "county", "San Francisco")).toEqual(["us/ca/sf"]);
+});
+
+test("every California county has exactly one Court of Appeal district", () => {
+  const counties = geo.layers.county.map((s) => s.id).sort();
+  expect(Object.keys(COURT_OF_APPEAL_BY_COUNTY).sort()).toEqual(counties);
+});
+
+test("mergeFoundArea replaces cities, counties and found districts, keeps the rest", () => {
+  const previous = {
+    localities: ["us/ca/oakland", "us/ca/ebmud"],
+    districts: { "us/ca/cd": "12", "us/ca/bart": "4" },
+  };
+  const found = { localities: ["us/ca/sf"], districts: { "us/ca/cd": "11" } };
+  expect(mergeFoundArea(previous, found, geo)).toEqual({
+    localities: ["us/ca/sf", "us/ca/ebmud"],
+    districts: { "us/ca/cd": "11", "us/ca/bart": "4" },
+  });
+});

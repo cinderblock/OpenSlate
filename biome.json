@@ -24,7 +24,8 @@
       "packages/core/schema/*.json",
       "vectors/positive/*.json",
       "vectors/negative/*.json",
-      "vectors/keys.json"
+      "vectors/keys.json",
+      "apps/web/public/geo/*.json"
     ]
   }
 }
