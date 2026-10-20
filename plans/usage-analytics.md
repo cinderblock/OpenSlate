@@ -258,6 +258,13 @@ local publish only at `0.0.0` (name claim) and refuses everything else
 outside CI. Order: core, sdk, cli. Then on npmjs.com, per package, add the
 trusted publisher (repo cinderblock/telemetry-collector, workflow
 `publish.yml`, environment `npm`).
+2026-10-19: user enrolled the passkey and ran `npm login` (whoami
+cinderblock; all three names still free). Workspace ranges resolved in the
+working tree, built, `npm pack --dry-run` clean (dist + package.json only).
+`npm publish` from an agent shell fails with `EOTP` (account 2FA needs a
+browser auth that only an interactive terminal waits for), so the user runs
+the three publishes; afterwards revert the two `workspace:*` rewrites in
+packages/sdk and packages/cli package.json.
 
 ## Open questions for the user
 
