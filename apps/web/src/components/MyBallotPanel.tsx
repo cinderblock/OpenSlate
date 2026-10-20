@@ -30,7 +30,9 @@ import { track } from "../lib/usage";
 import { openWizard } from "../lib/wizard";
 import { AddressLookup } from "./AddressLookup";
 import { AreaPicker, describeArea } from "./AreaPicker";
+import { electionOptions } from "./electionOptions";
 import { Checkbox } from "./ui/Checkbox";
+import { Select } from "./ui/Select";
 import { Switch } from "./ui/Switch";
 
 /** The user's own picks. Private: kept in this browser, only shared if they publish. */
@@ -195,17 +197,13 @@ export function MyBallotPanel() {
   return (
     <section className="panel my-ballot">
       <div className="ballot-toolbar no-print">
-        <label className="ballot-election">
-          Election
-          <select value={election ?? ""} onChange={(e) => setChosenElection(e.target.value)}>
-            {elections.map((e) => (
-              <option key={e.date} value={e.date}>
-                {formatElectionDate(e.date)}
-                {e.date < today ? " (past)" : e.date === today ? " (today)" : ""} · {e.races} races
-              </option>
-            ))}
-          </select>
-        </label>
+        <Select
+          className="ballot-election"
+          label="Election"
+          value={election}
+          onChange={setChosenElection}
+          options={electionOptions(elections, today)}
+        />
         <div className="ballot-area">
           <span className="ballot-area-label">Where you vote</span>
           <button

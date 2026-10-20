@@ -9,6 +9,7 @@ interface ResultsTimelineProps {
 }
 
 import { baseUrlFor } from "../lib/routing";
+import { Segmented } from "./ui/Segmented";
 import { Switch } from "./ui/Switch";
 
 type MapFormat = "svg" | "png";
@@ -79,16 +80,16 @@ export function ResultsTimeline({ raceId, hasMap }: ResultsTimelineProps) {
               {showMap ? "Hide map" : "Show map"}
             </button>
             {showMap && (
-              <label className="hint" style={{ flexDirection: "row", gap: "0.25rem" }}>
-                Format
-                <select
-                  value={mapFormat}
-                  onChange={(e) => setMapFormat(e.target.value as MapFormat)}
-                >
-                  <option value="svg">SVG</option>
-                  <option value="png">PNG</option>
-                </select>
-              </label>
+              <Segmented
+                className="hint"
+                label="Format"
+                value={mapFormat}
+                onChange={setMapFormat}
+                options={[
+                  { id: "svg", label: "SVG" },
+                  { id: "png", label: "PNG" },
+                ]}
+              />
             )}
           </>
         )}

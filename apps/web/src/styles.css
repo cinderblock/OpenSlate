@@ -524,7 +524,7 @@ footer a:hover {
   gap: 0.75rem 1.25rem;
   margin: 0.5rem 0;
 }
-.ballot-election select {
+.ballot-election {
   min-width: 14rem;
 }
 .ballot-area {
@@ -1317,4 +1317,308 @@ button.tag.active {
 .tag-on {
   color: var(--accent);
   border-color: var(--accent);
+}
+
+/* Fields: label + control + description/error, stacked. */
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+.ui-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.ui-description {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.ui-error {
+  font-size: 0.8rem;
+  color: var(--bad);
+}
+.ui-placeholder {
+  color: var(--muted);
+}
+
+/* The box a text/combobox input sits in; it owns the border and focus ring. */
+.ui-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  padding: 0 0.6rem;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.ui-input-group:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+.ui-input-group:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.ui-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  border-radius: 0;
+  padding: 0.5rem 0;
+  color: var(--text);
+  outline: none;
+}
+.ui-input::placeholder {
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+/* Select */
+.ui-select-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 8rem;
+  text-align: left;
+}
+.ui-select-trigger[data-focus-visible] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  outline: none;
+}
+.ui-select-trigger[data-pressed] {
+  border-color: var(--accent);
+}
+.ui-select-value {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ui-select-value-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ui-chevron {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.15s;
+}
+.ui-select[data-open] .ui-chevron,
+.ui-combobox[data-open] .ui-chevron {
+  transform: rotate(180deg);
+}
+.ui-select[data-disabled] {
+  opacity: 0.5;
+}
+.ui-combobox-button {
+  display: grid;
+  place-items: center;
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  margin-right: -0.35rem;
+}
+
+/* Popover + list */
+.ui-popover {
+  min-width: var(--trigger-width);
+  max-width: min(36rem, 94vw);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.5);
+  overflow: auto;
+  outline: none;
+}
+.ui-popover[data-entering] {
+  animation: ui-pop-in 0.12s ease-out;
+}
+@keyframes ui-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.ui-listbox {
+  padding: 0.3rem;
+  outline: none;
+  max-height: inherit;
+  overflow: auto;
+}
+.ui-listbox[data-empty] {
+  padding: 0.6rem 0.8rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.ui-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem 0.45rem 0.4rem;
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+}
+.ui-option[data-focused] {
+  background: var(--surface-2);
+}
+.ui-option[data-focus-visible] {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.ui-option[data-selected] {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.ui-option[data-selected][data-focused] {
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+.ui-option[data-disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ui-option-check {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 1rem;
+}
+.ui-option-check svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ui-option-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ui-option-label {
+  overflow-wrap: anywhere;
+}
+.ui-option-description {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.ui-option-badge {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Segmented: a radio group drawn as joined buttons. */
+.ui-segmented-field {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ui-segmented-label {
+  font-size: inherit;
+  color: inherit;
+}
+.ui-segmented {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ui-segment {
+  position: relative;
+  display: inline-flex;
+  flex-direction: row;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+.ui-segment + .ui-segment {
+  border-left: 1px solid var(--border);
+}
+.ui-segment[data-hovered] {
+  color: var(--text);
+}
+.ui-segment[data-selected] {
+  background: var(--accent);
+  color: #fff;
+}
+.ui-segment[data-focus-visible] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.ui-segment[data-selected][data-focus-visible] {
+  box-shadow: inset 0 0 0 2px #fff;
+}
+
+/* Stance colour on Select options and the closed control. */
+.ui-option.stance-opt-endorse .ui-option-label,
+.ui-select-value-label.stance-opt-endorse {
+  color: var(--ok);
+}
+.ui-option.stance-opt-oppose .ui-option-label,
+.ui-select-value-label.stance-opt-oppose {
+  color: var(--bad);
+}
+.ui-option.stance-opt-lean_for .ui-option-label,
+.ui-select-value-label.stance-opt-lean_for {
+  color: #7fd8a0;
+}
+.ui-option.stance-opt-lean_against .ui-option-label,
+.ui-select-value-label.stance-opt-lean_against {
+  color: #e8a87c;
+}
+.ui-option.stance-opt-neutral .ui-option-label,
+.ui-option.stance-opt-abstain .ui-option-label,
+.ui-select-value-label.stance-opt-neutral,
+.ui-select-value-label.stance-opt-abstain {
+  color: var(--muted);
+}
+
+.ui-option-quiet .ui-option-label {
+  color: var(--muted);
+}
+.ui-option-action .ui-option-label {
+  color: var(--accent);
+}
+.ui-option-action {
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 6px 6px;
+  margin-top: 0.2rem;
+}
+
+.ui-segmented-stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+.ui-segmented-stacked .ui-segmented-label {
+  font-size: 0.85rem;
+  font-weight: normal;
+  color: var(--muted);
+}
+.ui-segmented-stacked .ui-segment {
+  padding: 0.45rem 0.8rem;
+  font-size: 0.9rem;
+}
+.subject-free {
+  margin-top: 0.5rem;
 }

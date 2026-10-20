@@ -22,7 +22,9 @@ import { track } from "../lib/usage";
 import { RawInspector } from "./ImportVerifyPanel";
 import { QrDialog } from "./Qr";
 import { SubjectPicker } from "./SubjectPicker";
+import { electionOptions } from "./electionOptions";
 import { Checkbox } from "./ui/Checkbox";
+import { Select, type SelectOption } from "./ui/Select";
 
 const STANCE_LABEL: Record<Stance, string> = {
   endorse: "Endorse",
@@ -32,6 +34,12 @@ const STANCE_LABEL: Record<Stance, string> = {
   neutral: "Neutral",
   abstain: "Abstain",
 };
+
+const STANCE_OPTIONS: SelectOption<Stance>[] = STANCES.map((stance) => ({
+  id: stance,
+  label: STANCE_LABEL[stance],
+  className: `stance-opt-${stance}`,
+}));
 
 interface OtherEntry {
   id: string;
@@ -217,20 +225,17 @@ export function ComposePanel() {
             <code className="key">{identity?.publicKey}</code>
           </p>
         ) : (
-          <label className="row">
-            <span>Signing as:</span>
-            <select
-              className="grow"
-              value={activeKey || (identity?.publicKey ?? "")}
-              onChange={(e) => setActiveKey(e.target.value)}
-            >
-              {myIdentities.map((id) => (
-                <option key={id.publicKey} value={id.publicKey}>
-                  {id.name ?? "(unnamed)"} — {id.publicKey.slice(0, 20)}…
-                </option>
-              ))}
-            </select>
-          </label>
+          <Select
+            label="Signing as"
+            value={activeKey || (identity?.publicKey ?? null)}
+            onChange={setActiveKey}
+            options={myIdentities.map((id) => ({
+              id: id.publicKey,
+              label: id.name ?? "(unnamed)",
+              description: <code className="key">{id.publicKey}</code>,
+              badge: id.kind ?? "individual",
+            }))}
+          />
         )}
       </div>
 
@@ -239,17 +244,13 @@ export function ComposePanel() {
           <h3>My picks</h3>
           <span className="grow" />
           {elections.length > 0 && (
-            <label className="ballot-election">
-              Election
-              <select value={election ?? ""} onChange={(e) => setChosenElection(e.target.value)}>
-                {elections.map((e) => (
-                  <option key={e.date} value={e.date}>
-                    {formatElectionDate(e.date)}
-                    {e.date < today ? " (past)" : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <Select
+              className="ballot-election"
+              label="Election"
+              value={election}
+              onChange={setChosenElection}
+              options={electionOptions(elections, today)}
+            />
           )}
         </div>
         {picks.length === 0 ? (
@@ -288,16 +289,12 @@ export function ComposePanel() {
         </p>
         <SubjectPicker key={pickerSeq} imported={imported} onChange={setPickedSubject} />
         <div className="grid">
-          <label>
-            Stance
-            <select value={otherStance} onChange={(e) => setOtherStance(e.target.value as Stance)}>
-              {STANCES.map((value) => (
-                <option key={value} value={value}>
-                  {STANCE_LABEL[value]}
-                </option>
-              ))}
-            </select>
-          </label>
+          <Select
+            label="Stance"
+            value={otherStance}
+            onChange={setOtherStance}
+            options={STANCE_OPTIONS}
+          />
           <label>
             Choice (optional)
             <input
@@ -408,19 +405,14 @@ function PickRow({
           )}
         </span>
       </Checkbox>
-      <select
+      <Select
         className="pick-stance"
         value={row.stance ?? "endorse"}
-        disabled={!included}
-        onChange={(e) => onChange({ stance: e.target.value as Stance })}
+        isDisabled={!included}
+        onChange={(stance) => onChange({ stance })}
         aria-label={`Stance on ${row.choice || row.subject.title}`}
-      >
-        {STANCES.map((value) => (
-          <option key={value} value={value}>
-            {STANCE_LABEL[value]}
-          </option>
-        ))}
-      </select>
+        options={STANCE_OPTIONS}
+      />
       <input
         type="text"
         className="pick-statement"

@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { importCatalogEntry } from "../lib/catalogImport";
 import { electionOf } from "../lib/collate";
-import { formatElectionDate, formatLocalDate } from "../lib/dates";
+import { formatLocalDate } from "../lib/dates";
 import {
   defaultToUnfollowed,
   localToday,
@@ -17,6 +17,8 @@ import {
 } from "../lib/query";
 import { ELECTION_AUTHORITY, isFollowed, sourceIdOf } from "../lib/sources";
 import { track } from "../lib/usage";
+import { electionOptions } from "./electionOptions";
+import { Select } from "./ui/Select";
 
 function entryKey(entry: CatalogEntry): string {
   return `${entry.slug}/${entry.election}`;
@@ -160,17 +162,15 @@ export function CatalogBrowser() {
       {catalog && (
         <>
           <div className="row">
-            <label>
-              Election
-              <select value={activeElection} onChange={(e) => setElection(e.target.value)}>
-                {elections.map((e) => (
-                  <option key={e} value={e}>
-                    {formatElectionDate(e)}
-                    {e < today ? " (past)" : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <Select
+              label="Election"
+              value={activeElection}
+              onChange={setElection}
+              options={electionOptions(
+                elections.map((date) => ({ date })),
+                today,
+              )}
+            />
             <label className="grow">
               Search
               <input
