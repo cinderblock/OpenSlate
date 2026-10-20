@@ -8,6 +8,7 @@ import { slateFromUrlOptions } from "../lib/query";
 import { type SlateImportSource, track } from "../lib/usage";
 import { ScanQrButton } from "./Qr";
 import { UrlField } from "./ui/TextField";
+import { TokenField } from "./ui/Token";
 
 /**
  * Paste, load or scan a slate, verify it, and save it. Standalone under
@@ -106,19 +107,16 @@ export function ImportVerifyPanel({ embedded = false }: { embedded?: boolean }) 
       </p>
 
       <div className="card">
-        <label>
-          Block
-          <textarea
-            rows={6}
-            className="token"
-            placeholder="paste an OpenSlate block here"
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              setSource("paste");
-            }}
-          />
-        </label>
+        <TokenField
+          label="Block"
+          rows={6}
+          placeholder="paste an OpenSlate block here"
+          value={input}
+          onChange={(text) => {
+            setInput(text);
+            setSource("paste");
+          }}
+        />
         <div className="row">
           <button type="button" className="primary" onClick={() => verify(input)}>
             Verify

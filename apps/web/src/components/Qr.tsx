@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { scanImageFile, toQrSvg } from "../lib/qr";
+import { TokenBox } from "./ui/Token";
 
 /**
  * Modal-style QR display. Renders the QR for `text` plus a collapsible raw-text
@@ -50,7 +51,7 @@ export function QrDialog({
         />
         <details>
           <summary>Raw text</summary>
-          <textarea readOnly rows={3} value={text} className="token" />
+          <TokenBox text={text} copyable />
         </details>
         <div className="row">
           <button type="button" onClick={() => ref.current?.close()}>

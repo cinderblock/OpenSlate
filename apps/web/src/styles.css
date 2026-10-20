@@ -1736,3 +1736,86 @@ button.tag.active {
 .race-search {
   margin-bottom: 0.5rem;
 }
+
+/* Token fields: a transparent textarea over a coloured copy of its text. */
+.ui-token-frame {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.ui-tokenfield .ui-token-frame {
+  max-height: 22rem;
+  overflow: auto;
+}
+.ui-token-frame:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+.ui-token-frame:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.ui-token-stack {
+  display: grid;
+}
+.ui-token-mirror,
+.ui-token-input {
+  grid-area: 1 / 1;
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  border: 0;
+  border-radius: 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+.ui-token-mirror {
+  pointer-events: none;
+  color: var(--text);
+}
+.ui-token-input {
+  width: 100%;
+  height: 100%;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--text);
+  outline: none;
+}
+.ui-token-input::placeholder {
+  color: var(--muted);
+  opacity: 0.8;
+}
+.ui-token-input::selection {
+  background: color-mix(in srgb, var(--accent) 40%, transparent);
+  color: transparent;
+}
+.jws-extra {
+  color: var(--bad);
+  text-decoration: underline wavy;
+}
+
+/* Read-only block display */
+.ui-tokenbox .ui-token-frame {
+  display: flex;
+  align-items: flex-start;
+}
+.ui-token-display {
+  flex: 1;
+  min-width: 0;
+  max-height: 14rem;
+  overflow: auto;
+  padding: 0.5rem 0.6rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  user-select: all;
+  outline: none;
+}
+.ui-copy-button {
+  flex-shrink: 0;
+  margin: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+}

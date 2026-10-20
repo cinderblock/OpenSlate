@@ -6,6 +6,7 @@ import { slatesCollection } from "../lib/collections";
 import { shortKey } from "../lib/identities";
 import { firsthandSubjectKeys, payloadsFromTokens, supersessionFor } from "../lib/supersession";
 import { Leaderboard } from "./Leaderboard";
+import { TokenField } from "./ui/Token";
 
 // Listing page for /results. The user picks an imported slate (or pastes a
 // token) and we route to /results/$token, where each Position is rendered
@@ -68,16 +69,13 @@ export function ResultsView() {
 
       <div className="card">
         <h3>Paste a slate</h3>
-        <label>
-          Block
-          <textarea
-            rows={4}
-            className="token"
-            placeholder="paste any OpenSlate block to view its results…"
-            value={pasted}
-            onChange={(e) => setPasted(e.target.value)}
-          />
-        </label>
+        <TokenField
+          label="Block"
+          rows={4}
+          placeholder="paste any OpenSlate block to view its results…"
+          value={pasted}
+          onChange={setPasted}
+        />
         <div className="row">
           <button
             type="button"

@@ -26,6 +26,7 @@ import { electionOptions } from "./electionOptions";
 import { Checkbox } from "./ui/Checkbox";
 import { Select, type SelectOption } from "./ui/Select";
 import { TextArea, TextField } from "./ui/TextField";
+import { TokenBox } from "./ui/Token";
 
 const STANCE_LABEL: Record<Stance, string> = {
   endorse: "Endorse",
@@ -339,10 +340,7 @@ export function ComposePanel() {
 
       {token && (
         <div className="card">
-          <label>
-            Shareable block
-            <textarea readOnly rows={6} value={token} className="token" />
-          </label>
+          <TokenBox label="Shareable block" text={token} />
           <p className="hint">
             Kept in this browser (Identities → My slates); My ballot shows it on each race.
           </p>
