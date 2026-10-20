@@ -196,10 +196,9 @@ label {
   color: var(--muted);
 }
 
-input,
-select,
-textarea,
-button {
+/* Form fields are our own (components/ui, styled in the UI kit section). */
+button,
+.ui-textarea {
   font: inherit;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -207,8 +206,8 @@ button {
   color: var(--text);
   padding: 0.5rem 0.6rem;
 }
-textarea {
-  resize: vertical;
+.ui-input {
+  font: inherit;
 }
 .token {
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
@@ -1761,11 +1760,13 @@ button.tag.active {
 .ui-token-mirror,
 .ui-token-input {
   grid-area: 1 / 1;
+  /* Identical text metrics, or the colours drift from the caret. */
+  font: 0.8rem / 1.5 ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: normal;
   margin: 0;
   padding: 0.5rem 0.6rem;
   border: 0;
   border-radius: 0;
-  line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-all;
   overflow-wrap: anywhere;
