@@ -287,6 +287,14 @@ committed as telemetry-collector `b3a3f7a` (SDK_VERSION was a stray
 literal 0.0.0; a test now ties it to package.json), CI green. Next: push
 tag `v0.1.0` (needs the user's yes), then the user approves the three
 staged packages, core first.
+Tagged 2026-10-19 (user's yes); Publish run 39372921613 succeeded and
+staged all three with provenance: core 503aff45, sdk 815a6b51, cli
+d574f70b. npm 12.2.0 warned the cli `bin` "was invalid and removed"; its
+source (@npmcli/package-json normalize.js) shows that message fires on
+mere `./` normalization and the entry is kept. Confirmed by
+`npm stage download` of all three tarballs: cli bin present, shebang
+intact, deps `^0.1.0`. Path normalized for future releases (`371a262`).
+Waiting on the user's approvals.
 
 ## Open questions for the user
 
