@@ -37,6 +37,9 @@ import { track } from "../lib/usage";
 import { closeWizard, openWizard, useWizardOpen } from "../lib/wizard";
 import { AreaPicker } from "./AreaPicker";
 import { isBallotEntry } from "./CatalogBrowser";
+import { Checkbox } from "./ui/Checkbox";
+import { Radio, RadioGroup } from "./ui/Radio";
+import { TextField } from "./ui/TextField";
 
 type Step = "welcome" | "election" | "area" | "sources" | "importing" | "identity";
 
@@ -370,23 +373,22 @@ function ElectionStep({
         </>
       )}
       {elections.length > 0 && (
-        <div className="wizard-options" role="radiogroup" aria-label="Election">
+        <RadioGroup
+          aria-label="Election"
+          className="wizard-options"
+          value={election}
+          onChange={setElection}
+        >
           {elections.map(([date, count]) => (
-            <label key={date} className={`wizard-option${election === date ? " on" : ""}`}>
-              <input
-                type="radio"
-                name="wizard-election"
-                checked={election === date}
-                onChange={() => setElection(date)}
-              />
+            <Radio key={date} value={date} variant="card">
               <span className="grow">
                 <strong>{formatElectionDate(date)}</strong>
                 {date < today && <span className="tag tag-inline">past</span>}
               </span>
               <span className="hint">{count} organizations</span>
-            </label>
+            </Radio>
           ))}
-        </div>
+        </RadioGroup>
       )}
       <WizardFooter onBack={onBack} onSkip={onSkip}>
         {error ? (
@@ -590,8 +592,7 @@ function SourcesStep({
     const on = selected.has(entry.path);
     const name = entry.attribution?.of.name ?? entry.slug;
     return (
-      <label key={entry.path} className={`wizard-option${on ? " on" : ""}`}>
-        <input type="checkbox" checked={on} onChange={() => toggle(entry.path)} />
+      <Checkbox key={entry.path} variant="card" isSelected={on} onChange={() => toggle(entry.path)}>
         <span className="grow">
           <strong>{name}</strong>
           {entry.attribution?.of.uri && (
@@ -612,7 +613,7 @@ function SourcesStep({
           {item.races} race{item.races === 1 ? "" : "s"}
           {isAreaSet(area) ? " on your ballot" : ""}
         </span>
-      </label>
+      </Checkbox>
     );
   }
 
@@ -717,36 +718,32 @@ function IdentityStep({
               straight to Compose, or make another.
             </p>
           )}
-          <label>
-            Name people will see (optional)
-            <input
-              type="text"
-              value={name}
-              placeholder="e.g. Jamie Rivera, or Elm Street Tenants Association"
-              onChange={(e) => setName(e.target.value)}
-            />
-          </label>
-          <fieldset className="wizard-kind">
-            <legend className="sr-only">Who is publishing</legend>
-            <label className="inline-check">
-              <input
-                type="radio"
-                name="wizard-kind"
-                checked={kind === "individual"}
-                onChange={() => setKind("individual")}
-              />
-              Just me
-            </label>
-            <label className="inline-check">
-              <input
-                type="radio"
-                name="wizard-kind"
-                checked={kind === "organization"}
-                onChange={() => setKind("organization")}
-              />
-              An organization
-            </label>
-          </fieldset>
+          <TextField
+            label="Name people will see (optional)"
+            value={name}
+            placeholder="e.g. Jamie Rivera, or Elm Street Tenants Association"
+            onChange={setName}
+          />
+          <RadioGroup
+            aria-label="Who is publishing"
+            className="wizard-kind"
+            orientation="horizontal"
+            value={kind}
+            onChange={(value) => setKind(value as typeof kind)}
+          >
+            <Radio value="individual" variant="card">
+              <span>
+                <strong>Just me</strong>
+                <span className="hint ui-option-note">My own recommendations</span>
+              </span>
+            </Radio>
+            <Radio value="organization" variant="card">
+              <span>
+                <strong>An organization</strong>
+                <span className="hint ui-option-note">A group's endorsements</span>
+              </span>
+            </Radio>
+          </RadioGroup>
           <WizardFooter onBack={onBack} onSkip={onSkip}>
             {all.length > 0 && (
               <button type="button" onClick={onDone}>

@@ -196,10 +196,9 @@ label {
   color: var(--muted);
 }
 
-input,
-select,
-textarea,
-button {
+/* Form fields are our own (components/ui, styled in the UI kit section). */
+button,
+.ui-textarea {
   font: inherit;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -207,8 +206,8 @@ button {
   color: var(--text);
   padding: 0.5rem 0.6rem;
 }
-textarea {
-  resize: vertical;
+.ui-input {
+  font: inherit;
 }
 .token {
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
@@ -325,12 +324,8 @@ footer a:hover {
 .footer-usage {
   margin-top: 0.4rem;
 }
-.footer-usage label {
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: inherit;
+.footer-usage .ui-switch {
+  color: inherit;
 }
 
 /* QR dialog */
@@ -452,10 +447,12 @@ footer a:hover {
   border-top: none;
 }
 .identity-radio {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
   flex: 1 1 24rem;
+  width: auto;
+  align-items: flex-start;
+}
+.identity-radio .ui-radio-dot {
+  margin-top: 0.2rem;
 }
 .signing-as {
   background: var(--surface-2);
@@ -469,13 +466,6 @@ footer a:hover {
 .export-options {
   flex-wrap: wrap;
   gap: 0.75rem;
-}
-.export-options label {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.4rem;
-  color: var(--text);
-  font-size: 0.9rem;
 }
 
 /* Slates list (Collate) */
@@ -533,7 +523,7 @@ footer a:hover {
   gap: 0.75rem 1.25rem;
   margin: 0.5rem 0;
 }
-.ballot-election select {
+.ballot-election {
   min-width: 14rem;
 }
 .ballot-area {
@@ -562,12 +552,6 @@ footer a:hover {
 }
 .ballot-stats a {
   color: inherit;
-}
-label.inline-check {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.9rem;
 }
 .ballot-section-title {
   cursor: pointer;
@@ -648,9 +632,8 @@ label.inline-check {
   cursor: pointer;
   margin-top: 0.4rem;
 }
-.race-note textarea {
+.race-note .ui-field {
   margin-top: 0.4rem;
-  width: 100%;
 }
 .empty-state {
   padding: 1.5rem;
@@ -689,7 +672,7 @@ label.inline-check {
   font-weight: normal;
   font-size: 0.85rem;
 }
-.area-picker input[type="search"] {
+.area-search {
   margin-bottom: 0.4rem;
 }
 .chips {
@@ -763,49 +746,6 @@ details.card > summary {
   cursor: pointer;
   font-weight: 600;
 }
-/* A checkbox drawn as an on/off switch. */
-label.switch {
-  position: relative;
-  flex-direction: row;
-  flex-shrink: 0;
-  width: 2.2rem;
-  height: 1.2rem;
-}
-label.switch input {
-  appearance: none;
-  margin: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  cursor: pointer;
-  transition: background 0.15s;
-}
-label.switch input::after {
-  content: "";
-  position: absolute;
-  top: 0.2rem;
-  left: 0.2rem;
-  width: 0.8rem;
-  height: 0.8rem;
-  border-radius: 50%;
-  background: var(--muted);
-  transition: transform 0.15s;
-}
-label.switch input:checked {
-  background: var(--ok);
-  border-color: var(--ok);
-}
-label.switch input:checked::after {
-  background: #fff;
-  transform: translateX(1rem);
-}
-label.switch input:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 /* Getting-started wizard */
 dialog.wizard::backdrop {
   background: rgb(0 0 0 / 0.6);
@@ -887,24 +827,6 @@ dialog.wizard::backdrop {
   flex-direction: column;
   gap: 0.35rem;
 }
-label.wizard-option {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  font-size: 0.95rem;
-  cursor: pointer;
-}
-label.wizard-option.on {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-}
-label.wizard-option input {
-  margin: 0;
-}
 .wizard-scroll {
   max-height: 50vh;
   overflow-y: auto;
@@ -930,12 +852,11 @@ label.wizard-option input {
   letter-spacing: normal;
   font-size: 0.9rem;
 }
-.wizard-kind {
-  border: none;
-  padding: 0;
+.ui-radio-group.wizard-kind {
   margin: 0.75rem 0;
-  display: flex;
-  gap: 1.25rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
 }
 .wizard-footer {
   display: flex;
@@ -1198,4 +1119,798 @@ button.tag.active {
 /* My ballot: what I've already signed on this race. */
 .my-slate {
   margin: 0 0 0.4rem;
+}
+
+/* ── UI kit (components/ui) ─────────────────────────────────────────────
+   Our own form controls, built on react-aria-components. State comes in as
+   data attributes: [data-selected], [data-focus-visible], [data-hovered],
+   [data-pressed], [data-disabled], [data-invalid]. */
+:root {
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+
+/* Switch */
+.ui-switch {
+  position: relative;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: inherit;
+  color: var(--text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ui-switch-track {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.3rem;
+  height: 1.3rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  transition: background 0.15s, border-color 0.15s;
+}
+.ui-switch-thumb {
+  position: absolute;
+  top: 50%;
+  left: 0.15rem;
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-top: -0.45rem;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.15s, background 0.15s;
+}
+.ui-switch[data-hovered] .ui-switch-track {
+  border-color: var(--accent);
+}
+.ui-switch[data-selected] .ui-switch-track {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+.ui-switch[data-selected] .ui-switch-thumb {
+  background: #fff;
+  transform: translateX(1rem);
+}
+.ui-switch[data-pressed] .ui-switch-thumb {
+  width: 1.05rem;
+}
+.ui-switch[data-focus-visible] .ui-switch-track {
+  box-shadow: var(--focus-ring);
+}
+.ui-switch[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Checkbox */
+.ui-checkbox {
+  position: relative;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: inherit;
+  color: var(--text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ui-checkbox-box {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 5px;
+  border: 1.5px solid var(--muted);
+  background: var(--surface-2);
+  transition: background 0.12s, border-color 0.12s;
+}
+.ui-checkbox-mark {
+  width: 0.85rem;
+  height: 0.85rem;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 16;
+  stroke-dashoffset: 16;
+  transition: stroke-dashoffset 0.15s;
+}
+.ui-checkbox[data-hovered] .ui-checkbox-box {
+  border-color: var(--accent);
+}
+.ui-checkbox[data-selected] .ui-checkbox-box {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.ui-checkbox[data-selected] .ui-checkbox-mark {
+  stroke-dashoffset: 0;
+}
+.ui-checkbox[data-focus-visible] .ui-checkbox-box {
+  box-shadow: var(--focus-ring);
+}
+.ui-checkbox[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* A whole row as the control (Checkbox / Radio variant="card"). */
+.ui-option-card {
+  display: flex;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 0.95rem;
+  transition: background 0.12s, border-color 0.12s;
+}
+.ui-option-card[data-hovered] {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+}
+.ui-option-card[data-selected] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.ui-option-card[data-focus-visible] {
+  box-shadow: var(--focus-ring);
+}
+.ui-option-card[data-focus-visible] .ui-checkbox-box,
+.ui-option-card[data-focus-visible] .ui-radio-dot {
+  box-shadow: none;
+}
+
+/* Radio */
+.ui-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.ui-group-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.ui-radio {
+  position: relative;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: inherit;
+  color: var(--text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ui-radio-dot {
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--muted);
+  background: var(--surface-2);
+  transition: border-width 0.12s, border-color 0.12s;
+}
+.ui-radio[data-hovered] .ui-radio-dot {
+  border-color: var(--accent);
+}
+.ui-radio[data-selected] .ui-radio-dot {
+  border: 0.32rem solid var(--accent);
+  background: #fff;
+}
+.ui-radio[data-focus-visible] .ui-radio-dot {
+  box-shadow: var(--focus-ring);
+}
+.ui-radio[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ui-option-note {
+  display: block;
+  font-weight: normal;
+}
+.tag-on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Fields: label + control + description/error, stacked. */
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+.ui-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.ui-description {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.ui-error {
+  font-size: 0.8rem;
+  color: var(--bad);
+}
+.ui-placeholder {
+  color: var(--muted);
+}
+
+/* The box a text/combobox input sits in; it owns the border and focus ring. */
+.ui-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  padding: 0 0.6rem;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.ui-input-group:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+.ui-input-group:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.ui-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  border-radius: 0;
+  padding: 0.5rem 0;
+  color: var(--text);
+  outline: none;
+}
+.ui-input::placeholder {
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+/* Select */
+.ui-select-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 8rem;
+  text-align: left;
+}
+.ui-select-trigger[data-focus-visible] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  outline: none;
+}
+.ui-select-trigger[data-pressed] {
+  border-color: var(--accent);
+}
+.ui-select-value {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ui-select-value-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ui-chevron {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.15s;
+}
+.ui-select[data-open] .ui-chevron,
+.ui-combobox[data-open] .ui-chevron {
+  transform: rotate(180deg);
+}
+.ui-select[data-disabled] {
+  opacity: 0.5;
+}
+.ui-combobox-button {
+  display: grid;
+  place-items: center;
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  margin-right: -0.35rem;
+}
+
+/* Popover + list */
+.ui-popover {
+  min-width: var(--trigger-width);
+  max-width: min(36rem, 94vw);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.5);
+  overflow: auto;
+  outline: none;
+}
+.ui-popover[data-entering] {
+  animation: ui-pop-in 0.12s ease-out;
+}
+@keyframes ui-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.ui-listbox {
+  padding: 0.3rem;
+  outline: none;
+  max-height: inherit;
+  overflow: auto;
+}
+.ui-listbox[data-empty] {
+  padding: 0.6rem 0.8rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.ui-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem 0.45rem 0.4rem;
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+}
+.ui-option[data-focused] {
+  background: var(--surface-2);
+}
+.ui-option[data-focus-visible] {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.ui-option[data-selected] {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.ui-option[data-selected][data-focused] {
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+.ui-option[data-disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ui-option-check {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 1rem;
+}
+.ui-option-check svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ui-option-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ui-option-label {
+  overflow-wrap: anywhere;
+}
+.ui-option-description {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.ui-option-badge {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Segmented: a radio group drawn as joined buttons. */
+.ui-segmented-field {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ui-segmented-label {
+  font-size: inherit;
+  color: inherit;
+}
+.ui-segmented {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ui-segment {
+  position: relative;
+  display: inline-flex;
+  flex-direction: row;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+.ui-segment + .ui-segment {
+  border-left: 1px solid var(--border);
+}
+.ui-segment[data-hovered] {
+  color: var(--text);
+}
+.ui-segment[data-selected] {
+  background: var(--accent);
+  color: #fff;
+}
+.ui-segment[data-focus-visible] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.ui-segment[data-selected][data-focus-visible] {
+  box-shadow: inset 0 0 0 2px #fff;
+}
+
+/* Stance colour on Select options and the closed control. */
+.ui-option.stance-opt-endorse .ui-option-label,
+.ui-select-value-label.stance-opt-endorse {
+  color: var(--ok);
+}
+.ui-option.stance-opt-oppose .ui-option-label,
+.ui-select-value-label.stance-opt-oppose {
+  color: var(--bad);
+}
+.ui-option.stance-opt-lean_for .ui-option-label,
+.ui-select-value-label.stance-opt-lean_for {
+  color: #7fd8a0;
+}
+.ui-option.stance-opt-lean_against .ui-option-label,
+.ui-select-value-label.stance-opt-lean_against {
+  color: #e8a87c;
+}
+.ui-option.stance-opt-neutral .ui-option-label,
+.ui-option.stance-opt-abstain .ui-option-label,
+.ui-select-value-label.stance-opt-neutral,
+.ui-select-value-label.stance-opt-abstain {
+  color: var(--muted);
+}
+
+.ui-option-quiet .ui-option-label {
+  color: var(--muted);
+}
+.ui-option-action .ui-option-label {
+  color: var(--accent);
+}
+.ui-option-action {
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 6px 6px;
+  margin-top: 0.2rem;
+}
+
+.ui-segmented-stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+.ui-segmented-stacked .ui-segmented-label {
+  font-size: 0.85rem;
+  font-weight: normal;
+  color: var(--muted);
+}
+.ui-segmented-stacked .ui-segment {
+  padding: 0.45rem 0.8rem;
+  font-size: 0.9rem;
+}
+.subject-free {
+  margin-top: 0.5rem;
+}
+
+/* Text fields */
+.ui-affix {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.ui-search-icon,
+.ui-link-icon {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ui-search-clear {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  margin-right: -0.25rem;
+}
+.ui-search-clear svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  stroke: var(--muted);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.ui-search-clear[data-hovered] {
+  background: var(--border);
+}
+.ui-search-clear[data-hovered] svg {
+  stroke: var(--text);
+}
+.ui-searchfield[data-empty] .ui-search-clear {
+  visibility: hidden;
+}
+.ui-field[data-invalid] .ui-input-group,
+.ui-field[data-invalid] .ui-textarea {
+  border-color: var(--bad);
+}
+.ui-field[data-disabled] {
+  opacity: 0.5;
+}
+.ui-mono .ui-input,
+.ui-mono .ui-textarea {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.85rem;
+}
+.key-prefix {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.85rem;
+  border-right: 1px solid var(--border);
+  margin-right: 0.15rem;
+  padding: 0.1rem 0.4rem 0.1rem 0;
+}
+
+/* Quiet: no box until hovered or focused, for editing in place in a list. */
+.ui-quiet .ui-input-group {
+  border-color: transparent;
+  background: transparent;
+  padding: 0 0.35rem;
+  margin: 0 -0.35rem;
+}
+.ui-quiet .ui-input {
+  padding: 0.2rem 0;
+}
+.ui-quiet .ui-input-group:hover {
+  border-color: var(--border);
+}
+.ui-quiet .ui-input-group:focus-within {
+  background: var(--surface-2);
+}
+
+.ui-textarea {
+  width: 100%;
+  resize: none;
+  line-height: 1.45;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.ui-textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.8;
+}
+.ui-textarea:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+.ui-textarea[data-focused] {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.contact-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.contact-name {
+  flex: 0 1 20rem;
+}
+.race-search {
+  margin-bottom: 0.5rem;
+}
+
+/* Token fields: a transparent textarea over a coloured copy of its text. */
+.ui-token-frame {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.ui-tokenfield .ui-token-frame {
+  max-height: 22rem;
+  overflow: auto;
+}
+.ui-token-frame:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+.ui-token-frame:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.ui-token-stack {
+  display: grid;
+}
+.ui-token-mirror,
+.ui-token-input {
+  grid-area: 1 / 1;
+  /* Identical text metrics, or the colours drift from the caret. */
+  font: 0.8rem / 1.5 ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: normal;
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  border: 0;
+  border-radius: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+.ui-token-mirror {
+  pointer-events: none;
+  color: var(--text);
+}
+.ui-token-input {
+  width: 100%;
+  height: 100%;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--text);
+  outline: none;
+}
+.ui-token-input::placeholder {
+  color: var(--muted);
+  opacity: 0.8;
+}
+.ui-token-input::selection {
+  background: color-mix(in srgb, var(--accent) 40%, transparent);
+  color: transparent;
+}
+.jws-extra {
+  color: var(--bad);
+  text-decoration: underline wavy;
+}
+
+/* Read-only block display */
+.ui-tokenbox .ui-token-frame {
+  display: flex;
+  align-items: flex-start;
+}
+.ui-token-display {
+  flex: 1;
+  min-width: 0;
+  max-height: 14rem;
+  overflow: auto;
+  padding: 0.5rem 0.6rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  user-select: all;
+  outline: none;
+}
+.ui-copy-button {
+  flex-shrink: 0;
+  margin: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+/* File drop */
+.ui-dropzone {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.25rem 0.75rem 0.25rem 0.25rem;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  transition: border-color 0.12s, background 0.12s;
+}
+.ui-dropzone[data-drop-target] {
+  border-color: var(--accent);
+  border-style: solid;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.ui-dropzone[data-focus-visible] {
+  box-shadow: var(--focus-ring);
+}
+.ui-dropzone-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.ui-dropzone-hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.ui-file-icon {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+/* Slider */
+.ui-slider {
+  width: 100%;
+  padding: 0.5rem 0;
+}
+.ui-slider-track {
+  position: relative;
+  height: 1.4rem;
+  cursor: pointer;
+}
+.ui-slider-track::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 2px;
+  background: var(--border);
+}
+/* RAC sizes the fill to the full track height inline; draw a 4px bar in it. */
+.ui-slider-fill {
+  top: 0;
+  background: linear-gradient(var(--accent), var(--accent)) center / 100% 4px no-repeat;
+}
+.ui-slider-ticks span {
+  position: absolute;
+  top: 50%;
+  width: 2px;
+  height: 10px;
+  margin: -5px 0 0 -1px;
+  border-radius: 1px;
+  background: var(--border);
+}
+.ui-slider-thumb {
+  top: 50%;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--accent);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.5);
+  transition: scale 0.1s;
+}
+/* `scale`, not `transform`: RAC centres the thumb with an inline transform. */
+.ui-slider-thumb[data-hovered],
+.ui-slider-thumb[data-dragging] {
+  scale: 1.15;
+}
+.ui-slider-thumb[data-focus-visible] {
+  box-shadow: var(--focus-ring);
+}
+
+.subject-picker {
+  margin-bottom: 0.5rem;
 }

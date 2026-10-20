@@ -8,6 +8,8 @@ import { usePublishedSlates } from "../lib/published";
 import { contactToQrText } from "../lib/qr";
 import { track } from "../lib/usage";
 import { QrDialog } from "./Qr";
+import { Radio, RadioGroup } from "./ui/Radio";
+import { TextArea, TextField } from "./ui/TextField";
 
 export function IdentityPanel() {
   const { all: myIdentities, activeKey, setActiveKey } = useActiveIdentity();
@@ -72,23 +74,25 @@ export function IdentityPanel() {
         {myIdentities.length === 0 ? (
           <p className="hint">No identities yet — generate one below.</p>
         ) : (
-          <ul className="identity-list">
+          <RadioGroup
+            aria-label="Sign as"
+            value={effectiveActive || null}
+            onChange={setActiveKey}
+            className="identity-list"
+          >
             {myIdentities.map((identity) => (
-              <li key={identity.publicKey} className="identity-row">
-                <label className="identity-radio">
-                  <input
-                    type="radio"
-                    name="active-identity"
-                    checked={effectiveActive === identity.publicKey}
-                    onChange={() => setActiveKey(identity.publicKey)}
-                  />
+              <div key={identity.publicKey} className="identity-row">
+                <Radio value={identity.publicKey} variant="card" className="identity-radio">
                   <span className="grow">
                     <strong>{identity.name ?? "(unnamed)"}</strong>{" "}
                     <span className="tag">{identity.kind ?? "individual"}</span>
+                    {effectiveActive === identity.publicKey && (
+                      <span className="tag tag-inline tag-on">signing as</span>
+                    )}
                     <br />
                     <code className="key">{identity.publicKey}</code>
                   </span>
-                </label>
+                </Radio>
                 <div className="row">
                   <button type="button" onClick={() => shareIdentity(identity)}>
                     Share QR
@@ -100,18 +104,18 @@ export function IdentityPanel() {
                     Forget
                   </button>
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </RadioGroup>
         )}
 
         <div className="row">
-          <input
-            type="text"
+          <TextField
             className="grow"
+            aria-label="Display name for a new identity"
             placeholder="display name (optional)"
             value={genName}
-            onChange={(e) => setGenName(e.target.value)}
+            onChange={setGenName}
           />
           <button type="button" onClick={generate}>
             + Generate new identity
@@ -119,11 +123,13 @@ export function IdentityPanel() {
         </div>
         <details>
           <summary>Import an existing identity (backup JSON)</summary>
-          <textarea
-            rows={5}
+          <TextArea
+            monospace
+            rows={4}
+            aria-label="Identity backup JSON"
             placeholder="paste identity JSON (contains secret key)"
             value={importText}
-            onChange={(e) => setImportText(e.target.value)}
+            onChange={setImportText}
           />
           <button type="button" onClick={importIdentity} disabled={!importText.trim()}>
             Import

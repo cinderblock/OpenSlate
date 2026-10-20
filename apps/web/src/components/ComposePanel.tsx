@@ -22,6 +22,11 @@ import { track } from "../lib/usage";
 import { RawInspector } from "./ImportVerifyPanel";
 import { QrDialog } from "./Qr";
 import { SubjectPicker } from "./SubjectPicker";
+import { electionOptions } from "./electionOptions";
+import { Checkbox } from "./ui/Checkbox";
+import { Select, type SelectOption } from "./ui/Select";
+import { TextArea, TextField } from "./ui/TextField";
+import { TokenBox } from "./ui/Token";
 
 const STANCE_LABEL: Record<Stance, string> = {
   endorse: "Endorse",
@@ -31,6 +36,12 @@ const STANCE_LABEL: Record<Stance, string> = {
   neutral: "Neutral",
   abstain: "Abstain",
 };
+
+const STANCE_OPTIONS: SelectOption<Stance>[] = STANCES.map((stance) => ({
+  id: stance,
+  label: STANCE_LABEL[stance],
+  className: `stance-opt-${stance}`,
+}));
 
 interface OtherEntry {
   id: string;
@@ -216,20 +227,17 @@ export function ComposePanel() {
             <code className="key">{identity?.publicKey}</code>
           </p>
         ) : (
-          <label className="row">
-            <span>Signing as:</span>
-            <select
-              className="grow"
-              value={activeKey || (identity?.publicKey ?? "")}
-              onChange={(e) => setActiveKey(e.target.value)}
-            >
-              {myIdentities.map((id) => (
-                <option key={id.publicKey} value={id.publicKey}>
-                  {id.name ?? "(unnamed)"} — {id.publicKey.slice(0, 20)}…
-                </option>
-              ))}
-            </select>
-          </label>
+          <Select
+            label="Signing as"
+            value={activeKey || (identity?.publicKey ?? null)}
+            onChange={setActiveKey}
+            options={myIdentities.map((id) => ({
+              id: id.publicKey,
+              label: id.name ?? "(unnamed)",
+              description: <code className="key">{id.publicKey}</code>,
+              badge: id.kind ?? "individual",
+            }))}
+          />
         )}
       </div>
 
@@ -238,17 +246,13 @@ export function ComposePanel() {
           <h3>My picks</h3>
           <span className="grow" />
           {elections.length > 0 && (
-            <label className="ballot-election">
-              Election
-              <select value={election ?? ""} onChange={(e) => setChosenElection(e.target.value)}>
-                {elections.map((e) => (
-                  <option key={e.date} value={e.date}>
-                    {formatElectionDate(e.date)}
-                    {e.date < today ? " (past)" : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <Select
+              className="ballot-election"
+              label="Election"
+              value={election}
+              onChange={setChosenElection}
+              options={electionOptions(elections, today)}
+            />
           )}
         </div>
         {picks.length === 0 ? (
@@ -287,35 +291,25 @@ export function ComposePanel() {
         </p>
         <SubjectPicker key={pickerSeq} imported={imported} onChange={setPickedSubject} />
         <div className="grid">
-          <label>
-            Stance
-            <select value={otherStance} onChange={(e) => setOtherStance(e.target.value as Stance)}>
-              {STANCES.map((value) => (
-                <option key={value} value={value}>
-                  {STANCE_LABEL[value]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Choice (optional)
-            <input
-              type="text"
-              placeholder="e.g. A. Candidate"
-              value={otherChoice}
-              onChange={(e) => setOtherChoice(e.target.value)}
-            />
-          </label>
-        </div>
-        <label>
-          Public statement (optional)
-          <textarea
-            rows={2}
-            placeholder="why you take this position"
-            value={otherStatement}
-            onChange={(e) => setOtherStatement(e.target.value)}
+          <Select
+            label="Stance"
+            value={otherStance}
+            onChange={setOtherStance}
+            options={STANCE_OPTIONS}
           />
-        </label>
+          <TextField
+            label="Choice (optional)"
+            placeholder="e.g. A. Candidate"
+            value={otherChoice}
+            onChange={setOtherChoice}
+          />
+        </div>
+        <TextArea
+          label="Public statement (optional)"
+          placeholder="why you take this position"
+          value={otherStatement}
+          onChange={setOtherStatement}
+        />
         <button type="button" onClick={addOther} disabled={!pickedSubject}>
           Add position
         </button>
@@ -346,10 +340,7 @@ export function ComposePanel() {
 
       {token && (
         <div className="card">
-          <label>
-            Shareable block
-            <textarea readOnly rows={6} value={token} className="token" />
-          </label>
+          <TokenBox label="Shareable block" text={token} />
           <p className="hint">
             Kept in this browser (Identities → My slates); My ballot shows it on each race.
           </p>
@@ -387,8 +378,7 @@ function PickRow({
   const place = jurisdictionLabel(row.subject.jurisdiction);
   return (
     <li className={`pick-row${included ? "" : " left-out"}`}>
-      <label className="pick-include">
-        <input type="checkbox" checked={included} onChange={onToggle} />
+      <Checkbox className="pick-include" isSelected={included} onChange={onToggle}>
         <span>
           <Link
             to="/race/$key"
@@ -407,27 +397,21 @@ function PickRow({
             <em> (as a whole)</em>
           )}
         </span>
-      </label>
-      <select
+      </Checkbox>
+      <Select
         className="pick-stance"
         value={row.stance ?? "endorse"}
-        disabled={!included}
-        onChange={(e) => onChange({ stance: e.target.value as Stance })}
+        isDisabled={!included}
+        onChange={(stance) => onChange({ stance })}
         aria-label={`Stance on ${row.choice || row.subject.title}`}
-      >
-        {STANCES.map((value) => (
-          <option key={value} value={value}>
-            {STANCE_LABEL[value]}
-          </option>
-        ))}
-      </select>
-      <input
-        type="text"
+        options={STANCE_OPTIONS}
+      />
+      <TextField
         className="pick-statement"
         placeholder="public statement (optional)"
         value={statement}
-        disabled={!included}
-        onChange={(e) => setStatement(e.target.value)}
+        isDisabled={!included}
+        onChange={setStatement}
         onBlur={() => {
           if ((row.statement ?? "") !== statement) onChange({ statement: statement || undefined });
         }}

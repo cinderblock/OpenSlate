@@ -9,6 +9,9 @@ interface ResultsTimelineProps {
 }
 
 import { baseUrlFor } from "../lib/routing";
+import { Segmented } from "./ui/Segmented";
+import { Slider } from "./ui/Slider";
+import { Switch } from "./ui/Switch";
 
 type MapFormat = "svg" | "png";
 
@@ -69,45 +72,38 @@ export function ResultsTimeline({ raceId, hasMap }: ResultsTimelineProps) {
       <div className="timeline-controls">
         <strong>Timeline</strong>
         <span className="tag">{timestamps.length} snapshots</span>
-        <label className="hint" style={{ flexDirection: "row", gap: "0.25rem" }}>
-          <input
-            type="checkbox"
-            checked={liveFollow}
-            onChange={(e) => setLiveFollow(e.target.checked)}
-          />
+        <Switch className="hint" isSelected={liveFollow} onChange={setLiveFollow}>
           Live
-        </label>
+        </Switch>
         {hasMap && (
           <>
             <button type="button" className="link" onClick={() => setShowMap((v) => !v)}>
               {showMap ? "Hide map" : "Show map"}
             </button>
             {showMap && (
-              <label className="hint" style={{ flexDirection: "row", gap: "0.25rem" }}>
-                Format
-                <select
-                  value={mapFormat}
-                  onChange={(e) => setMapFormat(e.target.value as MapFormat)}
-                >
-                  <option value="svg">SVG</option>
-                  <option value="png">PNG</option>
-                </select>
-              </label>
+              <Segmented
+                className="hint"
+                label="Format"
+                value={mapFormat}
+                onChange={setMapFormat}
+                options={[
+                  { id: "svg", label: "SVG" },
+                  { id: "png", label: "PNG" },
+                ]}
+              />
             )}
           </>
         )}
       </div>
 
-      <input
+      <Slider
         className="timeline-scrubber"
-        type="range"
         min={0}
         max={timestamps.length - 1}
-        step={1}
         value={index ?? 0}
-        onChange={(e) => {
+        onChange={(next) => {
           setLiveFollow(false);
-          setIndex(Number(e.target.value));
+          setIndex(next);
         }}
         aria-label="History scrubber"
       />

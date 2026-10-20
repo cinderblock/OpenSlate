@@ -30,6 +30,11 @@ import { track } from "../lib/usage";
 import { openWizard } from "../lib/wizard";
 import { AddressLookup } from "./AddressLookup";
 import { AreaPicker, describeArea } from "./AreaPicker";
+import { electionOptions } from "./electionOptions";
+import { Checkbox } from "./ui/Checkbox";
+import { Select } from "./ui/Select";
+import { Switch } from "./ui/Switch";
+import { TextArea } from "./ui/TextField";
 
 /** The user's own picks. Private: kept in this browser, only shared if they publish. */
 const PICKS: Array<{ stance: Stance; label: string; title: string }> = [
@@ -193,17 +198,13 @@ export function MyBallotPanel() {
   return (
     <section className="panel my-ballot">
       <div className="ballot-toolbar no-print">
-        <label className="ballot-election">
-          Election
-          <select value={election ?? ""} onChange={(e) => setChosenElection(e.target.value)}>
-            {elections.map((e) => (
-              <option key={e.date} value={e.date}>
-                {formatElectionDate(e.date)}
-                {e.date < today ? " (past)" : e.date === today ? " (today)" : ""} · {e.races} races
-              </option>
-            ))}
-          </select>
-        </label>
+        <Select
+          className="ballot-election"
+          label="Election"
+          value={election}
+          onChange={setChosenElection}
+          options={electionOptions(elections, today)}
+        />
         <div className="ballot-area">
           <span className="ballot-area-label">Where you vote</span>
           <button
@@ -253,14 +254,9 @@ export function MyBallotPanel() {
             picks and statements.
           </p>
           <div className="row export-options">
-            <label>
-              <input
-                type="checkbox"
-                checked={exportNotes}
-                onChange={(e) => setExportNotes(e.target.checked)}
-              />{" "}
+            <Checkbox isSelected={exportNotes} onChange={setExportNotes}>
               Include my private notes
-            </label>
+            </Checkbox>
             <button type="button" onClick={() => exportBallot("json")}>
               Download JSON
             </button>
@@ -286,14 +282,9 @@ export function MyBallotPanel() {
             <strong>{followedCount}</strong> of {sourceIds.size} sources followed
           </Link>
         </span>
-        <label className="inline-check">
-          <input
-            type="checkbox"
-            checked={showUnfollowed}
-            onChange={(e) => setShowUnfollowed(e.target.checked)}
-          />
+        <Switch isSelected={showUnfollowed} onChange={setShowUnfollowed}>
           Include races only unfollowed sources cover
-        </label>
+        </Switch>
       </div>
 
       {summary && summary.followedSources === 0 && !showUnfollowed && (
@@ -465,11 +456,11 @@ function RaceCardInner({
       </ul>
       <details className="race-note no-print">
         <summary>{noteRow?.privateNote ? "My note ✎" : "Add a private note"}</summary>
-        <textarea
-          rows={2}
+        <TextArea
+          aria-label={`Private note on ${race.subject.title}`}
           placeholder="Only you see this. It stays in this browser."
           value={note}
-          onChange={(e) => setNote(e.target.value)}
+          onChange={setNote}
           onBlur={() =>
             patch(election, race.subject, NOTE_CHOICE, { privateNote: note.trim() || undefined })
           }

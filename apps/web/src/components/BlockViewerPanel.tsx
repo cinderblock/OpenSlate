@@ -1,5 +1,6 @@
 import { decodeToken } from "@openslate/core";
 import { useMemo, useState } from "react";
+import { TokenField } from "./ui/Token";
 
 export function BlockViewerPanel() {
   const [input, setInput] = useState("");
@@ -41,16 +42,13 @@ export function BlockViewerPanel() {
       </p>
 
       <div className="card">
-        <label>
-          Block
-          <textarea
-            rows={6}
-            className="token"
-            placeholder="paste an OpenSlate block here…"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-          />
-        </label>
+        <TokenField
+          label="Block"
+          rows={6}
+          placeholder="paste an OpenSlate block here…"
+          value={input}
+          onChange={setInput}
+        />
       </div>
 
       {view.state === "empty" && <p className="hint">Nothing pasted yet.</p>}

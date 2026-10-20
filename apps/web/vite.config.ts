@@ -1,4 +1,5 @@
 import { fileURLToPath } from "node:url";
+import optimizeLocales from "@react-aria/optimize-locales-plugin";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
@@ -8,6 +9,9 @@ import { VitePWA } from "vite-plugin-pwa";
 export default defineConfig({
   plugins: [
     react(),
+    // React Aria ships UI strings ("Clear search", "No results") for ~30
+    // languages; the app is English-only, so keep just that. Must run first.
+    { ...optimizeLocales.vite({ locales: ["en-US"] }), enforce: "pre" },
     VitePWA({
       registerType: "autoUpdate",
       // PWA service worker is built only in production; dev keeps HMR clean.

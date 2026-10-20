@@ -3,7 +3,9 @@ import { removeKnownIdentity, upsertKnownIdentity } from "../lib/collections";
 import type { KnownIdentity } from "../lib/db";
 import { shortKey, useKnownIdentities } from "../lib/identities";
 import { parseScanned } from "../lib/qr";
+import { PublicKeyField, isPublicKey } from "./PublicKeyField";
 import { ScanQrButton } from "./Qr";
+import { SearchField, TextField } from "./ui/TextField";
 
 /**
  * Other people's public keys, with private nicknames and notes. Moved here from
@@ -33,8 +35,8 @@ export function ContactsCard() {
 
   function addContact() {
     const key = newContactKey.trim();
-    if (!key.startsWith("ed25519:")) {
-      setContactError("public key must start with ed25519:");
+    if (!isPublicKey(key)) {
+      setContactError("That isn't a valid Ed25519 public key.");
       return;
     }
     upsertKnownIdentity(key, {
@@ -65,20 +67,11 @@ export function ContactsCard() {
         nicknames help you recognize them but are never shared. You cannot edit their endorsements —
         those are signed by them.
       </p>
-      <div className="row">
-        <input
-          type="search"
-          className="grow"
-          placeholder={`search ${knownIdentities.length} contact(s) by name, key, or notes…`}
-          value={contactSearch}
-          onChange={(e) => setContactSearch(e.target.value)}
-        />
-        {contactSearch && (
-          <button type="button" className="link" onClick={() => setContactSearch("")}>
-            clear
-          </button>
-        )}
-      </div>
+      <SearchField
+        placeholder={`search ${knownIdentities.length} contact(s) by name, key, or notes…`}
+        value={contactSearch}
+        onChange={setContactSearch}
+      />
       {filteredContacts.length === 0 ? (
         <p className="hint">{contactSearch ? "No matches." : "No contacts yet."}</p>
       ) : (
@@ -91,24 +84,13 @@ export function ContactsCard() {
       <details>
         <summary>+ Add public identity manually</summary>
         <div className="grid">
-          <label>
-            Public key
-            <input
-              type="text"
-              placeholder="ed25519:..."
-              value={newContactKey}
-              onChange={(e) => setNewContactKey(e.target.value)}
-            />
-          </label>
-          <label>
-            Nickname (optional)
-            <input
-              type="text"
-              placeholder="e.g. neighbor"
-              value={newContactName}
-              onChange={(e) => setNewContactName(e.target.value)}
-            />
-          </label>
+          <PublicKeyField label="Public key" value={newContactKey} onChange={setNewContactKey} />
+          <TextField
+            label="Nickname (optional)"
+            placeholder="e.g. neighbor"
+            value={newContactName}
+            onChange={setNewContactName}
+          />
         </div>
         <div className="row">
           <button type="button" onClick={addContact}>
@@ -140,20 +122,25 @@ function ContactRow({ contact }: { contact: KnownIdentity }) {
   return (
     <li className="identity-row">
       <div className="grow">
-        <input
-          type="text"
-          placeholder="nickname"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={saveName}
-        />
-        <code className="key">{shortKey(contact.publicKey)}</code>
-        <span className="tag">{contact.source}</span>
-        <input
-          type="text"
+        <div className="contact-head">
+          <TextField
+            quiet
+            className="contact-name"
+            aria-label="Nickname"
+            placeholder="nickname"
+            value={name}
+            onChange={setName}
+            onBlur={saveName}
+          />
+          <code className="key">{shortKey(contact.publicKey)}</code>
+          <span className="tag">{contact.source}</span>
+        </div>
+        <TextField
+          quiet
+          aria-label="Private notes"
           placeholder="private notes (never shared)"
           value={notes}
-          onChange={(e) => setNotes(e.target.value)}
+          onChange={setNotes}
           onBlur={saveNotes}
         />
       </div>

@@ -8,6 +8,7 @@ import { CatalogBrowser } from "./CatalogBrowser";
 import { ContactsCard } from "./ContactsCard";
 import { ImportVerifyPanel } from "./ImportVerifyPanel";
 import { SlatesList } from "./SlatesList";
+import { Switch } from "./ui/Switch";
 
 interface SourceGroup {
   source: Source;
@@ -160,14 +161,11 @@ function SourceRow({ group }: { group: SourceGroup }) {
   return (
     <li className="source-row">
       {!group.ballot && (
-        <label className="switch" title={group.followed ? "Following" : "Not following"}>
-          <input
-            type="checkbox"
-            checked={group.followed}
-            onChange={(e) => setFollowed(source.id, e.target.checked)}
-          />
-          <span className="sr-only">Follow {source.name}</span>
-        </label>
+        <Switch
+          isSelected={group.followed}
+          onChange={(on) => setFollowed(source.id, on)}
+          aria-label={`Follow ${source.name}`}
+        />
       )}
       <div className="grow">
         {source.uri ? (

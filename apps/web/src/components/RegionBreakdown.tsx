@@ -6,6 +6,7 @@ import {
   normalizeRegions,
   sortRegions,
 } from "../lib/region-summary";
+import { Select } from "./ui/Select";
 
 interface RegionBreakdownProps {
   race: Race;
@@ -47,16 +48,16 @@ export function RegionBreakdown({ race }: RegionBreakdownProps) {
             {aggregate.fullyReporting} fully in
           </span>
         )}
-        <label className="hint no-print" style={{ flexDirection: "row", gap: "0.25rem" }}>
-          Sort
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as RegionSort)}>
-            {(Object.keys(SORT_LABEL) as RegionSort[]).map((key) => (
-              <option key={key} value={key}>
-                {SORT_LABEL[key]}
-              </option>
-            ))}
-          </select>
-        </label>
+        <Select
+          className="no-print region-sort"
+          aria-label="Sort regions"
+          value={sortBy}
+          onChange={setSortBy}
+          options={(Object.keys(SORT_LABEL) as RegionSort[]).map((key) => ({
+            id: key,
+            label: SORT_LABEL[key],
+          }))}
+        />
       </div>
 
       <LeaderTally aggregate={aggregate} />

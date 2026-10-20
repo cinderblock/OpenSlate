@@ -8,6 +8,7 @@ import { slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
 import { localToday, useMyElection } from "../lib/myVote";
 import { electionsQueryOptions } from "../lib/query";
+import { Switch } from "./ui/Switch";
 
 interface ElectionEntry {
   id: string;
@@ -115,16 +116,9 @@ export function ElectionsPanel() {
       </p>
 
       <div className="card">
-        <label className="row">
-          <input
-            type="checkbox"
-            checked={showPast}
-            onChange={(e) => setShowPast(e.target.checked)}
-          />
-          <span>
-            Show past + Test elections <span className="hint">({pastCount} hidden)</span>
-          </span>
-        </label>
+        <Switch isSelected={showPast} onChange={setShowPast}>
+          Show past + Test elections <span className="hint">({pastCount} hidden)</span>
+        </Switch>
       </div>
 
       {electionsQuery.isLoading && <p className="hint">Loading elections…</p>}

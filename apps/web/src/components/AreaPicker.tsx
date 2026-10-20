@@ -7,6 +7,8 @@ import {
   jurisdictionLabel,
   parseJurisdiction,
 } from "../lib/jurisdictions";
+import { Select } from "./ui/Select";
+import { SearchField } from "./ui/TextField";
 
 /** Above this many localities, show a filter box instead of every chip. */
 const CHIP_LIMIT = 16;
@@ -15,6 +17,9 @@ const CHIP_LIMIT = 16;
  * "Where do you vote?": the localities and district numbers the user's ballot
  * covers. Offers only what the imported (or catalog) races actually use.
  */
+/** The district Select's "clear it" option. */
+const NOT_SET = "__not_set__";
+
 export function AreaPicker({
   options,
   area,
@@ -68,11 +73,11 @@ export function AreaPicker({
         <fieldset>
           <legend>City, county or local area</legend>
           {options.localities.length > CHIP_LIMIT && (
-            <input
-              type="search"
+            <SearchField
+              className="area-search"
               placeholder={`search ${options.localities.length} areas…`}
               value={filter}
-              onChange={(e) => setFilter(e.target.value)}
+              onChange={setFilter}
             />
           )}
           <div className="chips">
@@ -114,20 +119,17 @@ export function AreaPicker({
               const part = parseJurisdiction(`${family}-1`);
               const label = part.kind === "district" ? districtFamilyLabel(part.family) : family;
               return (
-                <label key={family}>
-                  {label}
-                  <select
-                    value={area.districts[family] ?? ""}
-                    onChange={(e) => setDistrict(family, e.target.value)}
-                  >
-                    <option value="">not set</option>
-                    {numbers.map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <Select
+                  key={family}
+                  label={label}
+                  placeholder="not set"
+                  value={area.districts[family] ?? null}
+                  onChange={(n) => setDistrict(family, n === NOT_SET ? "" : n)}
+                  options={[
+                    { id: NOT_SET, label: "not set", className: "ui-option-quiet" },
+                    ...numbers.map((n) => ({ id: n, label: n })),
+                  ]}
+                />
               );
             })}
           </div>

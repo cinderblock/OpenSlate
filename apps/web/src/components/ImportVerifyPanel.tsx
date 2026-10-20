@@ -7,6 +7,9 @@ import { parseScanned } from "../lib/qr";
 import { slateFromUrlOptions } from "../lib/query";
 import { type SlateImportSource, track } from "../lib/usage";
 import { ScanQrButton } from "./Qr";
+import { FileDrop } from "./ui/FileDrop";
+import { UrlField } from "./ui/TextField";
+import { TokenField } from "./ui/Token";
 
 /**
  * Paste, load or scan a slate, verify it, and save it. Standalone under
@@ -105,19 +108,16 @@ export function ImportVerifyPanel({ embedded = false }: { embedded?: boolean }) 
       </p>
 
       <div className="card">
-        <label>
-          Block
-          <textarea
-            rows={6}
-            className="token"
-            placeholder="paste an OpenSlate block here"
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              setSource("paste");
-            }}
-          />
-        </label>
+        <TokenField
+          label="Block"
+          rows={6}
+          placeholder="paste an OpenSlate block here"
+          value={input}
+          onChange={(text) => {
+            setInput(text);
+            setSource("paste");
+          }}
+        />
         <div className="row">
           <button type="button" className="primary" onClick={() => verify(input)}>
             Verify
@@ -126,18 +126,18 @@ export function ImportVerifyPanel({ embedded = false }: { embedded?: boolean }) 
             {embedded ? "Add to my sources" : "Save to collection"}
           </button>
           <ScanQrButton onScan={handleQrScan} label="Scan QR slate" />
-          <input
-            type="file"
-            accept=".txt,.json,application/json,text/plain"
-            onChange={(e) => loadFromFile(e.target.files?.[0])}
+          <FileDrop
+            accept={[".txt", ".json", ".slate", "application/json", "text/plain"]}
+            onFile={(file) => void loadFromFile(file)}
           />
         </div>
         <div className="row">
-          <input
-            type="url"
+          <UrlField
+            className="grow"
+            aria-label="Slate URL"
             placeholder="https://example.org/my-slate.txt"
             value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            onChange={setUrl}
           />
           <button type="button" onClick={loadFromUrl} disabled={!url.trim()}>
             Load from URL

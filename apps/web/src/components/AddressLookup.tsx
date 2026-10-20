@@ -6,6 +6,7 @@ import type { AreaOptions } from "../lib/collate";
 import type { Area } from "../lib/jurisdictions";
 import { ballotQueryOptions, serverHealthOptions } from "../lib/query";
 import { describeArea } from "./AreaPicker";
+import { TextField } from "./ui/TextField";
 
 /**
  * "Use my address": fills Where-you-vote from a Civic Info lookup through a
@@ -54,21 +55,19 @@ export function AddressLookup({
   return (
     <div className="address-lookup">
       <div className="row">
-        <label className="grow">
-          Use my address
-          <input
-            type="text"
-            placeholder="street address, city"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void lookUp();
-              }
-            }}
-          />
-        </label>
+        <TextField
+          className="grow"
+          label="Use my address"
+          placeholder="street address, city"
+          value={draft}
+          onChange={setDraft}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void lookUp();
+            }
+          }}
+        />
         <button type="button" onClick={() => void lookUp()} disabled={busy || !draft.trim()}>
           {busy ? "Looking up…" : "Look up"}
         </button>

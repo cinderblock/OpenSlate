@@ -1,10 +1,14 @@
 import type { Subject } from "@openslate/core";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { formatElectionDate } from "../lib/dates";
 import { jurisdictionLabel } from "../lib/jurisdictions";
 import type { KnownSubject } from "../lib/subjects";
+import { Segmented } from "./ui/Segmented";
+import { ComboBox, type SelectOption } from "./ui/Select";
+import { TextField } from "./ui/TextField";
 
 const FREE = "__free__";
+const FREE_TEXT = "New subject";
 const NONE = "";
 
 const SUBJECT_KINDS = ["race", "measure", "candidate", "option"] as const;
@@ -24,11 +28,44 @@ export function SubjectPicker({
   const [selected, setSelected] = useState<string>(NONE);
   const [freeTitle, setFreeTitle] = useState("");
   const [freeKind, setFreeKind] = useState<string>("race");
+  const [typed, setTyped] = useState("");
+
+  const options = useMemo<SelectOption[]>(
+    () => [
+      ...imported.map((entry) => {
+        const where = [
+          entry.subject.jurisdiction && jurisdictionLabel(entry.subject.jurisdiction),
+          entry.subject.election && formatElectionDate(entry.subject.election),
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        const n = entry.endorserCount;
+        return {
+          id: entry.key,
+          label: entry.subject.title,
+          textValue: where ? `${entry.subject.title} · ${where}` : entry.subject.title,
+          description: where || undefined,
+          badge: n > 0 ? `${n} issuer${n === 1 ? "" : "s"}` : undefined,
+        };
+      }),
+      {
+        id: FREE,
+        label: "+ Enter a new subject…",
+        textValue: FREE_TEXT,
+        className: "ui-option-action",
+      },
+    ],
+    [imported],
+  );
 
   function updateFromSelect(key: string) {
     setSelected(key);
     if (key === FREE) {
-      onChange(freeTitle.trim() ? { title: freeTitle.trim(), kind: freeKind } : null);
+      // Carry what was typed into the title, so a search that found nothing
+      // becomes the new subject.
+      const title = freeTitle.trim() || (typed === FREE_TEXT ? "" : typed.trim());
+      if (title !== freeTitle) setFreeTitle(title);
+      onChange(title ? { title, kind: freeKind } : null);
     } else if (key === NONE) {
       onChange(null);
     } else {
@@ -50,49 +87,36 @@ export function SubjectPicker({
   const showFree = selected === FREE;
 
   return (
-    <div>
-      <label>
-        Subject
-        <select value={selected} onChange={(e) => updateFromSelect(e.target.value)}>
-          <option value={NONE}>— pick a subject —</option>
-          {imported.length > 0 && (
-            <optgroup label="From imported slates">
-              {imported.map((entry) => (
-                <option key={entry.key} value={entry.key}>
-                  {entry.subject.title}
-                  {entry.subject.jurisdiction &&
-                    ` · ${jurisdictionLabel(entry.subject.jurisdiction)}`}
-                  {entry.subject.election && ` · ${formatElectionDate(entry.subject.election)}`}
-                  {entry.endorserCount > 0 ? ` · ${entry.endorserCount} issuer(s)` : ""}
-                </option>
-              ))}
-            </optgroup>
-          )}
-          <option value={FREE}>+ Enter a new subject…</option>
-        </select>
-      </label>
+    <div className="subject-picker">
+      <ComboBox
+        label="Subject"
+        placeholder={
+          imported.length > 0
+            ? `search ${imported.length} subjects from your slates…`
+            : "enter a new subject…"
+        }
+        value={selected === NONE ? null : selected}
+        onChange={updateFromSelect}
+        onInputChange={setTyped}
+        options={options}
+        alwaysShow={(option) => option.id === FREE}
+      />
 
       {showFree && (
-        <div className="grid">
-          <label>
-            Title
-            <input
-              type="text"
-              placeholder="e.g. Mayor of Springfield"
-              value={freeTitle}
-              onChange={(e) => updateFreeTitle(e.target.value)}
-            />
-          </label>
-          <label>
-            Kind
-            <select value={freeKind} onChange={(e) => updateFreeKind(e.target.value)}>
-              {SUBJECT_KINDS.map((kind) => (
-                <option key={kind} value={kind}>
-                  {kind}
-                </option>
-              ))}
-            </select>
-          </label>
+        <div className="grid subject-free">
+          <TextField
+            label="Title"
+            placeholder="e.g. Mayor of Springfield"
+            value={freeTitle}
+            onChange={updateFreeTitle}
+          />
+          <Segmented
+            layout="stacked"
+            label="Kind"
+            value={freeKind}
+            onChange={updateFreeKind}
+            options={SUBJECT_KINDS.map((kind) => ({ id: kind, label: kind }))}
+          />
         </div>
       )}
     </div>

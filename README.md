@@ -299,6 +299,13 @@ different package manager; `BUN_VERSION` should match the Bun that wrote
 3. **One source of truth.** Signing and the schema live only in `@openslate/core`.
 4. **Reimplementable.** The format is plain JSON + Ed25519 + JCS — easy to build
    in any language. The published JSON Schema helps.
+5. **Our own form controls.** The web app doesn't use bare native `<input>`,
+   `<select>` or `<textarea>`. Switches, checkboxes and radios show the chosen
+   option plainly; dropdowns can carry descriptions, badges and search; text
+   fields can format what's typed. Use (or extend) the kit in
+   [`apps/web/src/components/ui/`](./apps/web/src/components/ui/), built on
+   [React Aria Components](https://react-spectrum.adobe.com/react-aria/) so
+   keyboard and screen-reader behaviour stays right.
 
 ## License
 
