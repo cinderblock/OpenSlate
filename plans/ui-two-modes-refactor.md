@@ -110,13 +110,10 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
   carries across elections. (User, 2026-10-19.)
 - **Work on branch `ui/two-modes` in a dedicated T3 worktree**, merge to master
   when done and walked through. (User, 2026-10-19.)
-- **The uncommitted ComposePanel / ElectionCombobox / subjects.ts edits are
-  still in progress in another thread. Don't adopt or touch them.** So this
-  refactor leaves `ComposePanel.tsx`, `ElectionCombobox.tsx` and
-  `lib/subjects.ts` unedited: new collation code goes in a new module, and
-  Publish → Compose mounts the existing `ComposePanel` as-is. Slimming Compose
-  (taking positions from My-ballot picks) is a follow-up once that thread
-  lands.
+- ~~The uncommitted ComposePanel / ElectionCombobox / subjects.ts edits are
+  another thread's; don't touch them.~~ **Superseded 2026-10-19:** the user
+  said to adopt them (`1cf282c`); Compose was then reworked here (`71a33e9`)
+  and `ElectionCombobox` / `BallotComposer` deleted.
 - No central server (memory: project_no_central_server). Everything stays
   client-side; follow state lives in IndexedDB/localStorage.
 - **Publishing is not centred on where you live** (user, 2026-10-19): anyone
@@ -188,7 +185,7 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
     race" stays (SubjectPicker + free-form). Copy: "Identity tab" →
     "Identities". Ranked-choice ordering (`useBallotRanking`, SF uses RCV):
     keep it as a follow-up on My ballot cards that have a candidate list.
-15. **[current]** Published slates are remembered: new IndexedDB store `published`
+15. [x] (`b3f9ed9`) Published slates are remembered: new IndexedDB store `published`
     (token, publishedAt), written when Compose signs. My ballot card shows
     "You published: X" with a Compose link; Identities lists "My slates".
 16. [x] (endorsements repo `b9e20a8` bundles + scripts + README, `0193108`
@@ -201,37 +198,27 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
     `sf.gov/qualified-ballot-measures`) → SF local. Race keys must match the
     catalog's existing titles/jurisdictions or the field won't line up with
     the endorsements. Separate repo, separate commits.
-17. README + plan + ISSUES current; walkthrough round 2.
-18. Merge `ui/two-modes` into master.
+17. [x] README (modes, address lookup, ballot sources), ISSUES.md (hosted
+    404 entry updated), this plan. Walkthrough script in Open questions.
+18. **[current]** Merge `ui/two-modes` into master, after the user's
+    round-2 walkthrough and yes. Then push the endorsements repo so the
+    public catalog carries the ballot bundles.
 
 ## Follow-ups (not started)
 
-- **Opponents on My ballot.** The endorsement data alone can't show the field:
-  across all 69 November sources, 729 of 1,412 office races name exactly one
-  candidate, 572 name two, and only 32 carry any `oppose` (counted
-  2026-10-19 over `orgs/*/2026-11-03/positions.json`). Layers, cheapest first:
-  1. Show every imported source's choices on each card (unfollowed ones
-     muted) and say plainly "your sources cover 1 of ? candidates".
-  2. A candidate-list source. Options: (a) Civic `voterinfo` by address when
-     self-hosted (it returns contests with candidates *and* OCD district ids,
-     so it also fills Where-you-vote; coverage is spotty per the other thread);
-     (b) official candidate lists (CA SoS certified list for state/federal,
-     county registrars such as sfelections.org election data for local)
-     published as a signed secondhand report next to the endorsements catalog,
-     keyed by the same title|jurisdiction|election race key; no server, works
-     on openslate.us. Both can coexist: (b) as the base, (a) on top.
-- **Address moves to My vote.** `openslate.address.v1` (`lib/address.ts`)
-  already exists and is used by Compose only. Where-you-vote gets an optional
-  "Use my address" that, when the self-hosted server answers, fills districts
-  and the ballot from `voterinfo`; otherwise the manual area picker as now.
-- **Compose from My-ballot picks.** Blocked on the other thread's uncommitted
-  ComposePanel / ElectionCombobox / subjects.ts work landing. Then: Compose takes
-  positions from My-ballot picks (keyed by election date), drops its own
-  address/ballot lookup (per the decision above), keeps "add any race" (search
-  imported subjects + free-form), and its "Identity tab" copy becomes
-  "Identities".
-- **My ballot ↔ my endorsements.** A race card shows my published stance when
-  one of my own identities' slates covers the race, with a link to Compose.
+Done in round 2 (steps 11–16): opponents on My ballot (every source's
+choices on the card, official candidate lists as ballot sources; the data
+behind it: 729 of 1,412 November office races named one candidate), address
+lookup on Where-you-vote, Compose from picks, My ballot ↔ my slates. The
+numbers and options considered are in the Findings.
+
+- **Civic candidates into the field.** `voterinfo` contest titles ("Governor")
+  don't match catalog race keys ("Governor of California"), so the address
+  lookup only fills districts/city today. Needs same-race matching
+  (jurisdiction + office family) before its candidates can join the field.
+- **Push `openslate-public-endorsements`** (`b9e20a8`, `0193108`): CI signs
+  and the catalog gets the two ballot bundles and canonical spellings.
+  Until then ballot sources only exist as the local test-signed slates.
 - **Same-person matching in the app** (choice spellings that differ only by
   initials/nicknames collapse onto the ballot's spelling), for firsthand
   slates the catalog's normalizer never sees.
@@ -245,8 +232,11 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
 - **Catalog index should carry each slate's scope** (`context.jurisdiction`) in
   `openslate-public-endorsements`, so the wizard's area/sources steps don't
   download the election's ~0.8 MB of slates to learn it.
-- **Race page**: mark which positions come from followed sources. The polls
-  half of the ISSUES.md race-view bug is still open.
+- **Race page**: the polls half of the ISSUES.md race-view bug is still open
+  (followed/unfollowed marking landed in `0559c2a`).
+- **Elections page** still calls `/api/elections` and shows "HTTP 404" on the
+  hosted app (ISSUES.md). Its "Use as active" now sets the My-ballot election
+  by date; it mainly serves self-hosters with a Google key.
 - `bun run lint` on Windows (ISSUES.md).
 
 ## Findings / gotchas
@@ -346,12 +336,40 @@ Opens automatically on first visit (no slates, no identities, never dismissed).
 - [x] Structure sign-off and open questions answered (2026-10-19)
 - [x] Step 2 data layer, step 3 shell, step 4 My ballot
 - [x] Steps 5–8 (Sources, Publish, wizard, README)
-- [ ] User walkthrough and merge to master
+- [x] Round 1 walkthrough feedback (2026-10-19): not address-centred, not a
+      blind list, picks → endorsements
+- [x] Steps 10–16: ballot sources in data model + endorsements repo, field on
+      cards, address lookup on Where-you-vote, Compose from picks, signed
+      slates remembered (`1cf282c`…`b3f9ed9`)
+- [x] Step 17: README / ISSUES / plan current
+- [ ] Round 2 walkthrough, then merge to master (step 18)
+- [ ] Push the endorsements repo (user's call; two commits waiting)
 
 ## Open questions for the user
 
-1. (after round 2) Walk through `ui/two-modes` again (dev server on port
-   5199) and say whether to merge into master.
+1. **Round-2 walkthrough** on `http://localhost:5199` (branch
+   `ui/two-modes`, dev server already running), then say whether to merge
+   into master. What to look at:
+   - *Sources*: a "Ballot data" card for the official candidate lists. The
+     public catalog doesn't carry them until the endorsements repo is pushed;
+     the preview browser has test-signed copies (`$TEMP/sos.slate`,
+     `$TEMP/sf.slate`, import by file on Sources) and the preview profile
+     already has them imported.
+   - *My ballot*: cards show the whole field with "N of M candidates covered"
+     (or "field unknown" without a list), unfollowed sources as one muted
+     "+N you don't follow" chip, party/designation under each name.
+     **Export** (toolbar) downloads JSON/CSV, private notes opt-in. *Where
+     you vote* shows "Use my address" only when a self-hosted server with
+     `GOOGLE_API_KEY` answers (`bun run dev:server`); otherwise the picker.
+   - *Publish → Compose*: your picks for the election (same election as My
+     ballot, by date); untick to keep one private, change the stance, add a
+     public statement; "Other positions" for anything else; Sign.
+   - Back on *My ballot*, the race says "✍ You endorsed X · signed <date> ·
+     Compose". *Identities → My slates* lists what you signed (copy /
+     forget). *Elections → Use as active* sets the same election by date.
+2. Push `openslate-public-endorsements` (two commits, `b9e20a8` and
+   `0193108`)? Recommendation: yes, after the walkthrough; CI signs and the
+   hosted catalog gains the ballot bundles.
 
 Answered 2026-10-19: opponents come from official candidate lists in the
 endorsements repo plus Civic-by-address when self-hosted; this thread adopts
