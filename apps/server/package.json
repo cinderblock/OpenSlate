@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@openslate/core": "workspace:*",
+    "@openslate/poll-cache": "workspace:*",
     "hono": "^4.6.14"
   }
 }

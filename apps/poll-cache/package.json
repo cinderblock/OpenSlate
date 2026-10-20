@@ -5,6 +5,9 @@
   "private": true,
   "description": "Cloudflare Worker that caches public election data (VoteHub polls, civicAPI results, Kalshi forecasts) behind permissive CORS, and relays opt-in address lookups to the Census geocoder. Stateless; stores and logs nothing.",
   "license": "MIT",
+  "exports": {
+    "./geocode": "./src/geocode.ts"
+  },
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",

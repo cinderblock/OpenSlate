@@ -87,7 +87,7 @@ export function trimCensus(json: unknown): GeocodeMatch[] {
   return out;
 }
 
-function json(body: unknown, status: number, headers: HeadersInit): Response {
+function json(body: unknown, status: number, headers: Record<string, string>): Response {
   return Response.json(body, {
     status,
     headers: { ...headers, "Cache-Control": "no-store" },
@@ -95,7 +95,7 @@ function json(body: unknown, status: number, headers: HeadersInit): Response {
 }
 
 /** POST {"address": "..."} → GeocodeResponse. */
-export async function handleGeocode(req: Request, cors: HeadersInit): Promise<Response> {
+export async function handleGeocode(req: Request, cors: Record<string, string>): Promise<Response> {
   if (req.method !== "POST") {
     return json({ error: "POST an address" }, 405, { ...cors, Allow: "POST, OPTIONS" });
   }

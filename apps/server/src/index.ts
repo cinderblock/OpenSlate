@@ -1,4 +1,5 @@
 import { verifySlate } from "@openslate/core";
+import { GEOCODE_PATH, handleGeocode } from "@openslate/poll-cache/geocode";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createBallotSource, createElectionsSource } from "./ballot";
@@ -53,6 +54,11 @@ app.get("/api/ballot", async (c) => {
     return c.json({ error: err instanceof Error ? err.message : "ballot lookup failed" }, 502);
   }
 });
+
+// Address → districts via the Census geocoder, the same relay the public
+// worker runs (apps/poll-cache/src/geocode.ts): opt-in in the web app, the
+// address is forwarded and forgotten.
+app.post(GEOCODE_PATH, (c) => handleGeocode(c.req.raw, {}));
 
 // List available elections (so the UI can let the user pick one). 501 when no key.
 app.get("/api/elections", async (c) => {

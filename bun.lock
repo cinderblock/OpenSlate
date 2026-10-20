@@ -27,6 +27,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@openslate/core": "workspace:*",
+        "@openslate/poll-cache": "workspace:*",
         "hono": "^4.6.14",
       },
     },
