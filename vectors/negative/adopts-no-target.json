@@ -1,0 +1,10 @@
+{
+  "name": "adopts-no-target",
+  "description": "Validly signed token with an adoption that has neither uri nor an embedded slate. Schema MUST reject (SPEC §3.10).",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJhZG9wdHMiOlt7Imlzc3VlciI6ImVkMjU1MTk6OWhTUjZTN1dQdHhtVG9qZ282R0czazR5RFBlY2dKWTI5Mmo3eHJzVUdXQnUiLCJvZiI6IlNvbWUgT3JnIn1dLCJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5In0sInBvc2l0aW9ucyI6W10sInYiOjF9.-XPFajcQRZ12I3fGCQPnErA--Z81pxcj1caAmslpV0kHklMTLPvbmQsStSsURE4DqPT5ecU9TWdBceWtlqOgBQ",
+  "expect": {
+    "error_contains": [
+      "adopts"
+    ]
+  }
+}

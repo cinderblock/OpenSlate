@@ -73,6 +73,7 @@ Secret keys, when serialized (e.g. for backup), use the same scheme over the
 | `positions` | `Position[]` | yes | MAY be empty (e.g. an issuer publishing only `endorsed_by`). |
 | `endorsed_by` | `Reference[]` | no | Who endorsed *this* issuer (for candidates/orgs). |
 | `attribution` | `Attribution` | no | Marks this slate as a **secondhand report** by `issuer` about another entity. See §3.9. |
+| `adopts` | `Adoption[]` | no | Positions this slate takes on from other slates by reference, instead of copying them. See §3.10. |
 | `nonce` | string | no | Disambiguates otherwise-identical slates. |
 
 ### 3.2 `Issuer`
@@ -199,6 +200,59 @@ Verifiers and UIs that render slates carrying `attribution` MUST:
 
 Issuers SHOULD set `kind: "researcher"` on themselves when publishing
 attributed slates (see §7.1).
+
+### 3.10 `Adoption` — positions taken on by reference
+
+An entity often publishes another entity's picks as its own: a county party
+reposts the state party's statewide picks, a state union republishes its
+national union's House picks, two groups issue one joint statement. Copying
+those positions into a second slate duplicates them and loses where they came
+from. An `Adoption` instead points at the slate that states them.
+
+A publisher MAY use either method, or both in one slate: copy positions into
+`positions`, or reference them with `adopts`. A reference MAY embed a snapshot.
+
+| Field | Type | Req | Notes |
+| --- | --- | --- | --- |
+| `issuer` | string | yes | `ed25519:<base58>` key that signed the adopted slate. |
+| `of` | string | no | When the adopted slate is secondhand: its `attribution.of.name`. One researcher key may sign many slates. |
+| `election` | string | no | The adopted slate's `context.election`, to tell one entity's slates apart. |
+| `uri` | string | one of | Where the adopted slate can be fetched. A live reference: the slate there may be re-issued. |
+| `slate` | string | one of | An embedded OpenSlate token: a snapshot that verifies offline. |
+| `subjects` | `Subject[]` | no | Which positions to adopt, matched by subject identity (below). Absent means all of them. |
+| `source` | string | no | URL where the adopting entity published the adoption (evidence). |
+| `note` | string | no | Free text. |
+
+At least one of `uri` or `slate` MUST be present.
+
+**Subject identity.** A subject's identity is its `id` when present, otherwise
+the triple (`title`, `jurisdiction`, `election`), where absent compares equal
+to absent. Two subjects are the same if their identities are equal. To adopt a
+position, copy its subject as it appears in the adopted slate.
+
+**Semantics.** The adopting slate's entity (its `attribution.of` if the slate
+is secondhand, otherwise its `issuer`) is claimed to hold the selected
+positions of the adopted slate: their `stance`, `choice` and `weight`. Each
+adopted position keeps its own `statement` and `source`.
+
+Consumers resolving an adoption:
+
+- MUST use only a slate that verifies (§6.2), is issued by `issuer`, and
+  matches `of` and `election` when they are given. Use the embedded `slate` if
+  present; otherwise a matching slate the consumer already holds, or one
+  fetched from `uri`. If several match, use the most recently issued.
+- MUST NOT produce positions from an adoption they can't resolve. They SHOULD
+  show it as unresolved (e.g. "adopts 12 positions from <of>, not loaded").
+- MUST let positions the slate states itself win over adopted positions on the
+  same subject.
+- MAY follow adoptions inside adopted slates. Implementations SHOULD stop at a
+  depth of 4 and MUST ignore cycles.
+- SHOULD show adopted positions as the adopting entity's, with where they came
+  from ("via <adopted entity>").
+
+Like a `Reference` (§3.5), an adoption is a claim by the adopting slate's
+signer. For a secondhand slate it is the researcher reporting that the named
+entity republished those picks; `source` is the evidence.
 
 ---
 
@@ -389,6 +443,10 @@ such additions ship with a coordinated spec revision). Incompatible changes bump
 
 ### 10.1 Changelog (within v1)
 
+- **2026-10-19** — Added optional `adopts` field to `SlatePayload` (§3.10):
+  adopting another slate's positions by reference. Verifiers built before this
+  revision reject slates that use it (closed schema, §3.8), so consumers should
+  upgrade before publishers adopt it.
 - **2026-05-31** — Added optional `attribution` field to `SlatePayload` (§3.9)
   and conventional `kind: "researcher"` (§7.1). Amended in place rather than
   bumping `v`; the format was unadopted at the time.

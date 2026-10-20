@@ -196,6 +196,40 @@ export const POSITIVES: PositiveDef[] = [
       },
     },
   },
+  {
+    name: "adopts-reference",
+    description:
+      "Slate adopting two positions of another (secondhand) slate by reference instead of " +
+      "copying them (SPEC §3.10). The adopted slate is identified by its signer (bob), its " +
+      "attributed entity and election, and fetched from uri.",
+    signer: "alice",
+    payload: {
+      v: 1,
+      issuer: { name: "Springfield Neighbors Club", kind: "organization" },
+      issued_at: "2026-01-01T00:00:00Z",
+      context: { election: "2026-11-03" },
+      positions: [
+        {
+          subject: { title: "City Council, District 3", kind: "race" },
+          stance: "endorse",
+          choice: "B. Neighbor",
+        },
+      ],
+      adopts: [
+        {
+          issuer: "ed25519:9hSR6S7WPtxmTojgo6GG3k4yDPecgJY292j7xrsUGWBu",
+          of: "Springfield Sierra Club",
+          election: "2026-11-03",
+          uri: "https://slates.example/springfield-sierra-club/2026-11-03.slate",
+          subjects: [
+            { title: "Mayor of Springfield", kind: "race" },
+            { title: "Measure Q", kind: "measure" },
+          ],
+          source: "https://neighbors.example/2026-guide",
+        },
+      ],
+    },
+  },
 ];
 
 // ─── Negative vectors ────────────────────────────────────────────────────────
@@ -331,5 +365,26 @@ export const NEGATIVES: NegativeDef[] = [
       );
     },
     expect: { error_contains: ["attribution"] },
+  },
+  {
+    name: "adopts-no-target",
+    description:
+      "Validly signed token with an adoption that has neither uri nor an embedded slate. " +
+      "Schema MUST reject (SPEC §3.10).",
+    build: (h) => {
+      const key = h.pubkey("alice");
+      return h.sign(
+        { alg: "EdDSA", typ: "openslate+jws", kid: key },
+        {
+          v: 1,
+          issuer: { key },
+          issued_at: "2026-01-01T00:00:00Z",
+          positions: [],
+          adopts: [{ issuer: h.pubkey("bob"), of: "Some Org" }],
+        },
+        h.seed("alice"),
+      );
+    },
+    expect: { error_contains: ["adopts"] },
   },
 ];

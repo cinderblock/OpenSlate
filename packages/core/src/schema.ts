@@ -98,6 +98,29 @@ export const attributionSchema = z
   .strict();
 export type Attribution = z.infer<typeof attributionSchema>;
 
+/**
+ * Adopt another slate's positions by reference instead of copying them (SPEC §3.10).
+ * The adopting slate's entity claims the selected positions of the slate signed by
+ * `issuer` (and, for a secondhand slate, reporting on `of`). `slate` embeds a snapshot;
+ * `uri` points at a live copy. At least one is required.
+ */
+export const adoptionSchema = z
+  .object({
+    issuer: z.string().min(1),
+    of: z.string().min(1).optional(),
+    election: z.string().min(1).optional(),
+    uri: z.string().url().optional(),
+    slate: z.string().min(1).optional(),
+    subjects: z.array(subjectSchema).optional(),
+    source: z.string().url().optional(),
+    note: z.string().optional(),
+  })
+  .strict()
+  .refine((a) => a.uri !== undefined || a.slate !== undefined, {
+    message: "an adoption needs a uri or an embedded slate",
+  });
+export type Adoption = z.infer<typeof adoptionSchema>;
+
 export const slatePayloadSchema = z
   .object({
     v: z.literal(1),
@@ -108,6 +131,7 @@ export const slatePayloadSchema = z
     positions: z.array(positionSchema),
     endorsed_by: z.array(referenceSchema).optional(),
     attribution: attributionSchema.optional(),
+    adopts: z.array(adoptionSchema).optional(),
     nonce: z.string().optional(),
   })
   .strict();

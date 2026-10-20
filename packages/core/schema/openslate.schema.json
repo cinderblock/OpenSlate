@@ -215,6 +215,81 @@
           ],
           "additionalProperties": false
         },
+        "adopts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "issuer": {
+                "type": "string",
+                "minLength": 1
+              },
+              "of": {
+                "type": "string",
+                "minLength": 1
+              },
+              "election": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uri": {
+                "type": "string",
+                "format": "uri"
+              },
+              "slate": {
+                "type": "string",
+                "minLength": 1
+              },
+              "subjects": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "kind": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "jurisdiction": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "election": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "uri": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "required": [
+                    "title"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "source": {
+                "type": "string",
+                "format": "uri"
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "issuer"
+            ],
+            "additionalProperties": false
+          }
+        },
         "nonce": {
           "type": "string"
         }
