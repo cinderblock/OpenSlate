@@ -72,12 +72,19 @@ Mobile layout must stay as it is.
   no area set: 17,148px tall at 1100px wide before; 5,630px at 1920 and
   6,467px at 1440 after. Sources 13,127px to 9,178px at 1920.
 - [x] typecheck, 225 tests, Biome (CRLF config), build all pass.
-- [ ] Merge to `master`: waiting on the user.
+- [x] Merged to `master` (2026-10-21, user: "merge it"). The first
+  fast-forward aborted ("Please commit your changes or stash them") because
+  the district-map basemap thread had `styles.css` mid-edit in the main
+  checkout. After it committed `1fe36cd`, rebased onto that; typecheck, 234
+  tests, Biome and build pass. The district map renders at 1777x416 at
+  1920px, state centred, which is fine. Fast-forward, local only.
+- [ ] Push `master`: waiting on the user. A push deploys openslate.us.
 
 ## Open questions for the user
 
-1. Merge `ui/desktop-width` into `master`? Recommended once you've looked at
-   it on your screen (`bun run dev:web`, then My ballot, a race page, Sources).
+1. ~~Merge into `master`?~~ Yes (2026-10-21). Done.
+2. Push `master`? It deploys openslate.us, and master may carry other
+   threads' commits too, so this needs its own yes.
 
 ## Things not to do
 
