@@ -14,3 +14,10 @@ preview_urls = false
 # Zone-level Tiered Cache would make the cache global rather than per
 # datacenter; it is off, which is harmless at this traffic. See
 # plans/polls-cache-worker.md.
+
+# Workers Logs off: the worker relays opt-in address lookups
+# (src/geocode.ts) and promises to keep nothing. The address travels in a
+# POST body, which invocation logs wouldn't record anyway; this makes it
+# explicit. Approved by the user 2026-10-20 (plans/find-my-districts.md).
+[observability]
+enabled = false
