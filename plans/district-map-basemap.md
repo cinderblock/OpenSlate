@@ -39,12 +39,14 @@ it needs its own consent)."
     needs a Referer, which our `no-referrer` policy strips, and discourages
     app use); Esri World Imagery (needs an ArcGIS key now); CARTO (usage
     caps, commercial terms).
-- **Opt-in, off by default, remembered.** A "Background" choice (Off / Streets /
-  Satellite) next to the map, with the disclosure shown before choosing:
-  tiles tell USGS roughly which area you're viewing; where you click is
-  still worked out on the device. Picking Streets or Satellite is the consent;
-  choosing Off withdraws it. Stored in localStorage
-  (`openslate.basemap.v1`).
+- **Streets by default (user, 2026-10-21: "streets by default"),
+  remembered.** A "Background" choice (Off / Streets / Satellite) next to the
+  map; the note under it says tiles tell USGS roughly which area you're
+  viewing, links their privacy policy, and Off stops it. Where you click is
+  still worked out on the device. Stored in localStorage
+  (`openslate.basemap.v1`). This overrides the earlier plan's "opt-in
+  basemap" idea (plans/find-my-districts.md); first built as opt-in in
+  `1fe36cd`, switched in the follow-up commit.
 - **Own renderer, not MapLibre/Leaflet.** Raster tiles as SVG `<image>`s under
   the existing layers keep all of the current interaction, colouring, labels
   and accessibility. MapLibre would also need a CSP change (`worker-src
@@ -99,17 +101,15 @@ it needs its own consent)."
       Alameda, a pick in Oakland (SD 7 outlined, others dimmed), 390 px
       phone width. Typecheck (5 packages), 234 tests, Biome on changed
       files, build. Committed.
-- [ ] Push (needs the user's yes; push = deploy)
+- [x] Default switched to Streets (user's call)
+- [ ] Push and check live (user said yes)
 
 ## Open questions for the user
 
-1. Push to master (deploys openslate.us)? Recommendation: yes.
-2. Keep the background off by default (the earlier plan's privacy rule), or
-   default to Streets? Recommendation: keep it off; one click turns it on
-   and it's remembered.
+None open. Answered 2026-10-21: "streets by default. yes, deploy".
 
 ## Things not to do
 
-- Don't load any tile before the user picks a background: the map's
-  "nothing leaves this device" promise is the default.
+- Don't claim "nothing leaves this device" for the map while a background
+  is on: the method summary and the note under the map change with it.
 - Don't touch the boundary data or four-colouring (see the readability plan).

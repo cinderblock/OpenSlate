@@ -37,8 +37,9 @@ import { TextField } from "./ui/TextField";
  * "Find your districts": fills Where-you-vote from a spot on the map, the
  * device's location, or an address. The first two run entirely on this device
  * against the boundary data shipped with the app; an address needs a
- * geocoder, and each one the user can pick asks for their consent first. So
- * does the map's optional street/satellite background (tiles from USGS).
+ * geocoder, and each one the user can pick asks for their consent first. The
+ * map's street/satellite background (tiles from USGS, on by default) says
+ * what it shares and can be switched off.
  * See plans/find-my-districts.md.
  */
 

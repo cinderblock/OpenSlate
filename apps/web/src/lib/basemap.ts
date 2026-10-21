@@ -2,10 +2,10 @@ import { createLocalStore, useLocalStore } from "./localStore";
 
 /**
  * Optional backgrounds for the district map: map tiles from the US Geological
- * Survey's The National Map (public domain, no key). Off until the user picks
- * one, because loading tiles tells USGS roughly which area is on screen; where
- * they click is still worked out on the device. Pure apart from the store;
- * tested in test/basemap.test.ts.
+ * Survey's The National Map (public domain, no key). Streets unless the user
+ * picks otherwise; loading tiles tells USGS roughly which area is on screen,
+ * so the map says so and Off stops it. Where they click is still worked out
+ * on the device. Pure apart from the store; tested in test/basemap.test.ts.
  */
 
 export type Basemap = "off" | "streets" | "satellite";
@@ -92,11 +92,11 @@ export function tilesToDraw(
   return [...tilesFor(view, z - 1).filter((t) => waiting.has(`${t.x}/${t.y}`)), ...own];
 }
 
-const basemapStore = createLocalStore<Basemap>("openslate.basemap.v1", "off", (raw) =>
+const basemapStore = createLocalStore<Basemap>("openslate.basemap.v1", "streets", (raw) =>
   raw === "off" || raw === "streets" || raw === "satellite" ? raw : undefined,
 );
 
-/** The background the user picked for the district map (remembered here only). */
+/** The district map's background: Streets until the user picks (remembered here only). */
 export function useBasemap(): [Basemap, (next: Basemap) => void] {
   return useLocalStore(basemapStore);
 }

@@ -9,7 +9,7 @@ about what leaves the device:
 
 | Method | Runs | What is sent, to whom |
 | --- | --- | --- |
-| Pick on a California map | on device | nothing |
+| Pick on a California map | on device | nothing about your click; its street/satellite background (on by default, can be switched off) loads USGS map tiles for the area on screen |
 | Use my location | on device (after the browser's location prompt) | nothing from us; the browser/OS may consult its own location service |
 | Address via OpenStreetMap (Nominatim) | browser → OSM directly | the typed address, to the OpenStreetMap Foundation |
 | Address via the Census Bureau | browser → OpenSlate relay (polls.openslate.us) → US Census geocoder | the typed address, through our worker (kept nowhere) to census.gov |
@@ -164,8 +164,9 @@ off for poll-cache.
 
 ## Follow-ups (not started)
 
-- ~~Opt-in OpenStreetMap basemap under the map~~: done as an opt-in USGS
-  street/satellite background, see plans/district-map-basemap.md.
+- ~~Opt-in OpenStreetMap basemap under the map~~: done as a USGS
+  street/satellite background, on (Streets) by default at the user's call,
+  see plans/district-map-basemap.md.
 - BART and other special-district boundaries (BART publishes them).
 - Region containment (`us/ca/bay-area` ⊃ SF) from the county the lookup
   finds; see plans/ui-two-modes-refactor.md.

@@ -15,8 +15,8 @@ import { webMercator } from "../lib/projection";
 
 /**
  * California on a map, drawn from the boundary data on this device. Under it,
- * optionally, street or satellite tiles from USGS (lib/basemap.ts): off until
- * the user picks one, since tiles tell USGS roughly where they're looking.
+ * street or satellite tiles from USGS (lib/basemap.ts), unless the user turns
+ * them off: tiles tell USGS roughly where they're looking.
  * Drag to pan, wheel or pinch to zoom, click to pick a spot. Keyboard: arrows
  * pan, + and - zoom, Enter picks the centre.
  */
