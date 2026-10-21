@@ -1,3 +1,4 @@
+import polylabel from "polylabel";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GeoLayer, GeoShape, StateGeo } from "../lib/geo";
 import { shapeAt } from "../lib/geo";
@@ -26,12 +27,14 @@ function invert(x: number, y: number): [number, number] {
 interface Projected {
   id: string;
   d: string;
+  /** Map colour, 0–3, different from every neighbour's (see fourColor). */
+  color: number;
   /** Projected bbox. */
   box: [number, number, number, number];
-  /** Where its label goes: the centre of its largest ring. */
+  /** Where its label goes: the point deepest inside its roomiest polygon. */
   label: [number, number];
-  /** Projected area of the largest ring, for choosing which labels fit. */
-  size: number;
+  /** Distance from `label` to the nearest edge: how big a label fits there. */
+  room: number;
 }
 
 function projectShape(shape: GeoShape): Projected {
@@ -42,41 +45,36 @@ function projectShape(shape: GeoShape): Projected {
     Number.NEGATIVE_INFINITY,
     Number.NEGATIVE_INFINITY,
   ];
-  let best = { area: -1, cx: 0, cy: 0 };
+  let label: [number, number] = [0, 0];
+  let room = -1;
   for (const rings of shape.polygons) {
-    rings.forEach((ring, i) => {
-      let area = 0;
-      let cx = 0;
-      let cy = 0;
-      let prev: [number, number] | undefined;
-      ring.forEach(([lon = 0, lat = 0], j) => {
+    const projected = rings.map((ring, i) => {
+      const points = ring.map(([lon = 0, lat = 0], j): [number, number] => {
         const [x, y] = project(lon, lat);
         d += `${j ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`;
-        if (x < box[0]) box[0] = x;
-        if (y < box[1]) box[1] = y;
-        if (x > box[2]) box[2] = x;
-        if (y > box[3]) box[3] = y;
-        if (prev && i === 0) {
-          const cross = prev[0] * y - x * prev[1];
-          area += cross;
-          cx += (prev[0] + x) * cross;
-          cy += (prev[1] + y) * cross;
+        if (i === 0) {
+          if (x < box[0]) box[0] = x;
+          if (y < box[1]) box[1] = y;
+          if (x > box[2]) box[2] = x;
+          if (y > box[3]) box[3] = y;
         }
-        prev = [x, y];
+        return [x, y];
       });
       d += "Z";
-      if (i === 0 && Math.abs(area) > best.area && area !== 0) {
-        best = { area: Math.abs(area), cx: cx / (3 * area), cy: cy / (3 * area) };
-      }
+      return points;
     });
+    // Pole of inaccessibility, to a precision of a few hundredths of the
+    // polygon's size: plenty for placing a label.
+    const xs = projected[0]?.map((p) => p[0]) ?? [];
+    const ys = projected[0]?.map((p) => p[1]) ?? [];
+    const extent = Math.min(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+    const pole = polylabel(projected, Math.max(0.5, extent / 100));
+    if (pole.distance > room) {
+      label = [pole[0], pole[1]];
+      room = pole.distance;
+    }
   }
-  return {
-    id: shape.id,
-    d,
-    box,
-    label: [best.cx, best.cy],
-    size: best.area / 2,
-  };
+  return { id: shape.id, d, color: shape.color, box, label, room };
 }
 
 const projectedCache = new WeakMap<GeoShape[], Projected[]>();
@@ -92,18 +90,32 @@ function projectedLayer(shapes: GeoShape[]): Projected[] {
 const LayerPaths = memo(function LayerPaths({
   shapes,
   className,
+  colored = false,
 }: {
   shapes: Projected[];
   className: string;
+  /** Fill each shape with its map colour. */
+  colored?: boolean;
 }) {
   return (
     <g className={className}>
       {shapes.map((s) => (
-        <path key={s.id} d={s.d} vectorEffect="non-scaling-stroke" />
+        <path
+          key={s.id}
+          d={s.d}
+          className={colored ? `map-color-${s.color}` : undefined}
+          vectorEffect="non-scaling-stroke"
+        />
       ))}
     </g>
   );
 });
+
+/** Whether a label of `chars` characters at `fontSize` fits inside a shape. */
+function labelFits(s: Projected, chars: number, fontSize: number): boolean {
+  // Room is a radius; a label is about 0.6 em per character wide, 1 em tall.
+  return s.room >= Math.max(chars * 0.33, 0.6) * fontSize;
+}
 
 type ViewBox = { x: number; y: number; w: number; h: number };
 
@@ -138,6 +150,18 @@ export function DistrictMap({
   onPick: (lon: number, lat: number) => void;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
+  // The map's size on screen, so labels can be sized in pixels.
+  const [screen, setScreen] = useState({ w: 600, h: 416 });
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry?.contentRect ?? {};
+      if (width && height) setScreen({ w: width, h: height });
+    });
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, []);
   const counties = useMemo(() => projectedLayer(geo.layers.county), [geo]);
   const places = useMemo(() => projectedLayer(geo.layers.place), [geo]);
   const top = useMemo(() => projectedLayer(geo.layers[layer]), [geo, layer]);
@@ -297,19 +321,24 @@ export function DistrictMap({
   }
 
   // Labels that fit at this zoom: district numbers, and city names once zoomed in.
-  const fontSize = view.w / 55;
+  // 11 screen pixels, in map units (the view is fitted inside the SVG).
+  const fontSize = 11 * Math.max(view.w / screen.w, view.h / screen.h);
   const visible = (s: Projected) =>
     s.box[2] > view.x &&
     s.box[0] < view.x + view.w &&
     s.box[3] > view.y &&
     s.box[1] < view.y + view.h;
-  const minLabelSize = (view.w / 12) ** 2;
-  const topLabels = layer === "place" ? [] : top.filter((s) => visible(s) && s.size > minLabelSize);
+  // District numbers a little larger; county names are long enough already.
+  const topFontSize = layer === "county" ? fontSize : fontSize * 1.3;
+  const topLabels =
+    layer === "place"
+      ? []
+      : top.filter((s) => visible(s) && labelFits(s, s.id.length, topFontSize));
   const placeLabels =
     view.w < home.w / 6
       ? places
-          .filter((s) => visible(s) && s.size > (view.w / 20) ** 2)
-          .sort((a, b) => b.size - a.size)
+          .filter((s) => visible(s) && labelFits(s, s.id.length, fontSize))
+          .sort((a, b) => b.room - a.room)
           .slice(0, 40)
       : [];
 
@@ -337,13 +366,27 @@ export function DistrictMap({
         onPointerLeave={() => setHover("")}
         onKeyDown={onKeyDown}
       >
-        <LayerPaths shapes={counties} className="map-counties" />
-        <LayerPaths shapes={places} className="map-places" />
+        {/* Each district (or county) its own colour, neighbours always
+            different, with a gap between them, and county lines faint on top
+            for finding your way. Cities are named, not shaded: their patchy
+            limits would break every district into pieces. */}
+        <LayerPaths shapes={counties} className="map-land" />
+        <LayerPaths
+          shapes={top}
+          className={hiTop ? "map-fills map-fills-dimmed" : "map-fills"}
+          colored
+        />
+        {layer !== "county" && <LayerPaths shapes={counties} className="map-county-lines" />}
+        {hiTop && (
+          <path
+            className={`map-highlight map-color-${hiTop.color}`}
+            d={hiTop.d}
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
         {hiPlace && (
           <path className="map-highlight-place" d={hiPlace.d} vectorEffect="non-scaling-stroke" />
         )}
-        {layer !== "county" && <LayerPaths shapes={top} className="map-top" />}
-        {hiTop && <path className="map-highlight" d={hiTop.d} vectorEffect="non-scaling-stroke" />}
         <g className="map-labels" fontSize={fontSize}>
           {placeLabels.map((s) => (
             <text key={`p-${s.id}`} x={s.label[0]} y={s.label[1]} className="map-label-place">
@@ -351,7 +394,7 @@ export function DistrictMap({
             </text>
           ))}
           {topLabels.map((s) => (
-            <text key={s.id} x={s.label[0]} y={s.label[1]} fontSize={fontSize * 1.3}>
+            <text key={s.id} x={s.label[0]} y={s.label[1]} fontSize={topFontSize}>
               {s.id}
             </text>
           ))}

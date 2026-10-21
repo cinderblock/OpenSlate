@@ -798,29 +798,53 @@ footer a:hover {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-.map-counties path {
+.map-land path {
   fill: var(--surface);
-  stroke: var(--border);
-  stroke-width: 1.5;
-}
-.map-places path {
-  fill: color-mix(in srgb, var(--accent) 9%, transparent);
   stroke: none;
 }
-.map-top path {
+/* Four map colours (neighbours never share one; see fourColor in lib/geo.ts):
+   the dataviz reference dark slots yellow, magenta, green and violet at 90%
+   over --surface. Validated as a set against #1a1d24 with every pair compared
+   (plans/district-map-readability.md); the closest pair for colour-blind
+   eyes relies on the gap and the labels, which every district has. */
+.map-color-0 {
+  fill: #b87b04;
+}
+.map-color-1 {
+  fill: #c24c78;
+}
+.map-color-2 {
+  fill: #037904;
+}
+.map-color-3 {
+  fill: #847bd5;
+}
+.map-fills path {
+  /* The gap between neighbours. */
+  stroke: var(--bg);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.map-fills-dimmed path {
+  fill-opacity: 0.4;
+}
+.map-county-lines path {
   fill: none;
-  stroke: var(--muted);
-  stroke-width: 1;
-  stroke-opacity: 0.8;
+  stroke: var(--text);
+  stroke-opacity: 0.35;
+  stroke-width: 0.75;
+  stroke-dasharray: 3 2;
 }
 .map-highlight {
-  fill: color-mix(in srgb, var(--accent) 28%, transparent);
-  stroke: var(--accent);
+  stroke: var(--text);
   stroke-width: 2.5;
+  stroke-linejoin: round;
 }
 .map-highlight-place {
-  fill: color-mix(in srgb, var(--ok) 14%, transparent);
-  stroke: none;
+  fill: color-mix(in srgb, var(--text) 16%, transparent);
+  stroke: var(--text);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
 }
 .map-labels text {
   fill: var(--text);

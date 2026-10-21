@@ -26,6 +26,7 @@
     "idb": "^8.0.0",
     "idb-keyval": "^6.2.4",
     "jsqr": "^1.4.0",
+    "polylabel": "^2.1.0",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-aria-components": "^1.22.1",
@@ -36,6 +37,7 @@
   "devDependencies": {
     "@react-aria/optimize-locales-plugin": "^2.1.0",
     "@types/geojson": "^7946.0.16",
+    "@types/polylabel": "^2.0.0",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.17",
     "@types/react-dom": "^18.3.5",

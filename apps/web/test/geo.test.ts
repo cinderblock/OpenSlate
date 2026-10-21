@@ -1,14 +1,17 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Topology } from "topojson-specification";
+import { neighbors } from "topojson-client";
+import type { GeometryCollection, Topology } from "topojson-specification";
 import {
   COURT_OF_APPEAL_BY_COUNTY,
   areaFromHit,
   decodeStateGeo,
+  fourColor,
   localityCandidates,
   locate,
   mergeFoundArea,
+  touching,
 } from "../src/lib/geo";
 
 // The real shipped file: these points are checked against the Census
@@ -125,6 +128,67 @@ describe("locate (synthetic)", () => {
     expect(locate(tiny, 0.9997, 0.5)?.nearLine).toContain("cd");
     expect(locate(tiny, 0.5, 0.5)?.nearLine).toEqual([]);
     expect(locate(tiny, 1.5, 0.5)?.districts.cd).toBe("2");
+  });
+});
+
+describe("map colours", () => {
+  test("no two districts or counties that touch, even at a corner, share a colour", () => {
+    for (const layer of ["cd", "sd", "ad", "county"] as const) {
+      const object = topology.objects[layer] as GeometryCollection;
+      const adjacency = touching(topology, object);
+      const shapes = geo.layers[layer];
+      expect(shapes).toHaveLength(adjacency.length);
+      // Touching includes every shared border.
+      neighbors(object.geometries).forEach((next, i) => {
+        for (const j of next) expect(adjacency[i]).toContain(j);
+      });
+      adjacency.forEach((next, i) => {
+        for (const j of next) expect(shapes[i]?.color).not.toBe(shapes[j]?.color);
+      });
+      expect(Math.max(...shapes.map((s) => s.color))).toBeLessThan(4);
+    }
+  });
+
+  test("Assembly 38 and 40 meet at a single point and get different colours", () => {
+    const ad = geo.layers.ad;
+    const color = (id: string) => ad.find((s) => s.id === id)?.color;
+    expect(color("38")).not.toBe(color("40"));
+  });
+
+  const graph = (n: number, edges: [number, number][]) => {
+    const adjacency: number[][] = Array.from({ length: n }, () => []);
+    for (const [a, b] of edges) {
+      adjacency[a]?.push(b);
+      adjacency[b]?.push(a);
+    }
+    return adjacency;
+  };
+
+  test("fourColor needs all four on an odd wheel, and is deterministic", () => {
+    // A hub (0) inside a ring of five: the ring alone needs three colours,
+    // and the hub touches all of them.
+    const edges: [number, number][] = [
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [0, 4],
+      [0, 5],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [5, 1],
+    ];
+    const colors = fourColor(graph(6, edges)) ?? [];
+    for (const [a, b] of edges) expect(colors[a]).not.toBe(colors[b]);
+    expect(new Set(colors).size).toBe(4);
+    expect(fourColor(graph(6, edges))).toEqual(colors);
+  });
+
+  test("fourColor gives up on five regions that all touch", () => {
+    const edges: [number, number][] = [];
+    for (let a = 0; a < 5; a++) for (let b = a + 1; b < 5; b++) edges.push([a, b]);
+    expect(fourColor(graph(5, edges))).toBeUndefined();
   });
 });
 

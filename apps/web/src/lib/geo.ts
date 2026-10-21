@@ -1,5 +1,5 @@
 import type { Feature, MultiPolygon, Polygon, Position } from "geojson";
-import { feature } from "topojson-client";
+import { feature, neighbors } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import type { AreaOptions } from "./collate";
 import { type Area, localityPathFor } from "./jurisdictions";
@@ -29,6 +29,11 @@ export interface GeoShape {
   polygons: Rings[];
   /** [minX, minY, maxX, maxY] */
   bbox: [number, number, number, number];
+  /**
+   * Map colour, 0–3, different from every neighbour's in the same layer (see
+   * `fourColor`). Cities aren't coloured (always 0).
+   */
+  color: number;
 }
 
 export interface StateGeo {
@@ -58,7 +63,95 @@ function shapeOf(f: Feature<Polygon | MultiPolygon>): GeoShape {
       if (y > y1) y1 = y;
     }
   }
-  return { id: String(f.id), polygons, bbox: [x0, y0, x1, y1] };
+  return { id: String(f.id), polygons, bbox: [x0, y0, x1, y1], color: 0 };
+}
+
+/**
+ * Colour a map with four colours so no two neighbours match (any flat map can
+ * be; greedy colouring alone needs five for California's congressional and
+ * Assembly districts). `adjacency[i]` lists the neighbours of region i.
+ * Backtracking search, always colouring the most constrained region next
+ * (DSatur), ties broken by index so the result is the same on every device.
+ * Undefined if four colours can't be found (as when five regions all meet at
+ * one point and corners count as touching).
+ */
+export function fourColor(adjacency: number[][]): number[] | undefined {
+  const n = adjacency.length;
+  const color = new Array<number>(n).fill(-1);
+  const next = (): number => {
+    let best = -1;
+    let bestSat = -1;
+    let bestDegree = -1;
+    for (let i = 0; i < n; i++) {
+      if (color[i] !== -1) continue;
+      const sat = new Set(adjacency[i]?.map((j) => color[j]).filter((c) => c !== -1)).size;
+      const degree = adjacency[i]?.length ?? 0;
+      if (sat > bestSat || (sat === bestSat && degree > bestDegree)) {
+        best = i;
+        bestSat = sat;
+        bestDegree = degree;
+      }
+    }
+    return best;
+  };
+  let steps = 0;
+  const solve = (colored: number): boolean => {
+    if (colored === n) return true;
+    if (++steps > 100_000) return false;
+    const i = next();
+    const used = new Set(adjacency[i]?.map((j) => color[j]));
+    for (let c = 0; c < 4; c++) {
+      if (used.has(c)) continue;
+      color[i] = c;
+      if (solve(colored + 1)) return true;
+    }
+    color[i] = -1;
+    return false;
+  };
+  return solve(0) ? color : undefined;
+}
+
+/**
+ * Which shapes of a layer touch, even at a single point: two shapes the same
+ * colour meeting at a corner read as one. Wherever two shapes meet, the
+ * topology starts or ends an arc, so comparing arc endpoints finds every
+ * contact without walking every vertex.
+ */
+export function touching(topology: Topology, object: GeometryCollection): number[][] {
+  const delta = Boolean(topology.transform);
+  const ends = topology.arcs.map((arc) => {
+    const first = arc[0] ?? [0, 0];
+    let last = arc[arc.length - 1] ?? first;
+    if (delta) {
+      // Quantized arcs store each point as an offset from the previous one.
+      let x = 0;
+      let y = 0;
+      for (const [dx = 0, dy = 0] of arc) {
+        x += dx;
+        y += dy;
+      }
+      last = [x, y];
+    }
+    return [`${first[0]},${first[1]}`, `${last[0]},${last[1]}`];
+  });
+  const owners = new Map<string, Set<number>>();
+  const visit = (arcs: unknown, shape: number) => {
+    if (typeof arcs === "number") {
+      for (const key of ends[arcs < 0 ? ~arcs : arcs] ?? []) {
+        const set = owners.get(key) ?? new Set<number>();
+        set.add(shape);
+        owners.set(key, set);
+      }
+    } else if (Array.isArray(arcs)) {
+      for (const a of arcs) visit(a, shape);
+    }
+  };
+  object.geometries.forEach((g, i) => visit("arcs" in g ? g.arcs : undefined, i));
+  const adjacency = object.geometries.map(() => new Set<number>());
+  for (const shapes of owners.values()) {
+    for (const a of shapes) for (const b of shapes) if (a !== b) adjacency[a]?.add(b);
+  }
+  return adjacency.map((s) => [...s].sort((a, b) => a - b));
 }
 
 /** Decode a state's topology into per-layer shapes. */
@@ -70,7 +163,15 @@ export function decodeStateGeo(state: string, topology: Topology): StateGeo {
     const collection = feature(topology, object) as unknown as {
       features: Feature<Polygon | MultiPolygon>[];
     };
-    layers[name] = collection.features.filter((f) => f.geometry).map(shapeOf);
+    // Colour by every contact, corners included; if that can't be done in
+    // four, by shared borders alone (always possible on a flat map).
+    const colors =
+      name === "place"
+        ? []
+        : (fourColor(touching(topology, object)) ?? fourColor(neighbors(object.geometries)) ?? []);
+    layers[name] = collection.features.flatMap((f, i) =>
+      f.geometry ? [{ ...shapeOf(f), color: colors[i] ?? 0 }] : [],
+    );
   }
   const bbox = (topology.bbox ?? [0, 0, 0, 0]) as [number, number, number, number];
   const metadata = (topology as { metadata?: { vintage?: string } }).metadata;
