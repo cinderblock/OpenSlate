@@ -101,12 +101,13 @@ changing the boundary data or the lookup.
 - [x] `cb73c1c`: the map's screen-reader label said "countys"
 - [x] Checks: typecheck (5 packages), 229 tests, Biome on changed files,
       build
-- [ ] Push to master (deploys openslate.us)  ← waits on the user
+- [x] Pushed to master (2026-10-21, user's yes); live on openslate.us
+      (`index-ClL13ULl.js`) and checked there: Senate view shows 40 filled
+      districts in all four colours, the "counties" label fix, 13 labels
 
 ## Open questions for the user
 
-1. Push `68af945` and `cb73c1c` to master? That deploys openslate.us.
-   Recommendation: yes, after a look at the map on the dev server.
+None open. Answered 2026-10-21 ("yes"): push to master.
 
 ## Things not to do
 
