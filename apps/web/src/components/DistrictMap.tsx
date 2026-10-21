@@ -127,6 +127,14 @@ export const LAYER_NAMES: Record<GeoLayer, string> = {
   place: "City",
 };
 
+const LAYER_PLURALS: Record<GeoLayer, string> = {
+  cd: "congressional districts",
+  sd: "state senate districts",
+  ad: "assembly districts",
+  county: "counties",
+  place: "cities",
+};
+
 function describeShape(layer: GeoLayer, id: string): string {
   if (layer === "county") return `${id} County`;
   if (layer === "place") return id;
@@ -356,7 +364,7 @@ export function DistrictMap({
         viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
         preserveAspectRatio="xMidYMid meet"
         role="application"
-        aria-label={`Map of California's ${LAYER_NAMES[layer].toLowerCase()}s. Arrow keys pan, plus and minus zoom, Enter picks the centre.`}
+        aria-label={`Map of California's ${LAYER_PLURALS[layer]}. Arrow keys pan, plus and minus zoom, Enter picks the centre.`}
         // biome-ignore lint/a11y/noNoninteractiveTabindex: the map is a widget (arrows pan, +/- zoom, Enter picks; see onKeyDown)
         tabIndex={0}
         onPointerDown={onPointerDown}
