@@ -3,22 +3,15 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  lazyRouteComponent,
   redirect,
 } from "@tanstack/react-router";
 import { RootLayout } from "./App";
-import { BlockViewerPanel } from "./components/BlockViewerPanel";
-import { ComposePanel } from "./components/ComposePanel";
-import { ElectionsPanel } from "./components/ElectionsPanel";
-import { IdentityPanel } from "./components/IdentityPanel";
-import { ImportVerifyPanel } from "./components/ImportVerifyPanel";
-import { MyBallotPanel } from "./components/MyBallotPanel";
-import { RacePanel } from "./components/RacePanel";
-import { ResultsForSlate } from "./components/ResultsForSlate";
-import { ResultsView } from "./components/ResultsView";
-import { SettingsPage } from "./components/SettingsPage";
-import { SourcesPanel } from "./components/SourcesPanel";
 import { type RouteTemplate, track } from "./lib/usage";
 
+// Each page is its own chunk, fetched when the page is first opened (and on
+// hover/focus of a link to it, via defaultPreload below). The service worker
+// still precaches every chunk, so the app keeps working offline.
 const rootRoute = createRootRoute({ component: RootLayout });
 
 // --- My vote ---
@@ -26,27 +19,27 @@ const rootRoute = createRootRoute({ component: RootLayout });
 const ballotRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: MyBallotPanel,
+  component: lazyRouteComponent(() => import("./components/MyBallotPanel"), "MyBallotPanel"),
 });
 const sourcesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/sources",
-  component: SourcesPanel,
+  component: lazyRouteComponent(() => import("./components/SourcesPanel"), "SourcesPanel"),
 });
 const raceRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/race/$key",
-  component: RacePanel,
+  component: lazyRouteComponent(() => import("./components/RacePanel"), "RacePanel"),
 });
 const resultsIndexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/results",
-  component: ResultsView,
+  component: lazyRouteComponent(() => import("./components/ResultsView"), "ResultsView"),
 });
 const resultsForSlateRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/results/$token",
-  component: ResultsForSlate,
+  component: lazyRouteComponent(() => import("./components/ResultsForSlate"), "ResultsForSlate"),
 });
 
 // --- Publish ---
@@ -54,33 +47,36 @@ const resultsForSlateRoute = createRoute({
 const composeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/publish",
-  component: ComposePanel,
+  component: lazyRouteComponent(() => import("./components/ComposePanel"), "ComposePanel"),
 });
 const identitiesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/publish/identities",
-  component: IdentityPanel,
+  component: lazyRouteComponent(() => import("./components/IdentityPanel"), "IdentityPanel"),
 });
 const electionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/publish/elections",
-  component: ElectionsPanel,
+  component: lazyRouteComponent(() => import("./components/ElectionsPanel"), "ElectionsPanel"),
 });
 const verifyRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/publish/verify",
-  component: ImportVerifyPanel,
+  component: lazyRouteComponent(
+    () => import("./components/ImportVerifyPanel"),
+    "ImportVerifyPanel",
+  ),
 });
 const viewerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/publish/viewer",
-  component: BlockViewerPanel,
+  component: lazyRouteComponent(() => import("./components/BlockViewerPanel"), "BlockViewerPanel"),
 });
 
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
-  component: SettingsPage,
+  component: lazyRouteComponent(() => import("./components/SettingsPage"), "SettingsPage"),
 });
 
 // --- Pre-refactor paths, kept so bookmarks and shared links still land somewhere sensible ---
@@ -124,7 +120,11 @@ const routeTree = rootRoute.addChildren([
 // Hash history keeps route values (a whole signed slate in /results/$token, the
 // race in /race/$key) in the URL fragment, which browsers never send to a server.
 // Shared links therefore never reach a host's request logs.
-export const router = createRouter({ routeTree, history: createHashHistory() });
+export const router = createRouter({
+  routeTree,
+  history: createHashHistory(),
+  defaultPreload: "intent",
+});
 
 // Report the route *template* (e.g. "/results/$token"), never the matched value.
 router.subscribe("onResolved", () => {

@@ -1,5 +1,5 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { WizardHost } from "./components/Wizard";
+import { WizardHost } from "./components/WizardHost";
 import { Switch } from "./components/ui/Switch";
 import { useDbStatus } from "./lib/dbStatus";
 import { useUsageEnabled } from "./lib/usage";

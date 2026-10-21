@@ -5,7 +5,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { catalogEntryUrl, importCatalogEntry } from "../lib/catalogImport";
 import { areaOptionsOf } from "../lib/collate";
-import { addIdentity, identityCollection, slatesCollection } from "../lib/collections";
+import { addIdentity, slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
 import { useActiveIdentity } from "../lib/identities";
 import { downloadIdentityBackup } from "../lib/identityBackup";
@@ -23,7 +23,6 @@ import {
   myElectionStore,
   onboardingStore,
   setFollowed,
-  useOnboarding,
 } from "../lib/myVote";
 import {
   type CatalogEntry,
@@ -34,7 +33,7 @@ import {
 import { sourceIdOf } from "../lib/sources";
 import { subjectKey } from "../lib/subjects";
 import { track } from "../lib/usage";
-import { closeWizard, openWizard, useWizardOpen } from "../lib/wizard";
+import { closeWizard } from "../lib/wizard";
 import { AreaPicker } from "./AreaPicker";
 import { isBallotEntry } from "./CatalogBrowser";
 import { Checkbox } from "./ui/Checkbox";
@@ -47,30 +46,8 @@ const VOTE_STEPS: Step[] = ["election", "area", "sources"];
 
 const CATALOG_URL = DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG;
 
-/**
- * Mounted once in the layout. Opens itself on a first visit (nothing imported,
- * no identity, never finished or skipped); "Get started" reopens it any time.
- */
-export function WizardHost() {
-  const open = useWizardOpen();
-  const [onboarding] = useOnboarding();
-  const slates = useLiveQuery((q) => q.from({ slate: slatesCollection }));
-  const identities = useLiveQuery((q) => q.from({ identity: identityCollection }));
-  const firstVisit =
-    onboarding === "" &&
-    slates.isReady &&
-    identities.isReady &&
-    slates.data.length === 0 &&
-    identities.data.length === 0;
-
-  useEffect(() => {
-    if (firstVisit) openWizard();
-  }, [firstVisit]);
-
-  return open ? <Wizard /> : null;
-}
-
-function Wizard() {
+/** The getting-started wizard. Loaded and mounted by WizardHost while open. */
+export function Wizard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>("welcome");
