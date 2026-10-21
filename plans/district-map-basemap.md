@@ -102,7 +102,13 @@ it needs its own consent)."
       phone width. Typecheck (5 packages), 234 tests, Biome on changed
       files, build. Committed.
 - [x] Default switched to Streets (user's call)
-- [ ] Push and check live (user said yes)
+- [x] Pushed `b623594..28c7cde` (2026-10-21) and checked live in a fresh
+      incognito window (`index-B0d_6CnO.js`): nothing stored, Streets
+      selected, 35 USGS tiles drawn (CSP allows them), 40 Senate fills,
+      method summary "On this device; map images from USGS".
+      That push also carried the desktop-width thread's `73a0e53`,
+      `0579a6c`, `c949329`, which were waiting on their own yes; told the
+      user.
 
 ## Open questions for the user
 
