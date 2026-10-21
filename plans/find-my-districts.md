@@ -89,8 +89,11 @@ election; only even-numbered seats are up") rather than hiding it, which
 7. [x] UI: FindDistricts + DistrictMap in AreaPicker, so the wizard gets it
    (`d6faa46`); Settings panel (`2553f4a`); phone-width fix.
 8. [x] README, ISSUES, plan; checks; browser walkthrough.
-9. [ ] **Your call:** merge to master and push (deploys the web app and the
-   worker). See Open questions.
+9. [x] Merge to master and push (user: "yes", 2026-10-20). `ui/custom-controls`
+   had already landed on master (`eead22d`) via its own thread; merged
+   `origin/master` into this branch, re-ran every check, pushed as a
+   fast-forward. Workers Builds deploys both workers from there.
+10. [x] Workers Logs pinned off in `apps/poll-cache/wrangler.toml` (user: yes).
 
 ## Findings / gotchas
 
@@ -146,20 +149,13 @@ election; only even-numbered seats are up") rather than hiding it, which
       no race" between Congress and Assembly; Settings lists both consents
       and the remembered address; phone width (390 px) fits.
 - [x] Checks: 5 packages typecheck, 225 tests, Biome clean, build OK.
-- [ ] Merge + push (waiting on the user).
+- [x] Merge + push (2026-10-20), after a clean merge of `origin/master` and
+      a full re-check (225 tests, typecheck, Biome, build, wrangler dry run).
 
 ## Open questions for the user
 
-1. **Merge and push?** Pushing `master` deploys both workers through Workers
-   Builds: the web app (new UI and the 1.76 MB boundary file) and the
-   poll-cache worker (new `POST /api/geocode/census`). Recommendation: merge
-   `ui/custom-controls` first (this branch already contains it, so either
-   order merges cleanly), then this branch, then push.
-2. **Pin Workers Logs off for poll-cache?** The address is in the POST body,
-   which invocation logs don't record, and the worker never logs it. Adding
-   `[observability] enabled = false` to `apps/poll-cache/wrangler.toml` would
-   make "logs nothing" explicit, but it changes a Worker setting on deploy,
-   so it needs your yes. Recommendation: yes.
+None open. Answered 2026-10-20 ("yes"): merge and push; pin Workers Logs
+off for poll-cache.
 
 ## Follow-ups (not started)
 
