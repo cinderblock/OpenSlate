@@ -36,7 +36,11 @@ shell and the page being opened.
 3. [x] Load `qrcode` / `jsqr` on first use (found while measuring: the `Qr`
    chunk was 58 KB gzipped). (`1832105`)
 4. [x] Measured, checked offline precache, walked the routes (see Progress).
-5. [ ] Merge to `master` and push: waiting on the user.  ← current
+5. [x] Rebased onto `master` (the find-my-districts work had landed:
+   `31d23a1`), re-checked (225 tests, shell still 196 KB, My ballot 274 KB with
+   the district finder), merged and pushed on the user's yes, 2026-10-20
+   (`4e9413f`). Live on `https://openslate.us` within a minute (entry
+   `index-BKGXsM-r.js`, with the wizard as its own chunk).
 
 ## Findings / gotchas
 
@@ -72,7 +76,7 @@ shell and the page being opened.
 
 ## Open questions for the user
 
-1. Merge to `master` and push? (Pushing deploys.) Recommendation: yes.
+1. ~~Merge to `master` and push?~~ Done (`4e9413f`).
 
 ## Things not to do
 
