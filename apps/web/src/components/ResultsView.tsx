@@ -98,7 +98,7 @@ export function ResultsView() {
       ) : (
         <div className="card">
           <h3>Your imported slates</h3>
-          <ul className="position-list">
+          <ul className="position-list slate-grid">
             {rows.map((row) => {
               const signerName =
                 row.issuer?.name?.trim() || shortKey(row.issuer?.key ?? "(unknown)");

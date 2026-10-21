@@ -177,7 +177,7 @@ export function ComposePanel() {
       return;
     }
     if (positions.length === 0) {
-      setError("pick something on My ballot, or add a position below");
+      setError("pick something on My ballot, or add one under Other positions");
       return;
     }
     try {
@@ -212,149 +212,161 @@ export function ComposePanel() {
       <h2>Compose a slate</h2>
       <p className="hint">
         Your picks from My ballot, signed as a slate others can import. Public stances and
-        statements go in; private notes never do. Add any other race or issue below.
+        statements go in; private notes never do. Add any other race or issue under Other positions.
       </p>
 
-      <div className="card signing-as">
-        {myIdentities.length === 0 ? (
-          <p className="hint">
-            <strong>No identity yet.</strong>{" "}
-            <Link to="/publish/identities">Create one in Identities</Link> before signing.
-          </p>
-        ) : myIdentities.length === 1 ? (
-          <p className="hint">
-            Signing as <strong>{identity?.name ?? "(unnamed)"}</strong>{" "}
-            <code className="key">{identity?.publicKey}</code>
-          </p>
-        ) : (
-          <Select
-            label="Signing as"
-            value={activeKey || (identity?.publicKey ?? null)}
-            onChange={setActiveKey}
-            options={myIdentities.map((id) => ({
-              id: id.publicKey,
-              label: id.name ?? "(unnamed)",
-              description: <code className="key">{id.publicKey}</code>,
-              badge: id.kind ?? "individual",
-            }))}
-          />
-        )}
-      </div>
+      {/* On a wide screen: who's signing and the picks on the left; other
+          positions, Sign and the result on the right. Same order on a phone. */}
+      <div className="card-columns">
+        <div>
+          <div className="card signing-as">
+            {myIdentities.length === 0 ? (
+              <p className="hint">
+                <strong>No identity yet.</strong>{" "}
+                <Link to="/publish/identities">Create one in Identities</Link> before signing.
+              </p>
+            ) : myIdentities.length === 1 ? (
+              <p className="hint">
+                Signing as <strong>{identity?.name ?? "(unnamed)"}</strong>{" "}
+                <code className="key">{identity?.publicKey}</code>
+              </p>
+            ) : (
+              <Select
+                label="Signing as"
+                value={activeKey || (identity?.publicKey ?? null)}
+                onChange={setActiveKey}
+                options={myIdentities.map((id) => ({
+                  id: id.publicKey,
+                  label: id.name ?? "(unnamed)",
+                  description: <code className="key">{id.publicKey}</code>,
+                  badge: id.kind ?? "individual",
+                }))}
+              />
+            )}
+          </div>
 
-      <div className="card">
-        <div className="card-title">
-          <h3>My picks</h3>
-          <span className="grow" />
-          {elections.length > 0 && (
-            <Select
-              className="ballot-election"
-              label="Election"
-              value={election}
-              onChange={setChosenElection}
-              options={electionOptions(elections, today)}
-            />
-          )}
-        </div>
-        {picks.length === 0 ? (
-          <p className="hint">
-            Nothing picked{election ? ` for ${formatElectionDate(election)}` : ""} yet.{" "}
-            <Link to="/">Make your picks on My ballot</Link>, or add positions below.
-          </p>
-        ) : (
-          <>
-            <p className="hint">
-              Untick a pick to keep it private. Change picks on <Link to="/">My ballot</Link>.
-            </p>
-            <ul className="pick-list">
-              {picks.map((row) => (
-                <PickRow
-                  key={row.id}
-                  row={row}
-                  included={!leftOut.has(row.id)}
-                  onToggle={() => toggleLeftOut(row.id)}
-                  onChange={(fields) => {
-                    draft.patch(row.electionId, row.subject, row.choice, fields);
-                    setToken("");
-                  }}
+          <div className="card">
+            <div className="card-title">
+              <h3>My picks</h3>
+              <span className="grow" />
+              {elections.length > 0 && (
+                <Select
+                  className="ballot-election"
+                  label="Election"
+                  value={election}
+                  onChange={setChosenElection}
+                  options={electionOptions(elections, today)}
                 />
-              ))}
-            </ul>
-          </>
-        )}
-      </div>
-
-      <div className="card">
-        <h3>Other positions</h3>
-        <p className="hint">
-          Any race or issue, on your ballot or not: pick a subject your imported slates know, or
-          enter a new one.
-        </p>
-        <SubjectPicker key={pickerSeq} imported={imported} onChange={setPickedSubject} />
-        <div className="grid">
-          <Select
-            label="Stance"
-            value={otherStance}
-            onChange={setOtherStance}
-            options={STANCE_OPTIONS}
-          />
-          <TextField
-            label="Choice (optional)"
-            placeholder="e.g. A. Candidate"
-            value={otherChoice}
-            onChange={setOtherChoice}
-          />
+              )}
+            </div>
+            {picks.length === 0 ? (
+              <p className="hint">
+                Nothing picked{election ? ` for ${formatElectionDate(election)}` : ""} yet.{" "}
+                <Link to="/">Make your picks on My ballot</Link>, or add other positions.
+              </p>
+            ) : (
+              <>
+                <p className="hint">
+                  Untick a pick to keep it private. Change picks on <Link to="/">My ballot</Link>.
+                </p>
+                <ul className="pick-list">
+                  {picks.map((row) => (
+                    <PickRow
+                      key={row.id}
+                      row={row}
+                      included={!leftOut.has(row.id)}
+                      onToggle={() => toggleLeftOut(row.id)}
+                      onChange={(fields) => {
+                        draft.patch(row.electionId, row.subject, row.choice, fields);
+                        setToken("");
+                      }}
+                    />
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
         </div>
-        <TextArea
-          label="Public statement (optional)"
-          placeholder="why you take this position"
-          value={otherStatement}
-          onChange={setOtherStatement}
-        />
-        <button type="button" onClick={addOther} disabled={!pickedSubject}>
-          Add position
-        </button>
-        {others.length > 0 && (
-          <ul className="position-list">
-            {others.map((entry) => (
-              <li key={entry.id}>
-                <span className={`stance stance-${entry.stance}`}>{entry.stance}</span>
-                <span className="position-subject">
-                  {entry.subject.title}
-                  {entry.choice ? ` → ${entry.choice}` : ""}
-                </span>
-                <button type="button" className="link danger" onClick={() => removeOther(entry.id)}>
-                  remove
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
 
-      <div className="row">
-        <button type="button" className="primary" onClick={sign}>
-          Sign slate ({positions.length} position{positions.length === 1 ? "" : "s"})
-        </button>
-      </div>
-      {error && <p className="error">{error}</p>}
-
-      {token && (
-        <div className="card">
-          <TokenBox label="Shareable block" text={token} />
-          <p className="hint">
-            Kept in this browser (Identities → My slates); My ballot shows it on each race.
-          </p>
-          <div className="row">
-            <button type="button" onClick={copyToken}>
-              {copied ? "Copied!" : "Copy"}
+        <div>
+          <div className="card">
+            <h3>Other positions</h3>
+            <p className="hint">
+              Any race or issue, on your ballot or not: pick a subject your imported slates know, or
+              enter a new one.
+            </p>
+            <SubjectPicker key={pickerSeq} imported={imported} onChange={setPickedSubject} />
+            <div className="grid">
+              <Select
+                label="Stance"
+                value={otherStance}
+                onChange={setOtherStance}
+                options={STANCE_OPTIONS}
+              />
+              <TextField
+                label="Choice (optional)"
+                placeholder="e.g. A. Candidate"
+                value={otherChoice}
+                onChange={setOtherChoice}
+              />
+            </div>
+            <TextArea
+              label="Public statement (optional)"
+              placeholder="why you take this position"
+              value={otherStatement}
+              onChange={setOtherStatement}
+            />
+            <button type="button" onClick={addOther} disabled={!pickedSubject}>
+              Add position
             </button>
-            <button type="button" onClick={() => setShowQr(true)}>
-              Show QR
+            {others.length > 0 && (
+              <ul className="position-list">
+                {others.map((entry) => (
+                  <li key={entry.id}>
+                    <span className={`stance stance-${entry.stance}`}>{entry.stance}</span>
+                    <span className="position-subject">
+                      {entry.subject.title}
+                      {entry.choice ? ` → ${entry.choice}` : ""}
+                    </span>
+                    <button
+                      type="button"
+                      className="link danger"
+                      onClick={() => removeOther(entry.id)}
+                    >
+                      remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="row">
+            <button type="button" className="primary" onClick={sign}>
+              Sign slate ({positions.length} position{positions.length === 1 ? "" : "s"})
             </button>
           </div>
-          <RawInspector token={token} />
+          {error && <p className="error">{error}</p>}
+
+          {token && (
+            <div className="card">
+              <TokenBox label="Shareable block" text={token} />
+              <p className="hint">
+                Kept in this browser (Identities → My slates); My ballot shows it on each race.
+              </p>
+              <div className="row">
+                <button type="button" onClick={copyToken}>
+                  {copied ? "Copied!" : "Copy"}
+                </button>
+                <button type="button" onClick={() => setShowQr(true)}>
+                  Show QR
+                </button>
+              </div>
+              <RawInspector token={token} />
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {showQr && token && (
         <QrDialog text={token} label="Share this slate" onClose={() => setShowQr(false)} />

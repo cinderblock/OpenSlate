@@ -69,76 +69,78 @@ export function IdentityPanel() {
         them somewhere safe.
       </p>
 
-      <div className="card">
-        <h3>My identities</h3>
-        {myIdentities.length === 0 ? (
-          <p className="hint">No identities yet — generate one below.</p>
-        ) : (
-          <RadioGroup
-            aria-label="Sign as"
-            value={effectiveActive || null}
-            onChange={setActiveKey}
-            className="identity-list"
-          >
-            {myIdentities.map((identity) => (
-              <div key={identity.publicKey} className="identity-row">
-                <Radio value={identity.publicKey} variant="card" className="identity-radio">
-                  <span className="grow">
-                    <strong>{identity.name ?? "(unnamed)"}</strong>{" "}
-                    <span className="tag">{identity.kind ?? "individual"}</span>
-                    {effectiveActive === identity.publicKey && (
-                      <span className="tag tag-inline tag-on">signing as</span>
-                    )}
-                    <br />
-                    <code className="key">{identity.publicKey}</code>
-                  </span>
-                </Radio>
-                <div className="row">
-                  <button type="button" onClick={() => shareIdentity(identity)}>
-                    Share QR
-                  </button>
-                  <button type="button" onClick={() => downloadIdentityBackup(identity)}>
-                    Export
-                  </button>
-                  <button type="button" className="danger" onClick={() => forget(identity)}>
-                    Forget
-                  </button>
+      <div className="card-columns">
+        <div className="card">
+          <h3>My identities</h3>
+          {myIdentities.length === 0 ? (
+            <p className="hint">No identities yet — generate one below.</p>
+          ) : (
+            <RadioGroup
+              aria-label="Sign as"
+              value={effectiveActive || null}
+              onChange={setActiveKey}
+              className="identity-list"
+            >
+              {myIdentities.map((identity) => (
+                <div key={identity.publicKey} className="identity-row">
+                  <Radio value={identity.publicKey} variant="card" className="identity-radio">
+                    <span className="grow">
+                      <strong>{identity.name ?? "(unnamed)"}</strong>{" "}
+                      <span className="tag">{identity.kind ?? "individual"}</span>
+                      {effectiveActive === identity.publicKey && (
+                        <span className="tag tag-inline tag-on">signing as</span>
+                      )}
+                      <br />
+                      <code className="key">{identity.publicKey}</code>
+                    </span>
+                  </Radio>
+                  <div className="row">
+                    <button type="button" onClick={() => shareIdentity(identity)}>
+                      Share QR
+                    </button>
+                    <button type="button" onClick={() => downloadIdentityBackup(identity)}>
+                      Export
+                    </button>
+                    <button type="button" className="danger" onClick={() => forget(identity)}>
+                      Forget
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </RadioGroup>
-        )}
+              ))}
+            </RadioGroup>
+          )}
 
-        <div className="row">
-          <TextField
-            className="grow"
-            aria-label="Display name for a new identity"
-            placeholder="display name (optional)"
-            value={genName}
-            onChange={setGenName}
-          />
-          <button type="button" onClick={generate}>
-            + Generate new identity
-          </button>
+          <div className="row">
+            <TextField
+              className="grow"
+              aria-label="Display name for a new identity"
+              placeholder="display name (optional)"
+              value={genName}
+              onChange={setGenName}
+            />
+            <button type="button" onClick={generate}>
+              + Generate new identity
+            </button>
+          </div>
+          <details>
+            <summary>Import an existing identity (backup JSON)</summary>
+            <TextArea
+              monospace
+              rows={4}
+              aria-label="Identity backup JSON"
+              placeholder="paste identity JSON (contains secret key)"
+              value={importText}
+              onChange={setImportText}
+            />
+            <button type="button" onClick={importIdentity} disabled={!importText.trim()}>
+              Import
+            </button>
+            {importError && <p className="error">{importError}</p>}
+          </details>
         </div>
-        <details>
-          <summary>Import an existing identity (backup JSON)</summary>
-          <TextArea
-            monospace
-            rows={4}
-            aria-label="Identity backup JSON"
-            placeholder="paste identity JSON (contains secret key)"
-            value={importText}
-            onChange={setImportText}
-          />
-          <button type="button" onClick={importIdentity} disabled={!importText.trim()}>
-            Import
-          </button>
-          {importError && <p className="error">{importError}</p>}
-        </details>
-      </div>
 
-      <MySlatesCard identities={myIdentities} />
+        <MySlatesCard identities={myIdentities} />
+      </div>
 
       {qrShare && (
         <QrDialog text={qrShare.text} label={qrShare.label} onClose={() => setQrShare(null)} />

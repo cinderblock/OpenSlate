@@ -72,57 +72,65 @@ export function RacePanel() {
         )}
       </p>
 
-      {myRows.length > 0 && (
-        <div className="card">
-          <h3>My positions</h3>
-          <ul className="position-list">
-            {myRows.map((row) => (
-              <li key={row.id}>
-                <span className={`stance stance-${row.stance ?? "neutral"}`}>
-                  {row.stance ? STANCE_LABEL[row.stance] : "—"}
-                </span>
-                <span className="position-subject">
-                  {row.choice ?? <em>(overall)</em>}
-                  {row.statement && (
-                    <div className="hint">
-                      <em>statement:</em> {row.statement}
-                    </div>
-                  )}
-                  {row.privateNote && (
-                    <div className="hint">
-                      <em>private note:</em> {row.privateNote}
-                    </div>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <div className="race-layout">
+        {myRows.length > 0 && (
+          <div className="card race-mine">
+            <h3>My positions</h3>
+            <ul className="position-list">
+              {myRows.map((row) => (
+                <li key={row.id}>
+                  <span className={`stance stance-${row.stance ?? "neutral"}`}>
+                    {row.stance ? STANCE_LABEL[row.stance] : "—"}
+                  </span>
+                  <span className="position-subject">
+                    {row.choice ?? <em>(overall)</em>}
+                    {row.statement && (
+                      <div className="hint">
+                        <em>statement:</em> {row.statement}
+                      </div>
+                    )}
+                    {row.privateNote && (
+                      <div className="hint">
+                        <em>private note:</em> {row.privateNote}
+                      </div>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-      <PollsPanel subject={pollSubject} />
+        {/* Beside the endorsements on a wide screen; between My positions and them on a phone. */}
+        <aside className="race-context" aria-label="Polls, forecast and results">
+          <PollsPanel subject={pollSubject} />
 
-      <ForecastsPanel subject={pollSubject} />
+          <ForecastsPanel subject={pollSubject} />
 
-      <ResultsPanel subject={pollSubject} />
+          <ResultsPanel subject={pollSubject} />
+        </aside>
 
-      {!race ? (
-        <div className="card">
-          <p className="hint">No endorsements imported for this subject yet.</p>
-        </div>
-      ) : (
-        <>
-          {race.onBallot && (
-            <p className="hint">
-              {race.choices.filter((c) => c.onBallot).length} on the ballot · {race.followedSources}{" "}
-              of {race.totalSources} sources with a position here are ones you follow
-            </p>
+        <div className="race-choices">
+          {!race ? (
+            <div className="card">
+              <p className="hint">No endorsements imported for this subject yet.</p>
+            </div>
+          ) : (
+            <>
+              {race.onBallot && (
+                <p className="hint">
+                  {race.choices.filter((c) => c.onBallot).length} on the ballot ·{" "}
+                  {race.followedSources} of {race.totalSources} sources with a position here are
+                  ones you follow
+                </p>
+              )}
+              {race.choices.map((group) => (
+                <ChoiceCard key={group.choice} group={group} subjectTitle={race.subject.title} />
+              ))}
+            </>
           )}
-          {race.choices.map((group) => (
-            <ChoiceCard key={group.choice} group={group} subjectTitle={race.subject.title} />
-          ))}
-        </>
-      )}
+        </div>
+      </div>
     </section>
   );
 }

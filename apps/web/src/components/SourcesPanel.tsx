@@ -63,83 +63,92 @@ export function SourcesPanel() {
         My ballot; the rest stay imported so you can compare on race pages.
       </p>
 
-      {isReady && ballots.length > 0 && (
-        <div className="card">
-          <h3>Ballot data</h3>
-          <p className="hint">
-            Official candidate lists. They aren't recommendations, so there's nothing to follow;
-            they give each race its whole field.
-          </p>
-          <ul className="source-list">
-            {ballots.map((group) => (
-              <SourceRow key={group.source.id} group={group} />
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {isReady && groups.length > ballots.length && (
-        <div className="card">
-          <h3>Following ({following.length})</h3>
-          {following.length === 0 ? (
-            <p className="hint">You aren't following anyone yet. Follow sources below.</p>
-          ) : (
+      {/* Two columns on a wide screen once there's something imported: what you
+          have on the left, "Add sources" on the right. One column, in this
+          order, on a phone. */}
+      <div className={isReady && groups.length > 0 ? "sources-layout" : undefined}>
+        {isReady && ballots.length > 0 && (
+          <div className="card sources-ballot">
+            <h3>Ballot data</h3>
+            <p className="hint">
+              Official candidate lists. They aren't recommendations, so there's nothing to follow;
+              they give each race its whole field.
+            </p>
             <ul className="source-list">
-              {following.map((group) => (
+              {ballots.map((group) => (
                 <SourceRow key={group.source.id} group={group} />
               ))}
             </ul>
-          )}
-          {notFollowing.length > 0 && (
-            <details>
-              <summary>Imported but not followed ({notFollowing.length})</summary>
+          </div>
+        )}
+
+        {isReady && groups.length > ballots.length && (
+          <div className="card sources-following">
+            <h3>Following ({following.length})</h3>
+            {following.length === 0 ? (
+              <p className="hint">You aren't following anyone yet. Follow some from Add sources.</p>
+            ) : (
               <ul className="source-list">
-                {notFollowing.map((group) => (
+                {following.map((group) => (
                   <SourceRow key={group.source.id} group={group} />
                 ))}
               </ul>
-            </details>
+            )}
+            {notFollowing.length > 0 && (
+              <details>
+                <summary>Imported but not followed ({notFollowing.length})</summary>
+                <ul className="source-list">
+                  {notFollowing.map((group) => (
+                    <SourceRow key={group.source.id} group={group} />
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
+        )}
+
+        <div className="sources-add">
+          <h3 className="section-heading">Add sources</h3>
+          <div className="segmented" role="tablist" aria-label="Add sources from">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={addTab === "catalog"}
+              className={addTab === "catalog" ? "active" : ""}
+              onClick={() => setAddTab("catalog")}
+            >
+              Public catalog
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={addTab === "paste"}
+              className={addTab === "paste" ? "active" : ""}
+              onClick={() => setAddTab("paste")}
+            >
+              Link, file, QR or paste
+            </button>
+          </div>
+          {addTab === "catalog" ? (
+            <div className="card">
+              <CatalogBrowser />
+            </div>
+          ) : (
+            <ImportVerifyPanel embedded />
           )}
         </div>
-      )}
 
-      <h3 className="section-heading">Add sources</h3>
-      <div className="segmented" role="tablist" aria-label="Add sources from">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={addTab === "catalog"}
-          className={addTab === "catalog" ? "active" : ""}
-          onClick={() => setAddTab("catalog")}
-        >
-          Public catalog
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={addTab === "paste"}
-          className={addTab === "paste" ? "active" : ""}
-          onClick={() => setAddTab("paste")}
-        >
-          Link, file, QR or paste
-        </button>
-      </div>
-      {addTab === "catalog" ? (
-        <div className="card">
-          <CatalogBrowser />
+        <div className="sources-contacts">
+          <ContactsCard />
         </div>
-      ) : (
-        <ImportVerifyPanel embedded />
-      )}
 
-      <ContactsCard />
-
-      {slates.length > 0 && (
-        <details className="card">
-          <summary>All imported slates ({slates.length})</summary>
-          <SlatesList />
-        </details>
-      )}
+        {slates.length > 0 && (
+          <details className="card sources-all">
+            <summary>All imported slates ({slates.length})</summary>
+            <SlatesList />
+          </details>
+        )}
+      </div>
     </section>
   );
 }

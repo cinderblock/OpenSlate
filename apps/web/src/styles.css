@@ -36,8 +36,10 @@ a {
   white-space: nowrap;
 }
 
+/* Wide enough to use a desktop screen; pages lay their cards out in columns
+   (race grid, race sidebar, sources) rather than stretching one column. */
 .app {
-  max-width: min(1100px, 96vw);
+  max-width: min(120rem, 96vw);
   margin: 0 auto;
   padding: 1.5rem 1rem 4rem;
 }
@@ -126,6 +128,20 @@ a {
 
 .panel h2 {
   margin: 0.5rem 0;
+}
+/* Keep running text to a readable line length on a wide screen. */
+main p {
+  max-width: 80ch;
+}
+/* Independent cards side by side once two fit (Identities, Compose,
+   Settings). Below that it's a plain block, so margins collapse as before. */
+@media screen and (min-width: 76rem) {
+  .card-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.5rem;
+    align-items: start;
+  }
 }
 .hint {
   color: var(--muted);
@@ -277,6 +293,12 @@ button.link {
 }
 .position-subject {
   flex: 1;
+}
+/* A long list of short rows: fill the width with columns of them. */
+.position-list.slate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 28rem), 1fr));
+  column-gap: 2rem;
 }
 
 .stance {
@@ -553,6 +575,25 @@ footer a:hover {
 .ballot-stats a {
   color: inherit;
 }
+/* Closed sections sit side by side, so a statewide ballot's hundreds of
+   one-race districts don't each take a line on a wide screen. Anything open
+   (or explaining itself, like "no race") takes the whole row, in order. */
+@media screen and (min-width: 40rem) {
+  .ballot-sections {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    column-gap: 1.25rem;
+  }
+  .ballot-sections > * {
+    grid-column: 1 / -1;
+  }
+  .ballot-sections > details.ballot-section:not([open]) {
+    grid-column: auto;
+  }
+  .ballot-sections > details.ballot-section:not([open]) > .ballot-section-title {
+    margin: 0.6rem 0 0;
+  }
+}
 .ballot-section-title {
   cursor: pointer;
   margin: 1.5rem 0 0.25rem;
@@ -560,6 +601,17 @@ footer a:hover {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--muted);
+}
+/* One column on a phone, two or three on a desktop. A grid rather than CSS
+   columns, so the races still read (and tab) across, in ballot order. */
+.race-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 32rem), 1fr));
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+.race-grid > .card {
+  margin: 0;
 }
 .race-card .card-title {
   flex-wrap: wrap;
@@ -1001,15 +1053,84 @@ footer a:hover {
   margin: 0.25rem 0 0.5rem;
 }
 
+/* Race page: on a wide screen polls, forecast and results sit beside the
+   endorsements. The last row is the only flexible one, so a tall sidebar
+   stretches it rather than pushing My positions and the choices apart. */
+@media screen and (min-width: 70rem) {
+  .race-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(22rem, 2fr);
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      "mine context"
+      "choices context"
+      ". context";
+    column-gap: 1.5rem;
+    align-items: start;
+  }
+  .race-mine {
+    grid-area: mine;
+  }
+  .race-context {
+    grid-area: context;
+  }
+  .race-choices {
+    grid-area: choices;
+  }
+}
+
 /* Sources */
 .section-heading {
   margin: 1.5rem 0 0.5rem;
+}
+/* What you have imported on the left, "Add sources" on the right; see the
+   race page above for why the last row is the flexible one. */
+@media screen and (min-width: 70rem) {
+  .sources-layout {
+    display: grid;
+    /* The catalog is the long one; give it the extra room. */
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    grid-template-rows: auto auto auto auto 1fr;
+    grid-template-areas:
+      "ballot add"
+      "following add"
+      "contacts add"
+      "all add"
+      ". add";
+    column-gap: 1.5rem;
+    align-items: start;
+  }
+  .sources-ballot {
+    grid-area: ballot;
+  }
+  .sources-following {
+    grid-area: following;
+  }
+  .sources-contacts {
+    grid-area: contacts;
+  }
+  .sources-all {
+    grid-area: all;
+  }
+  .sources-add {
+    grid-area: add;
+  }
+  /* Line "Add sources" up with the top of the first card. */
+  .sources-add > .section-heading {
+    margin-top: 0.75rem;
+  }
 }
 .source-list,
 .catalog-list {
   list-style: none;
   padding: 0;
   margin: 0.5rem 0;
+}
+/* Long enough to be worth columns once there's room for them. */
+.catalog-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr));
+  column-gap: 1.5rem;
 }
 .source-row,
 .catalog-list li {
@@ -1186,6 +1307,13 @@ dialog.wizard::backdrop {
   .app {
     max-width: none;
     padding: 0;
+  }
+  /* Paper gets one column of races, split cleanly between pages. */
+  .race-grid {
+    display: block;
+  }
+  .race-grid > .card {
+    margin: 0.75rem 0;
   }
   /* Cards must not split across pages — losing half a candidate list to a
      page break is unreadable. Make borders subtle for ink savings. */

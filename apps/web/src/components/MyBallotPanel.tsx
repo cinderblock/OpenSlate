@@ -326,30 +326,32 @@ export function MyBallotPanel() {
         </p>
       )}
 
-      {sections.map((section) =>
-        section.noRace ? (
-          <div key={section.label} className="ballot-section ballot-section-empty">
-            <div className="ballot-section-title">
-              {section.label} <span className="hint">· no race</span>
+      <div className="ballot-sections">
+        {sections.map((section) =>
+          section.noRace ? (
+            <div key={section.label} className="ballot-section ballot-section-empty">
+              <div className="ballot-section-title">
+                {section.label} <span className="hint">· no race</span>
+              </div>
+              <p className="hint">{section.noRace}</p>
             </div>
-            <p className="hint">{section.noRace}</p>
-          </div>
-        ) : (
-          <BallotSection
-            // Remount when the area changes, so "open by default" re-applies.
-            key={`${section.label}|${isAreaSet(area)}`}
-            label={section.label}
-            races={section.races}
-            // With no area set the ballot covers the whole state: hundreds of
-            // district and local races. Start those closed.
-            defaultOpen={isAreaSet(area) || section.rank < 2}
-            election={election ?? ""}
-            rows={draft.rows}
-            patch={draft.patch}
-            mine={mine}
-          />
-        ),
-      )}
+          ) : (
+            <BallotSection
+              // Remount when the area changes, so "open by default" re-applies.
+              key={`${section.label}|${isAreaSet(area)}`}
+              label={section.label}
+              races={section.races}
+              // With no area set the ballot covers the whole state: hundreds of
+              // district and local races. Start those closed.
+              defaultOpen={isAreaSet(area) || section.rank < 2}
+              election={election ?? ""}
+              rows={draft.rows}
+              patch={draft.patch}
+              mine={mine}
+            />
+          ),
+        )}
+      </div>
 
       <PrintPicks
         election={election}
@@ -387,17 +389,20 @@ function BallotSection({
         {label} <span className="hint">· {races.length}</span>
       </summary>
       {/* Closed sections render nothing: a statewide ballot can run to 600+ races. */}
-      {open &&
-        races.map((race) => (
-          <RaceCard
-            key={race.key}
-            race={race}
-            election={election}
-            rows={rows}
-            patch={patch}
-            mine={mine.get(race.key)}
-          />
-        ))}
+      {open && (
+        <div className="race-grid">
+          {races.map((race) => (
+            <RaceCard
+              key={race.key}
+              race={race}
+              election={election}
+              rows={rows}
+              patch={patch}
+              mine={mine.get(race.key)}
+            />
+          ))}
+        </div>
+      )}
     </details>
   );
 }
