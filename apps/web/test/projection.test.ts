@@ -1,7 +1,5 @@
 import { expect, test } from "bun:test";
-import { albers } from "../src/lib/projection";
-
-const p = albers();
+import { webMercator as p } from "../src/lib/projection";
 
 test("round-trips points across California", () => {
   for (const [lon, lat] of [
@@ -24,4 +22,14 @@ test("north is up and east is right (SVG coordinates)", () => {
   const [xEast] = p.project(-115, 37);
   expect(yNorth).toBeLessThan(ySouth);
   expect(xWest).toBeLessThan(xEast);
+});
+
+test("lands in the same map tile as the tile servers say", () => {
+  // SF City Hall is in USGS tile z13 row 3166 column 1310 (fetched 2026-10-21).
+  const [x, y] = p.project(-122.41831, 37.778536);
+  expect(Math.floor(x * 2 ** 13)).toBe(1310);
+  expect(Math.floor(y * 2 ** 13)).toBe(3166);
+  // The world's corners.
+  expect(p.project(-180, 0)).toEqual([0, 0.5]);
+  expect(p.invert(1, 0)[0]).toBe(180);
 });

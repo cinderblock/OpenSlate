@@ -1,27 +1,36 @@
 import polylabel from "polylabel";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  BASEMAPS,
+  BASEMAP_SOURCE,
+  type Basemap,
+  type BasemapInfo,
+  tileUrl,
+  tileZoom,
+  tilesToDraw,
+} from "../lib/basemap";
 import type { GeoLayer, GeoShape, StateGeo } from "../lib/geo";
 import { shapeAt } from "../lib/geo";
-import { albers } from "../lib/projection";
+import { webMercator } from "../lib/projection";
 
 /**
- * California on a map, drawn from the boundary data on this device (no map
- * tiles, so nothing about where you look leaves the browser). Drag to pan,
- * wheel or pinch to zoom, click to pick a spot. Keyboard: arrows pan, + and -
- * zoom, Enter picks the centre.
+ * California on a map, drawn from the boundary data on this device. Under it,
+ * optionally, street or satellite tiles from USGS (lib/basemap.ts): off until
+ * the user picks one, since tiles tell USGS roughly where they're looking.
+ * Drag to pan, wheel or pinch to zoom, click to pick a spot. Keyboard: arrows
+ * pan, + and - zoom, Enter picks the centre.
  */
 
-/** Projected units per sphere radius: 1 unit ≈ 64 m, so one decimal is ~6 m. */
-const SCALE = 1e5;
-const projection = albers();
+/** Map units across the world: 1 unit ≈ 60 m in California, so one decimal is ~6 m. */
+const SCALE = 2 ** 19;
 
 function project(lon: number, lat: number): [number, number] {
-  const [x, y] = projection.project(lon, lat);
+  const [x, y] = webMercator.project(lon, lat);
   return [x * SCALE, y * SCALE];
 }
 
 function invert(x: number, y: number): [number, number] {
-  return projection.invert(x / SCALE, y / SCALE);
+  return webMercator.invert(x / SCALE, y / SCALE);
 }
 
 interface Projected {
@@ -119,6 +128,21 @@ function labelFits(s: Projected, chars: number, fontSize: number): boolean {
 
 type ViewBox = { x: number; y: number; w: number; h: number };
 
+/** The background tiles for an area of the map `pixelsAcross` device pixels wide. */
+function basemapTiles(
+  info: BasemapInfo,
+  area: ViewBox,
+  pixelsAcross: number,
+  loaded: ReadonlySet<string>,
+) {
+  const world = { x: area.x / SCALE, y: area.y / SCALE, w: area.w / SCALE, h: area.h / SCALE };
+  const z = tileZoom(world, pixelsAcross, info.maxZoom);
+  return tilesToDraw(world, z, (t) => loaded.has(tileUrl(info, t.z, t.x, t.y))).map((t) => {
+    const size = SCALE / 2 ** t.z;
+    return { href: tileUrl(info, t.z, t.x, t.y), x: t.x * size, y: t.y * size, size };
+  });
+}
+
 export const LAYER_NAMES: Record<GeoLayer, string> = {
   cd: "Congressional district",
   sd: "State Senate district",
@@ -146,6 +170,7 @@ export function DistrictMap({
   layer,
   point,
   highlight,
+  basemap = "off",
   onPick,
 }: {
   geo: StateGeo;
@@ -155,6 +180,8 @@ export function DistrictMap({
   point?: [number, number];
   /** Shape ids to highlight, per layer (the ones containing the picked spot). */
   highlight?: Partial<Record<GeoLayer, string>>;
+  /** Street or satellite tiles underneath (each load tells USGS the area). */
+  basemap?: Basemap;
   onPick: (lon: number, lat: number) => void;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -328,9 +355,28 @@ export function DistrictMap({
     e.preventDefault();
   }
 
+  // The view is fitted inside the SVG, so one side shows more than asked for.
+  const perPixel = Math.max(view.w / screen.w, view.h / screen.h);
+  const shown: ViewBox = {
+    x: view.x + (view.w - screen.w * perPixel) / 2,
+    y: view.y + (view.h - screen.h * perPixel) / 2,
+    w: screen.w * perPixel,
+    h: screen.h * perPixel,
+  };
+  const info = basemap === "off" ? undefined : BASEMAPS[basemap];
+  // Background tiles that have finished loading (by URL).
+  const [loaded, setLoaded] = useState<ReadonlySet<string>>(() => new Set());
+  const onTileLoad = useCallback(
+    (href: string) => setLoaded((s) => (s.has(href) ? s : new Set(s).add(href))),
+    [],
+  );
+  const tiles = info
+    ? basemapTiles(info, shown, screen.w * Math.min(2, window.devicePixelRatio || 1), loaded)
+    : [];
+
   // Labels that fit at this zoom: district numbers, and city names once zoomed in.
-  // 11 screen pixels, in map units (the view is fitted inside the SVG).
-  const fontSize = 11 * Math.max(view.w / screen.w, view.h / screen.h);
+  // 11 screen pixels, in map units.
+  const fontSize = 11 * perPixel;
   const visible = (s: Projected) =>
     s.box[2] > view.x &&
     s.box[0] < view.x + view.w &&
@@ -357,7 +403,7 @@ export function DistrictMap({
   const marker = point ? project(point[0], point[1]) : undefined;
 
   return (
-    <div className="district-map">
+    <div className={info ? `district-map basemap-${basemap}` : "district-map"}>
       <svg
         ref={svgRef}
         className="district-map-svg"
@@ -377,8 +423,27 @@ export function DistrictMap({
         {/* Each district (or county) its own colour, neighbours always
             different, with a gap between them, and county lines faint on top
             for finding your way. Cities are named, not shaded: their patchy
-            limits would break every district into pieces. */}
-        <LayerPaths shapes={counties} className="map-land" />
+            limits would break every district into pieces. Over a background
+            map the colours turn mostly transparent (styles.css). */}
+        {info ? (
+          <g className="map-tiles">
+            {tiles.map((t) => (
+              // A pixel of overlap hides the hairline seams between tiles.
+              <image
+                key={t.href}
+                href={t.href}
+                onLoad={() => onTileLoad(t.href)}
+                x={t.x}
+                y={t.y}
+                width={t.size + perPixel}
+                height={t.size + perPixel}
+                preserveAspectRatio="none"
+              />
+            ))}
+          </g>
+        ) : (
+          <LayerPaths shapes={counties} className="map-land" />
+        )}
         <LayerPaths
           shapes={top}
           className={hiTop ? "map-fills map-fills-dimmed" : "map-fills"}
@@ -444,6 +509,16 @@ export function DistrictMap({
       <div className="district-map-readout" aria-live="polite">
         {hover || "Click where you live"}
       </div>
+      {info && (
+        <a
+          className="district-map-credit"
+          href={BASEMAP_SOURCE.creditUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {BASEMAP_SOURCE.credit}
+        </a>
+      )}
     </div>
   );
 }

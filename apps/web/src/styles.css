@@ -808,16 +808,20 @@ footer a:hover {
    (plans/district-map-readability.md); the closest pair for colour-blind
    eyes relies on the gap and the labels, which every district has. */
 .map-color-0 {
-  fill: #b87b04;
+  --map-color: #b87b04;
 }
 .map-color-1 {
-  fill: #c24c78;
+  --map-color: #c24c78;
 }
 .map-color-2 {
-  fill: #037904;
+  --map-color: #037904;
 }
 .map-color-3 {
-  fill: #847bd5;
+  --map-color: #847bd5;
+}
+.map-fills path,
+.map-highlight {
+  fill: var(--map-color);
 }
 .map-fills path {
   /* The gap between neighbours. */
@@ -860,6 +864,61 @@ footer a:hover {
   fill: var(--muted);
   font-style: italic;
 }
+/* Over a background map: districts tinted, not painted, each outlined in its
+   own colour so its edge shows on streets and imagery alike; county lines and
+   the pick's outline dark-on-light enough to read on both. */
+.map-tiles image {
+  pointer-events: none;
+}
+.basemap-satellite .district-map-svg {
+  /* Imagery stops a little way offshore (its tiles turn transparent): show
+     open water as dark sea rather than the app's near-black. */
+  background: #0d1f2d;
+}
+.basemap-streets .map-tiles {
+  /* Tone the white street map down to sit in the dark app. */
+  opacity: 0.85;
+}
+.basemap-streets .map-fills path,
+.basemap-satellite .map-fills path {
+  fill-opacity: 0.3;
+  stroke: var(--map-color);
+  stroke-width: 2;
+}
+.basemap-satellite .map-fills path {
+  fill-opacity: 0.25;
+}
+.basemap-streets .map-fills-dimmed path,
+.basemap-satellite .map-fills-dimmed path {
+  fill-opacity: 0.08;
+  stroke-opacity: 0.6;
+}
+.basemap-streets .map-county-lines path {
+  stroke: #000;
+  stroke-opacity: 0.55;
+  stroke-width: 1;
+}
+.basemap-satellite .map-county-lines path {
+  stroke: #fff;
+  stroke-opacity: 0.7;
+  stroke-width: 1;
+}
+.basemap-streets .map-highlight,
+.basemap-satellite .map-highlight {
+  fill-opacity: 0.3;
+  stroke: #fff;
+  stroke-width: 3;
+}
+.basemap-streets .map-highlight {
+  stroke: #000;
+}
+.basemap-streets .map-highlight-place,
+.basemap-satellite .map-highlight-place {
+  fill: color-mix(in srgb, #fff 12%, transparent);
+}
+.basemap-streets .map-highlight-place {
+  stroke: #000;
+}
 .map-marker {
   fill: var(--bad);
   stroke: #fff;
@@ -886,6 +945,23 @@ footer a:hover {
   height: 2rem;
   padding: 0;
   line-height: 1;
+}
+.district-map-credit {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  border-radius: 4px;
+  padding: 0 0.35rem;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.find-map-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  justify-content: space-between;
 }
 .district-map-readout {
   position: absolute;

@@ -55,7 +55,10 @@ use your device's location (both matched on your device, against district
 boundaries shipped with the app), or type your address and pick who looks it
 up: the US Census Bureau (through the project's relay, which keeps nothing) or
 OpenStreetMap (straight from your browser). Each address service asks before
-its first use and can be switched off in Settings. A district with no race
+its first use and can be switched off in Settings. The map can lay the
+districts over a street or satellite map from the US Geological Survey; that's
+off until you pick it, since loading map images shows USGS roughly where
+you're looking. A district with no race
 this election (e.g. an odd-numbered State Senate seat in 2026) says so on My
 ballot.
 
@@ -217,6 +220,7 @@ flowchart LR
   GCI[("Google Civic Info<br/>VIP ballot data")]:::ext
   CEN[("US Census geocoder<br/>address → districts")]:::ext
   OSM[("OpenStreetMap Nominatim<br/>address → point")]:::ext
+  USGS[("USGS The National Map<br/>street/satellite tiles")]:::ext
   VH[("VoteHub<br/>opinion polls<br/>CC BY 4.0")]:::ext
   CA[("civicAPI<br/>election results")]:::ext
   KS[("Kalshi<br/>market forecasts")]:::ext
@@ -232,6 +236,7 @@ flowchart LR
   Client -->|"direct (default)"| CA
   Client -->|"index.json · signed.slate"| OPE
   Client -.->|"address, opt-in"| OSM
+  Client -.->|"map tiles, opt-in"| USGS
   Client -.->|"POST /api/geocode/census, opt-in"| Worker
   Client -.->|"POST /api/geocode/census, opt-in"| Hono
 

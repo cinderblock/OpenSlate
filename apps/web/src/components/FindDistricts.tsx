@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useAddress } from "../lib/address";
+import { BASEMAP_SOURCE, type Basemap, useBasemap } from "../lib/basemap";
 import { areaFromLookup } from "../lib/civicArea";
 import type { AreaOptions } from "../lib/collate";
 import {
@@ -36,7 +37,8 @@ import { TextField } from "./ui/TextField";
  * "Find your districts": fills Where-you-vote from a spot on the map, the
  * device's location, or an address. The first two run entirely on this device
  * against the boundary data shipped with the app; an address needs a
- * geocoder, and each one the user can pick asks for their consent first.
+ * geocoder, and each one the user can pick asks for their consent first. So
+ * does the map's optional street/satellite background (tiles from USGS).
  * See plans/find-my-districts.md.
  */
 
@@ -94,6 +96,7 @@ export function FindDistricts({
 }) {
   const [method, setMethod] = useState<Method | null>(null);
   const [found, setFound] = useState<Found | null>(null);
+  const [basemap] = useBasemap();
   const [error, setError] = useState<string | null>(null);
   const { geo, error: geoError } = useStateGeo(method !== null);
 
@@ -139,7 +142,11 @@ export function FindDistricts({
             onClick={() => choose(m.id)}
           >
             <span className="find-method-title">{m.title}</span>
-            <span className="find-method-privacy">{m.privacy}</span>
+            <span className="find-method-privacy">
+              {m.id === "map" && basemap !== "off"
+                ? "On this device; map images from USGS"
+                : m.privacy}
+            </span>
           </button>
         ))}
       </fieldset>
@@ -244,35 +251,64 @@ function MapPanel({
   onPick: (lon: number, lat: number) => void;
 }) {
   const [layer, setLayer] = useState<GeoLayer>("sd");
+  const [basemap, setBasemap] = useBasemap();
   const highlight: Partial<Record<GeoLayer, string>> = {
     ...found?.hit?.districts,
     ...(found?.hit?.county ? { county: found.hit.county } : {}),
     ...(found?.hit?.place ? { place: found.hit.place } : {}),
   };
+  const vintage = geo.vintage.replace(/^.*; /, "");
   return (
     <div className="find-panel">
-      <Segmented
-        aria-label="Boundaries to show"
-        value={layer}
-        onChange={setLayer}
-        options={[
-          { id: "cd", label: "Congress" },
-          { id: "sd", label: "Senate" },
-          { id: "ad", label: "Assembly" },
-          { id: "county", label: "Counties" },
-        ]}
-      />
+      <div className="find-map-options">
+        <Segmented
+          aria-label="Boundaries to show"
+          value={layer}
+          onChange={setLayer}
+          options={[
+            { id: "cd", label: "Congress" },
+            { id: "sd", label: "Senate" },
+            { id: "ad", label: "Assembly" },
+            { id: "county", label: "Counties" },
+          ]}
+        />
+        <Segmented<Basemap>
+          label="Background"
+          value={basemap}
+          onChange={setBasemap}
+          options={[
+            { id: "off", label: "Off" },
+            { id: "streets", label: "Streets" },
+            { id: "satellite", label: "Satellite" },
+          ]}
+        />
+      </div>
       <DistrictMap
         geo={geo}
         layer={layer}
         point={found?.point}
         highlight={highlight}
+        basemap={basemap}
         onPick={onPick}
       />
-      <p className="hint">
-        Drawn from Census boundaries stored with the app ({geo.vintage.replace(/^.*; /, "")}), so
-        nothing about where you click leaves this device. Zoom in and click your home.
-      </p>
+      {basemap === "off" ? (
+        <p className="hint">
+          Drawn from Census boundaries stored with the app ({vintage}), so nothing about where you
+          click leaves this device. Zoom in and click your home. A street or satellite background
+          loads map images from {BASEMAP_SOURCE.recipient}, which can see roughly where you're
+          looking.
+        </p>
+      ) : (
+        <p className="hint">
+          The background loads map images from <strong>{BASEMAP_SOURCE.recipient}</strong>, so they
+          can see roughly where you're looking (switch it off to stop).{" "}
+          <a href={BASEMAP_SOURCE.policyUrl} target="_blank" rel="noreferrer">
+            Their privacy policy
+          </a>
+          . The districts are drawn from Census boundaries stored with the app ({vintage}), and
+          where you click is worked out on this device. Zoom in and click your home.
+        </p>
+      )}
     </div>
   );
 }

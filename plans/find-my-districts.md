@@ -164,8 +164,8 @@ off for poll-cache.
 
 ## Follow-ups (not started)
 
-- Opt-in OpenStreetMap basemap under the map (tiles reveal roughly where you
-  look, so it needs its own consent).
+- ~~Opt-in OpenStreetMap basemap under the map~~: done as an opt-in USGS
+  street/satellite background, see plans/district-map-basemap.md.
 - BART and other special-district boundaries (BART publishes them).
 - Region containment (`us/ca/bay-area` ⊃ SF) from the county the lookup
   finds; see plans/ui-two-modes-refactor.md.
