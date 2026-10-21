@@ -1,8 +1,9 @@
-import jsQR from "jsqr";
-import QRCode from "qrcode";
+// The QR libraries load on first use: drawing a code or scanning one is rare,
+// and jsqr alone is ~125 KB.
 
 /** Generate a QR code as an SVG string. */
 export async function toQrSvg(text: string, size = 280): Promise<string> {
+  const { default: QRCode } = await import("qrcode");
   return QRCode.toString(text, {
     type: "svg",
     width: size,
@@ -26,6 +27,7 @@ export async function scanImageFile(file: File): Promise<string | null> {
     canvas.height = Math.max(1, Math.round(img.height * scale));
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const { default: jsQR } = await import("jsqr");
     const code = jsQR(data.data, data.width, data.height);
     return code?.data ?? null;
   } finally {
