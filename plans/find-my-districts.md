@@ -94,6 +94,10 @@ election; only even-numbered seats are up") rather than hiding it, which
    `origin/master` into this branch, re-ran every check, pushed as a
    fast-forward. Workers Builds deploys both workers from there.
 10. [x] Workers Logs pinned off in `apps/poll-cache/wrangler.toml` (user: yes).
+11. [x] Verified live (2026-10-21): `polls.openslate.us/api/health` lists
+    `/api/geocode/census`; a production POST for Palo Alto City Hall returns
+    CD 16 / SD 13 / AD 23 with `Cache-Control: no-store`; openslate.us serves
+    the new bundle and `geo/us-ca.topo.json` (614 KB brotli on the wire).
 
 ## Findings / gotchas
 
@@ -149,6 +153,7 @@ election; only even-numbered seats are up") rather than hiding it, which
       no race" between Congress and Assembly; Settings lists both consents
       and the remembered address; phone width (390 px) fits.
 - [x] Checks: 5 packages typecheck, 225 tests, Biome clean, build OK.
+- [x] Deployed and checked live (2026-10-21).
 - [x] Merge + push (2026-10-20), after a clean merge of `origin/master` and
       a full re-check (225 tests, typecheck, Biome, build, wrangler dry run).
 
