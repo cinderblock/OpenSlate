@@ -2112,3 +2112,20 @@ button.tag.active {
 .subject-picker {
   margin-bottom: 0.5rem;
 }
+
+/* Kit buttons draw their own ring, only for keyboard focus ([data-focus-visible]).
+   Without this, the browser's outline lingers after a mouse pick returns
+   focus to the trigger. */
+.ui-select-trigger,
+.ui-combobox-button,
+.ui-search-clear,
+.ui-dropzone-button,
+.ui-copy-button {
+  outline: none;
+}
+.ui-combobox-button[data-focus-visible],
+.ui-search-clear[data-focus-visible],
+.ui-dropzone-button[data-focus-visible],
+.ui-copy-button[data-focus-visible] {
+  box-shadow: var(--focus-ring);
+}

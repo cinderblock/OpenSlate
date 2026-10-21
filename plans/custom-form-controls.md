@@ -130,12 +130,17 @@ extend the kit in `apps/web/src/components/ui/`.
   mounted standalone: no results timeline has data before Nov 3), mobile
   width on Compose.
 - [ ] A real file drag onto Import & verify (needs a human; see Findings).
-- [ ] Results timeline slider and region sort on real results data (none of
-  the imported slates have past results yet).
+- [x] Region sort on real results (GrowSF's June 2 slate, 58 counties):
+  "Name (A–Z)" and "Closest margin" reorder the table. Found and fixed a
+  lingering browser outline on the trigger after a mouse pick.
+- [ ] Results timeline slider on real data: not possible yet. civicAPI keeps
+  no history for the June 2 races ("No tracked history for this race"), so
+  the timeline only appears once Nov 3 results come in. The slider itself
+  was checked standalone.
 
 ## Open questions for the user
 
-1. **Merge and push?** The branch is 11 commits on top of `e07192b`, not
+1. **Merge and push?** The branch is 13 commits on top of `e07192b`, not
    pushed. Recommendation: merge to `master` and push once you've had a look.
 2. **Bundle size** (+73 KB gzipped, see Findings): accept it, or follow up
    with route-level code splitting? Recommendation: accept; log code
