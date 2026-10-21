@@ -57,3 +57,14 @@ and `biome.json` itself. With `"lineEnding": "crlf"` in a copy of the config
 because lint can't be used as a gate on Windows, where the user works. Fix
 needs a choice that works on both OSes (e.g. a `.gitattributes` policy, or
 Biome 2's `lineEnding: "auto"`).
+
+## Setup wizard hangs on "Where do you vote?" while loading endorsements
+
+Seen 2026-10-21 in a fresh browser profile (T3 preview, local dev server):
+Get started → Plan my vote → Nov 3, 2026 → Next. The "Where do you vote?" step
+showed "Loading endorsements… 173 of 197" and never finished. The console
+warned "Cannot update a component while rendering a different component" from
+`ElectionSlates` (`apps/web/src/components/Wizard.tsx`). Clicking "Skip, show
+everything →" didn't advance either, and hash navigation stopped re-rendering
+the page until a reload. The preview tab wasn't visible at the time, which may
+be a factor. Matters because this is the first thing a new visitor does.
