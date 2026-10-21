@@ -71,8 +71,9 @@ extend the kit in `apps/web/src/components/ui/`.
    (`c25e0bd`); grep finds no `<input>`/`<select>`/`<textarea>` outside the
    kit's comments; typecheck, 197 tests, lint (CRLF config) and `vite build`
    pass; browser walkthrough done (see Progress).
-9. [ ] Merge to `master` and push: waiting on the user (pushing master
-   deploys the hosted app).  ← current
+9. [x] Merged to `master` (fast-forward to `eead22d`) and pushed on the
+   user's yes, 2026-10-20. Live on `https://openslate.us` within a minute
+   (bundle `index-DBE_SJkp.js`).
 
 ## Findings / gotchas
 
@@ -114,6 +115,9 @@ extend the kit in `apps/web/src/components/ui/`.
   React Aria's core (interactions 24 KB, utils 25, selection 19, overlays 18,
   collections 15, focus 10 raw), not optional extras. The app ships as one
   chunk; route-level code splitting would be the lever if it matters.
+  Raw sizes of React Aria's parts in the build: interactions 24 KB, utils 25,
+  selection + collections 45, overlays 18, focus 10, dnd 9, the components and
+  react-stately ~65. Shared, so further components cost a few KB each.
 
 ## Progress log
 
@@ -140,11 +144,11 @@ extend the kit in `apps/web/src/components/ui/`.
 
 ## Open questions for the user
 
-1. **Merge and push?** The branch is 13 commits on top of `e07192b`, not
-   pushed. Recommendation: merge to `master` and push once you've had a look.
-2. **Bundle size** (+73 KB gzipped, see Findings): accept it, or follow up
-   with route-level code splitting? Recommendation: accept; log code
-   splitting as a separate task if load time on phones matters.
+1. ~~Merge and push?~~ Done 2026-10-20 (`eead22d`).
+2. **Bundle size** (+73 KB gzipped, see Findings; the user asked why, and was
+   told it is React Aria's shared core, see the table in Findings): accept
+   it, or follow up with route-level code splitting? Recommendation: accept;
+   code splitting as a separate task if load time on phones matters.
 3. Another thread is on `feat/find-my-districts`. It touches
    `apps/web/package.json`, `bun.lock` and `vite.config.ts` too (small merge),
    and will probably add district/location UI: it should use the kit, not
