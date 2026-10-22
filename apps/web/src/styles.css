@@ -797,6 +797,114 @@ a.button-link:hover {
   color: var(--ok);
   font-weight: 600;
 }
+.choice-row.ruled-out .choice-name {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+/* Working through the ballot: progress, status filter, done races. */
+.triage-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.triage-bar {
+  display: inline-block;
+  width: 8rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.triage-fill {
+  display: block;
+  height: 100%;
+  background: var(--ok);
+  transition: width 0.2s ease;
+}
+.triage-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0 0 0.75rem;
+}
+.triage-filter .ui-segmented {
+  flex-wrap: wrap;
+}
+.segment-count {
+  margin-left: 0.35rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+.ballot-zero {
+  border-left: 4px solid var(--ok);
+}
+.ballot-zero h3 {
+  margin-top: 0;
+}
+.race-done {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  /* Its own height, not the full card beside it in the grid row. */
+  align-self: start;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+.race-done-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.race-done-status.decided {
+  color: var(--ok);
+}
+.race-done-detail {
+  min-width: 0;
+}
+
+/* Quick fill */
+.quick-fill h4 {
+  margin: 1rem 0 0.4rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.quick-fill-parties {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.quick-fill-parties li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0;
+  border-top: 1px solid var(--border);
+}
+.quick-fill-parties li:first-child {
+  border-top: none;
+}
+.quick-fill-party {
+  flex: 1 1 12rem;
+}
+.quick-fill-source {
+  align-items: flex-end;
+}
+.quick-fill-source .ui-field {
+  flex: 1 1 16rem;
+}
+.quick-fill-notice {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
 .choice-main {
   flex: 1;
   min-width: 0;

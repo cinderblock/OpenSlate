@@ -102,6 +102,41 @@ interface RowFields {
   privateNote?: string;
 }
 
+/** One `patch` call, for `patchMany`. */
+export interface RowPatch {
+  subject: Subject;
+  choice: string | undefined;
+  fields: RowFields;
+}
+
+function applyPatch(
+  current: DraftMap,
+  electionId: string,
+  subject: Subject,
+  choice: string | undefined,
+  fields: RowFields,
+): DraftMap {
+  const id = rowIdFor(electionId, subject, choice);
+  const existing = current[id];
+  const merged: DraftRow = {
+    id,
+    electionId,
+    subject,
+    choice,
+    stance: "stance" in fields ? fields.stance : existing?.stance,
+    statement: "statement" in fields ? fields.statement : existing?.statement,
+    privateNote: "privateNote" in fields ? fields.privateNote : existing?.privateNote,
+    updatedAt: new Date().toISOString(),
+  };
+  if (isEmpty(merged)) {
+    if (!existing) return current;
+    const next = { ...current };
+    delete next[id];
+    return next;
+  }
+  return { ...current, [id]: merged };
+}
+
 export function useBallotDraft(): {
   rows: DraftMap;
   patch: (
@@ -110,6 +145,10 @@ export function useBallotDraft(): {
     choice: string | undefined,
     fields: RowFields,
   ) => void;
+  /** Several patches as one change (a quick fill). */
+  patchMany: (electionId: string, patches: RowPatch[]) => void;
+  /** Put rows back as they were (undo): `undefined` removes the row. */
+  restore: (previous: Record<string, DraftRow | undefined>) => void;
   clearRow: (id: string) => void;
   clearElection: (electionId: string) => void;
   clearAll: () => void;
@@ -123,30 +162,30 @@ export function useBallotDraft(): {
 
   const patch = useCallback(
     (electionId: string, subject: Subject, choice: string | undefined, fields: RowFields) => {
-      setRows((current) => {
-        const id = rowIdFor(electionId, subject, choice);
-        const existing = current[id];
-        const merged: DraftRow = {
-          id,
-          electionId,
-          subject,
-          choice,
-          stance: "stance" in fields ? fields.stance : existing?.stance,
-          statement: "statement" in fields ? fields.statement : existing?.statement,
-          privateNote: "privateNote" in fields ? fields.privateNote : existing?.privateNote,
-          updatedAt: new Date().toISOString(),
-        };
-        if (isEmpty(merged)) {
-          if (!existing) return current;
-          const next = { ...current };
-          delete next[id];
-          return next;
-        }
-        return { ...current, [id]: merged };
-      });
+      setRows((current) => applyPatch(current, electionId, subject, choice, fields));
     },
     [],
   );
+
+  const patchMany = useCallback((electionId: string, patches: RowPatch[]) => {
+    setRows((current) =>
+      patches.reduce(
+        (acc, { subject, choice, fields }) => applyPatch(acc, electionId, subject, choice, fields),
+        current,
+      ),
+    );
+  }, []);
+
+  const restore = useCallback((previous: Record<string, DraftRow | undefined>) => {
+    setRows((current) => {
+      const next = { ...current };
+      for (const [id, row] of Object.entries(previous)) {
+        if (row) next[id] = row;
+        else delete next[id];
+      }
+      return next;
+    });
+  }, []);
 
   const clearRow = useCallback((id: string) => {
     setRows((current) => {
@@ -169,7 +208,7 @@ export function useBallotDraft(): {
 
   const clearAll = useCallback(() => setRows({}), []);
 
-  return { rows, patch, clearRow, clearElection, clearAll };
+  return { rows, patch, patchMany, restore, clearRow, clearElection, clearAll };
 }
 
 /** Per-contest ranking: ordered list of candidate names (most preferred first). */

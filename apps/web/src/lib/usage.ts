@@ -65,6 +65,8 @@ export const USAGE_SCHEMA = {
   "results.print": {},
   "results.export": { format: ["csv", "markdown"] },
   "ballot.export": { format: ["json", "csv"] },
+  // Which kind of quick fill, never which party or source, nor which way.
+  "ballot.quick_fill": { by: ["party", "source"] },
   "slate.sign": {},
   "wizard.finish": { path: ["vote", "publish"] },
   "wizard.skip": {},
@@ -94,6 +96,8 @@ export const USAGE_EVENT_DESCRIPTIONS: Record<EventName, string> = {
   "results.print": "That a results sheet was printed",
   "results.export": "That results were exported, and as CSV or Markdown",
   "ballot.export": "That My ballot was exported, and as JSON or CSV",
+  "ballot.quick_fill":
+    "That Quick fill was used on My ballot, and whether by party or by source (never which one)",
   "slate.sign": "That a slate was signed",
   "wizard.finish":
     "That the getting-started guide was finished, and whether to plan a vote or to publish",

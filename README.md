@@ -22,7 +22,12 @@ The web app has two modes:
 - **My vote** (the default): *My ballot* shows the races for your election and
   area: the official candidate list where one is imported, your followed
   sources' endorsements next to each choice, your private picks and notes, and
-  what you've already signed. *Sources* is where you follow or unfollow
+  what you've already signed. Work through it like an inbox: filter races by
+  To do, Maybe, Picked or Against all, watch the "decided" count climb, and
+  reach *ballot zero*. *Quick fill* marks many races at once: pick (or rule
+  out) every candidate of a party, or agree with, or go against, everything
+  one source recommends, followed or not. It only fills what you haven't
+  marked and can be undone. *Sources* is where you follow or unfollow
   sources, browse the public catalog, and add slates from a link, file, QR
   code or paste.
 - **Publish**: create a signing identity, sign your My-ballot picks (plus any

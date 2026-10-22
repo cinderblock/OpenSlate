@@ -1,6 +1,7 @@
 import type { Stance } from "@openslate/core";
 import { Link } from "@tanstack/react-router";
-import { memo, useMemo, useState } from "react";
+import { type ReactNode, memo, useCallback, useMemo, useState } from "react";
+import { ProgressBar } from "react-aria-components";
 import { type DraftRow, NOTE_CHOICE, rowIdFor, useBallotDraft } from "../lib/ballotDraft";
 import { ballotFileName, ballotToCsv, ballotToJson } from "../lib/ballotExport";
 import {
@@ -27,11 +28,15 @@ import {
 import { localToday, useArea, useDecodedSlates, useFollows, useMyElection } from "../lib/myVote";
 import { type MyPosition, useMyPositionsByRace } from "../lib/published";
 import { isBallotSource, isFollowed } from "../lib/sources";
+import { subjectKey } from "../lib/subjects";
+import { type RaceStatus, isDecided, marksOn, raceStatus } from "../lib/triage";
 import { track } from "../lib/usage";
 import { openWizard } from "../lib/wizard";
 import { AreaPicker, describeArea } from "./AreaPicker";
+import { QuickFill } from "./QuickFill";
 import { electionOptions } from "./electionOptions";
 import { Checkbox } from "./ui/Checkbox";
+import { Segmented } from "./ui/Segmented";
 import { Select } from "./ui/Select";
 import { Switch } from "./ui/Switch";
 import { TextArea } from "./ui/TextField";
@@ -69,6 +74,24 @@ function describeMine(position: MyPosition): string {
   return `${MY_STANCE_WORD[position.stance]} ${position.choice || "it"}`;
 }
 
+type StatusFilter = "all" | RaceStatus;
+
+/** The status filter's segments, in working order. */
+const STATUS_FILTERS: Array<{ id: StatusFilter; label: string }> = [
+  { id: "all", label: "All" },
+  { id: "todo", label: "To do" },
+  { id: "maybe", label: "Maybe" },
+  { id: "picked", label: "Picked" },
+  { id: "against", label: "Against all" },
+];
+
+const STATUS_LABEL: Record<RaceStatus, string> = {
+  todo: "To do",
+  maybe: "Maybe",
+  picked: "Picked",
+  against: "Against all",
+};
+
 export function MyBallotPanel() {
   const { slates, isReady } = useDecodedSlates();
   const [follows] = useFollows();
@@ -80,6 +103,13 @@ export function MyBallotPanel() {
   const [editingArea, setEditingArea] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportNotes, setExportNotes] = useState(false);
+  const [filling, setFilling] = useState(false);
+  const [filter, setFilterState] = useState<StatusFilter>("all");
+  // Races you marked while filtering. One that leaves the filter (you picked
+  // it in To do) stays as a one-line summary until the filter changes, so
+  // nothing jumps away under the pointer and a misclick is easy to fix.
+  const [touched, setTouched] = useState<ReadonlySet<string>>(() => new Set());
+  const { patch: draftPatch } = draft;
 
   const today = localToday();
   const elections = useMemo(() => electionsOf(slates, follows), [slates, follows]);
@@ -123,9 +153,53 @@ export function MyBallotPanel() {
     return [...counts.entries()];
   }, [slates, follows, election, area, showUnfollowed]);
 
+  const statuses = useMemo(
+    () => new Map(races.map((race) => [race.key, raceStatus(race, draft.rows, election ?? "")])),
+    [races, draft.rows, election],
+  );
+  const counts = useMemo(() => {
+    const out: Record<StatusFilter, number> = {
+      all: races.length,
+      todo: 0,
+      maybe: 0,
+      picked: 0,
+      against: 0,
+    };
+    for (const status of statuses.values()) out[status]++;
+    return out;
+  }, [races.length, statuses]);
+  const decided = counts.picked + counts.against;
+
+  function setFilter(next: StatusFilter) {
+    setFilterState(next);
+    setTouched(new Set());
+  }
+
+  // Remember which race a mark came from (see `touched`). Stable, so a mark
+  // still re-renders only its own race card.
+  const patch = useCallback<Patch>(
+    (electionId, subject, choice, fields) => {
+      const key = subjectKey(subject);
+      setTouched((current) => (current.has(key) ? current : new Set(current).add(key)));
+      draftPatch(electionId, subject, choice, fields);
+    },
+    [draftPatch],
+  );
+
+  // Under a filter: races that match it, plus the ones you've just dealt with.
+  const shown = useMemo(
+    () =>
+      filter === "all"
+        ? races
+        : races.filter((race) => statuses.get(race.key) === filter || touched.has(race.key)),
+    [races, statuses, filter, touched],
+  );
+  const doneHere =
+    filter === "all" ? 0 : shown.filter((race) => statuses.get(race.key) !== filter).length;
+
   const sections = useMemo(() => {
     const out: Array<{ label: string; rank: number; races: Race[]; noRace?: string }> = [];
-    for (const race of races) {
+    for (const race of shown) {
       const label = jurisdictionLabel(race.jurisdiction);
       const last = out.at(-1);
       if (last?.label === label) last.races.push(race);
@@ -133,8 +207,8 @@ export function MyBallotPanel() {
     }
     // The user's districts with nothing on this ballot get a section saying so
     // (e.g. an odd-numbered Senate district in 2026), in ballot order, rather
-    // than silently going missing.
-    for (const [family, n] of Object.entries(area.districts)) {
+    // than silently going missing. Not under a status filter: nothing to do there.
+    for (const [family, n] of filter === "all" ? Object.entries(area.districts) : []) {
       const present = areaOptions.districts[family] ?? [];
       if (present.includes(n)) continue;
       const path = `${family}-${n}`;
@@ -146,15 +220,12 @@ export function MyBallotPanel() {
       });
     }
     return out.sort((a, b) => a.rank - b.rank || collator.compare(a.label, b.label));
-  }, [races, area.districts, areaOptions, election]);
+  }, [shown, filter, area.districts, areaOptions, election]);
 
   const myRows = useMemo(
     () => Object.values(draft.rows).filter((row) => row.electionId === election),
     [draft.rows, election],
   );
-  const decided = races.filter((race) =>
-    myRows.some((row) => row.id.startsWith(`${election}|${race.key}|`) && row.stance === "endorse"),
-  ).length;
 
   // Ballot sources (official candidate lists) aren't recommendations to follow.
   const sourceIds = new Set(
@@ -236,13 +307,21 @@ export function MyBallotPanel() {
         <span className="grow" />
         <button
           type="button"
+          aria-expanded={filling}
+          onClick={() => setFilling((v) => !v)}
+          disabled={races.length === 0}
+        >
+          Quick fill
+        </button>
+        <button
+          type="button"
           aria-expanded={exporting}
           onClick={() => setExporting((v) => !v)}
           disabled={races.length === 0}
         >
           Export
         </button>
-        <button type="button" onClick={() => window.print()} disabled={decided === 0}>
+        <button type="button" onClick={() => window.print()} disabled={counts.picked === 0}>
           Print my picks
         </button>
       </div>
@@ -286,13 +365,33 @@ export function MyBallotPanel() {
         </div>
       )}
 
+      <QuickFill
+        open={filling}
+        onClose={() => setFilling(false)}
+        races={races}
+        election={election ?? ""}
+        draft={draft}
+      />
+
       <div className="ballot-stats no-print">
-        <span>
-          <strong>{races.length}</strong> races
-        </span>
-        <span>
-          <strong>{decided}</strong> picked
-        </span>
+        <ProgressBar
+          className="triage-progress"
+          value={decided}
+          maxValue={Math.max(races.length, 1)}
+          aria-label="Races decided"
+          valueLabel={`${decided} of ${races.length} races decided`}
+        >
+          {({ percentage }) => (
+            <>
+              <span>
+                <strong>{decided}</strong> of <strong>{races.length}</strong> races decided
+              </span>
+              <span className="triage-bar" aria-hidden="true">
+                <span className="triage-fill" style={{ width: `${percentage ?? 0}%` }} />
+              </span>
+            </>
+          )}
+        </ProgressBar>
         <span>
           <Link to="/sources">
             <strong>{followedCount}</strong> of {sourceIds.size} sources followed
@@ -302,6 +401,50 @@ export function MyBallotPanel() {
           Include races only unfollowed sources cover
         </Switch>
       </div>
+
+      {races.length > 0 && (
+        <div className="triage-filter no-print">
+          <Segmented
+            aria-label="Show races"
+            value={filter}
+            onChange={setFilter}
+            options={STATUS_FILTERS.map(({ id, label }) => ({
+              id,
+              label: (
+                <>
+                  {label} <span className="segment-count">{counts[id]}</span>
+                </>
+              ),
+            }))}
+          />
+          {doneHere > 0 && (
+            <button type="button" className="link" onClick={() => setTouched(new Set())}>
+              Clear {doneHere} done
+            </button>
+          )}
+        </div>
+      )}
+
+      {filter === "todo" && counts.todo === 0 && races.length > 0 && (
+        <div className="card ballot-zero no-print">
+          <h3>Ballot zero 🎉</h3>
+          <p>
+            Every race has a decision
+            {counts.maybe > 0 ? `, except ${counts.maybe} you're still on the fence about` : ""}.{" "}
+            {counts.maybe > 0 ? (
+              <button type="button" className="link" onClick={() => setFilter("maybe")}>
+                Settle the maybes
+              </button>
+            ) : (
+              counts.picked > 0 && (
+                <button type="button" className="link" onClick={() => window.print()}>
+                  Print my picks
+                </button>
+              )
+            )}
+          </p>
+        </div>
+      )}
 
       {summary && summary.followedSources === 0 && !showUnfollowed && (
         <div className="card">
@@ -346,8 +489,11 @@ export function MyBallotPanel() {
               defaultOpen={isAreaSet(area) || section.rank < 2}
               election={election ?? ""}
               rows={draft.rows}
-              patch={draft.patch}
+              patch={patch}
               mine={mine}
+              // Under a filter, races you've dealt with shrink to a summary.
+              statuses={filter === "all" ? undefined : statuses}
+              filter={filter}
             />
           ),
         )}
@@ -373,6 +519,8 @@ function BallotSection({
   rows,
   patch,
   mine,
+  statuses,
+  filter,
 }: {
   label: string;
   races: Race[];
@@ -381,6 +529,8 @@ function BallotSection({
   rows: Record<string, DraftRow>;
   patch: Patch;
   mine: Map<string, MyPosition[]>;
+  statuses: Map<string, RaceStatus> | undefined;
+  filter: StatusFilter;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -391,19 +541,75 @@ function BallotSection({
       {/* Closed sections render nothing: a statewide ballot can run to 600+ races. */}
       {open && (
         <div className="race-grid">
-          {races.map((race) => (
-            <RaceCard
-              key={race.key}
-              race={race}
-              election={election}
-              rows={rows}
-              patch={patch}
-              mine={mine.get(race.key)}
-            />
-          ))}
+          {races.map((race) => {
+            const status = statuses?.get(race.key);
+            const card = (
+              <RaceCard
+                key={race.key}
+                race={race}
+                election={election}
+                rows={rows}
+                patch={patch}
+                mine={mine.get(race.key)}
+              />
+            );
+            return status && status !== filter ? (
+              <DoneRace key={race.key} race={race} status={status} election={election} rows={rows}>
+                {card}
+              </DoneRace>
+            ) : (
+              card
+            );
+          })}
         </div>
       )}
     </details>
+  );
+}
+
+/**
+ * A race that left the status filter while you worked: one line saying where
+ * it stands, with the full card a click away.
+ */
+function DoneRace({
+  race,
+  status,
+  election,
+  rows,
+  children,
+}: {
+  race: Race;
+  status: RaceStatus;
+  election: string;
+  rows: Record<string, DraftRow>;
+  children: ReactNode;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  if (expanded) return <>{children}</>;
+  const marks = marksOn(race, rows, election);
+  const detail =
+    status === "picked"
+      ? marks.picked.join(", ") || "No"
+      : status === "maybe"
+        ? marks.maybe.join(", ")
+        : status === "against"
+          ? "skipping this race"
+          : marks.against.length > 0
+            ? `ruled out ${marks.against.join(", ")}`
+            : "nothing marked";
+  return (
+    <div className={`card race-done status-${status}`}>
+      <span className={`race-done-status${isDecided(status) ? " decided" : ""}`}>
+        {isDecided(status) ? "✓ " : ""}
+        {STATUS_LABEL[status]}
+      </span>
+      <strong className="race-done-title">{race.subject.title}</strong>
+      <span className="hint race-done-detail">{detail}</span>
+      <span className="grow" />
+      <button type="button" className="link" onClick={() => setExpanded(true)}>
+        Edit
+      </button>
+    </div>
   );
 }
 
@@ -539,7 +745,9 @@ function ChoiceRow({
   const followed = group.positions.filter((p) => p.followed);
   const others = group.positions.filter((p) => !p.followed);
   return (
-    <li className={`choice-row${row?.stance === "endorse" ? " picked" : ""}`}>
+    <li
+      className={`choice-row${row?.stance === "endorse" ? " picked" : ""}${row?.stance === "oppose" ? " ruled-out" : ""}`}
+    >
       <div className="choice-main">
         <div className="choice-name">
           {group.choice || <em>{race.subject.title}</em>}
