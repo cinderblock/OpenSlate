@@ -164,8 +164,23 @@ of event names and low-cardinality, non-political dims is fine.
 - [x] OpenSlate: wire `setUsageSink` in main.tsx with `VITE_TELEMETRY_ENDPOINT`
       / `VITE_TELEMETRY_KEY` (2026-10-21, key derived at build; see the npm
       section's end).
-- [ ] After deploy: opt in on openslate.us, check one live request body,
-      opt back out; confirm the event in the collector.
+- [x] After deploy: check a live request body. Deployed 2026-10-21 11:18 PM
+      PDT (06:18Z), `620e465`, with the user's yes. In the user's Chrome
+      (stats were already on; left on), a fetch hook captured one POST to
+      `/u/ek1.openslate.web.<mac>`, answered 202. Body: `{"events":[…page.view
+      …],"release":"620e465","environment":"production"}`, nothing else.
+      **Found:** each navigation sent `page.view` twice. TanStack Router's
+      `onResolved` fires on every settle (react-router `Transitioner.js`),
+      including loader re-runs on the same location. Fixed by counting only
+      `pathChanged` (`b591d5b`, deployed 11:21 PM PDT, 06:21Z). Re-checked on
+      `b591d5b`: three screens produced three events in one request (202).
+      Gotcha: the PWA service worker keeps serving the previous build until
+      it updates. Check `document.scripts` for the new `index-*.js` before
+      testing.
+- [ ] Seeing the counts in the collector needs `CF_ACCOUNT_ID` /
+      `CF_ANALYTICS_TOKEN` on the worker (usage is read back from Analytics
+      Engine). Events are now flowing, so the 90-day clock started
+      2026-10-21. Without them the daily rollup can't copy usage into D1.
 - [ ] **telemetry-collector has never been deployed.** Findings 2026-10-17:
       its only Workers Build (deploy@7a2d14e, 2026-09-25) failed with
       "UnknownLockfileVersion" because the trigger has no `BUN_VERSION` (image
