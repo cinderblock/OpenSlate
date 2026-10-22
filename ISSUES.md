@@ -51,3 +51,13 @@ Dark `--bad` (`#e74c3c`) as text measures 4.41:1 on `--surface` and 4.02:1 on
 white-on-red fills worse, so the fix probably wants "on-colour" tokens for text
 on filled backgrounds. `apps/web/test/theme.test.ts` lists the `--bad` pairs as
 known failures; take them off the list when fixed.
+
+## Same candidate under two spellings: "Donald P. (Don) Wagner" / "Don Wagner"
+
+Seen 2026-10-22 on My ballot, California Secretary of State race (Nov 3,
+2026): the SoS ballot lists "Donald P. (Don) Wagner" and the California
+Republican Party's slate says "Don Wagner", so the race shows two rows and
+CAGOP's endorsement sits on a name that isn't on the ballot. The fix belongs
+in the endorsements repo's `scripts/normalize-choices.ts` (parenthesised
+nickname not matched). Matters because party/source quick fill and "your
+sources agree" both key on the exact name.
