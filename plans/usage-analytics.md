@@ -395,10 +395,20 @@ anywhere.
    "Everything is in sync".
 5. Approve the GitHub protections above (tag ruleset, deploy ruleset, npm
    environment)?
-6. The ops `web_analytics: { auto_install: false }` site for openslate.us is
-   now unused. Remove it from ops (needs a commit yes), or keep it?
-   Recommendation: remove; the CSP would block an auto-injected beacon
-   anyway.
+6. ~~Remove the unused ops Web Analytics site for openslate.us?~~ User
+   2026-10-22: remove. Ops `3db3300` sets `web_analytics: false`. That only
+   worked after fixing a sync bug (`8b3d6b6`): a resource marked for
+   deletion whose live settings already matched (auto-install off) was
+   "unchanged", so `false` never deleted it. Dry run after the fix: exactly
+   one delete, the openslate.us site.
+   **Applied, but the site is still there.** CI run 39740364949: the first
+   attempt hit a 429 while fetching (nothing applied). The rerun logged
+   "✓ Deleted web-analytics: openslate.us (manual)", yet 10+ minutes later
+   `GET rum/site_info/2b3f91845a854656ab9fac599dcdbeb5` still returns it.
+   So the verify job (STRICT) now fails on every ops push ("1 to delete").
+   The provider deleted by `site_tag` via `rum.siteInfo.delete` and got no
+   error. Cause unknown. Asked the user: remove it in the dashboard, or
+   revert the config.
 
 ## Things not to do
 
