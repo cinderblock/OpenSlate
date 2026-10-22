@@ -89,11 +89,14 @@ export function FindDistricts({
   area,
   election,
   onChange,
+  onAdjust,
 }: {
   options: AreaOptions;
   area: Area;
   election?: string;
   onChange: (next: Area) => void;
+  /** Switch to setting the area by hand, to fix or fill in what was found. */
+  onAdjust: () => void;
 }) {
   const [method, setMethod] = useState<Method | null>(null);
   const [found, setFound] = useState<Found | null>(null);
@@ -236,6 +239,7 @@ export function FindDistricts({
           options={options}
           election={election}
           onShowMap={found.point && method !== "map" ? () => setMethod("map") : undefined}
+          onAdjust={onAdjust}
         />
       )}
     </div>
@@ -505,11 +509,13 @@ function FoundSummary({
   options,
   election,
   onShowMap,
+  onAdjust,
 }: {
   found: Found;
   options: AreaOptions;
   election?: string;
   onShowMap?: () => void;
+  onAdjust: () => void;
 }) {
   const districts = Object.entries(found.area.districts);
   const near = found.nearLine.filter((l): l is "cd" | "sd" | "ad" =>
@@ -546,15 +552,18 @@ function FoundSummary({
       {found.notCovered.length > 0 && (
         <p className="hint">
           Not found this way:{" "}
-          {found.notCovered.map((f) => districtFamilyLabel(f.split("/").pop() ?? f)).join(", ")}.
-          Set {found.notCovered.length === 1 ? "it" : "them"} below if you vote in one.
+          {found.notCovered.map((f) => districtFamilyLabel(f.split("/").pop() ?? f)).join(", ")}. If
+          you vote in one, set it by hand.
         </p>
       )}
       <p className="hint">
-        From {found.via}. Your ballot is updated; adjust anything below.
+        From {found.via}. Your ballot is updated.{" "}
+        <button type="button" className="link" onClick={onAdjust}>
+          Adjust by hand
+        </button>
         {onShowMap && (
           <>
-            {" "}
+            {" · "}
             <button type="button" className="link" onClick={onShowMap}>
               Show it on the map
             </button>

@@ -726,6 +726,19 @@ footer a:hover {
   font-weight: normal;
   font-size: 0.85rem;
 }
+/* "Find them for me" or "Choose them myself" (AreaPicker.tsx). */
+.ui-radio-group.area-modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.area-modes .ui-radio {
+  align-items: flex-start;
+}
+.area-modes .ui-radio-dot {
+  margin-top: 0.2rem;
+}
 .area-search {
   margin-bottom: 0.4rem;
 }
@@ -1285,6 +1298,14 @@ dialog.wizard::backdrop {
   margin-top: 1.25rem;
   padding-top: 1rem;
   border-top: 1px solid var(--border);
+  /* Stays in view while a tall step (the district map) scrolls under it, so
+     Next is always one click away. Covers the dialog's bottom padding. */
+  position: sticky;
+  bottom: -1.5rem;
+  margin-bottom: -1.5rem;
+  padding-bottom: 1.5rem;
+  background: var(--surface);
+  z-index: 1;
 }
 
 @media print {
