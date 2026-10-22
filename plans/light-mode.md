@@ -25,6 +25,8 @@ bundle loads.
 
 ## Decisions already made (don't re-ask)
 
+- The installed app's splash matches the device by default (user, 2026-10-21): light base
+  colours in the manifest, with `color_scheme_dark` for dark.
 - Light mode is fully supported, and that includes critical CSS so the first load doesn't flash
   (user, 2026-10-21).
 - The theme follows the OS by default, with a System / Light / Dark override in Settings
@@ -91,9 +93,15 @@ bundle loads.
 - Vite leaves a non-module `<script src>` in `index.html` alone (and warns). Files in
   `public/` are served from the root, and the PWA precache picks up `theme.js` through
   `globPatterns` (`**/*.js`).
-- PWA manifest `theme_color` / `background_color` take a single value. No shipped
-  mechanism makes them depend on the colour scheme, so an installed app's splash screen
-  stays one colour.
+- PWA splash and title bar: the manifest's `color_scheme_dark` member (W3C manifest PR
+  #1207, merged 2026-04-09) overrides `theme_color` / `background_color` when the OS is
+  dark. WebKit shipped it in May 2026 (bug 311727). Chromium has committed to it (crbug
+  383165202) but hasn't shipped, so Chrome installs show the light base colours for now.
+  vite-plugin-pwa 1.3's `ManifestOptions` type doesn't know the member yet; it's passed
+  through a spread and does reach `manifest.webmanifest`.
+- Another thread's feedback dialog landed alongside this with dark-only `rgb(0 0 0 / …)`
+  backdrop and shadow. Fixed in `7bb4661`, and the theme test now rejects any raw `rgb()`
+  outside the theme blocks.
 
 ## Progress log
 
@@ -105,13 +113,13 @@ bundle loads.
 - [x] Tests (`test/theme.test.ts`)
 - [x] Checks and build pass (bun test 249+, typecheck, Biome with a CRLF config per ISSUES.md). Verified in a browser
 - [x] README (How to Run → Cloud)
-- [ ] Push to origin (waits on the user)
+- [x] Pushed to origin (`8704551`, user approved 2026-10-21)
+- [x] Manifest splash follows the device (`color_scheme_dark`)
+- [ ] Push the splash follow-up (waits on the user)
 
 ## Open questions for the user
 
-1. PWA splash colour (`manifest.background_color`) is one value. Keep it dark, or switch it
-   to the light background? Recommendation: keep it dark for now, since it only affects
-   installed-app launches.
+None open.
 
 ## Things not to do
 

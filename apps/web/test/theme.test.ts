@@ -123,6 +123,19 @@ describe("index.html paints the right theme before the stylesheet loads", () => 
     }
   });
 
+  test("the installed app's splash and title bar use each theme's background", () => {
+    const manifestColors = read("../vite.config.ts").match(/const manifestColors[\s\S]*?\n\};/);
+    const colors = [...(manifestColors?.[0] ?? "").matchAll(/(\w+): "(#[0-9a-f]+)"/g)];
+    const light = token(themes.light, "--bg");
+    const dark = token(themes.dark, "--bg");
+    expect(colors.map((m) => `${m[1]} ${m[2]}`)).toEqual([
+      `theme_color ${light}`,
+      `background_color ${light}`,
+      `theme_color ${dark}`,
+      `background_color ${dark}`,
+    ]);
+  });
+
   test("theme-color metas follow the OS with each theme's background", () => {
     expect(themeColorMetas()).toEqual([
       {
