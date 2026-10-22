@@ -110,7 +110,8 @@ Three features on My ballot (`apps/web/src/components/MyBallotPanel.tsx`):
 - [x] typecheck + tests (289 pass) + browser check
 - [x] commit (`9c48572`)
 - [x] focus mode + tests + browser check
-- [x] commit focus mode
+- [x] commit focus mode (`61db250`)
+- [x] on origin/master (another thread's push of `86399ca` carried them); live on openslate.us, checked in the `MyBallotPanel` chunk 2026-10-22 12:36 AM PDT (07:36Z)
 
 ## Focus mode (user: "do it", 2026-10-22)
 
