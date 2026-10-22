@@ -10,8 +10,8 @@ the official arguments for and against a measure (with rebuttals), and the raw
 text of a proposed law. Is there a standard published form we can load, and
 should any of it be modelled as an "endorsement" that can be shared?
 
-Status: **research done, design mostly agreed, nothing built.** Waiting on
-the user's choice of where reference material lives (open question 1).
+Status: **building** (user: "do it", 2026-10-22). See *Build plan* below; the
+current step is marked.
 
 ## Environment / context
 
@@ -172,42 +172,70 @@ User, 2026-10-22, accepting the recommendations:
   git. That is an infrastructure change: per-change authorization through the
   ops repo.
 
-## Open questions for the user
+6. **One repo per state and election** for official ballot material, named
+   `openslate-ballot-<state>-<election>`; first one
+   `cinderblock/openslate-ballot-ca-2026-11-03`, served by GitHub Pages
+   (user: "do it", 2026-10-22, after the per-election repo recommendation).
 
-1. **Where do photos and reference text live?** The user asked whether to keep
-   them in git, and suggested a repo or orphan branch per election. Facts:
-   - Data already lives apart from the app: `openslate-public-endorsements`
-     (org-first layout `orgs/<org>/<election>/`, including the ballot source
-     `orgs/ca-secretary-of-state/2026-11-03`, 261 KB). It deploys one Pages
-     site from master via Actions. Today: `.git` 9.7 MB, `orgs/` 13 MB, no
-     images or PDFs.
-   - A Pages site is capped at 1 GB, and each repo gets one site. Orphan
-     branches isolate history but still deploy into that single site, so they
-     don't lift the cap. They also need multi-branch CI to build it.
-   - Pages serves `Access-Control-Allow-Origin: *`; Releases and LFS don't help
-     (LFS isn't served by Pages; release assets aren't a CORS-friendly host).
-   - Rough size per state general election: photos ~20–30 KB × a few hundred
-     candidates = a few MB; proposition text PDFs ~100 KB each; county guide
-     PDFs are tens of MB each × 58 counties (the real risk).
-   - *Recommendation*: one repo per (state, election) for official ballot
-     material, e.g. `openslate-ballot-ca-2026-11-03`: the ballot-source
-     candidate list moves there, with statements, arguments, photos, extracted
-     text and analysis. Endorsements stay org-first in the existing repo. Shared
-     tooling lives in the OpenSlate repo (already pinned via `.openslate-version`).
-     The catalog gains a list of ballot repos. Keep the big county PDFs out of
-     git: store extracted per-item text plus the original's URL and sha256.
-     Creating repos is outward-facing, so wait for the user's yes on names.
+## Build design (decided while building; reasons given)
+
+- **Statements and arguments live in the reference bundle, not in slates.**
+  This changes the earlier proposal (a secondhand self-endorsement slate per
+  candidate). Reasons: they are official guide content, shown only on the race
+  page and never tallied (decision 2), so a slate per candidate would add
+  catalog entries, follow state and tally exclusions for no visible gain. When
+  a candidate signs a firsthand slate, that is a real source and supersedes
+  nothing here. Argument *signer organizations* still become secondhand slates
+  in the endorsements repo (decision 3).
+- **The candidate list stays in the endorsements repo until after Nov 3.** The
+  live app imports it from the catalog and users already hold it; moving it 12
+  days before the election risks breaking ballots for no benefit. Revisit
+  after the election.
+- **Signed manifest + content-addressed files.** The ballot repo's CI signs one
+  small manifest (JWS, header `typ: "openslate-ref+jws"`, same canonical JSON and
+  Ed25519 as slates). The manifest lists every published file with its sha256
+  and maps each subject to its item file. Item JSON, photos and PDFs are
+  fetched lazily per race page and checked against the manifest's hash before
+  use. A race page never downloads the whole election.
+- **Full text stays a PDF.** CA law text marks additions and deletions with
+  italics and strikeout; extracted plain text would lose that. The mirrored
+  PDF (~100 KB each) opens after its hash checks.
+- **Signing key: a new key per ballot repo.** The project key's private half
+  exists only as the endorsements repo's Actions secret (by design, no local
+  copy), so it can't be installed on a second repo. Each ballot repo gets its
+  own researcher key, generated in memory and piped straight into
+  `gh secret set`, never written to disk. The public half is committed in the
+  repo's `keys/` and listed in the endorsements catalog next to the repo URL,
+  which is how the app knows which key to expect.
+- **Discovery: the endorsements catalog lists ballot references.** `index.json`
+  gains `references: [{ election, jurisdiction, url, key }]` (from a
+  `references.json` in that repo). The race page reads the catalog it already
+  caches, picks the reference for its election and jurisdiction, then checks
+  the manifest's `kid` against `key`.
+- **Format and verification in `@openslate/core`; signing in the CLI**
+  (`openslate reference sign`). The CA guide scraper lives in the ballot repo,
+  and the repo is a GitHub template, so the next CA election starts from it.
+
+## Build plan
+
+1. [ ] Core: `reference.ts` (types, manifest build, sign, verify, sha256) + tests
+2. [ ] CLI: `openslate reference sign <dir> --key`
+3. [ ] Ballot repo: scraper for statewide statements and photos, and for each
+   proposition's title and summary, LAO analysis, arguments and rebuttals
+   (with signers) and text PDF; evidence saved
+4. [ ] Ballot repo: CI (verify, sign, build site, Pages), README, key, push
+5. [ ] Endorsements repo: `references.json` → `index.json`
+6. [ ] Web: load and verify reference, race page sections, tests
+7. [ ] Endorsements repo: argument-signer organizations as secondhand slates
+8. [ ] READMEs (OpenSlate, endorsements, ballot repo), SPEC note
 
 ## Progress log
 
 - [x] Survey of current data model and ballot-source pipeline
 - [x] Research: state guide, county guides, VIP / Civic, photo sources, CORS
-- [x] User answers to the open questions (2026-10-22), except hosting
-- [ ] Hosting decision: repo per election vs existing repo
-- [ ] Scraper for state-guide statements, photos, arguments and text (endorsements repo)
-- [ ] Reference bundle format, signing and publishing
-- [ ] Race page: photo, "in their own words", arguments, analysis and full text
-- [ ] Collation: keep candidate self-statements out of the tallies
+- [x] User answers to the open questions (2026-10-22)
+- [x] Hosting decision: one repo per state and election
+- [ ] Build plan above
 
 ## Things not to do
 
