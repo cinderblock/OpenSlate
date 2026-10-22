@@ -177,10 +177,16 @@ of event names and low-cardinality, non-political dims is fine.
       Gotcha: the PWA service worker keeps serving the previous build until
       it updates. Check `document.scripts` for the new `index-*.js` before
       testing.
-- [ ] Seeing the counts in the collector needs `CF_ACCOUNT_ID` /
-      `CF_ANALYTICS_TOKEN` on the worker (usage is read back from Analytics
-      Engine). Events are now flowing, so the 90-day clock started
-      2026-10-21. Without them the daily rollup can't copy usage into D1.
+- [x] `CF_ACCOUNT_ID` / `CF_ANALYTICS_TOKEN` on the worker, set by the user
+      in the dashboard 2026-10-21 11:39 PM PDT (06:39Z). The token is an
+      **account-owned** API token (Account Analytics: Read, no TTL), so it
+      doesn't depend on the user's login; Cloudflare suggests that type. The
+      Analytics Engine SQL API accepts it: `/usage` showed 13 `page.view`
+      for 10-22 (UTC), all from tonight's live tests.
+      **Gotcha:** `CF_ACCOUNT_ID` was added as plain text. `wrangler deploy`
+      replaces plain-text vars with `wrangler.toml`'s `[vars]` (and keeps
+      secrets), so the next collector deploy would drop it. The user should
+      switch it to Secret, which is how the collector's `wrangler.toml` lists it.
 - [ ] **telemetry-collector has never been deployed.** Findings 2026-10-17:
       its only Workers Build (deploy@7a2d14e, 2026-09-25) failed with
       "UnknownLockfileVersion" because the trigger has no `BUN_VERSION` (image
