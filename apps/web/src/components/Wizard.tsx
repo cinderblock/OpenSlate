@@ -484,8 +484,20 @@ function AreaStep({
         <AreaPicker options={options} area={area} election={election} onChange={setArea} />
       )}
       <WizardFooter onBack={onBack} onSkip={onSkip}>
-        <button type="button" className="primary" onClick={onNext}>
-          {isAreaSet(area) ? "Next →" : "Skip, show everything →"}
+        {/* Picking an area is the way through; showing everything stays a quiet
+            way out, and only once there's a picker to pass up. */}
+        {!loading && !isAreaSet(area) && (
+          <button type="button" className="link" onClick={onNext}>
+            Show every race instead
+          </button>
+        )}
+        <button
+          type="button"
+          className="primary"
+          onClick={onNext}
+          disabled={loading || !isAreaSet(area)}
+        >
+          Next →
         </button>
       </WizardFooter>
     </>
