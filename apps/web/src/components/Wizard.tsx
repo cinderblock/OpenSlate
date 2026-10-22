@@ -489,7 +489,7 @@ function AreaStep({
         {/* Picking an area is the way through; showing everything stays a quiet
             way out, and only once there's a picker to pass up. */}
         {!loading && !isAreaSet(area) && (
-          <button type="button" className="link" onClick={onNext}>
+          <button type="button" className="hollow" onClick={onNext}>
             Show every race instead
           </button>
         )}
@@ -666,9 +666,15 @@ function SourcesStep({
         )}
       </p>
       <WizardFooter onBack={onBack} onSkip={onSkip}>
-        <button type="button" className="primary" onClick={onNext}>
+        {/* Following someone is the way through, as on the area step. */}
+        {selected.size === 0 && (
+          <button type="button" className="hollow" onClick={onNext}>
+            Continue without sources
+          </button>
+        )}
+        <button type="button" className="primary" onClick={onNext} disabled={selected.size === 0}>
           {selected.size === 0
-            ? "Continue without sources"
+            ? "Follow and see my ballot →"
             : `Follow ${selected.size} and see my ballot →`}
         </button>
       </WizardFooter>
@@ -777,7 +783,7 @@ function IdentityStep({
             >
               {backedUp ? "Downloaded ✓" : "Download backup"}
             </button>
-            <button type="button" className={backedUp ? "primary" : ""} onClick={onDone}>
+            <button type="button" className={backedUp ? "primary" : "hollow"} onClick={onDone}>
               Continue to Compose →
             </button>
           </WizardFooter>

@@ -331,6 +331,10 @@ button.primary {
   border-color: var(--accent);
   color: #fff;
 }
+/* Outline only: a way past the usual step, beside the primary that is the usual step. */
+button.hollow {
+  background: none;
+}
 button.danger {
   color: var(--bad);
 }
