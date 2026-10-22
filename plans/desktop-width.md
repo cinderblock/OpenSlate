@@ -78,13 +78,16 @@ Mobile layout must stay as it is.
   checkout. After it committed `1fe36cd`, rebased onto that; typecheck, 234
   tests, Biome and build pass. The district map renders at 1777x416 at
   1920px, state centred, which is fine. Fast-forward, local only.
-- [ ] Push `master`: waiting on the user. A push deploys openslate.us.
+- [x] Pushed and live (2026-10-21). The district-map basemap thread's push,
+  which the user approved, carried `73a0e53`, `0579a6c` and `c949329` along.
+  The user then said yes to this push too, but nothing of ours was left to
+  push. openslate.us's CSS has `race-grid`, `card-columns`, `sources-layout`
+  and `120rem`.
 
 ## Open questions for the user
 
 1. ~~Merge into `master`?~~ Yes (2026-10-21). Done.
-2. Push `master`? It deploys openslate.us, and master may carry other
-   threads' commits too, so this needs its own yes.
+2. ~~Push `master`?~~ Yes (2026-10-21). Already pushed by the basemap thread.
 
 ## Things not to do
 
