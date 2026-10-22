@@ -174,6 +174,12 @@ All built on `feat/feedback`, pushed and live. **Current step: the
      and `VITE_TELEMETRY_KEY=<key>` to `apps/web/.env.production`, push,
      send one test report from openslate.us and check it in the admin UI.
    Needs the user logged in to the admin UI in Chrome (passkey).
+   **Note from the usage-analytics thread (2026-10-21):** app `openslate`
+   is registered. The secret is a secret build variable on `openslate-web`,
+   and `vite.config.ts` derives the channel `web` key at build time instead
+   of committing it. `.env.production` now holds `VITE_TELEMETRY_ENDPOINT`.
+   Private feedback turns on with the next deploy. See
+   `plans/usage-analytics.md`.
 2. **`data` label** on GitHub issues for the "Wrong or missing
    information" form. GitHub skips labels that don't exist (`bug` and
    `enhancement` do). Create it, or point the form at an existing label?

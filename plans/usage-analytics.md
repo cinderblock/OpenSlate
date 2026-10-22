@@ -161,8 +161,11 @@ of event names and low-cardinality, non-political dims is fine.
       local push". So a new package's first publish may be local, with the
       user's go-ahead at that moment, solely to enable trusted publishing.
       Every later version comes from CI.
-- [ ] OpenSlate: wire `setUsageSink` in main.tsx with `VITE_TELEMETRY_ENDPOINT`
-      / `VITE_TELEMETRY_KEY`.
+- [x] OpenSlate: wire `setUsageSink` in main.tsx with `VITE_TELEMETRY_ENDPOINT`
+      / `VITE_TELEMETRY_KEY` (2026-10-21, key derived at build; see the npm
+      section's end).
+- [ ] After deploy: opt in on openslate.us, check one live request body,
+      opt back out; confirm the event in the collector.
 - [ ] **telemetry-collector has never been deployed.** Findings 2026-10-17:
       its only Workers Build (deploy@7a2d14e, 2026-09-25) failed with
       "UnknownLockfileVersion" because the trigger has no `BUN_VERSION` (image
@@ -301,14 +304,37 @@ core `^0.1.0`, cli bin intact.
 
 `openslate` app registered 2026-10-21 (id `openslate`, name "OpenSlate"),
 driven through the admin UI in the user's browser session. Its app secret
-is shown once on that page; the agent never read or recorded it. Next: the
-user stores it, then (recommended) adds it as a secret build variable
-`TELEMETRY_COLLECTOR_APP_SECRET` on the OpenSlate Workers Builds trigger(s)
-so each build derives its own ingest key with `--channel <version>` (the
-README's intended flow: a channel per version or preview, created on first
-sight). Alternative: one fixed channel key, derived once by the user and
-committed to `.env.production` (public value), which loses per-version
-grouping.
+is shown once on that page; the agent never read or recorded it. The user
+saved it as a **secret build variable** `TELEMETRY_COLLECTOR_APP_SECRET` on
+the `openslate-web` trigger (dashboard → Settings → Build → Variables and
+secrets; the runtime "Variables and Secrets" section refuses with "Variables
+cannot be added to a Worker that only has static assets"; wrangler has no
+build-variable command). Created 2026-10-21 10:56 PM PDT
+(2026-10-22 05:56Z), verified via the Builds API: `is_secret=true`, value null.
+
+**Channel decision:** fixed channel `web`, with `release` = the short commit.
+The collector stores `release` separately from the channel (worker
+`ingest/usage.ts`), so per-version breakdown survives, and a channel per
+commit would add a row to the Channels tab on every deploy. Retiring a
+version (410) matters for shipped binaries, not a site that updates on
+reload. `web` is also what `plans/feedback.md` proposed, so both features
+share one key.
+
+**Wired (step 6):** `vite.config.ts` derives the key from the build variable
+(`deriveIngestKey(secret, "openslate", "web")`, from
+`telemetry-collector-core`) and defines `VITE_TELEMETRY_KEY`. A
+`neverBundle` plugin fails the build if the secret appears in any output.
+`.env.production` holds only `VITE_TELEMETRY_ENDPOINT`. A build without the
+secret (local, forks) has no key, so it reports nowhere. `src/lib/telemetry.ts`
+holds a 5 s batch itself (the SDK's own queue can't be dropped, so an
+opt-out would still have sent it). It re-checks the switch at send time and
+`setUsageEnabled(false)` calls `sink.discard()`, then hands the batch to the
+SDK `Client` and calls `flushUsage()`. Flushes on pagehide or hidden. Uses
+`new Client`, not `init`, so the SDK's global helpers stay no-ops. Tests
+(`test/telemetry.test.ts`) include the exact request body through the real
+SDK: `{events:[{event,dims}],release,environment}`. Local build with a
+throwaway secret: key in bundle, secret absent. Without it: no `ek1.`
+anywhere.
 
 ## Open questions for the user
 
