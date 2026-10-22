@@ -26,19 +26,26 @@ export interface DecodedSlate {
   source: Source;
 }
 
+/**
+ * Verification results by token. A token never changes, so neither does its
+ * result, and every page that lists slates decodes the same few hundred.
+ */
+const verified = new Map<string, Omit<DecodedSlate, "token" | "importedAt"> | null>();
+
 /** Verify and decode imported slates. Unparseable tokens are dropped. */
 export function decodeSlates(rows: Array<{ token: string; importedAt: string }>): DecodedSlate[] {
   const out: DecodedSlate[] = [];
   for (const row of rows) {
-    const result = verifySlate(row.token);
-    if (!result.payload) continue;
-    out.push({
-      token: row.token,
-      importedAt: row.importedAt,
-      payload: result.payload,
-      valid: result.valid,
-      source: sourceOf(result.payload),
-    });
+    let decoded = verified.get(row.token);
+    if (decoded === undefined) {
+      const result = verifySlate(row.token);
+      decoded = result.payload
+        ? { payload: result.payload, valid: result.valid, source: sourceOf(result.payload) }
+        : null;
+      verified.set(row.token, decoded);
+    }
+    if (!decoded) continue;
+    out.push({ token: row.token, importedAt: row.importedAt, ...decoded });
   }
   return out;
 }
