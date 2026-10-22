@@ -41,6 +41,12 @@ everything →" didn't advance either, and hash navigation stopped re-rendering
 the page until a reload. The preview tab wasn't visible at the time, which may
 be a factor. Matters because this is the first thing a new visitor does.
 
+Seen again 2026-10-22 1:15 AM PDT (08:15Z), fresh incognito T3 preview (hidden
+tab): right after "Plan my vote" the page stopped answering automation
+entirely (snapshot and evaluate timed out for over a minute). Since `bce1106`
+the area step has no forward button while loading (Next waits for the
+picker), so a stuck load now leaves only Back and "Skip setup".
+
 ## Dark theme: some text and white-on-colour fills fall below 4.5:1
 
 Dark `--bad` (`#e74c3c`) as text measures 4.41:1 on `--surface` and 4.02:1 on
