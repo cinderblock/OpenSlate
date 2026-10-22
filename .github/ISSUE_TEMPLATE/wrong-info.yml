@@ -1,0 +1,34 @@
+# Opened from the app's "Send feedback" dialog with `description`, `page`
+# and `version` prefilled (apps/web/src/lib/feedback.ts). Keep those ids.
+name: Wrong or missing information
+description: A candidate, measure, district, endorsement or result that's wrong, out of date or missing.
+labels: [data]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Everything here is public.** Don't paste anything you'd rather keep
+        to yourself, such as your picks, address or signing keys.
+  - type: textarea
+    id: description
+    attributes:
+      label: What's wrong?
+      description: What OpenSlate shows, and what it should show instead.
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: A link to where the correct information is published, if you have one.
+      placeholder: https://
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      description: Which screen of OpenSlate you were on.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Filled in by the app. Leave it as is.

@@ -1,0 +1,28 @@
+# Opened from the app's "Send feedback" dialog with `description`, `page`
+# and `version` prefilled (apps/web/src/lib/feedback.ts). Keep those ids.
+name: Idea or suggestion
+description: Something OpenSlate could do, or do better.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Everything here is public.** Don't paste anything you'd rather keep
+        to yourself, such as your picks, address or signing keys.
+  - type: textarea
+    id: description
+    attributes:
+      label: Your idea
+      description: What you'd like, and what it would help you do.
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      description: Which screen of OpenSlate you were on, if it's about one.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Filled in by the app. Leave it as is.

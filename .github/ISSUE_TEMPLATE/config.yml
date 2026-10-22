@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Send feedback privately
+    url: https://openslate.us/
+    about: Use "Send feedback" at the bottom of any page in OpenSlate. It goes to the developer, not to GitHub, and can include a screenshot.

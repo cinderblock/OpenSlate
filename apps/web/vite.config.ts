@@ -1,8 +1,21 @@
+import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import optimizeLocales from "@react-aria/optimize-locales-plugin";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+
+// Which build this is, for feedback reports and issue links (src/lib/feedback.ts).
+// Workers Builds sets WORKERS_CI_COMMIT_SHA; locally, ask git.
+function buildCommit(): string {
+  const ci = process.env.WORKERS_CI_COMMIT_SHA;
+  if (ci) return ci.slice(0, 7);
+  try {
+    return execSync("git rev-parse --short=7 HEAD", { encoding: "utf8" }).trim();
+  } catch {
+    return "unknown";
+  }
+}
 
 // Alias the workspace core package to its TypeScript source so Vite compiles it
 // as part of the app (Vite does not transpile TS inside node_modules by default).
@@ -50,6 +63,9 @@ export default defineConfig({
       },
     }),
   ],
+  define: {
+    "import.meta.env.VITE_COMMIT": JSON.stringify(buildCommit()),
+  },
   resolve: {
     alias: {
       "@openslate/core": fileURLToPath(

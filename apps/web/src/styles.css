@@ -350,6 +350,97 @@ footer a:hover {
   color: inherit;
 }
 
+footer button.link {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: inherit;
+}
+footer button.link:hover {
+  text-decoration: underline;
+}
+
+/* Feedback dialog (components/FeedbackDialog.tsx) */
+dialog.feedback-dialog::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+.feedback-dialog {
+  width: min(600px, calc(100% - 2rem));
+  max-height: 92vh;
+  overflow-y: auto;
+  margin: 4vh auto;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.feedback-dialog:not([open]) {
+  display: none;
+}
+/* The dialog scrolls when it's taller than the window; without this the
+   flex column squeezes its children (the message box) instead. */
+.feedback-dialog > * {
+  flex-shrink: 0;
+}
+.feedback-dialog h2 {
+  margin: 0;
+}
+.feedback-dialog h2:focus {
+  outline: none;
+}
+.feedback-route {
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.feedback-route h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+.feedback-route p {
+  margin: 0;
+}
+.feedback-shot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-left: 1.6rem;
+}
+.feedback-shot-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 260px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.feedback-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+/* A link that leaves the app, dressed as a button. */
+a.button-link {
+  display: inline-block;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 0.5rem 0.6rem;
+  text-decoration: none;
+}
+a.button-link:hover {
+  border-color: var(--accent);
+}
+
 /* QR dialog */
 .qr-dialog {
   border: 1px solid var(--border);
