@@ -61,7 +61,8 @@ loading map images shows USGS roughly where you're looking, so the map says
 so and can switch the background off. A district with no race
 this election (e.g. an odd-numbered State Senate seat in 2026) says so on My
 ballot. Or skip all that and choose your city and district numbers from lists
-yourself.
+yourself. The app is light or dark to match your device; Settings →
+Appearance picks one for this browser instead.
 
 ### Your Own Servers
 

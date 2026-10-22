@@ -1,4 +1,65 @@
+/* Theme: light here; dark when the OS asks for it (unless the user picked
+   Light) or the user picked Dark — Settings → Appearance stamps data-theme on
+   <html> (lib/theme.ts, public/theme.js). The two dark blocks must match, and
+   index.html's critical CSS repeats --bg and --text: test/theme.test.ts checks
+   both, plus text contrast. Text colours clear 4.5:1 on --bg and both surfaces. */
 :root {
+  color-scheme: light;
+  --bg: #f3f4f6;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+  --border: #d3d8e0;
+  --text: #1b1f24;
+  --muted: #596273;
+  --accent: #0f62d6;
+  --ok: #18794a;
+  --bad: #c52a2a;
+  --warn: #8a5a00;
+  --lean-for: #3b7a52;
+  --lean-against: #9a5430;
+  --jws-header: #b4236e;
+  --jws-payload: #6a3fc0;
+  --jws-signature: #0b6a88;
+  /* District map: see .map-color-0 below. */
+  --map-0: #eda100;
+  --map-1: #e87ba4;
+  --map-2: #008300;
+  --map-3: #6250d6;
+  --map-tile-opacity: 1;
+  --backdrop: rgb(15 17 21 / 0.4);
+  --shadow: rgb(15 17 21 / 0.18);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0f1115;
+    --surface: #1a1d24;
+    --surface-2: #21252e;
+    --border: #2c313c;
+    --text: #e6e8ec;
+    --muted: #9aa3b2;
+    --accent: #4f8cff;
+    --ok: #2ecc71;
+    --bad: #e74c3c;
+    --warn: #f1c40f;
+    --lean-for: #7fd8a0;
+    --lean-against: #e8a87c;
+    --jws-header: #ff79c6;
+    --jws-payload: #bd93f9;
+    --jws-signature: #8be9fd;
+    --map-0: #b87b04;
+    --map-1: #c24c78;
+    --map-2: #037904;
+    --map-3: #847bd5;
+    /* Tone the white street map down to sit in the dark app. */
+    --map-tile-opacity: 0.85;
+    --backdrop: rgb(0 0 0 / 0.6);
+    --shadow: rgb(0 0 0 / 0.5);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
   --bg: #0f1115;
   --surface: #1a1d24;
   --surface-2: #21252e;
@@ -9,7 +70,19 @@
   --ok: #2ecc71;
   --bad: #e74c3c;
   --warn: #f1c40f;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --lean-for: #7fd8a0;
+  --lean-against: #e8a87c;
+  --jws-header: #ff79c6;
+  --jws-payload: #bd93f9;
+  --jws-signature: #8be9fd;
+  --map-0: #b87b04;
+  --map-1: #c24c78;
+  --map-2: #037904;
+  --map-3: #847bd5;
+  /* Tone the white street map down to sit in the dark app. */
+  --map-tile-opacity: 0.85;
+  --backdrop: rgb(0 0 0 / 0.6);
+  --shadow: rgb(0 0 0 / 0.5);
 }
 
 * {
@@ -320,10 +393,10 @@ button.link {
   border-color: var(--bad);
 }
 .stance-lean_for {
-  color: #7fd8a0;
+  color: var(--lean-for);
 }
 .stance-lean_against {
-  color: #e8a87c;
+  color: var(--lean-against);
 }
 .stance-neutral,
 .stance-abstain {
@@ -359,8 +432,9 @@ footer a:hover {
   padding: 0;
   max-width: 90vw;
 }
+/* Older browsers don't let ::backdrop inherit custom properties: fall back. */
 .qr-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--backdrop, rgb(0 0 0 / 0.6));
 }
 .qr-dialog-inner {
   padding: 1.25rem;
@@ -394,13 +468,13 @@ footer a:hover {
   line-height: 1.5;
 }
 .jws-header {
-  color: #ff79c6;
+  color: var(--jws-header);
 }
 .jws-payload {
-  color: #bd93f9;
+  color: var(--jws-payload);
 }
 .jws-signature {
-  color: #8be9fd;
+  color: var(--jws-signature);
 }
 .jws-sep {
   color: var(--muted);
@@ -867,22 +941,25 @@ footer a:hover {
   fill: var(--surface);
   stroke: none;
 }
-/* Four map colours (neighbours never share one; see fourColor in lib/geo.ts):
-   the dataviz reference dark slots yellow, magenta, green and violet at 90%
-   over --surface. Validated as a set against #1a1d24 with every pair compared
-   (plans/district-map-readability.md); the closest pair for colour-blind
-   eyes relies on the gap and the labels, which every district has. */
+/* Four map colours (neighbours never share one; see fourColor in lib/geo.ts),
+   --map-0..3 in the theme blocks: the dataviz reference slots yellow, magenta,
+   green and violet. Dark: the dark slots at 90% over --surface, validated as a
+   set against #1a1d24 with every pair compared (plans/district-map-readability.md).
+   Light: the light slots at full strength, validated against #ffffff the same
+   way (plans/light-mode.md). The closest pair for colour-blind eyes, and the
+   light yellow and magenta's low contrast, rely on the gap and the labels,
+   which every district has. */
 .map-color-0 {
-  --map-color: #b87b04;
+  --map-color: var(--map-0);
 }
 .map-color-1 {
-  --map-color: #c24c78;
+  --map-color: var(--map-1);
 }
 .map-color-2 {
-  --map-color: #037904;
+  --map-color: var(--map-2);
 }
 .map-color-3 {
-  --map-color: #847bd5;
+  --map-color: var(--map-3);
 }
 .map-fills path,
 .map-highlight {
@@ -941,8 +1018,7 @@ footer a:hover {
   background: #0d1f2d;
 }
 .basemap-streets .map-tiles {
-  /* Tone the white street map down to sit in the dark app. */
-  opacity: 0.85;
+  opacity: var(--map-tile-opacity);
 }
 .basemap-streets .map-fills path,
 .basemap-satellite .map-fills path {
@@ -1180,7 +1256,7 @@ details.card > summary {
 }
 /* Getting-started wizard */
 dialog.wizard::backdrop {
-  background: rgb(0 0 0 / 0.6);
+  background: var(--backdrop, rgb(0 0 0 / 0.6));
 }
 .wizard {
   width: min(640px, calc(100% - 2rem));
@@ -1192,7 +1268,7 @@ dialog.wizard::backdrop {
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 1.5rem;
-  box-shadow: 0 20px 60px rgb(0 0 0 / 0.5);
+  box-shadow: 0 20px 60px var(--shadow);
 }
 .wizard h2 {
   margin: 0 0 0.75rem;
@@ -1886,7 +1962,7 @@ button.tag.active {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
-  box-shadow: 0 12px 40px rgb(0 0 0 / 0.5);
+  box-shadow: 0 12px 40px var(--shadow);
   overflow: auto;
   outline: none;
 }
@@ -2025,11 +2101,11 @@ button.tag.active {
 }
 .ui-option.stance-opt-lean_for .ui-option-label,
 .ui-select-value-label.stance-opt-lean_for {
-  color: #7fd8a0;
+  color: var(--lean-for);
 }
 .ui-option.stance-opt-lean_against .ui-option-label,
 .ui-select-value-label.stance-opt-lean_against {
-  color: #e8a87c;
+  color: var(--lean-against);
 }
 .ui-option.stance-opt-neutral .ui-option-label,
 .ui-option.stance-opt-abstain .ui-option-label,
@@ -2346,7 +2422,7 @@ button.tag.active {
   border-radius: 50%;
   background: #fff;
   border: 3px solid var(--accent);
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.5);
+  box-shadow: 0 1px 4px var(--shadow);
   transition: scale 0.1s;
 }
 /* `scale`, not `transform`: RAC centres the thumb with an inline transform. */

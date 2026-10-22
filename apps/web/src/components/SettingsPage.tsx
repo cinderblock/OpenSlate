@@ -1,4 +1,5 @@
 import { AddressLookupsPanel } from "./AddressLookupsPanel";
+import { AppearancePanel } from "./AppearancePanel";
 import { RoutingPanel } from "./RoutingPanel";
 import { UsageStatsPanel } from "./UsageStatsPanel";
 
@@ -8,6 +9,7 @@ export function SettingsPage() {
       <AddressLookupsPanel />
       <RoutingPanel />
       <UsageStatsPanel />
+      <AppearancePanel />
     </div>
   );
 }
