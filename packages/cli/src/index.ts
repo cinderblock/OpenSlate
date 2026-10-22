@@ -1,9 +1,10 @@
 #!/usr/bin/env bun
 import { existsSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative, sep } from "node:path";
 import {
   type Adoption,
   type Attribution,
+  type GuideManifest,
   type Position,
   type Reference,
   type SlatePayload,
@@ -13,14 +14,20 @@ import {
   createIdentity,
   decodeToken,
   deserializeIdentity,
+  guideItemFiles,
+  guideItemSchema,
+  guideManifestSchema,
   identityToIssuer,
   parseSlate,
   resolveAdoptions,
   serializeIdentity,
+  sha256,
+  signGuide,
   signSlate,
   slateEntity,
   slatePayloadSchema,
   subjectIdentity,
+  verifyGuide,
   verifySlate,
 } from "@openslate/core";
 
@@ -36,6 +43,9 @@ Usage:
   openslate inspect <token|file|->
   openslate adopt <token|file|url> --mode copy|reference|embed [--uri U] [--subjects file.json]
                   [--match TEXT] [--source U] [--into positions.json]
+  openslate guide check <dir>
+  openslate guide sign <dir> --key <identity.json> [-o guide.jws]
+  openslate guide verify <file|url> [--expect KEY] [--files]
 
 A <positions.json> is either a JSON array of Position objects, or an object
 { "positions": [...], "endorsed_by": [...], "attribution": {...}, "adopts": [...],
@@ -63,6 +73,15 @@ signed.slate already exists are skipped unless --force.
 
 validate is a schema-only check (no crypto) of a complete SlatePayload JSON
 file — useful for CI on hand-authored research data before signing.
+
+guide publishes an election authority's voter guide (candidate statements and
+photos, a measure's summary, analysis, arguments and full text) as reference
+material, not positions. <dir> holds guide.json ({ "context", "attribution" }),
+items/*.json (one GuideItem per race or measure) and the files they point at.
+check validates every item and that each file it names exists. sign also
+hashes every file under <dir> into a manifest and signs it (default output
+<dir>/guide.jws). verify checks a signed manifest; --files fetches or reads
+every file it lists and checks its hash.
 
 Keys are Ed25519, encoded "ed25519:<base58>". keygen output contains the SECRET
 key — keep it safe.`;
@@ -545,6 +564,121 @@ async function cmdAdopt(rest: string[]): Promise<void> {
   }
 }
 
+/** Every file under `dir`, as `/`-separated paths relative to it. */
+function walkFiles(dir: string, base = dir): string[] {
+  const out: string[] = [];
+  for (const name of readdirSync(dir).sort()) {
+    const full = join(dir, name);
+    if (statSync(full).isDirectory()) out.push(...walkFiles(full, base));
+    else out.push(relative(base, full).split(sep).join("/"));
+  }
+  return out;
+}
+
+const GUIDE_META = "guide.json";
+const GUIDE_OUT = "guide.jws";
+
+/** Validate a guide directory; returns the manifest minus issuer and signature details. */
+async function buildGuide(dir: string): Promise<Omit<GuideManifest, "issuer" | "issued_at">> {
+  const metaPath = join(dir, GUIDE_META);
+  if (!existsSync(metaPath)) fail(`${metaPath} not found`);
+  const meta = JSON.parse(await Bun.file(metaPath).text()) as Pick<
+    GuideManifest,
+    "context" | "attribution"
+  >;
+
+  const paths = walkFiles(dir).filter((p) => p !== GUIDE_META && p !== GUIDE_OUT);
+  const present = new Set(paths);
+  const problems: string[] = [];
+  const items: GuideManifest["items"] = [];
+  for (const path of paths.filter((p) => p.startsWith("items/") && p.endsWith(".json"))) {
+    const parsed = guideItemSchema.safeParse(JSON.parse(await Bun.file(join(dir, path)).text()));
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues)
+        problems.push(`${path} ${issue.path.join(".")}: ${issue.message}`);
+      continue;
+    }
+    for (const file of guideItemFiles(parsed.data)) {
+      if (!present.has(file)) problems.push(`${path}: names ${file}, which is missing`);
+    }
+    items.push({ subject: parsed.data.subject, file: path });
+  }
+  if (problems.length > 0) fail(`guide ${dir} has problems:\n  ${problems.join("\n  ")}`);
+
+  const files: Record<string, string> = {};
+  for (const path of paths)
+    files[path] = await sha256(new Uint8Array(await Bun.file(join(dir, path)).arrayBuffer()));
+  return { v: 1, ...meta, items, files };
+}
+
+async function cmdGuide(rest: string[]): Promise<void> {
+  const [sub, ...args] = rest;
+  const { flags, positional } = parseFlags(args);
+  const target = positional[0];
+  if (!target) fail(`usage: openslate guide check|sign|verify ...\n\n${USAGE}`);
+
+  if (sub === "check") {
+    const guide = await buildGuide(target);
+    console.error(`ok: ${guide.items.length} item(s), ${Object.keys(guide.files).length} file(s)`);
+    return;
+  }
+
+  if (sub === "sign") {
+    const keyPath = strFlag(flags, "key");
+    if (!keyPath) fail("guide sign needs --key <identity.json>");
+    const identity = deserializeIdentity(JSON.parse(await readText(keyPath)) as StoredIdentity);
+    const guide = await buildGuide(target);
+    const manifest = guideManifestSchema.parse({
+      ...guide,
+      issuer: identityToIssuer(identity),
+      issued_at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
+    });
+    const token = signGuide(manifest, identity.keyPair.secretKey);
+    const check = verifyGuide(token);
+    if (!check.valid) fail(`signed guide does not verify: ${check.errors.join("; ")}`);
+    const out = strFlag(flags, "o", "out") ?? join(target, GUIDE_OUT);
+    await Bun.write(out, `${token}\n`);
+    console.error(
+      `signed ${manifest.items.length} item(s), ${Object.keys(manifest.files).length} file(s) → ${out}`,
+    );
+    console.log(manifest.issuer.key);
+    return;
+  }
+
+  if (sub === "verify") {
+    const isUrl = /^https?:\/\//.test(target);
+    const token = await resolveToken(target);
+    const result = verifyGuide(token, { expectedKey: strFlag(flags, "expect") });
+    if (!result.valid || !result.manifest) fail(`INVALID guide:\n  ${result.errors.join("\n  ")}`);
+    const manifest = result.manifest;
+    console.error(
+      `valid guide by ${manifest.issuer.name ?? manifest.issuer.key} (${manifest.issuer.key}), ${manifest.items.length} item(s)`,
+    );
+    if (flags.files) {
+      const bad: string[] = [];
+      for (const [path, expected] of Object.entries(manifest.files)) {
+        let bytes: Uint8Array;
+        if (isUrl) {
+          const response = await fetch(new URL(path, target));
+          if (!response.ok) {
+            bad.push(`${path}: HTTP ${response.status}`);
+            continue;
+          }
+          bytes = new Uint8Array(await response.arrayBuffer());
+        } else {
+          bytes = new Uint8Array(await Bun.file(join(target, "..", path)).arrayBuffer());
+        }
+        if ((await sha256(bytes)) !== expected) bad.push(`${path}: hash mismatch`);
+      }
+      if (bad.length > 0) fail(`files that don't match the manifest:\n  ${bad.join("\n  ")}`);
+      console.error(`all ${Object.keys(manifest.files).length} file(s) match`);
+    }
+    return;
+  }
+
+  fail(`unknown guide command: ${sub}\n\n${USAGE}`);
+}
+
 const [command, ...rest] = process.argv.slice(2);
 
 switch (command) {
@@ -568,6 +702,9 @@ switch (command) {
     break;
   case "adopt":
     await cmdAdopt(rest);
+    break;
+  case "guide":
+    await cmdGuide(rest);
     break;
   case "help":
   case "--help":

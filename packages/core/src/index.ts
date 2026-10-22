@@ -8,3 +8,4 @@ export * from "./identity";
 export * from "./results";
 export * from "./polls";
 export * from "./forecasts";
+export * from "./guide";
