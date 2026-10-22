@@ -194,6 +194,14 @@ of event names and low-cardinality, non-political dims is fine.
       `CF_ACCOUNT_ID` to the telemetry-collector trigger, **then** pushes
       master to `deploy` (order matters: without the build var, that deploy
       removes the dashboard copy).
+      **Done 2026-10-22 12:01 AM PDT (07:01Z):** the user set the build var;
+      deploy pushed 664d56d..1f2e0c0 with their yes; build 0382063b succeeded
+      (log: `account id = c5987…`, "No migrations to apply", the binding
+      listed as an Environment Variable; version c2fd9959). Worker settings
+      show `CF_ACCOUNT_ID` as plain text from a wrangler deployment. Custom
+      domain `/login` 200, workers.dev 404, `/usage` still 13 `page.view`.
+      The ops plan's "Still outstanding: CF_* secrets" line is now stale;
+      fix it in the next ops commit.
 - [ ] **telemetry-collector has never been deployed.** Findings 2026-10-17:
       its only Workers Build (deploy@7a2d14e, 2026-09-25) failed with
       "UnknownLockfileVersion" because the trigger has no `BUN_VERSION` (image
