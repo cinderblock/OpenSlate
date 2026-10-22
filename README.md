@@ -288,7 +288,9 @@ Analytics and the zone settings are managed in
 Cloudflare credential.
 
 `apps/web/.env.production` is committed on purpose: everything in it ships in
-the public bundle anyway. The hosted app's address lookups are the Census
+the public bundle anyway. Private feedback needs `VITE_TELEMETRY_ENDPOINT` and
+`VITE_TELEMETRY_KEY` (telemetry-collector's public ingest key) there; without
+them the feedback dialog offers GitHub issues only. The hosted app's address lookups are the Census
 relay on `polls.openslate.us` and OpenStreetMap; Google's needs `apps/server`
 with a `GOOGLE_API_KEY`.
 
@@ -323,6 +325,13 @@ different package manager; `BUN_VERSION` should match the Bun that wrote
    scripts, so no third-party analytics can load. The exact list is in
    Settings → Usage statistics; the rules are in
    [`apps/web/src/lib/usage.ts`](./apps/web/src/lib/usage.ts).
+   **Feedback goes only where you send it.** "Send feedback" in the footer
+   either opens a prefilled public GitHub issue (from the forms in
+   [`.github/ISSUE_TEMPLATE/`](./.github/ISSUE_TEMPLATE/)) or sends a private
+   report to the developer's telemetry-collector. A private report carries
+   what you typed, the screen's route template (never the slate in the URL),
+   the build, and, only if you ask for one and after you've seen it, a
+   screenshot. See [`apps/web/src/lib/feedback.ts`](./apps/web/src/lib/feedback.ts).
 3. **One source of truth.** Signing and the schema live only in `@openslate/core`.
 4. **Reimplementable.** The format is plain JSON + Ed25519 + JCS — easy to build
    in any language. The published JSON Schema helps.

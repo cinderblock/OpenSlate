@@ -187,7 +187,9 @@ export function TextArea(props: TextAreaProps) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when the text changes
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    // Not rendered yet (e.g. inside a <dialog> that isn't open): there's
+    // nothing to measure, and sizing to 0 would stick. Keep `rows` for now.
+    if (!el || el.getClientRects().length === 0) return;
     el.style.height = "auto";
     const style = getComputedStyle(el);
     const px = (value: string) => Number.parseFloat(value) || 0;

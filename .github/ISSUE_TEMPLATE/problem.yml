@@ -1,0 +1,36 @@
+# Opened from the app's "Send feedback" dialog with `description`, `page`
+# and `version` prefilled (apps/web/src/lib/feedback.ts). Keep those ids.
+name: Something's broken
+description: A bug, an error message, or something that doesn't work the way it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this. **Everything here is public.** Don't paste
+        anything you'd rather keep to yourself, such as your picks, address or
+        signing keys. To report something privately, use **Send feedback** at
+        the bottom of any page in OpenSlate.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead. Screenshots help; paste or drag them in here.
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      description: Which screen of OpenSlate you were on.
+      placeholder: My ballot
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Filled in by the app. Leave it as is.
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: Firefox on Windows, Safari on iPhone…

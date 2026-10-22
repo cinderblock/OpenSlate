@@ -1,7 +1,9 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { FeedbackHost } from "./components/FeedbackHost";
 import { WizardHost } from "./components/WizardHost";
 import { Switch } from "./components/ui/Switch";
 import { useDbStatus } from "./lib/dbStatus";
+import { openFeedback } from "./lib/feedback";
 import { useUsageEnabled } from "./lib/usage";
 import { openWizard } from "./lib/wizard";
 
@@ -125,6 +127,7 @@ export function RootLayout() {
       </main>
 
       <WizardHost />
+      <FeedbackHost />
 
       <footer>
         <span>Decentralized — your keys and data stay in this browser.</span>
@@ -132,6 +135,10 @@ export function RootLayout() {
         <a href="https://github.com/cinderblock/openslate" target="_blank" rel="noreferrer">
           GitHub
         </a>
+        {" · "}
+        <button type="button" className="link" onClick={openFeedback}>
+          Send feedback
+        </button>
         <UsageFooterToggle />
       </footer>
     </div>
