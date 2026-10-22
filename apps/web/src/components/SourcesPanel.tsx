@@ -1,3 +1,4 @@
+import { Landmark, Library, Link2, Scale, Trash2, UserCheck, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { type DecodedSlate, electionOf } from "../lib/collate";
 import { slatesCollection } from "../lib/collections";
@@ -6,8 +7,11 @@ import { followsStore, setFollowed, useDecodedSlates, useFollows } from "../lib/
 import { type Source, isBallotSource, isFollowed } from "../lib/sources";
 import { CatalogBrowser } from "./CatalogBrowser";
 import { ContactsCard } from "./ContactsCard";
+import { EndorserAvatar } from "./EndorserAvatar";
 import { ImportVerifyPanel } from "./ImportVerifyPanel";
+import { LeanMeter } from "./LeanMeter";
 import { SlatesList } from "./SlatesList";
+import { SpectrumStrip } from "./SpectrumStrip";
 import { Switch } from "./ui/Switch";
 
 interface SourceGroup {
@@ -69,7 +73,9 @@ export function SourcesPanel() {
       <div className={isReady && groups.length > 0 ? "sources-layout" : undefined}>
         {isReady && ballots.length > 0 && (
           <div className="card sources-ballot">
-            <h3>Ballot data</h3>
+            <h3>
+              <Landmark className="icon" /> Ballot data
+            </h3>
             <p className="hint">
               Official candidate lists. They aren't recommendations, so there's nothing to follow;
               they give each race its whole field.
@@ -84,7 +90,9 @@ export function SourcesPanel() {
 
         {isReady && groups.length > ballots.length && (
           <div className="card sources-following">
-            <h3>Following ({following.length})</h3>
+            <h3>
+              <UserCheck className="icon" /> Following ({following.length})
+            </h3>
             {following.length === 0 ? (
               <p className="hint">You aren't following anyone yet. Follow some from Add sources.</p>
             ) : (
@@ -107,8 +115,23 @@ export function SourcesPanel() {
           </div>
         )}
 
+        {isReady && following.length > 0 && (
+          <div className="card sources-spectrum">
+            <h3>
+              <Scale className="icon" /> Left to right
+            </h3>
+            <p className="hint">
+              Where the sources you follow sit, by the side they took wherever the Democratic and
+              Republican parties split. Tap one for its counts.
+            </p>
+            <SpectrumStrip sources={following.map((g) => g.source)} />
+          </div>
+        )}
+
         <div className="sources-add">
-          <h3 className="section-heading">Add sources</h3>
+          <h3 className="section-heading">
+            <UserPlus className="icon" /> Add sources
+          </h3>
           <div className="segmented" role="tablist" aria-label="Add sources from">
             <button
               type="button"
@@ -117,7 +140,7 @@ export function SourcesPanel() {
               className={addTab === "catalog" ? "active" : ""}
               onClick={() => setAddTab("catalog")}
             >
-              Public catalog
+              <Library className="icon" /> Public catalog
             </button>
             <button
               type="button"
@@ -126,7 +149,7 @@ export function SourcesPanel() {
               className={addTab === "paste" ? "active" : ""}
               onClick={() => setAddTab("paste")}
             >
-              Link, file, QR or paste
+              <Link2 className="icon" /> Link, file, QR or paste
             </button>
           </div>
           {addTab === "catalog" ? (
@@ -176,6 +199,7 @@ function SourceRow({ group }: { group: SourceGroup }) {
           aria-label={`Follow ${source.name}`}
         />
       )}
+      <EndorserAvatar sourceId={source.id} name={source.name} size="md" />
       <div className="grow">
         {source.uri ? (
           <a href={source.uri} target="_blank" rel="noreferrer">
@@ -187,17 +211,14 @@ function SourceRow({ group }: { group: SourceGroup }) {
         <div className="hint">
           {group.elections.map(formatElectionDate).join(", ") || "no election date"} ·{" "}
           {group.positions} {group.ballot ? "ballot lines" : "positions"} ·{" "}
-          {source.secondhand ? (
-            <span title={`Signed by ${source.signerKey}. ${source.name} did not sign this.`}>
-              reported by {source.signerName ?? "a researcher"}
-            </span>
-          ) : (
-            <span title={source.signerKey}>signed by them</span>
-          )}
+          {source.secondhand
+            ? `reported by ${source.signerName ?? "a researcher"}, not signed by them`
+            : "signed by them"}
           {group.slates.some((s) => !s.valid) && (
             <span className="warning"> · a slate failed verification</span>
           )}
         </div>
+        {!group.ballot && <LeanMeter sourceId={source.id} name={source.name} withWord />}
       </div>
       {confirming ? (
         <span className="row">
@@ -210,7 +231,7 @@ function SourceRow({ group }: { group: SourceGroup }) {
         </span>
       ) : (
         <button type="button" className="link danger" onClick={() => setConfirming(true)}>
-          remove
+          <Trash2 className="icon" /> remove
         </button>
       )}
     </li>

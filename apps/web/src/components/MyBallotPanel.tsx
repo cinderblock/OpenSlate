@@ -1,5 +1,23 @@
 import type { Stance } from "@openslate/core";
 import { Link } from "@tanstack/react-router";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  CircleCheck,
+  CircleHelp,
+  Download,
+  Focus,
+  List,
+  type LucideIcon,
+  MapPin,
+  PartyPopper,
+  PenLine,
+  Pencil,
+  Printer,
+  WandSparkles,
+  X,
+} from "lucide-react";
 import { type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProgressBar } from "react-aria-components";
 import { type DraftRow, NOTE_CHOICE, rowIdFor, useBallotDraft } from "../lib/ballotDraft";
@@ -33,9 +51,12 @@ import { type RaceStatus, isDecided, marksOn, raceStatus, stepThrough } from "..
 import { track } from "../lib/usage";
 import { openWizard } from "../lib/wizard";
 import { AreaPicker, describeArea } from "./AreaPicker";
+import { EndorserAvatar } from "./EndorserAvatar";
+import { LeanSummary } from "./LeanMeter";
 import { QuickFill } from "./QuickFill";
 import { electionOptions } from "./electionOptions";
 import { Checkbox } from "./ui/Checkbox";
+import { InfoPopover } from "./ui/InfoPopover";
 import { Segmented } from "./ui/Segmented";
 import { Select } from "./ui/Select";
 import { Switch } from "./ui/Switch";
@@ -45,10 +66,10 @@ import { TextArea } from "./ui/TextField";
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
 /** The user's own picks. Private: kept in this browser, only shared if they publish. */
-const PICKS: Array<{ stance: Stance; label: string; title: string }> = [
-  { stance: "endorse", label: "Pick", title: "My pick" },
-  { stance: "lean_for", label: "Maybe", title: "Leaning towards" },
-  { stance: "oppose", label: "Against", title: "Against" },
+const PICKS: Array<{ stance: Stance; label: string; icon: LucideIcon }> = [
+  { stance: "endorse", label: "Pick", icon: Check },
+  { stance: "lean_for", label: "Maybe", icon: CircleHelp },
+  { stance: "oppose", label: "Against", icon: X },
 ];
 
 const STANCE_WORD: Record<Stance, string> = {
@@ -353,7 +374,9 @@ export function MyBallotPanel() {
             aria-expanded={editingArea}
             onClick={() => setEditingArea((v) => !v)}
           >
-            {isAreaSet(area) ? describeArea(area) : "Everywhere (set your area)"} ✎
+            <MapPin className="icon" />{" "}
+            {isAreaSet(area) ? describeArea(area) : "Everywhere (set your area)"}{" "}
+            <Pencil className="icon" />
           </button>
         </div>
         <span className="grow" />
@@ -363,7 +386,7 @@ export function MyBallotPanel() {
           onClick={() => setFilling((v) => !v)}
           disabled={races.length === 0}
         >
-          Quick fill
+          <WandSparkles className="icon" /> Quick fill
         </button>
         <button
           type="button"
@@ -371,10 +394,10 @@ export function MyBallotPanel() {
           onClick={() => setExporting((v) => !v)}
           disabled={races.length === 0}
         >
-          Export
+          <Download className="icon" /> Export
         </button>
         <button type="button" onClick={() => window.print()} disabled={counts.picked === 0}>
-          Print my picks
+          <Printer className="icon" /> Print my picks
         </button>
       </div>
 
@@ -405,10 +428,10 @@ export function MyBallotPanel() {
               Include my private notes
             </Checkbox>
             <button type="button" onClick={() => exportBallot("json")}>
-              Download JSON
+              <Download className="icon" /> Download JSON
             </button>
             <button type="button" onClick={() => exportBallot("csv")}>
-              Download CSV
+              <Download className="icon" /> Download CSV
             </button>
             <button type="button" className="link" onClick={() => setExporting(false)}>
               close
@@ -480,14 +503,24 @@ export function MyBallotPanel() {
             aria-pressed={focusing}
             onClick={() => (focusing ? setFocusing(false) : startFocus())}
           >
-            {focusing ? "Show the whole list" : "One at a time"}
+            {focusing ? (
+              <>
+                <List className="icon" /> Show the whole list
+              </>
+            ) : (
+              <>
+                <Focus className="icon" /> One at a time
+              </>
+            )}
           </button>
         </div>
       )}
 
       {filter === "todo" && counts.todo === 0 && races.length > 0 && (
         <div className="card ballot-zero no-print">
-          <h3>Ballot zero 🎉</h3>
+          <h3>
+            <PartyPopper className="icon" /> Ballot zero
+          </h3>
           <p>
             Every race has a decision
             {counts.maybe > 0 ? `, except ${counts.maybe} you're still on the fence about` : ""}.{" "}
@@ -676,7 +709,7 @@ function DoneRace({
   return (
     <div className={`card race-done status-${status}`}>
       <span className={`race-done-status${isDecided(status) ? " decided" : ""}`}>
-        {isDecided(status) ? "✓ " : ""}
+        {isDecided(status) && <CircleCheck className="icon" />}
         {STATUS_LABEL[status]}
       </span>
       <strong className="race-done-title">{race.subject.title}</strong>
@@ -778,7 +811,7 @@ function FocusRace({
     <div className="focus-mode no-print">
       <div className="focus-bar">
         <button type="button" onClick={() => onStep(-1)} disabled={index <= 0}>
-          ← Previous
+          <ArrowLeft className="icon" /> Previous
         </button>
         <span className="focus-position">
           <span className="hint">{label} · </span>
@@ -786,7 +819,7 @@ function FocusRace({
           <span className="hint"> · {left} left</span>
         </span>
         <button type="button" onClick={() => onStep(1)} disabled={index >= total - 1}>
-          Next →
+          Next <ArrowRight className="icon" />
         </button>
       </div>
       <div
@@ -878,8 +911,8 @@ function RaceCardInner({
       </div>
       {mine && mine.length > 0 && (
         <p className="my-slate hint no-print">
-          ✍ You {mine.map(describeMine).join("; ")} · signed {formatLocalDate(mine[0]?.publishedAt)}{" "}
-          · <Link to="/publish">Compose</Link>
+          <PenLine className="icon" /> You {mine.map(describeMine).join("; ")} · signed{" "}
+          {formatLocalDate(mine[0]?.publishedAt)} · <Link to="/publish">Compose</Link>
         </p>
       )}
       <ul className="choice-list">
@@ -969,38 +1002,67 @@ function ChoiceRow({
         </div>
         {(followed.length > 0 || others.length > 0) && (
           <div className="source-chips">
-            {followed.map((position) => (
-              <span
-                key={position.source.id}
-                className={`source-chip tone-${stanceTone(position.stance)}`}
-                title={[
-                  `${position.source.name} ${STANCE_WORD[position.stance]} ${group.choice || race.subject.title}`,
-                  position.source.secondhand
-                    ? `Reported by ${position.source.signerName ?? "a researcher"}, not signed by ${position.source.name}`
-                    : "",
-                  position.statement ? `“${position.statement}”` : "",
-                  position.valid ? "" : "Signature did not verify",
-                ]
-                  .filter(Boolean)
-                  .join("\n")}
-              >
-                {stanceTone(position.stance) === "against" && "✗ "}
-                {position.stance === "lean_for" && "~ "}
-                {position.source.name}
-                {!position.valid && " ⚠"}
-              </span>
-            ))}
+            {followed.map((position) => {
+              const what = `${position.source.name} ${STANCE_WORD[position.stance]} ${group.choice || race.subject.title}`;
+              return (
+                <InfoPopover
+                  key={position.source.id}
+                  className={`source-chip tone-${stanceTone(position.stance)}`}
+                  bare={false}
+                  label={what}
+                  trigger={
+                    <>
+                      <EndorserAvatar sourceId={position.source.id} name={position.source.name} />
+                      {stanceTone(position.stance) === "against" && "✗ "}
+                      {position.stance === "lean_for" && "~ "}
+                      {position.source.name}
+                      {!position.valid && " ⚠"}
+                    </>
+                  }
+                >
+                  <div className="chip-detail-head">
+                    <EndorserAvatar
+                      sourceId={position.source.id}
+                      name={position.source.name}
+                      size="md"
+                    />
+                    <strong>{what}</strong>
+                  </div>
+                  {position.statement && <p>“{position.statement}”</p>}
+                  {position.source.secondhand && (
+                    <p className="hint">
+                      Reported by {position.source.signerName ?? "a researcher"}, not signed by{" "}
+                      {position.source.name}.
+                    </p>
+                  )}
+                  {!position.valid && <p className="warning">The signature did not verify.</p>}
+                  <LeanSummary sourceId={position.source.id} />
+                </InfoPopover>
+              );
+            })}
             {others.length > 0 && (
               // Sources you don't follow are summarised, not shown: comparing
               // isn't trusting. The race page lists them all.
-              <span
+              <InfoPopover
                 className="source-chip tone-neutral unfollowed"
-                title={others
-                  .map((p) => `${p.source.name} ${STANCE_WORD[p.stance]} (not followed)`)
-                  .join("\n")}
+                bare={false}
+                label={`${others.length} sources you don't follow`}
+                trigger={
+                  <>
+                    +{others.length} {followed.length > 0 ? "more " : ""}you don't follow
+                  </>
+                }
               >
-                +{others.length} {followed.length > 0 ? "more " : ""}you don't follow
-              </span>
+                <ul className="chip-detail-list">
+                  {others.map((p) => (
+                    <li key={p.source.id}>
+                      <EndorserAvatar sourceId={p.source.id} name={p.source.name} />
+                      {p.source.name} {STANCE_WORD[p.stance]} {group.choice || race.subject.title}
+                    </li>
+                  ))}
+                </ul>
+                <p className="hint">Not followed, so they don't count here.</p>
+              </InfoPopover>
             )}
           </div>
         )}
@@ -1009,6 +1071,7 @@ function ChoiceRow({
         <legend className="sr-only">My pick: {group.choice || race.subject.title}</legend>
         {PICKS.map((pick) => {
           const active = row?.stance === pick.stance;
+          const PickIcon = pick.icon;
           return (
             <button
               key={pick.stance}
@@ -1024,12 +1087,11 @@ function ChoiceRow({
                       ? `Shift+${shortcut}`
                       : undefined
               }
-              title={pick.title}
               onClick={() =>
                 patch(election, race.subject, choice, { stance: active ? undefined : pick.stance })
               }
             >
-              {pick.label}
+              <PickIcon className="icon" /> {pick.label}
             </button>
           );
         })}

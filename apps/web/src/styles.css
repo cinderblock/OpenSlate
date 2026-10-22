@@ -17,6 +17,11 @@
   --warn: #8a5a00;
   --lean-for: #3b7a52;
   --lean-against: #9a5430;
+  /* Left-right spectrum poles (Democratic, Republican) and its neutral middle;
+     checked with the dataviz palette validator against --surface. */
+  --pole-left: #2563eb;
+  --pole-right: #dc2626;
+  --pole-mid: #c4c9d2;
   --jws-header: #b4236e;
   --jws-payload: #6a3fc0;
   --jws-signature: #0b6a88;
@@ -45,6 +50,9 @@
     --warn: #f1c40f;
     --lean-for: #7fd8a0;
     --lean-against: #e8a87c;
+    --pole-left: #5b8def;
+    --pole-right: #ef5b5b;
+    --pole-mid: #4a505c;
     --jws-header: #ff79c6;
     --jws-payload: #bd93f9;
     --jws-signature: #8be9fd;
@@ -72,6 +80,9 @@
   --warn: #f1c40f;
   --lean-for: #7fd8a0;
   --lean-against: #e8a87c;
+  --pole-left: #5b8def;
+  --pole-right: #ef5b5b;
+  --pole-mid: #4a505c;
   --jws-header: #ff79c6;
   --jws-payload: #bd93f9;
   --jws-signature: #8be9fd;
@@ -328,6 +339,16 @@ button.link {
   border: none;
   padding: 0;
   text-decoration: underline;
+}
+/* A tap-to-expand trigger that looks like its contents (a meter, a logo). */
+button.ui-info-bare {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  border-radius: 6px;
 }
 
 .key {
@@ -971,12 +992,46 @@ a.button-link:hover {
   gap: 0.25rem;
   margin-top: 0.25rem;
 }
+button.source-chip {
+  font: inherit;
+  text-align: start;
+}
 .source-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   font-size: 0.75rem;
   border-radius: 5px;
-  padding: 0.05rem 0.45rem;
+  padding: 0.1rem 0.45rem 0.1rem 0.15rem;
   border: 1px solid transparent;
-  cursor: default;
+  color: inherit;
+}
+.source-chip:hover {
+  filter: brightness(0.97);
+}
+.chip-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.chip-detail-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+.chip-detail-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.lean-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 .source-chip.tone-for {
   background: color-mix(in srgb, var(--ok) 18%, transparent);
@@ -1430,10 +1485,11 @@ a.button-link:hover {
     display: grid;
     /* The catalog is the long one; give it the extra room. */
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-    grid-template-rows: auto auto auto auto 1fr;
+    grid-template-rows: auto auto auto auto auto 1fr;
     grid-template-areas:
       "ballot add"
       "following add"
+      "spectrum add"
       "contacts add"
       "all add"
       ". add";
@@ -1445,6 +1501,9 @@ a.button-link:hover {
   }
   .sources-following {
     grid-area: following;
+  }
+  .sources-spectrum {
+    grid-area: spectrum;
   }
   .sources-contacts {
     grid-area: contacts;
@@ -1579,7 +1638,15 @@ dialog.wizard::backdrop {
   font-size: 0.9rem;
 }
 .wizard-choice-icon {
-  font-size: 1.6rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--accent);
+}
+.wizard-source-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
 }
 .wizard-options {
   display: flex;
@@ -2704,4 +2771,174 @@ button.tag.active {
 .ui-dropzone-button[data-focus-visible],
 .ui-copy-button[data-focus-visible] {
   box-shadow: var(--focus-ring);
+}
+
+/* Icons (lucide-react): sized to the text they sit in. */
+.icon {
+  width: 1.1em;
+  height: 1.1em;
+  vertical-align: -0.2em;
+  flex-shrink: 0;
+}
+
+/* Endorser avatars: a logo on a white tile (site icons assume a light page),
+   or a monogram. White on hsl(h 45% 30%) clears 4.5:1 for every hue. */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 22%;
+  overflow: hidden;
+  vertical-align: middle;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}
+.avatar-sm {
+  width: 1.15rem;
+  height: 1.15rem;
+  font-size: 0.5rem;
+}
+.avatar-md {
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.7rem;
+}
+.avatar-lg {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 0.95rem;
+}
+.avatar-logo {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.avatar-logo img {
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+}
+.avatar-monogram {
+  background: hsl(var(--avatar-hue, 210) 45% 30%);
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+/* Tap-to-expand detail (components/ui/InfoPopover.tsx); the bare trigger's
+   reset sits with the button styles above. */
+.ui-info-trigger[data-focus-visible] {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.ui-info-popover {
+  max-width: min(22rem, 92vw);
+}
+.ui-info-dialog {
+  padding: 0.75rem 0.9rem;
+  outline: none;
+  font-size: 0.9rem;
+}
+.ui-info-dialog p {
+  margin: 0.4rem 0 0;
+}
+
+/* Left-right meter: Democratic side left, Republican side right, a neutral
+   middle. The marker carries the value; the gradient only names the ends. */
+.lean-track {
+  position: relative;
+  display: inline-block;
+  width: 3.5rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--pole-left), var(--pole-mid) 50%, var(--pole-right));
+  vertical-align: middle;
+}
+.lean-track.lean-unknown {
+  background: none;
+  border: 1px dashed var(--border);
+}
+.lean-marker {
+  position: absolute;
+  top: 50%;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--text);
+  border: 2px solid var(--surface);
+  transform: translate(-50%, -50%);
+}
+.lean-meter {
+  gap: 0.4rem;
+  padding: 0.2rem 0.15rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.lean-meter:hover .lean-meter-word {
+  text-decoration: underline;
+}
+.lean-detail .lean-track {
+  display: block;
+  width: 100%;
+  margin: 0.5rem 0 0.25rem;
+}
+.lean-word-left {
+  color: var(--pole-left);
+  font-weight: 600;
+}
+.lean-word-right {
+  color: var(--pole-right);
+  font-weight: 600;
+}
+
+/* Spectrum strip (components/SpectrumStrip.tsx). */
+.spectrum-plot {
+  position: relative;
+  margin: 0.75rem 0 0.25rem;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+.spectrum-axis {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--pole-left), var(--pole-mid) 50%, var(--pole-right));
+}
+.spectrum-mid {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  height: 18px;
+  border-left: 1px dashed var(--muted);
+}
+.spectrum-marker {
+  position: absolute;
+  transform: translateX(-50%);
+  line-height: 0;
+}
+.spectrum-marker .avatar {
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.spectrum-marker .avatar-logo {
+  box-shadow: inset 0 0 0 1px var(--border), 0 0 0 2px var(--surface);
+}
+.spectrum-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.spectrum-detail-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+.position-subject .lean-meter {
+  display: flex;
+  width: fit-content;
 }

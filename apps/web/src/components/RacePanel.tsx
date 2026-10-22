@@ -5,7 +5,9 @@ import { useBallotDraft } from "../lib/ballotDraft";
 import { type ChoiceGroup, collateRaces, stanceTone } from "../lib/collate";
 import { useDecodedSlates, useFollows } from "../lib/myVote";
 import { subjectKey } from "../lib/subjects";
+import { EndorserAvatar } from "./EndorserAvatar";
 import { ForecastsPanel } from "./ForecastsPanel";
+import { LeanMeter } from "./LeanMeter";
 import { PollsPanel } from "./PollsPanel";
 import { ResultsPanel } from "./ResultsPanel";
 
@@ -148,11 +150,8 @@ function ChoiceCard({ group, subjectTitle }: { group: ChoiceGroup; subjectTitle:
         <strong>{group.choice || <em>(no specific choice)</em>}</strong>
         {group.ballotNote && <span className="hint">{group.ballotNote}</span>}
         <span className="grow" />
-        <span
-          className="tag"
-          title="Counting every imported source; My ballot counts only followed ones"
-        >
-          {total.for} for · {total.against} against
+        <span className="tag">
+          {total.for} for · {total.against} against, followed or not
         </span>
       </div>
       {group.positions.length === 0 ? (
@@ -167,28 +166,25 @@ function ChoiceCard({ group, subjectTitle }: { group: ChoiceGroup; subjectTitle:
               <span className={`stance stance-${position.stance}`}>
                 {STANCE_LABEL[position.stance]}
               </span>
+              <EndorserAvatar sourceId={position.source.id} name={position.source.name} size="md" />
               <span className="position-subject">
                 {position.source.uri ? (
                   <a href={position.source.uri} target="_blank" rel="noreferrer">
                     <strong>{position.source.name}</strong>
                   </a>
                 ) : (
-                  <strong title={position.source.signerKey}>{position.source.name}</strong>
+                  <strong>{position.source.name}</strong>
                 )}
                 {!position.followed && (
-                  <span className="tag tag-inline" title="Shown for comparison; not on My ballot">
-                    not followed
-                  </span>
+                  <span className="tag tag-inline">not followed, not on My ballot</span>
                 )}
                 {position.source.secondhand && (
-                  <span
-                    className="hint"
-                    title={`Signed by ${position.source.signerKey}. ${position.source.name} did not sign this.`}
-                  >
+                  <span className="hint">
                     {" "}
-                    · reported by {position.source.signerName ?? "a researcher"}
+                    · reported by {position.source.signerName ?? "a researcher"}, not signed by them
                   </span>
                 )}
+                <LeanMeter sourceId={position.source.id} name={position.source.name} withWord />
                 {!position.valid && <span className="warning"> (unverified)</span>}
                 {position.statement && <div className="hint">“{position.statement}”</div>}
               </span>

@@ -2,6 +2,7 @@ import { type SlatePayload, createIdentity, serializeIdentity, verifySlate } fro
 import { useLiveQuery } from "@tanstack/react-db";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { PenLine, Vote } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { catalogEntryUrl, importCatalogEntry } from "../lib/catalogImport";
 import { areaOptionsOf } from "../lib/collate";
@@ -27,6 +28,7 @@ import {
 import {
   type CatalogEntry,
   DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
+  catalogEntryLogoUrl,
   catalogQueryOptions,
   slateFromUrlOptions,
 } from "../lib/query";
@@ -36,6 +38,8 @@ import { track } from "../lib/usage";
 import { closeWizard } from "../lib/wizard";
 import { AreaPicker } from "./AreaPicker";
 import { isBallotEntry } from "./CatalogBrowser";
+import { EndorserAvatar } from "./EndorserAvatar";
+import { LeanSummary } from "./LeanMeter";
 import { Checkbox } from "./ui/Checkbox";
 import { Radio, RadioGroup } from "./ui/Radio";
 import { TextField } from "./ui/TextField";
@@ -147,9 +151,7 @@ export function Wizard() {
           </p>
           <div className="wizard-choices">
             <button type="button" className="wizard-choice" onClick={() => setStep("election")}>
-              <span className="wizard-choice-icon" aria-hidden="true">
-                🗳
-              </span>
+              <Vote className="wizard-choice-icon" />
               <strong>Plan my vote</strong>
               <span>
                 Pick the organizations you trust and see their endorsements side by side, race by
@@ -157,9 +159,7 @@ export function Wizard() {
               </span>
             </button>
             <button type="button" className="wizard-choice" onClick={() => setStep("identity")}>
-              <span className="wizard-choice-icon" aria-hidden="true">
-                ✍
-              </span>
+              <PenLine className="wizard-choice-icon" />
               <strong>Publish endorsements</strong>
               <span>
                 Sign your own recommendations so friends or members can verify they came from you.
@@ -467,6 +467,8 @@ function AreaStep({
     return areaOptionsOf(positions);
   }, [loaded]);
 
+  const loading = loaded.done < loaded.total;
+
   return (
     <>
       <h2 id="wizard-heading" ref={headingRef} tabIndex={-1}>
@@ -476,7 +478,7 @@ function AreaStep({
         This trims a statewide list to the races on your ballot. It's optional, stays in this
         browser, and you can change it any time.
       </p>
-      {loaded.done < loaded.total ? (
+      {loading ? (
         <p className="hint">
           Loading endorsements… {loaded.done} of {loaded.total}
         </p>
@@ -585,6 +587,12 @@ function SourcesStep({
     const name = entry.attribution?.of.name ?? entry.slug;
     return (
       <Checkbox key={entry.path} variant="card" isSelected={on} onChange={() => toggle(entry.path)}>
+        <EndorserAvatar
+          sourceId={sourceIdOf(entry)}
+          name={name}
+          size="md"
+          logo={catalogEntryLogoUrl(entry, CATALOG_URL)}
+        />
         <span className="grow">
           <strong>{name}</strong>
           {entry.attribution?.of.uri && (
@@ -601,9 +609,12 @@ function SourcesStep({
             </>
           )}
         </span>
-        <span className="hint">
+        <span className="hint wizard-source-meta">
           {item.races} race{item.races === 1 ? "" : "s"}
           {isAreaSet(area) ? " on your ballot" : ""}
+          {entry.lean && (
+            <LeanSummary sourceId={sourceIdOf(entry)} lean={{ ...entry.lean, via: "catalog" }} />
+          )}
         </span>
       </Checkbox>
     );

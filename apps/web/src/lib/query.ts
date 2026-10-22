@@ -45,6 +45,23 @@ export interface CatalogEntry {
   };
   positions: number;
   issued_at: string;
+  /** The endorser's logo, relative to the catalog URL. */
+  logo?: string;
+  /**
+   * Subjects where the endorser took the Democratic (`left`) or Republican
+   * (`right`) side, counted by the catalog with core's `leanOf`.
+   */
+  lean?: { left: number; right: number };
+}
+
+export function catalogEntryLogoUrl(entry: CatalogEntry, catalogUrl: string): string | undefined {
+  if (!entry.logo) return undefined;
+  try {
+    const url = new URL(entry.logo, catalogUrl);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export interface Catalog {

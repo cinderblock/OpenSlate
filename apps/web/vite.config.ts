@@ -101,6 +101,18 @@ export default defineConfig({
             handler: "StaleWhileRevalidate",
             options: { cacheName: "openslate-geo", expiration: { maxEntries: 8 } },
           },
+          // Endorser logos, from the public catalog's host (src/lib/endorsers.ts).
+          // Cross-origin images come back opaque (status 0), so accept those too.
+          {
+            urlPattern: ({ request, url }) =>
+              request.destination === "image" && /\/orgs\/[^/]+\/logo\.[a-z]+$/.test(url.pathname),
+            handler: "CacheFirst",
+            options: {
+              cacheName: "openslate-logos",
+              expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
         ],
       },
     }),

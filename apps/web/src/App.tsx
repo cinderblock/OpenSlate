@@ -1,8 +1,25 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import {
+  CalendarDays,
+  ChartColumn,
+  Eye,
+  KeyRound,
+  ListChecks,
+  type LucideIcon,
+  MessageSquare,
+  PenLine,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  SquarePen,
+  Users,
+  Vote,
+} from "lucide-react";
 import { FeedbackHost } from "./components/FeedbackHost";
 import { WizardHost } from "./components/WizardHost";
 import { Switch } from "./components/ui/Switch";
 import { useDbStatus } from "./lib/dbStatus";
+import { EndorsersContext, useEndorserDirectory } from "./lib/endorsers";
 import { openFeedback } from "./lib/feedback";
 import { useUsageEnabled } from "./lib/usage";
 import { openWizard } from "./lib/wizard";
@@ -20,31 +37,35 @@ interface NavItem {
     | "/publish/verify"
     | "/publish/viewer";
   label: string;
+  icon: LucideIcon;
   /** Also active under these path prefixes (e.g. a race page belongs to My ballot). */
   prefixes?: string[];
 }
 
-const MODES: Record<Mode, { label: string; icon: string; home: NavItem["to"]; nav: NavItem[] }> = {
+const MODES: Record<
+  Mode,
+  { label: string; icon: LucideIcon; home: NavItem["to"]; nav: NavItem[] }
+> = {
   vote: {
     label: "My vote",
-    icon: "🗳",
+    icon: Vote,
     home: "/",
     nav: [
-      { to: "/", label: "My ballot", prefixes: ["/race/"] },
-      { to: "/sources", label: "Sources" },
-      { to: "/results", label: "Results", prefixes: ["/results/"] },
+      { to: "/", label: "My ballot", icon: ListChecks, prefixes: ["/race/"] },
+      { to: "/sources", label: "Sources", icon: Users },
+      { to: "/results", label: "Results", icon: ChartColumn, prefixes: ["/results/"] },
     ],
   },
   publish: {
     label: "Publish",
-    icon: "✍",
+    icon: PenLine,
     home: "/publish",
     nav: [
-      { to: "/publish", label: "Compose" },
-      { to: "/publish/identities", label: "Identities" },
-      { to: "/publish/elections", label: "Elections" },
-      { to: "/publish/verify", label: "Verify" },
-      { to: "/publish/viewer", label: "Viewer" },
+      { to: "/publish", label: "Compose", icon: SquarePen },
+      { to: "/publish/identities", label: "Identities", icon: KeyRound },
+      { to: "/publish/elections", label: "Elections", icon: CalendarDays },
+      { to: "/publish/verify", label: "Verify", icon: ShieldCheck },
+      { to: "/publish/viewer", label: "Viewer", icon: Eye },
     ],
   },
 };
@@ -62,86 +83,95 @@ function isActive(item: NavItem, pathname: string): boolean {
 export function RootLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const mode = modeOf(pathname);
+  const endorsers = useEndorserDirectory();
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <Link to="/" className="brand">
-          <h1>OpenSlate</h1>
-        </Link>
-        <nav className="mode-switch" aria-label="Mode">
-          {(Object.keys(MODES) as Mode[]).map((key) => (
-            <Link
-              key={key}
-              to={MODES[key].home}
-              className={`mode${mode === key ? " active" : ""}`}
-              aria-current={mode === key ? "page" : undefined}
-              activeProps={{}}
-            >
-              <span aria-hidden="true">{MODES[key].icon}</span> {MODES[key].label}
-            </Link>
-          ))}
-        </nav>
-        <span className="grow" />
-        <span className="header-links">
-          <button type="button" className="header-link" onClick={() => openWizard()}>
-            Get started
-          </button>
-          <Link
-            to="/settings"
-            className={`header-link${pathname === "/settings" ? " active" : ""}`}
-            activeProps={{}}
-          >
-            Settings
+    <EndorsersContext.Provider value={endorsers}>
+      <div className="app">
+        <header className="app-header">
+          <Link to="/" className="brand">
+            <h1>OpenSlate</h1>
           </Link>
-        </span>
-      </header>
-      <p className="tagline">
-        {mode === "publish"
-          ? "Sign endorsements anyone can verify, and share them anywhere."
-          : "Collect the endorsements you trust and plan your vote with them."}
-      </p>
-
-      {mode && (
-        <nav className="tabs" aria-label={MODES[mode].label}>
-          {MODES[mode].nav.map((item) => (
+          <nav className="mode-switch" aria-label="Mode">
+            {(Object.keys(MODES) as Mode[]).map((key) => {
+              const ModeIcon = MODES[key].icon;
+              return (
+                <Link
+                  key={key}
+                  to={MODES[key].home}
+                  className={`mode${mode === key ? " active" : ""}`}
+                  aria-current={mode === key ? "page" : undefined}
+                  activeProps={{}}
+                >
+                  <ModeIcon className="icon" /> {MODES[key].label}
+                </Link>
+              );
+            })}
+          </nav>
+          <span className="grow" />
+          <span className="header-links">
+            <button type="button" className="header-link" onClick={() => openWizard()}>
+              <Sparkles className="icon" /> Get started
+            </button>
             <Link
-              key={item.to}
-              to={item.to}
-              className={`tab${isActive(item, pathname) ? " active" : ""}`}
-              // We decide "active" ourselves. Link's default adds an `active`
-              // class on any prefix match, so Compose (/publish) would light
-              // up on every Publish page.
+              to="/settings"
+              className={`header-link${pathname === "/settings" ? " active" : ""}`}
               activeProps={{}}
             >
-              {item.label}
+              <Settings className="icon" /> Settings
             </Link>
-          ))}
-        </nav>
-      )}
+          </span>
+        </header>
+        <p className="tagline">
+          {mode === "publish"
+            ? "Sign endorsements anyone can verify, and share them anywhere."
+            : "Collect the endorsements you trust and plan your vote with them."}
+        </p>
 
-      <DbStatusBanner />
+        {mode && (
+          <nav className="tabs" aria-label={MODES[mode].label}>
+            {MODES[mode].nav.map((item) => {
+              const TabIcon = item.icon;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`tab${isActive(item, pathname) ? " active" : ""}`}
+                  // We decide "active" ourselves. Link's default adds an `active`
+                  // class on any prefix match, so Compose (/publish) would light
+                  // up on every Publish page.
+                  activeProps={{}}
+                >
+                  <TabIcon className="icon" /> {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
 
-      <main>
-        <Outlet />
-      </main>
+        <DbStatusBanner />
 
-      <WizardHost />
-      <FeedbackHost />
+        <main>
+          <Outlet />
+        </main>
 
-      <footer>
-        <span>Decentralized — your keys and data stay in this browser.</span>
-        {" · "}
-        <a href="https://github.com/cinderblock/openslate" target="_blank" rel="noreferrer">
-          GitHub
-        </a>
-        {" · "}
-        <button type="button" className="link" onClick={openFeedback}>
-          Send feedback
-        </button>
-        <UsageFooterToggle />
-      </footer>
-    </div>
+        <WizardHost />
+        <FeedbackHost />
+
+        <footer>
+          <span>Decentralized — your keys and data stay in this browser.</span>
+          {" · "}
+          <a href="https://github.com/cinderblock/openslate" target="_blank" rel="noreferrer">
+            GitHub
+          </a>
+          {" · "}
+          <button type="button" className="link" onClick={openFeedback}>
+            <MessageSquare className="icon" /> Send feedback
+          </button>
+          <UsageFooterToggle />
+        </footer>
+      </div>
+    </EndorsersContext.Provider>
   );
 }
 

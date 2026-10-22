@@ -31,7 +31,12 @@ The web app has two modes:
   one source recommends, followed or not. It only fills what you haven't
   marked and can be undone. *Sources* is where you follow or unfollow
   sources, browse the public catalog, and add slates from a link, file, QR
-  code or paste.
+  code or paste. Each endorser shows its logo (from the catalog, else a
+  monogram) and where it sits *left to right*: the share of its picks on the
+  Democratic or the Republican side, counted only where the two parties
+  split (races between a Democrat and a Republican, and races and measures
+  the parties' endorsements disagree on). It's arithmetic on picks
+  (`leanOf` in `@openslate/core`), not a rating; tap any meter for the counts.
 - **Publish**: create a signing identity, sign your My-ballot picks (plus any
   other race or issue, on your ballot or not) as a slate, see the slates you've
   signed, and verify or inspect any block.
@@ -203,7 +208,9 @@ want a uniform fetch surface or edge caching on election night.
 
 The web app's **Sources** page (and the getting-started guide) additionally imports pre-signed slates from a
 sibling repo, [openslate-public-endorsements][ope] — published as static files
-on GitHub Pages, fetched directly with no server in between.
+on GitHub Pages, fetched directly with no server in between. Its catalog also
+carries each org's logo and left-right counts, so the app never contacts the
+orgs' own sites.
 
 [ope]: https://github.com/cinderblock/openslate-public-endorsements
 

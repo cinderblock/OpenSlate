@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, Download, Plus, RefreshCw, UserCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 import { importCatalogEntry } from "../lib/catalogImport";
 import { electionOf } from "../lib/collate";
@@ -13,10 +14,13 @@ import {
 import {
   type CatalogEntry,
   DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
+  catalogEntryLogoUrl,
   catalogQueryOptions,
 } from "../lib/query";
 import { ELECTION_AUTHORITY, isFollowed, sourceIdOf } from "../lib/sources";
 import { track } from "../lib/usage";
+import { EndorserAvatar } from "./EndorserAvatar";
+import { LeanMeter } from "./LeanMeter";
 import { electionOptions } from "./electionOptions";
 import { Select } from "./ui/Select";
 import { SearchField, UrlField } from "./ui/TextField";
@@ -191,6 +195,12 @@ export function CatalogBrowser() {
               const name = entry.attribution?.of.name ?? entry.slug;
               return (
                 <li key={key} className={following ? "following" : ""}>
+                  <EndorserAvatar
+                    sourceId={sourceId}
+                    name={name}
+                    size="md"
+                    logo={catalogEntryLogoUrl(entry, catalogUrl)}
+                  />
                   <div className="grow">
                     {entry.attribution?.of.uri ? (
                       <a href={entry.attribution.of.uri} target="_blank" rel="noreferrer">
@@ -202,23 +212,38 @@ export function CatalogBrowser() {
                     {ballot && <span className="tag tag-inline">official candidate list</span>}
                     <div className="hint">
                       {entry.positions} {ballot ? "candidates" : "positions"} · reported by{" "}
-                      <span title={entry.issuer.key}>{entry.issuer.name ?? "a researcher"}</span>
+                      {entry.issuer.name ?? "a researcher"}
                       {entry.attribution &&
                         ` · ${entry.attribution.mode} ${formatLocalDate(entry.attribution.retrieved_at)}`}
                     </div>
+                    {!ballot && entry.lean && (
+                      <LeanMeter
+                        sourceId={sourceId}
+                        name={name}
+                        lean={{ ...entry.lean, via: "catalog" }}
+                        withWord
+                      />
+                    )}
                     {errors[key] && <div className="error">{errors[key]}</div>}
                   </div>
                   {ballot ? (
                     has ? (
-                      <span className="hint">✓ Added</span>
+                      <span className="hint">
+                        <Check className="icon" /> Added
+                      </span>
                     ) : (
                       <button
                         type="button"
                         onClick={() => follow(entry)}
                         disabled={busy.has(key) || bulk !== null}
-                        title="Import the official candidate list so every race shows its whole field"
                       >
-                        {busy.has(key) ? "Importing…" : "+ Add"}
+                        {busy.has(key) ? (
+                          "Importing…"
+                        ) : (
+                          <>
+                            <Plus className="icon" /> Add
+                          </>
+                        )}
                       </button>
                     )
                   ) : following ? (
@@ -226,9 +251,9 @@ export function CatalogBrowser() {
                       type="button"
                       className="link"
                       onClick={() => setFollowed(sourceId, false)}
-                      title="Stop showing this source on My ballot (keeps it imported)"
+                      aria-label={`Following ${name}. Unfollow (keeps it imported)`}
                     >
-                      ✓ Following
+                      <UserCheck className="icon" /> Following
                     </button>
                   ) : (
                     <button
@@ -236,7 +261,13 @@ export function CatalogBrowser() {
                       onClick={() => follow(entry)}
                       disabled={busy.has(key) || bulk !== null}
                     >
-                      {busy.has(key) ? "Importing…" : has ? "Follow" : "+ Follow"}
+                      {busy.has(key) ? (
+                        "Importing…"
+                      ) : (
+                        <>
+                          <Plus className="icon" /> Follow
+                        </>
+                      )}
                     </button>
                   )}
                 </li>
@@ -250,8 +281,8 @@ export function CatalogBrowser() {
               type="button"
               onClick={importAll}
               disabled={bulk !== null || pendingCount === 0}
-              title="Import without following, to compare on race pages and with “Show sources I don't follow”"
             >
+              <Download className="icon" />{" "}
               {bulk
                 ? `Importing ${bulk.done}/${bulk.total}…`
                 : pendingCount === 0
@@ -284,7 +315,7 @@ export function CatalogBrowser() {
             Load
           </button>
           <button type="button" onClick={() => refetch()} disabled={isFetching}>
-            {isFetching ? "Refreshing…" : "Refresh"}
+            <RefreshCw className="icon" /> {isFetching ? "Refreshing…" : "Refresh"}
           </button>
         </div>
         {catalog && (
