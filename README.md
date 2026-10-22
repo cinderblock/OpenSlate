@@ -24,7 +24,9 @@ The web app has two modes:
   sources' endorsements next to each choice, your private picks and notes, and
   what you've already signed. Work through it like an inbox: filter races by
   To do, Maybe, Picked or Against all, watch the "decided" count climb, and
-  reach *ballot zero*. *Quick fill* marks many races at once: pick (or rule
+  reach *ballot zero*. *One at a time* shows a single race and moves on once
+  it's decided: number keys pick a choice, Shift+number rules it out, arrow
+  keys step back and forth. *Quick fill* marks many races at once: pick (or rule
   out) every candidate of a party, or agree with, or go against, everything
   one source recommends, followed or not. It only fills what you haven't
   marked and can be undone. *Sources* is where you follow or unfollow

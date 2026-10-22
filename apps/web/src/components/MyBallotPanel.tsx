@@ -1,6 +1,6 @@
 import type { Stance } from "@openslate/core";
 import { Link } from "@tanstack/react-router";
-import { type ReactNode, memo, useCallback, useMemo, useState } from "react";
+import { type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProgressBar } from "react-aria-components";
 import { type DraftRow, NOTE_CHOICE, rowIdFor, useBallotDraft } from "../lib/ballotDraft";
 import { ballotFileName, ballotToCsv, ballotToJson } from "../lib/ballotExport";
@@ -29,7 +29,7 @@ import { localToday, useArea, useDecodedSlates, useFollows, useMyElection } from
 import { type MyPosition, useMyPositionsByRace } from "../lib/published";
 import { isBallotSource, isFollowed } from "../lib/sources";
 import { subjectKey } from "../lib/subjects";
-import { type RaceStatus, isDecided, marksOn, raceStatus } from "../lib/triage";
+import { type RaceStatus, isDecided, marksOn, raceStatus, stepThrough } from "../lib/triage";
 import { track } from "../lib/usage";
 import { openWizard } from "../lib/wizard";
 import { AreaPicker, describeArea } from "./AreaPicker";
@@ -109,6 +109,10 @@ export function MyBallotPanel() {
   // it in To do) stays as a one-line summary until the filter changes, so
   // nothing jumps away under the pointer and a misclick is easy to fix.
   const [touched, setTouched] = useState<ReadonlySet<string>>(() => new Set());
+  // Focus mode: one race at a time, keyboard-driven. `focusKey` is the race on
+  // screen; it stays put as the list around it changes.
+  const [focusing, setFocusing] = useState(false);
+  const [focusKey, setFocusKey] = useState<string | null>(null);
   const { patch: draftPatch } = draft;
 
   const today = localToday();
@@ -196,6 +200,54 @@ export function MyBallotPanel() {
   );
   const doneHere =
     filter === "all" ? 0 : shown.filter((race) => statuses.get(race.key) !== filter).length;
+
+  // Still to work on: matches the filter (under All, not yet decided).
+  const isLive = useCallback(
+    (race: Race) => {
+      const status = statuses.get(race.key);
+      return status !== undefined && (filter === "all" ? !isDecided(status) : status === filter);
+    },
+    [statuses, filter],
+  );
+  const focusIndex = useMemo(() => {
+    const at = shown.findIndex((race) => race.key === focusKey);
+    return at >= 0 ? at : shown.findIndex(isLive);
+  }, [shown, focusKey, isLive]);
+  const focused = focusing ? shown[focusIndex] : undefined;
+  const focusedStatus = focused ? statuses.get(focused.key) : undefined;
+
+  // Pin the race on screen (the first one left, when none is yet), so it stays
+  // put when marking it changes the list.
+  useEffect(() => {
+    if (focused && focused.key !== focusKey) setFocusKey(focused.key);
+  }, [focused, focusKey]);
+
+  function focusStep(direction: 1 | -1, live?: boolean) {
+    const next = stepThrough(shown, focusIndex, direction, live ? isLive : undefined);
+    if (next >= 0) setFocusKey(shown[next]?.key ?? null);
+  }
+  const focusStepRef = useRef(focusStep);
+  focusStepRef.current = focusStep;
+
+  function startFocus() {
+    if (filter === "all" && counts.todo > 0) setFilter("todo");
+    setFocusKey(null);
+    setFocusing(true);
+  }
+
+  // Once the race on screen is dealt with (it leaves the filter; under All,
+  // it's decided), move on to the next one left, after a beat to see the mark.
+  const lastSeen = useRef<{ key?: string; status?: RaceStatus }>({});
+  useEffect(() => {
+    const was = lastSeen.current;
+    lastSeen.current = { key: focused?.key, status: focusedStatus };
+    if (!focused || !focusedStatus || was.key !== focused.key || was.status === focusedStatus)
+      return;
+    const dealtWith = filter === "all" ? isDecided(focusedStatus) : focusedStatus !== filter;
+    if (!dealtWith) return;
+    const timer = setTimeout(() => focusStepRef.current(1, true), 450);
+    return () => clearTimeout(timer);
+  }, [focused, focusedStatus, filter]);
 
   const sections = useMemo(() => {
     const out: Array<{ label: string; rank: number; races: Race[]; noRace?: string }> = [];
@@ -417,11 +469,19 @@ export function MyBallotPanel() {
               ),
             }))}
           />
-          {doneHere > 0 && (
+          {doneHere > 0 && !focusing && (
             <button type="button" className="link" onClick={() => setTouched(new Set())}>
               Clear {doneHere} done
             </button>
           )}
+          <span className="grow" />
+          <button
+            type="button"
+            aria-pressed={focusing}
+            onClick={() => (focusing ? setFocusing(false) : startFocus())}
+          >
+            {focusing ? "Show the whole list" : "One at a time"}
+          </button>
         </div>
       )}
 
@@ -469,35 +529,51 @@ export function MyBallotPanel() {
         </p>
       )}
 
-      <div className="ballot-sections">
-        {sections.map((section) =>
-          section.noRace ? (
-            <div key={section.label} className="ballot-section ballot-section-empty">
-              <div className="ballot-section-title">
-                {section.label} <span className="hint">· no race</span>
+      {focusing ? (
+        <FocusRace
+          race={focused}
+          index={focusIndex}
+          total={shown.length}
+          left={shown.filter(isLive).length}
+          label={focused ? jurisdictionLabel(focused.jurisdiction) : ""}
+          election={election ?? ""}
+          rows={draft.rows}
+          patch={patch}
+          mine={focused ? mine.get(focused.key) : undefined}
+          onStep={(direction) => focusStep(direction)}
+          onExit={() => setFocusing(false)}
+        />
+      ) : (
+        <div className="ballot-sections">
+          {sections.map((section) =>
+            section.noRace ? (
+              <div key={section.label} className="ballot-section ballot-section-empty">
+                <div className="ballot-section-title">
+                  {section.label} <span className="hint">· no race</span>
+                </div>
+                <p className="hint">{section.noRace}</p>
               </div>
-              <p className="hint">{section.noRace}</p>
-            </div>
-          ) : (
-            <BallotSection
-              // Remount when the area changes, so "open by default" re-applies.
-              key={`${section.label}|${isAreaSet(area)}`}
-              label={section.label}
-              races={section.races}
-              // With no area set the ballot covers the whole state: hundreds of
-              // district and local races. Start those closed.
-              defaultOpen={isAreaSet(area) || section.rank < 2}
-              election={election ?? ""}
-              rows={draft.rows}
-              patch={patch}
-              mine={mine}
-              // Under a filter, races you've dealt with shrink to a summary.
-              statuses={filter === "all" ? undefined : statuses}
-              filter={filter}
-            />
-          ),
-        )}
-      </div>
+            ) : (
+              <BallotSection
+                // Remount when the area changes, so "open by default" re-applies.
+                key={`${section.label}|${isAreaSet(area)}`}
+                label={section.label}
+                races={section.races}
+                // With no area set the ballot covers the whole state: hundreds of
+                // district and local races. Start those closed.
+                defaultOpen={isAreaSet(area) || section.rank < 2}
+                election={election ?? ""}
+                rows={draft.rows}
+                patch={patch}
+                mine={mine}
+                // Under a filter, races you've dealt with shrink to a summary.
+                statuses={filter === "all" ? undefined : statuses}
+                filter={filter}
+              />
+            ),
+          )}
+        </div>
+      )}
 
       <PrintPicks
         election={election}
@@ -613,6 +689,130 @@ function DoneRace({
   );
 }
 
+/** Keys a focused race listens for. Typing in a field or list is left alone. */
+function isTypingTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest(
+      "input, textarea, select, [contenteditable], [role=radiogroup], [role=combobox], [role=listbox], [role=slider]",
+    ) !== null
+  );
+}
+
+/**
+ * Focus mode: one race on screen, with Previous / Next and keys. 1–9 pick a
+ * choice, Shift with a number marks it Against, ← → (or K J) move, Esc leaves.
+ */
+function FocusRace({
+  race,
+  index,
+  total,
+  left,
+  label,
+  election,
+  rows,
+  patch,
+  mine,
+  onStep,
+  onExit,
+}: {
+  race: Race | undefined;
+  index: number;
+  total: number;
+  /** Races still to work on, this one included if it is. */
+  left: number;
+  label: string;
+  election: string;
+  rows: Record<string, DraftRow>;
+  patch: Patch;
+  mine: MyPosition[] | undefined;
+  onStep: (direction: 1 | -1) => void;
+  onExit: () => void;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Each new race takes keyboard focus, so the keys (and a screen reader)
+  // follow along, and a click that moved us on doesn't strand focus.
+  const raceKey = race?.key;
+  useEffect(() => {
+    if (raceKey) cardRef.current?.focus();
+  }, [raceKey]);
+
+  const latest = useRef({ race, rows, onStep, onExit });
+  latest.current = { race, rows, onStep, onExit };
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
+      if (isTypingTarget(event.target)) return;
+      const { race, rows, onStep, onExit } = latest.current;
+      if (event.key === "Escape") onExit();
+      else if (event.key === "ArrowRight" || event.key === "j") onStep(1);
+      else if (event.key === "ArrowLeft" || event.key === "k") onStep(-1);
+      else {
+        const digit = /^Digit([1-9])$/.exec(event.code)?.[1];
+        const group = digit && race ? race.choices[Number(digit) - 1] : undefined;
+        if (!race || !group) return;
+        const choice = group.choice || undefined;
+        const stance: Stance = event.shiftKey ? "oppose" : "endorse";
+        const current = rows[rowIdFor(election, race.subject, choice)]?.stance;
+        patch(election, race.subject, choice, { stance: current === stance ? undefined : stance });
+      }
+      event.preventDefault();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [election, patch]);
+
+  if (!race) {
+    return (
+      <div className="card no-print">
+        <p>Nothing left here.</p>
+        <button type="button" onClick={onExit}>
+          Show the whole list
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="focus-mode no-print">
+      <div className="focus-bar">
+        <button type="button" onClick={() => onStep(-1)} disabled={index <= 0}>
+          ← Previous
+        </button>
+        <span className="focus-position">
+          <span className="hint">{label} · </span>
+          {index + 1} of {total}
+          <span className="hint"> · {left} left</span>
+        </span>
+        <button type="button" onClick={() => onStep(1)} disabled={index >= total - 1}>
+          Next →
+        </button>
+      </div>
+      <div
+        ref={cardRef}
+        className="focus-card"
+        tabIndex={-1}
+        aria-label={`${race.subject.title}, race ${index + 1} of ${total}`}
+      >
+        <RaceCard
+          key={race.key}
+          race={race}
+          election={election}
+          rows={rows}
+          patch={patch}
+          mine={mine}
+          numbered
+        />
+      </div>
+      <p className="hint focus-keys">
+        <kbd>1</kbd>–<kbd>9</kbd> pick · <kbd>Shift</kbd>+number against · <kbd>←</kbd> <kbd>→</kbd>{" "}
+        previous / next · <kbd>Esc</kbd> whole list. Once a race is decided, the next one comes up.
+      </p>
+    </div>
+  );
+}
+
 /** Draft rows that belong to one race (its choices plus the race-level row). */
 function raceRowIds(race: Race, election: string): string[] {
   return [
@@ -629,6 +829,7 @@ const RaceCard = memo(
     prev.election === next.election &&
     prev.patch === next.patch &&
     prev.mine === next.mine &&
+    prev.numbered === next.numbered &&
     raceRowIds(next.race, next.election).every((id) => prev.rows[id] === next.rows[id]),
 );
 
@@ -638,6 +839,7 @@ function RaceCardInner({
   rows,
   patch,
   mine,
+  numbered,
 }: {
   race: Race;
   election: string;
@@ -645,6 +847,8 @@ function RaceCardInner({
   patch: Patch;
   /** What I've signed on this race, if anything. */
   mine?: MyPosition[];
+  /** Show each choice's key (focus mode). */
+  numbered?: boolean;
 }) {
   const noteRow = rows[rowIdFor(election, race.subject, NOTE_CHOICE)];
   const [note, setNote] = useState(noteRow?.privateNote ?? "");
@@ -679,9 +883,10 @@ function RaceCardInner({
         </p>
       )}
       <ul className="choice-list">
-        {race.choices.map((group) => (
+        {race.choices.map((group, i) => (
           <ChoiceRow
             key={group.choice}
+            shortcut={numbered && i < 9 ? i + 1 : undefined}
             group={group}
             race={race}
             election={election}
@@ -729,12 +934,15 @@ function fieldHint(race: Race): { text: string; title: string } | null {
 }
 
 function ChoiceRow({
+  shortcut,
   group,
   race,
   election,
   row,
   patch,
 }: {
+  /** The number key that picks this choice (focus mode). */
+  shortcut?: number;
   group: ChoiceGroup;
   race: Race;
   election: string;
@@ -750,6 +958,7 @@ function ChoiceRow({
     >
       <div className="choice-main">
         <div className="choice-name">
+          {shortcut !== undefined && <kbd className="choice-key">{shortcut}</kbd>}
           {group.choice || <em>{race.subject.title}</em>}
           <span className="choice-count hint">
             {group.support > 0 && `${group.support} for`}
@@ -806,6 +1015,15 @@ function ChoiceRow({
               type="button"
               className={`stance-btn stance-${pick.stance}${active ? " active" : ""}`}
               aria-pressed={active}
+              aria-keyshortcuts={
+                shortcut === undefined
+                  ? undefined
+                  : pick.stance === "endorse"
+                    ? `${shortcut}`
+                    : pick.stance === "oppose"
+                      ? `Shift+${shortcut}`
+                      : undefined
+              }
               title={pick.title}
               onClick={() =>
                 patch(election, race.subject, choice, { stance: active ? undefined : pick.stance })

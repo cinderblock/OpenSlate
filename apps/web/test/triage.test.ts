@@ -11,6 +11,7 @@ import {
   raceStatus,
   sourceFill,
   sourcesOn,
+  stepThrough,
 } from "../src/lib/triage";
 
 const researcher = generateKeyPair();
@@ -224,5 +225,23 @@ describe("sourceFill", () => {
       "Controller:Rob=oppose",
       "Prop 2:Yes=endorse",
     ]);
+  });
+});
+
+describe("stepThrough", () => {
+  const items = ["a", "b", "c", "d"];
+
+  test("a plain step stops at the ends", () => {
+    expect(stepThrough(items, 1, 1)).toBe(2);
+    expect(stepThrough(items, 3, 1)).toBe(-1);
+    expect(stepThrough(items, 0, -1)).toBe(-1);
+  });
+
+  test("moving on skips what's done and wraps to anything left behind", () => {
+    const live = new Set(["a", "d"]);
+    expect(stepThrough(items, 1, 1, (x) => live.has(x))).toBe(3);
+    expect(stepThrough(items, 3, 1, (x) => live.has(x))).toBe(0);
+    expect(stepThrough(items, 0, 1, (x) => x === "a")).toBe(-1);
+    expect(stepThrough(items, 2, -1, (x) => live.has(x))).toBe(0);
   });
 });

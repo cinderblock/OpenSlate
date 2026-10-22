@@ -108,12 +108,31 @@ Three features on My ballot (`apps/web/src/components/MyBallotPanel.tsx`):
 - [x] My ballot UI (`MyBallotPanel.tsx`, `QuickFill.tsx`, styles)
 - [x] README
 - [x] typecheck + tests (289 pass) + browser check
-- [x] commit
+- [x] commit (`9c48572`)
+- [x] focus mode + tests + browser check
+- [x] commit focus mode
+
+## Focus mode (user: "do it", 2026-10-22)
+
+- "One at a time" button in the filter row. Entering from All switches to To
+  do. Shows one race (`FocusRace` in `MyBallotPanel.tsx`) with Previous /
+  Next, "N of M · K left", and the card takes keyboard focus on each race.
+- Keys: 1–9 toggle Pick on the nth choice, Shift+number toggles Against,
+  ←/→ (or K/J) step, Esc returns to the list. Ignored while typing in a
+  field, a combobox/listbox, or the filter radio group. Pick/Against buttons
+  carry `aria-keyshortcuts`; choices show a number badge.
+- When the race on screen is dealt with (leaves the filter; under All, gets
+  decided) the next one left comes up after 450 ms; undoing within that time
+  cancels. Manual Previous/Next step through everything shown, including
+  races already dealt with this session. Logic: `stepThrough` in
+  `lib/triage.ts` (tested).
+- Browser check 2026-10-22 ~12:45 AM PDT (07:45Z): `1` picked Rob Bonta and
+  moved to Controller; Shift+2 ruled out Herb Morgan and stayed; ← went back;
+  Esc returned to the list; a `1` typed into the private note didn't pick.
 
 ## Open questions for the user
 
-1. A one-race-at-a-time "focus" mode (Next / Prev, keyboard shortcuts) would
-   be the fuller "inbox" experience. Not built in this pass; worth doing?
+- (none)
 
 ## Things not to do
 

@@ -868,6 +868,58 @@ a.button-link:hover {
   min-width: 0;
 }
 
+/* Focus mode: one race at a time */
+.focus-mode {
+  max-width: 48rem;
+  margin: 0 auto 1rem;
+}
+.focus-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0.75rem;
+}
+.focus-position {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.focus-card {
+  border-radius: 10px;
+}
+.focus-card:focus {
+  outline: none;
+}
+.focus-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.focus-card > .card {
+  margin: 0;
+}
+.choice-key {
+  display: inline-block;
+  min-width: 1.3rem;
+  margin-right: 0.5rem;
+  padding: 0 0.3rem;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
+.focus-keys kbd {
+  padding: 0 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-2);
+  font-size: 0.8em;
+}
+
 /* Quick fill */
 .quick-fill h4 {
   margin: 1rem 0 0.4rem;

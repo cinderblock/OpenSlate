@@ -313,3 +313,31 @@ export function sourceFill(
   }
   return out;
 }
+
+// ---------------------------------------------------------------------------
+// Focus mode
+
+/**
+ * Where to go from `current` in a list of races, one at a time. Without
+ * `isLive`: one step either way, stopping at the ends. With it (moving on
+ * after a race is dealt with): the next live race after `current`, wrapping
+ * to the start for any left behind. -1 when there's nowhere to go.
+ */
+export function stepThrough<T>(
+  items: readonly T[],
+  current: number,
+  direction: 1 | -1,
+  isLive?: (item: T) => boolean,
+): number {
+  if (!isLive) {
+    const next = current + direction;
+    return next >= 0 && next < items.length ? next : -1;
+  }
+  const order =
+    direction === 1
+      ? [...items.keys()]
+          .slice(current + 1)
+          .concat([...items.keys()].slice(0, Math.max(current, 0)))
+      : [...items.keys()].slice(0, Math.max(current, 0)).reverse();
+  return order.find((i) => isLive(items[i] as T)) ?? -1;
+}
