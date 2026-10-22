@@ -69,7 +69,8 @@ Three parts:
 8. [x] Endorsements repo: `scripts/catalog-extras.ts`, `build-site.ts` adds
    `logo` + `lean` to entries; `.openslate-version` → `942f869`.
 9. [x] README updates in both repos.
-10. [ ] **Current step:** push. Needs the user's go-ahead (see open questions).
+10. [x] Pushed (user approved, 2026-10-22). Live on openslate.us and the
+    catalog republished at 1:40 AM PDT (08:40Z).
 
 ## Findings / gotchas
 
@@ -93,6 +94,13 @@ Three parts:
   sierraclub.org's 16 px favicon). 19 orgs failed (403s, dead sites, no
   `uri`), 6 rejected (Facebook/Wix/IONOS defaults, a photo). Full list in the
   endorsements repo commit `76453a3` and `review/logos.html`.
+- My "core: format lean tests" commit (`da257ca`) swept in another thread's
+  already-staged `Wizard.tsx` hunks: `git add <path>` + bare `git commit`
+  commits the whole shared index. That thread split it before pushing
+  (`bce1106` theirs, `7e7266c` mine). Commit with `git commit -- <paths>`.
+- The catalog's `index.json` is served `max-age=600`, so a browser that just
+  fetched it keeps the old one (no logos) for up to 10 minutes after a
+  republish. The app's catalog query adds up to an hour (`staleTime`).
 - `bun run lint` still fails on CRLF in a Windows checkout (ISSUES.md); lint
   was run with `--formatter-enabled=false` plus `biome format --write`.
 
@@ -104,18 +112,20 @@ Three parts:
 - [x] `2587d5b` web: logos, spectrum, icons
 - [x] endorsements `5efed02`, `76453a3`, `5404dd2` logos; `1ae4a8c` catalog extras
 - [x] Checks: 312 tests pass, every package typechecks, `vite build` OK.
-- [ ] Push OpenSlate master (deploys openslate.us), then the endorsements repo.
+- [x] OpenSlate master pushed (by the candidate-info thread, in merge `2702f81`;
+  my commits are `942f869`, `b7d1a1d`, `7e7266c`, `2f2bd50`); deployed.
+- [x] Endorsements repo rebased onto that thread's voter-guide commits and
+  pushed (`52b2a40`..`2fa856b`); publish run succeeded. Live catalog: 267
+  entries, 200 with a logo, 248 with a lean.
+- [ ] Logos for the 40 orgs added from ballot arguments (`3956a00`) after the
+  logo run: run `bun scripts/fetch-logos.ts` (skips orgs that have one).
 
 ## Open questions for the user
 
-1. **Push?** OpenSlate master is 9 commits ahead of `origin/master`
-   (5 mine, 4 plan commits from the candidate-info thread). Pushing deploys
-   openslate.us. The endorsements repo is 4 commits ahead; it must be pushed
-   *after* OpenSlate, because CI fetches OpenSlate at `942f869`. Until the
-   catalog republishes, the live app shows monograms and computes lean only
-   from imported ballot data. Recommendation: push both, OpenSlate first.
-2. Lower-quality logos (28 under 64 px, several only 16 px): accept for now,
+1. Lower-quality logos (28 under 64 px, several only 16 px): accept for now,
    or hand-source better ones for the most-followed orgs?
+2. Fetch logos for the 40 newly added orgs now? (Recommended: yes, same
+   script, then review the contact sheet.)
 
 ## Things not to do
 
