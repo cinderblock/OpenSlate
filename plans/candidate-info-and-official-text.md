@@ -155,6 +155,22 @@ User, 2026-10-22, accepting the recommendations:
    (secondhand slates per signer org; joint argument adopted by reference, §3.10).
 4. **The reference bundle starts as an app-level format.** It goes into
    SPEC.md once it settles.
+5. **County guide PDFs stay out of git.** Store each race's extracted text
+   plus the original's URL and sha256.
+
+## Hosting today (checked 2026-10-22)
+
+- The web app (`openslate.us`) is Cloudflare Workers static assets
+  (`apps/web/wrangler.jsonc`, worker `openslate-web`, no Worker script).
+- Endorsement data is **GitHub Pages**:
+  `cinderblock.github.io/openslate-public-endorsements/index.json`
+  (`Server: GitHub.com`, `Access-Control-Allow-Origin: *`, `max-age=600`).
+  It's the app's `DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG` (`apps/web/src/lib/query.ts`).
+- Keeping data on GitHub Pages keeps it on a host any fork can reproduce, apart
+  from the project's own domain, which suits the no-central-server constraint.
+  If we ever want the original PDFs archived, Cloudflare R2 is the place, not
+  git. That is an infrastructure change: per-change authorization through the
+  ops repo.
 
 ## Open questions for the user
 
