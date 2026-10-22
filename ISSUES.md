@@ -68,3 +68,14 @@ warned "Cannot update a component while rendering a different component" from
 everything →" didn't advance either, and hash navigation stopped re-rendering
 the page until a reload. The preview tab wasn't visible at the time, which may
 be a factor. Matters because this is the first thing a new visitor does.
+
+## Dark theme: some text and white-on-colour fills fall below 4.5:1
+
+Dark `--bad` (`#e74c3c`) as text measures 4.41:1 on `--surface` and 4.02:1 on
+`--surface-2` (error text, Oppose stance, `button.danger`). White text on dark
+`--ok` (`#2ecc71`) is 2.10:1 (`.filter-chip.active.ok`) and on dark `--accent`
+3.22:1 (primary buttons, selected segments and tags). The light theme clears
+4.5:1 for all of these. Lightening `--bad` to fix the text makes the
+white-on-red fills worse, so the fix probably wants "on-colour" tokens for text
+on filled backgrounds. `apps/web/test/theme.test.ts` lists the `--bad` pairs as
+known failures; take them off the list when fixed.
