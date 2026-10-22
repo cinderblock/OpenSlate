@@ -66,12 +66,16 @@ scroll past the manually entered parts to finish."
   width: cards stack, footer pinned; My ballot's editor opens on the lists
   when an area is set.
 - [x] typecheck (5 packages), 234 tests, Biome (CRLF config), build all pass.
-- [ ] Merge to master: waits on the user.
+- [x] Merged to master (fast-forward) and pushed `4739b5e..aa2ab49`
+  (2026-10-21, user: "yes and yes"); nothing else rode along. Live at
+  10:10 PM PDT (05:10Z) as `AreaPicker-D7q33R6S.js`. Checked in a fresh
+  incognito window on openslate.us: both mode cards, the lists hidden while
+  the map is open, the footer pinned to the dialog's bottom (dialog 734 px,
+  content 1,022 px). Worktree removed.
 
 ## Open questions for the user
 
-1. Merge `feat/wizard-area-modes` into master (local fast-forward)?
-   Recommended: yes. Pushing deploys, so that's a separate yes.
+None open.
 
 ## Things not to do
 
