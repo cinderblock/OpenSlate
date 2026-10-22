@@ -10,8 +10,8 @@ the official arguments for and against a measure (with rebuttals), and the raw
 text of a proposed law. Is there a standard published form we can load, and
 should any of it be modelled as an "endorsement" that can be shared?
 
-Status: **research done, design proposed, nothing built.** Waiting on the
-user's answers to the open questions below.
+Status: **research done, design mostly agreed, nothing built.** Waiting on
+the user's choice of where reference material lives (open question 1).
 
 ## Environment / context
 
@@ -143,27 +143,51 @@ Congress and Legislature incumbent photos from public-domain and Wikidata
 sources, (c) county guides, one county at a time, starting where users are (SF,
 LA, San Mateo, given the bundles we have).
 
+## Decisions already made (don't re-ask)
+
+User, 2026-10-22, accepting the recommendations:
+
+1. **Quote statements and arguments verbatim**, credited, with the guide's own
+   "not checked for accuracy" line. Copyright is unconfirmed; the user accepted that.
+2. **A candidate's statement about themselves never counts as backing.** Show
+   it, never tally it.
+3. **Organizations that sign ballot arguments become followable sources**
+   (secondhand slates per signer org; joint argument adopted by reference, §3.10).
+4. **The reference bundle starts as an app-level format.** It goes into
+   SPEC.md once it settles.
+
 ## Open questions for the user
 
-1. **Reuse of statement and argument text.** Reproduce verbatim with the
-   source link and the guide's own disclaimer? *Recommendation: yes.* They are
-   official public election materials, and we'd quote them whole and attributed.
-   Copyright isn't confirmed (see Findings), so this is the user's call.
-2. **Should a candidate's statement about themselves count anywhere as backing?**
-   *Recommendation: no.* Show it, never tally it.
-3. **Should ballot-argument signers become sources** (followable, quick-fillable)?
-   *Recommendation: yes, as secondhand slates per signer org*, with the joint
-   argument recorded once and adopted by reference (§3.10).
-4. **Hosting photos**: mirror on the endorsements Pages site (recommended) or
-   hotlink SOS and Commons?
-5. **Spec**: add a "reference bundle" document type to SPEC.md, or keep it an
-   app-level format for now? *Recommendation: app-level first, spec once it settles.*
+1. **Where do photos and reference text live?** The user asked whether to keep
+   them in git, and suggested a repo or orphan branch per election. Facts:
+   - Data already lives apart from the app: `openslate-public-endorsements`
+     (org-first layout `orgs/<org>/<election>/`, including the ballot source
+     `orgs/ca-secretary-of-state/2026-11-03`, 261 KB). It deploys one Pages
+     site from master via Actions. Today: `.git` 9.7 MB, `orgs/` 13 MB, no
+     images or PDFs.
+   - A Pages site is capped at 1 GB, and each repo gets one site. Orphan
+     branches isolate history but still deploy into that single site, so they
+     don't lift the cap. They also need multi-branch CI to build it.
+   - Pages serves `Access-Control-Allow-Origin: *`; Releases and LFS don't help
+     (LFS isn't served by Pages; release assets aren't a CORS-friendly host).
+   - Rough size per state general election: photos ~20–30 KB × a few hundred
+     candidates = a few MB; proposition text PDFs ~100 KB each; county guide
+     PDFs are tens of MB each × 58 counties (the real risk).
+   - *Recommendation*: one repo per (state, election) for official ballot
+     material, e.g. `openslate-ballot-ca-2026-11-03`: the ballot-source
+     candidate list moves there, with statements, arguments, photos, extracted
+     text and analysis. Endorsements stay org-first in the existing repo. Shared
+     tooling lives in the OpenSlate repo (already pinned via `.openslate-version`).
+     The catalog gains a list of ballot repos. Keep the big county PDFs out of
+     git: store extracted per-item text plus the original's URL and sha256.
+     Creating repos is outward-facing, so wait for the user's yes on names.
 
 ## Progress log
 
 - [x] Survey of current data model and ballot-source pipeline
 - [x] Research: state guide, county guides, VIP / Civic, photo sources, CORS
-- [ ] User answers to the open questions
+- [x] User answers to the open questions (2026-10-22), except hosting
+- [ ] Hosting decision: repo per election vs existing repo
 - [ ] Scraper for state-guide statements, photos, arguments and text (endorsements repo)
 - [ ] Reference bundle format, signing and publishing
 - [ ] Race page: photo, "in their own words", arguments, analysis and full text
