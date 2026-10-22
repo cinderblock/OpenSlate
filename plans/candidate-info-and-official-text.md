@@ -10,9 +10,10 @@ the official arguments for and against a measure (with rebuttals), and the raw
 text of a proposed law. Is there a standard published form we can load, and
 should any of it be modelled as an "endorsement" that can be shared?
 
-Status: **steps 1–6 shipped** (2026-10-22): the CA guide is live and race pages
-show it. Remaining: step 7 (argument-signer organizations as sources) and the
-open items under *Next*.
+Status: **done and live** (2026-10-22, about 1:25 AM PDT (08:25Z)): the CA guide is
+published, race pages on openslate.us show it (checked in a fresh incognito
+browser), and 40 argument-signer organizations are in the catalog. Only the
+*Next* items remain, none started.
 
 ## Environment / context
 
@@ -239,13 +240,19 @@ User, 2026-10-22, accepting the recommendations:
 6. [x] Web: `lib/guides.ts` + `components/GuideContent.tsx` on the race page;
    checked in the dev server against the live guide (Superintendent, Prop 1,
    Prop 39, Governor)
-7. [ ] **Current:** argument-signer organizations as secondhand slates
+7. [x] Argument-signer organizations: `scripts/ca-ballot-arguments.ts` in the
+   endorsements repo (`3956a00`), 56 positions in 40 new bundles (`inferred`,
+   evidence notes link the saved guide pages at the ballot repo's `5f20bcb`).
+   A signature counts only from a senior officer (president, CEO, executive
+   director, chair, director, chief); 25 signatures left out (board members,
+   past or incoming officers, members, staff, former officials, government
+   bodies, a city). The 28 signatures from organizations already in the
+   catalog all **agree** with their recorded positions, so none changed.
 8. [x] READMEs (OpenSlate, endorsements, ballot repo). SPEC note deferred by
    decision 4.
 
 ## Next (not started)
 
-- Step 7 above.
 - After Nov 3: move the CA candidate list (ballot source) into the ballot repo.
 - County guides, one county at a time (SF, LA, San Mateo first).
 - Incumbent photos from public-domain sources for races the state guide
@@ -257,8 +264,7 @@ User, 2026-10-22, accepting the recommendations:
 - [x] Research: state guide, county guides, VIP / Civic, photo sources, CORS
 - [x] User answers to the open questions (2026-10-22)
 - [x] Hosting decision: one repo per state and election
-- [x] Build plan steps 1–6 and 8 (2026-10-22)
-- [ ] Step 7
+- [x] Build plan steps 1–8 (2026-10-22)
 
 ## Findings while building
 
@@ -268,10 +274,14 @@ User, 2026-10-22, accepting the recommendations:
   name; a single signer may have no `<br>` (Prop 38's "Robert M Kaplan, Ph.D.").
 - Courts of Appeal pages only link to courts.ca.gov bios; six justices have
   "(No biographical information available.)" instead of a link.
-- Biome's `--write` turned a `̀-ͯ` regex class into literal
+- Biome's `--write` turned a `[\u0300-\u036f]` regex class into literal
   combining characters; use `\p{M}` with the `u` flag instead.
 - Git `text=auto` rewrote the saved evidence pages' line endings, so
   `evidence/** -text` keeps them byte-exact.
+
+- Race pages only show a guide when the race itself is known (an imported
+  ballot source or slate covers it); a bare `/race/<key>` with nothing
+  imported shows nothing, as before.
 
 ## Things not to do
 
