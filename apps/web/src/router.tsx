@@ -127,7 +127,11 @@ export const router = createRouter({
 });
 
 // Report the route *template* (e.g. "/results/$token"), never the matched value.
-router.subscribe("onResolved", () => {
+// onResolved fires whenever the router settles, including when loaders re-run
+// on the same page; only a new path is a new screen. (Seen live: each
+// navigation was counted twice.)
+router.subscribe("onResolved", ({ pathChanged }) => {
+  if (!pathChanged) return;
   const routeId = router.state.matches.at(-1)?.routeId;
   if (routeId && routeId !== "__root__") {
     const route: RouteTemplate = routeId;
