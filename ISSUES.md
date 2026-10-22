@@ -19,34 +19,6 @@ appears when `/api/health` reports `ballotLookup: true`, so the ballot half is
 moot. The Elections page (`ElectionsPanel.tsx`) still calls `/api/elections`
 and shows "Google elections list unavailable — HTTP 404" on the hosted app.
 
-## Race view finds no polls and no endorsements for catalog slates
-
-Reproduce on https://openslate.us (or locally): Catalog → import "California
-Democratic Party" 2026-11-03 → Collate → click "Governor of California". The
-race page (URL `#/race/Governor%20of%20California|us%2Fca|2026-11-03`) shows:
-
-- **Recent polls**: "No governor polls found. Tried
-  `governor-of-california-us-ca-2026-11-03`." The app sent
-  `/api/polls?subject=governor-of-california-us-ca-2026-11-03` (the slate's
-  `subject.id`), which VoteHub doesn't know, so the result is `[]`. VoteHub keys
-  subjects by a `<year> <state>` rollup; `subject=2026 California&poll_type=governor`
-  through the same cache returns real polls. See `voteHubLookup` /
-  `subjectToVoteHubKey` in `apps/web/src/lib/polls.ts`.
-- **Endorsements**: "No endorsements imported for this subject yet", even
-  though the slate that linked here is imported. The Collate group key
-  (`Governor of California|us/ca|2026-11-03`) apparently doesn't match what
-  RacePanel looks up (`subjectKey()` in `lib/subjects.ts`, which prefers
-  `subject.id`).
-
-So the race view is broken for every catalog slate whose subjects carry an
-`id`. Not a deploy problem: the poll-cache answers both queries with 200.
-
-**Update (branch `ui/two-modes`, 2026-10-19):** the endorsements half is fixed
-there. Collate is gone; My ballot links to `/race/<subjectKey>`, the key
-RacePanel looks up, and the race page lists the endorsements. (Catalog
-subjects carry no `id` today.) The polls half (`subjectToVoteHubKey`) is still
-open.
-
 ## `bun run lint` fails on every file in a Windows checkout
 
 With `core.autocrlf=true` the working tree is CRLF, but `biome.json` leaves
