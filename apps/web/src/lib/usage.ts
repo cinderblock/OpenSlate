@@ -137,6 +137,8 @@ export function sanitizeUsageEvent(name: unknown, dims: unknown): SanitizedUsage
 
 export interface UsageSink {
   track(name: string, dims?: Record<string, string>): void;
+  /** Drop anything held back for a later send. Called when the user opts out. */
+  discard?(): void;
 }
 
 const STORAGE_KEY = "openslate.usage-stats";
@@ -176,8 +178,12 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-/** Takes effect at once: `track` checks the switch on every call. */
+/**
+ * Takes effect at once: `track` checks the switch on every call, and turning
+ * it off drops whatever the sink hasn't sent yet.
+ */
 export function setUsageEnabled(enabled: boolean): void {
+  if (!enabled) sink?.discard?.();
   memoryChoice = enabled ? "on" : "off";
   try {
     localStorage.setItem(STORAGE_KEY, enabled ? "on" : "off");

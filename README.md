@@ -288,9 +288,15 @@ Analytics and the zone settings are managed in
 Cloudflare credential.
 
 `apps/web/.env.production` is committed on purpose: everything in it ships in
-the public bundle anyway. Private feedback needs `VITE_TELEMETRY_ENDPOINT` and
-`VITE_TELEMETRY_KEY` (telemetry-collector's public ingest key) there; without
-them the feedback dialog offers GitHub issues only. The hosted app's address lookups are the Census
+the public bundle anyway. Usage statistics and private feedback go to the
+telemetry-collector at `VITE_TELEMETRY_ENDPOINT`, using its public ingest key.
+That key isn't committed: [`apps/web/vite.config.ts`](./apps/web/vite.config.ts)
+derives it at build time from the `TELEMETRY_COLLECTOR_APP_SECRET` build
+variable (app `openslate`, channel `web`) and fails the build if the secret
+itself ever lands in the output. A build without the secret, such as a local
+build or a fork's, reports nowhere: no usage statistics, and the feedback
+dialog offers GitHub issues only. A self-hosted copy can set
+`VITE_TELEMETRY_KEY` in an `.env` file instead. The hosted app's address lookups are the Census
 relay on `polls.openslate.us` and OpenStreetMap; Google's needs `apps/server`
 with a `GOOGLE_API_KEY`.
 
@@ -303,7 +309,7 @@ production branch `master` and non-production branch builds off:
 | Build command | `bun install --frozen-lockfile && bun run build` | `bun install --frozen-lockfile` |
 | Deploy command | `bunx wrangler deploy` | `bunx wrangler deploy` |
 | Build watch paths | `apps/web/*`, `packages/core/*`, `bun.lock` | `apps/poll-cache/*`, `bun.lock` |
-| Build variables | `SKIP_DEPENDENCY_INSTALL=1`, `BUN_VERSION=1.4.2` | `SKIP_DEPENDENCY_INSTALL=1`, `BUN_VERSION=1.4.2` |
+| Build variables | `SKIP_DEPENDENCY_INSTALL=1`, `BUN_VERSION=1.4.2`, `TELEMETRY_COLLECTOR_APP_SECRET` (secret) | `SKIP_DEPENDENCY_INSTALL=1`, `BUN_VERSION=1.4.2` |
 
 `SKIP_DEPENDENCY_INSTALL` stops the build image running its own install with a
 different package manager; `BUN_VERSION` should match the Bun that wrote
@@ -324,7 +330,10 @@ different package manager; `BUN_VERSION` should match the Bun that wrote
    ([`apps/web/public/_headers`](./apps/web/public/_headers)) only runs our own
    scripts, so no third-party analytics can load. The exact list is in
    Settings → Usage statistics; the rules are in
-   [`apps/web/src/lib/usage.ts`](./apps/web/src/lib/usage.ts).
+   [`apps/web/src/lib/usage.ts`](./apps/web/src/lib/usage.ts). Counts go in
+   small batches to the developer's own telemetry-collector, and switching the
+   setting off drops anything not yet sent
+   ([`apps/web/src/lib/telemetry.ts`](./apps/web/src/lib/telemetry.ts)).
    **Feedback goes only where you send it.** "Send feedback" in the footer
    either opens a prefilled public GitHub issue (from the forms in
    [`.github/ISSUE_TEMPLATE/`](./.github/ISSUE_TEMPLATE/)) or sends a private
