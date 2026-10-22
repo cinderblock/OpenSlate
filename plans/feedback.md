@@ -71,8 +71,8 @@ screenshots on private submissions"):
 
 ## Plan / steps
 
-All built on `feat/feedback`; **current step: merge to master and push,
-waiting on the user.**
+All built on `feat/feedback`, pushed and live. **Current step: the
+`openslate` ingest key (question 1), waiting on the user's yes.**
 
 1. ~~Plan doc~~
 2. GitHub issue forms: `.github/ISSUE_TEMPLATE/{problem,wrong-info,idea}.yml`
@@ -146,22 +146,39 @@ waiting on the user.**
 - [x] Tests / typecheck / build
 - [x] Browser check (dev + stub collector, phone size, production CSP)
 - [x] README, commit
-- [ ] Merge `feat/feedback` to master and push (user's go-ahead)
+- [x] Pushed 2026-10-21 10:35 PM PDT (05:35Z) with the user's yes, as a
+      fast-forward of only these commits (`257759a..1cfe77e`). Local master
+      then held two unpushed light-mode commits from another thread
+      (`2498cc0`, `b5ff669`), so they were left out of the deploy; local
+      master merges `origin/master` (`91907c5`), checks green (265 tests,
+      typecheck, build). Verified live: footer button, dialog, "isn't set up"
+      for private, GitHub link with `version=1cfe77e`; all four issue
+      templates on the default branch, YAML parses.
 - [ ] Private path live: needs the collector's `openslate` app and ingest
       key (see question 1)
 
 ## Open questions for the user
 
-1. **Private feedback is off on openslate.us until there's an ingest key.**
-   Register app `openslate` in the collector's admin UI, then the key goes in
-   `apps/web/.env.production` as `VITE_TELEMETRY_KEY`, with
-   `VITE_TELEMETRY_ENDPOINT=https://telemetry.tomsawyerlabs.com`. Same step as
-   `plans/usage-analytics.md` step 5. Until then the dialog says private
-   feedback isn't set up and offers GitHub.
-2. Create a `data` label on GitHub for the "Wrong or missing information"
-   form? GitHub skips labels that don't exist (`bug` and `enhancement`
-   exist). Recommendation: yes.
-3. Merge `feat/feedback` into master and push (deploys)? Recommendation: yes.
+1. **Ingest key** (user asked 2026-10-21: "can you handle this?"). How it
+   works (telemetry-collector `worker/src/admin/pages.ts`,
+   `packages/core/src/keys.ts`): registering an app in the passkey-protected
+   admin UI (`POST /apps`) creates its secret and shows it **once**; ingest
+   keys are then derived offline, `HMAC(secret, app+channel)`, as
+   `<prefix>.openslate.<channel>.<mac>`. No other registration. Staged
+   proposal, awaiting an explicit yes (it changes a server's data):
+   - In the user's Chrome session on `https://telemetry.tomsawyerlabs.com/apps`,
+     register id `openslate`, name `OpenSlate`.
+   - Derive the key for channel `web` inside that page, so the secret never
+     leaves it; the user saves the secret themselves if they want it.
+   - Commit `VITE_TELEMETRY_ENDPOINT=https://telemetry.tomsawyerlabs.com`
+     and `VITE_TELEMETRY_KEY=<key>` to `apps/web/.env.production`, push,
+     send one test report from openslate.us and check it in the admin UI.
+   Needs the user logged in to the admin UI in Chrome (passkey).
+2. **`data` label** on GitHub issues for the "Wrong or missing
+   information" form. GitHub skips labels that don't exist (`bug` and
+   `enhancement` do). Create it, or point the form at an existing label?
+   Recommendation: create it.
+3. ~~Merge and push~~ Done (see progress).
 
 ## Things not to do
 
