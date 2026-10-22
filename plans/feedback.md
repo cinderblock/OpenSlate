@@ -154,7 +154,14 @@ All built on `feat/feedback`, pushed and live. **Current step: the
       typecheck, build). Verified live: footer button, dialog, "isn't set up"
       for private, GitHub link with `version=1cfe77e`; all four issue
       templates on the default branch, YAML parses.
-- [ ] Private path live: needs the collector's `openslate` app and ingest
+- [x] Private path live. Verified 2026-10-22 12:10 AM PDT (07:10Z) by the
+      usage-analytics thread, with the user's go-ahead: on openslate.us
+      (`b591d5b`), Settings → Send feedback → Idea → "TEST from Claude
+      (usage-analytics thread) … Safe to delete." → Send privately showed
+      "Thanks, it's sent". The collector lists it as an open `info feedback`
+      issue for openslate, first seen in `b591d5b`, one example with route
+      `/settings`. Left open for the user to delete. Original note:
+      needs the collector's `openslate` app and ingest
       key (see question 1)
 
 ## Open questions for the user
