@@ -10,8 +10,10 @@ the official arguments for and against a measure (with rebuttals), and the raw
 text of a proposed law. Is there a standard published form we can load, and
 should any of it be modelled as an "endorsement" that can be shared?
 
-Status: **building** (user: "do it", 2026-10-22). See *Build plan* below; the
-current step is marked.
+Status: **done and live** (2026-10-22, about 1:25 AM PDT (08:25Z)): the CA guide is
+published, race pages on openslate.us show it (checked in a fresh incognito
+browser), and 40 argument-signer organizations are in the catalog. Only the
+*Next* items remain, none started.
 
 ## Environment / context
 
@@ -212,22 +214,49 @@ User, 2026-10-22, accepting the recommendations:
   `references.json` in that repo). The race page reads the catalog it already
   caches, picks the reference for its election and jurisdiction, then checks
   the manifest's `kid` against `key`.
+- **Named "guide", not "reference"**: SPEC §3.5 already has `Reference`
+  (cross-endorsements). Format in `packages/core/src/guide.ts`, header
+  `typ: "openslate-guide+jws"`, catalog file `guides.json`.
 - **Format and verification in `@openslate/core`; signing in the CLI**
-  (`openslate reference sign`). The CA guide scraper lives in the ballot repo,
+  (`openslate guide check|sign|verify`). The CA guide scraper lives in the ballot repo,
   and the repo is a GitHub template, so the next CA election starts from it.
 
 ## Build plan
 
-1. [ ] Core: `reference.ts` (types, manifest build, sign, verify, sha256) + tests
-2. [ ] CLI: `openslate reference sign <dir> --key`
-3. [ ] Ballot repo: scraper for statewide statements and photos, and for each
-   proposition's title and summary, LAO analysis, arguments and rebuttals
-   (with signers) and text PDF; evidence saved
-4. [ ] Ballot repo: CI (verify, sign, build site, Pages), README, key, push
-5. [ ] Endorsements repo: `references.json` → `index.json`
-6. [ ] Web: load and verify reference, race page sections, tests
-7. [ ] Endorsements repo: argument-signer organizations as secondhand slates
-8. [ ] READMEs (OpenSlate, endorsements, ballot repo), SPEC note
+1. [x] Core: `guide.ts` (types, manifest, sign, verify, sha256) + tests
+2. [x] CLI: `openslate guide check|sign|verify`
+3. [x] Ballot repo scraper (`scripts/scrape-ca-vig.ts`): 90 items: 12 races
+   (20 statements with photos), 14 propositions (summary, Yes/No meaning,
+   AG title and summary, LAO analysis with figures and tables, 50 arguments
+   and rebuttals with signers, text PDF), 65 justice retentions (Supreme Court
+   statements of qualifications; Courts of Appeal bio links or "no
+   biographical information"). Evidence pages kept byte-exact.
+4. [x] Ballot repo `cinderblock/openslate-ballot-ca-2026-11-03`: CI signs and
+   publishes; live at https://cinderblock.github.io/openslate-ballot-ca-2026-11-03/,
+   `guide verify --files` passes over HTTPS (132 files). Marked a template.
+   Key `ed25519:CdNuyS5e7RAMhAa9kH6RSCNE3tracD4jSS9dr3Br3JQH`, private half
+   only in the `OPENSLATE_GUIDE_SIGNING_KEY` secret (generated into it via pipe).
+5. [x] Endorsements repo: `guides.json` published beside `index.json` (`a1d31bf`)
+6. [x] Web: `lib/guides.ts` + `components/GuideContent.tsx` on the race page;
+   checked in the dev server against the live guide (Superintendent, Prop 1,
+   Prop 39, Governor)
+7. [x] Argument-signer organizations: `scripts/ca-ballot-arguments.ts` in the
+   endorsements repo (`3956a00`), 56 positions in 40 new bundles (`inferred`,
+   evidence notes link the saved guide pages at the ballot repo's `5f20bcb`).
+   A signature counts only from a senior officer (president, CEO, executive
+   director, chair, director, chief); 25 signatures left out (board members,
+   past or incoming officers, members, staff, former officials, government
+   bodies, a city). The 28 signatures from organizations already in the
+   catalog all **agree** with their recorded positions, so none changed.
+8. [x] READMEs (OpenSlate, endorsements, ballot repo). SPEC note deferred by
+   decision 4.
+
+## Next (not started)
+
+- After Nov 3: move the CA candidate list (ballot source) into the ballot repo.
+- County guides, one county at a time (SF, LA, San Mateo first).
+- Incumbent photos from public-domain sources for races the state guide
+  doesn't cover (Congress, Legislature).
 
 ## Progress log
 
@@ -235,7 +264,24 @@ User, 2026-10-22, accepting the recommendations:
 - [x] Research: state guide, county guides, VIP / Civic, photo sources, CORS
 - [x] User answers to the open questions (2026-10-22)
 - [x] Hosting decision: one repo per state and election
-- [ ] Build plan above
+- [x] Build plan steps 1–8 (2026-10-22)
+
+## Findings while building
+
+- The guide's pages declare UTF-8 and are UTF-8; `parse5` handles their
+  mis-nested `<strong><em>…</strong></em>`.
+- Signers: the last paragraph of each argument section, opening with a bold
+  name; a single signer may have no `<br>` (Prop 38's "Robert M Kaplan, Ph.D.").
+- Courts of Appeal pages only link to courts.ca.gov bios; six justices have
+  "(No biographical information available.)" instead of a link.
+- Biome's `--write` turned a `[\u0300-\u036f]` regex class into literal
+  combining characters; use `\p{M}` with the `u` flag instead.
+- Git `text=auto` rewrote the saved evidence pages' line endings, so
+  `evidence/** -text` keeps them byte-exact.
+
+- Race pages only show a guide when the race itself is known (an imported
+  ballot source or slate covers it); a bare `/race/<key>` with nothing
+  imported shows nothing, as before.
 
 ## Things not to do
 
@@ -243,5 +289,7 @@ User, 2026-10-22, accepting the recommendations:
 - Don't fetch voterguide.sos.ca.gov from the browser (no CORS), and don't route
   it through a project server (no central server).
 - Don't scrape Ballotpedia or Voter's Edge for photos or bios.
+- Don't push the main checkout's master: other threads' unpushed commits ride
+  along. Ship from a worktree cut from `origin/master` (as done for this work).
 - Don't present a candidate statement or ballot argument as checked fact: carry
   the guide's own "not checked for accuracy" line.

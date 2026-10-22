@@ -29,14 +29,21 @@ The web app has two modes:
   keys step back and forth. *Quick fill* marks many races at once: pick (or rule
   out) every candidate of a party, or agree with, or go against, everything
   one source recommends, followed or not. It only fills what you haven't
-  marked and can be undone. *Sources* is where you follow or unfollow
-  sources, browse the public catalog, and add slates from a link, file, QR
-  code or paste. Each endorser shows its logo (from the catalog, else a
-  monogram) and where it sits *left to right*: the share of its picks on the
-  Democratic or the Republican side, counted only where the two parties
-  split (races between a Democrat and a Republican, and races and measures
-  the parties' endorsements disagree on). It's arithmetic on picks
-  (`leanOf` in `@openslate/core`), not a rating; tap any meter for the counts.
+  marked and can be undone. A race's own page compares every source's
+  position and, where the catalog lists the election's official **voter
+  guide**, shows it too: what the office does or what the measure would do,
+  each candidate's photo and statement in their own words, what a Yes and a No
+  vote mean, the arguments and rebuttals with who signed them, the official
+  summary and analysis, and the full text. That material is reference, not
+  endorsement: it's never counted as anyone backing anything. *Sources* is
+  where you follow or unfollow sources, browse the public catalog, and add
+  slates from a link, file, QR code or paste. Each endorser shows its logo
+  (from the catalog, else a monogram) and where it sits *left to right*: the
+  share of its picks on the Democratic or the Republican side, counted only
+  where the two parties split (races between a Democrat and a Republican, and
+  races and measures the parties' endorsements disagree on). It's arithmetic
+  on picks (`leanOf` in `@openslate/core`), not a rating; tap any meter for
+  the counts.
 - **Publish**: create a signing identity, sign your My-ballot picks (plus any
   other race or issue, on your ballot or not) as a slate, see the slates you've
   signed, and verify or inspect any block.
@@ -176,6 +183,17 @@ for cross-language conformance test vectors, and
 language. The standard is decentralized-first: a block is self-contained and
 verifiable without any server.
 
+A **voter guide** carries an election authority's official material (candidate
+statements and photos, a measure's summary, analysis, arguments and full text)
+rather than positions, so it isn't a slate. It is one signed manifest
+(`typ: openslate-guide+jws`, the same canonical JSON and Ed25519) listing every
+published file with its SHA-256; clients fetch only the files a page needs and
+check each one. `openslate guide check|sign|verify` builds and checks one. The
+format lives in [`packages/core/src/guide.ts`](./packages/core/src/guide.ts) and
+isn't part of SPEC.md yet. California's Nov 3, 2026 guide is
+[openslate-ballot-ca-2026-11-03](https://github.com/cinderblock/openslate-ballot-ca-2026-11-03),
+one repo per state and election.
+
 ## Repository layout
 
 This is a [Bun](https://bun.sh) workspaces monorepo. Everything shares one core
@@ -241,6 +259,7 @@ flowchart LR
   CA[("civicAPI<br/>election results")]:::ext
   KS[("Kalshi<br/>market forecasts")]:::ext
   OPE[("openslate-public-endorsements<br/>signed catalog (GH Pages)")]:::ext
+  VG[("openslate-ballot-* repos<br/>signed voter guides (GH Pages)")]:::ext
 
   Client -.->|"/api/ballot · /api/elections"| Hono
   Client -.->|"/api/polls/*"| Hono
@@ -250,7 +269,8 @@ flowchart LR
   Client -.->|"/api/forecasts/v2/*"| Hono
   Client -.->|"/api/forecasts/v2/*"| Worker
   Client -->|"direct (default)"| CA
-  Client -->|"index.json · signed.slate"| OPE
+  Client -->|"index.json · signed.slate · guides.json"| OPE
+  Client -->|"guide.jws · items · photos · PDFs"| VG
   Client -.->|"address, opt-in"| OSM
   Client -.->|"map tiles, on by default"| USGS
   Client -.->|"POST /api/geocode/census, opt-in"| Worker

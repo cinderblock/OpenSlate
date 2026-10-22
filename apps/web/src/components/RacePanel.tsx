@@ -1,12 +1,14 @@
-import type { Stance, Subject } from "@openslate/core";
+import type { CandidateInfo, Passage, Stance, Subject } from "@openslate/core";
 import { Link, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useBallotDraft } from "../lib/ballotDraft";
 import { type ChoiceGroup, collateRaces, stanceTone } from "../lib/collate";
+import { type GuideForSubject, useGuideItem } from "../lib/guides";
 import { useDecodedSlates, useFollows } from "../lib/myVote";
 import { subjectKey } from "../lib/subjects";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { ForecastsPanel } from "./ForecastsPanel";
+import { CandidateGuide, GuideDetails, GuideMeans, GuideOverview } from "./GuideContent";
 import { LeanMeter } from "./LeanMeter";
 import { PollsPanel } from "./PollsPanel";
 import { ResultsPanel } from "./ResultsPanel";
@@ -55,6 +57,9 @@ export function RacePanel() {
     }),
     [subject, targetKey],
   );
+
+  // The official voter guide's material on this race, when a guide covers it.
+  const guide = useGuideItem(subject);
 
   return (
     <section className="panel">
@@ -113,6 +118,12 @@ export function RacePanel() {
         </aside>
 
         <div className="race-choices">
+          {guide.guide && <GuideOverview guide={guide.guide} />}
+          {guide.status === "error" && (
+            <p className="hint warning">
+              Couldn't load the official voter guide: {guide.error?.message ?? "unknown error"}
+            </p>
+          )}
           {!race ? (
             <div className="card">
               <p className="hint">No endorsements imported for this subject yet.</p>
@@ -127,17 +138,35 @@ export function RacePanel() {
                 </p>
               )}
               {race.choices.map((group) => (
-                <ChoiceCard key={group.choice} group={group} subjectTitle={race.subject.title} />
+                <ChoiceCard
+                  key={group.choice}
+                  group={group}
+                  subjectTitle={race.subject.title}
+                  guide={guide.guide}
+                />
               ))}
             </>
           )}
+          {guide.guide && <GuideDetails guide={guide.guide} />}
         </div>
       </div>
     </section>
   );
 }
 
-function ChoiceCard({ group, subjectTitle }: { group: ChoiceGroup; subjectTitle: string }) {
+function ChoiceCard({
+  group,
+  subjectTitle,
+  guide,
+}: {
+  group: ChoiceGroup;
+  subjectTitle: string;
+  guide?: GuideForSubject;
+}) {
+  const candidate: CandidateInfo | undefined = guide?.item.candidates?.find(
+    (c) => c.choice === group.choice,
+  );
+  const means: Passage | undefined = group.choice ? guide?.item.means?.[group.choice] : undefined;
   const total = { for: 0, against: 0 };
   for (const p of group.positions) {
     const tone = stanceTone(p.stance);
@@ -154,6 +183,11 @@ function ChoiceCard({ group, subjectTitle }: { group: ChoiceGroup; subjectTitle:
           {total.for} for · {total.against} against, followed or not
         </span>
       </div>
+      {guide && candidate && <CandidateGuide candidate={candidate} guide={guide} />}
+      {guide && !candidate && group.onBallot && guide.item.subject.kind === "race" && (
+        <p className="hint">No statement or photo in the official voter guide.</p>
+      )}
+      {guide && means && <GuideMeans passage={means} guide={guide} />}
       {group.positions.length === 0 ? (
         <p className="hint">
           On the ballot; none of your imported sources take a position on {subjectTitle} for this

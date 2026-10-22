@@ -9,3 +9,4 @@ export * from "./results";
 export * from "./polls";
 export * from "./forecasts";
 export * from "./lean";
+export * from "./guide";
