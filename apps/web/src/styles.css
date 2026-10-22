@@ -1419,6 +1419,98 @@ a.button-link:hover {
   }
 }
 
+/* Official voter guide on the race page: a candidate's photo and statement in
+   their choice card, what a Yes or No vote means, and a measure's summary,
+   analysis, arguments and full text. */
+.guide-candidate {
+  display: flow-root;
+  margin: 0.25rem 0 0.5rem;
+}
+.guide-photo {
+  float: left;
+  width: 5.5rem;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  margin: 0 0.75rem 0.25rem 0;
+}
+.guide-image-pending.guide-photo {
+  background: var(--surface-2);
+}
+.guide-statement > summary,
+.guide-details details > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.guide-statement > summary {
+  padding-top: 0.25rem;
+}
+.guide-means p,
+.guide-overview p {
+  margin: 0.25rem 0;
+}
+.guide-means {
+  color: var(--muted);
+}
+.guide-overview h4,
+.guide-details h4 {
+  margin: 0.75rem 0 0.25rem;
+}
+.guide-details h5 {
+  margin: 0.5rem 0 0.25rem;
+}
+.guide-details details {
+  margin: 0.5rem 0;
+}
+.guide-arguments {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 0 1.25rem;
+}
+.guide-signers {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+}
+.guide-signers li {
+  margin: 0.25rem 0;
+}
+.guide-figure {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.5rem auto;
+  background: #fff;
+  border-radius: 4px;
+}
+.guide-image-pending.guide-figure {
+  min-height: 6rem;
+  background: var(--surface-2);
+}
+.guide-table {
+  overflow-x: auto;
+}
+.guide-table table {
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+}
+.guide-table th,
+.guide-table td {
+  border: 1px solid var(--border);
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+.guide-documents {
+  padding-left: 1.25rem;
+  margin: 0.5rem 0 0;
+}
+.guide-disclaimer,
+.guide-attribution {
+  font-size: 0.85em;
+}
+
 /* Sources */
 .section-heading {
   margin: 1.5rem 0 0.5rem;
