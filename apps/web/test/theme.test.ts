@@ -65,6 +65,16 @@ describe("styles.css theme tokens", () => {
     expect(tokens.pickedDark.get("color-scheme")).toBe("dark");
   });
 
+  test("shadows and backdrops outside the theme blocks use the tokens", () => {
+    // A dark-only rgb(0 0 0 / 0.5) is too heavy on the light page: use
+    // var(--shadow) or var(--backdrop, <fallback>) (::backdrop needs the fallback).
+    const rules = styles.slice(styles.indexOf("}", styles.indexOf(':root[data-theme="dark"]')));
+    const raw = [...rules.matchAll(/(var\(--[\w-]+,\s*)?rgba?\([^)]*\)/g)]
+      .filter((m) => !m[1])
+      .map((m) => m[0]);
+    expect(raw).toEqual([]);
+  });
+
   // Dark --bad text sits below 4.5:1 on the surfaces; see ISSUES.md.
   const knownFailures = new Set(["dark --bad on --surface", "dark --bad on --surface-2"]);
   const textTokens = [
