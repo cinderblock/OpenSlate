@@ -113,7 +113,7 @@ bundle loads.
 - [x] Tests (`test/theme.test.ts`)
 - [x] Checks and build pass (bun test 249+, typecheck, Biome with a CRLF config per ISSUES.md). Verified in a browser
 - [x] README (How to Run → Cloud)
-- [x] Pushed to origin (`8704551`, user approved 2026-10-21)
+- [x] Pushed to origin (`8704551`, user approved 2026-10-21) and verified live on openslate.us: light on a light OS, Appearance card present. Returning visitors get it after one reload (the service worker updates in the background).
 - [x] Manifest splash follows the device (`color_scheme_dark`)
 - [ ] Push the splash follow-up (waits on the user)
 
