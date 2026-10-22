@@ -185,8 +185,15 @@ of event names and low-cardinality, non-political dims is fine.
       for 10-22 (UTC), all from tonight's live tests.
       **Gotcha:** `CF_ACCOUNT_ID` was added as plain text. `wrangler deploy`
       replaces plain-text vars with `wrangler.toml`'s `[vars]` (and keeps
-      secrets), so the next collector deploy would drop it. The user should
-      switch it to Secret, which is how the collector's `wrangler.toml` lists it.
+      secrets), so the next collector deploy would drop it. User: it isn't a
+      secret, so make the deploy treat it as a var. Done in
+      telemetry-collector `1f2e0c0` (CI green): `resolve-bindings.ts` writes
+      `CF_ACCOUNT_ID` into `[vars]` from a build variable of the same name.
+      Optional (warns when unset), validated as 32 hex. Wrangler's dry run
+      lists it as a plain env var. Next: the user adds the build variable
+      `CF_ACCOUNT_ID` to the telemetry-collector trigger, **then** pushes
+      master to `deploy` (order matters: without the build var, that deploy
+      removes the dashboard copy).
 - [ ] **telemetry-collector has never been deployed.** Findings 2026-10-17:
       its only Workers Build (deploy@7a2d14e, 2026-09-25) failed with
       "UnknownLockfileVersion" because the trigger has no `BUN_VERSION` (image
