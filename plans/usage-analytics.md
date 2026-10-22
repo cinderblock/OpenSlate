@@ -102,7 +102,8 @@ of event names and low-cardinality, non-political dims is fine.
   the footer".** Off until the user turns it on; GPC needs no special case.
 - Cut a telemetry-collector release. Use the plain npm names if available
   (they were): `telemetry-collector`, `-core`, `-cli`.
-- Register an `openslate` app in the telemetry-collector admin UI.
+- Register an `openslate` app in the telemetry-collector admin UI. (Done
+  2026-10-21.)
 
 - **2026-10-17, user: "make sure it's only sharing usage and
   sanitizes/cannot leak personal choices/preferences".** Done in `252ae76`:
@@ -294,7 +295,20 @@ source (@npmcli/package-json normalize.js) shows that message fires on
 mere `./` normalization and the entry is kept. Confirmed by
 `npm stage download` of all three tarballs: cli bin present, shebang
 intact, deps `^0.1.0`. Path normalized for future releases (`371a262`).
-Waiting on the user's approvals.
+User approved all three 2026-10-21; `npm view` confirms 0.1.0 is `latest`
+on core, sdk and cli, each with SLSA v1 provenance, sdk/cli depending on
+core `^0.1.0`, cli bin intact.
+
+`openslate` app registered 2026-10-21 (id `openslate`, name "OpenSlate"),
+driven through the admin UI in the user's browser session. Its app secret
+is shown once on that page; the agent never read or recorded it. Next: the
+user stores it, then (recommended) adds it as a secret build variable
+`TELEMETRY_COLLECTOR_APP_SECRET` on the OpenSlate Workers Builds trigger(s)
+so each build derives its own ingest key with `--channel <version>` (the
+README's intended flow: a channel per version or preview, created on first
+sight). Alternative: one fixed channel key, derived once by the user and
+committed to `.env.production` (public value), which loses per-version
+grouping.
 
 ## Open questions for the user
 
