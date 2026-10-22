@@ -115,7 +115,7 @@ bundle loads.
 - [x] README (How to Run → Cloud)
 - [x] Pushed to origin (`8704551`, user approved 2026-10-21) and verified live on openslate.us: light on a light OS, Appearance card present. Returning visitors get it after one reload (the service worker updates in the background).
 - [x] Manifest splash follows the device (`color_scheme_dark`)
-- [ ] Push the splash follow-up (waits on the user)
+- [x] Splash follow-up pushed (`6d405e8`, user approved 2026-10-21) and live: openslate.us/manifest.webmanifest carries the light colours and `color_scheme_dark`.
 
 ## Open questions for the user
 
