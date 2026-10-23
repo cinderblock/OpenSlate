@@ -255,11 +255,10 @@ User, 2026-10-22, accepting the recommendations:
 
 - After Nov 3: move the CA candidate list (ballot source) into the ballot repo.
 - **County guides: in progress**, see *Phase 2* below.
-- Incumbent photos from public-domain sources: **proposed to drop** (asked
-  2026-10-22). Photos of incumbents only would put a face next to the
-  officeholder and a blank next to every challenger, which tilts the page. An
-  official guide gives every candidate the same chance to print one. Keep to
-  guide photos (and later, photos candidates sign themselves).
+- Incumbent photos: **dropped** (user, 2026-10-23: "Incumbents aren't special
+  and don't get special picture handling"). Photos only from official guides,
+  where every candidate had the same chance to print one (and later, photos
+  candidates sign themselves).
 
 ## Phase 2: county guides (started 2026-10-22, about 3:40 PM PDT (22:40Z))
 
@@ -357,12 +356,203 @@ Findings (checked 2026-10-22):
    3:33 AM PDT (10:33Z)): Prop G (question, Yes/No, 4 official and 30 paid
    arguments, legal text link to p.222); CD-15 (Mullin's statement from the SF
    guide, Hoelter "no statement"), signed by the real key.
-7. [ ] Signer organizations from SF's official and paid arguments (decision 3)
-   ← **next, awaiting go-ahead with step 8's choice**
-8. [ ] Next counties, in order of value for effort (survey below): Los
-   Angeles **done**; then Orange ← **next, awaiting go-ahead**, then San
-   Diego. Alameda only if we want photos. Santa Clara and San Mateo
-   postponed.
+7. [x] Signer organizations from the county guides' official and paid
+   arguments (decision 3), done for SF, Orange, San Diego and Alameda
+   (2026-10-23, about 12:20 PM PDT (19:20Z)). LA prints no arguments.
+   - Endorsements repo:
+     - the hand-reviewed signer table moved to
+       `scripts/lib/argument-signers.ts`, shared with the state script, whose
+       output is unchanged (`a1d8da7`);
+     - `scripts/county-ballot-arguments.ts` and the county table (`eaa1a7c`);
+     - 90 new sources with 143 positions (`eb92f9c`).
+   - Three ways an organization signs:
+     - as itself (SF);
+     - an officer who speaks for it, as "Role, Organization"; a title marked
+       "*" is for identification only and doesn't count;
+     - Alameda's "s/ Organization, by NAME, Title".
+   - Government bodies, people and fragments of wrapped names map to `null`.
+   - 43 signatures agree with positions the catalog already had; none
+     conflict.
+   - Checked live: the Costa Mesa Firefighters Association's position on Costa
+     Mesa Measure C.
+   - Before this: the SF scraper now joins signatures that wrap and reads
+     signatures set two across (ballot repo `4583b44`). One break remains:
+     "Chinatown Transportation" / "Research and Improvement Project".
+8. [x] Next counties (user, 2026-10-23: "Keep going"), in order of value for
+   effort (survey below): Los Angeles, Orange, Alameda (built while San
+   Diego's index ran) and San Diego all **done**. Santa Clara and San Mateo
+   postponed: there's no machine-readable source, so ask the registrars.
+9. Phase 2 is complete apart from the open question below. A new county
+   needs the user's go-ahead: Santa Clara and San Mateo need the registrars'
+   files.
+
+### Orange County (done 2026-10-23, about 9:50 AM PDT (16:50Z))
+
+- Ballot source (endorsements `959a052`, names `501f8c3`; shared matching
+  moved to `scripts/lib/ballot-subjects.ts`, `e5f9cc5`): 138 races, 15
+  measures; 129 of 153 subjects reuse catalog titles. OC's filing log
+  truncates and abbreviates names ("Rcho Santiago Coll Dist"); each is matched
+  to the qualified-contests page's full name by word prefixes in order, fewest
+  skipped words winning. Only filers marked "Qualified For The Ballot (Yes)"
+  count. Catalog subjects OC doesn't have: Newport Beach Measures P, Q, R
+  (OC's letters stop at O). No logo: OC's favicon is over the 200 KB limit.
+- Guide (ballot repo `e465d56`, `75ee8fa`… see git log; `county/oc/`): 168
+  items, 364 statements (one PDF each), 15 measures with question, Yes/No
+  meanings, impartial analysis and signer, 32 arguments and rebuttals with
+  signers, full text linked by page. Checked live: Costa Mesa Measure C.
+- Findings: OC sets columns ~8 pt apart, so `pdf-layout.ts` now splits a line
+  at a gap over 6 pt that straddles the page middle (SF unchanged). Yes/No sit
+  side by side, so they're read by position, not reading order. Sign-offs vary
+  ("s/", "/s/", "/s", name then title, before or after the notice). Item file
+  names must keep a race's "(Short Term)" (they had merged Moulton Niguel's
+  two seats; fixed in both OC and LA scrapers).
+- Python edits on Windows: text mode writes CRLF (biome then fails), and
+  `` in a non-raw string becomes a backspace. Use the Edit tool for regexes;
+  fix stray `` with `perl -pi -e 's//chr(92)."b"/ge'`.
+
+### San Diego (done 2026-10-23)
+
+- **Source:** one pamphlet per ballot type, `SB-ENG-{n}.pdf` (about 650 of
+  them, 9–13 MB each). Each is assembled from shared sections, and each page
+  has its section code at the foot: `CS-<contest>-<page>-ENG` for a contest's
+  statements and `PR-<measure>-<page>-ENG` for a measure.
+- **Index** (ballot repo `scripts/sd-index.ts` →
+  `evidence/county/sd/ballot-types.json`): each pamphlet's bookmarks are read
+  through range requests (`scripts/lib/pdf-range.ts`), about 0.6 MB each.
+  - Paced, resumable, about 5–15 s per file.
+  - At SB-ENG-432 at about 11:20 AM PDT (18:20Z).
+- **Ballot source** (endorsements `scripts/sd-rov-ballot.ts`, uncommitted):
+  - Races come from the registrar's `candidate-list.pdf` layout; measures from
+    the index's bookmarks (a measure's own bookmark, e.g. "CITY OF OCEANSIDE
+    MEASURE R").
+  - `--index <path>` reads a local index before it's pushed.
+  - On the partial index: 144 races, 5 measures, 139 of 149 subjects reused.
+- **Guide** (ballot repo `scripts/scrape-sd.ts`):
+  1. A greedy cover picks the fewest pamphlets whose bookmarks cover every
+     contest (15 for the first 70 ballot types).
+  2. It downloads those pamphlets into `.cache/county/sd/`.
+  3. It reads each section code once.
+  - Statements go to the race whose ballot-source choices match every printed
+    name; the heading breaks ties, and the Secretary of State's titles are
+    used for Senate and Assembly districts.
+  - Measures map by the "<BODY> / MEASURE X" heading to `contest-subjects.json`.
+  - From each measure it takes the question, the Yes/No meanings (the end of
+    the analysis), the analysis with its author, the tax rate statement, the
+    arguments and rebuttals with their signers, and the full text's page.
+  - On the partial index: 64 items, 117 statements, 16 arguments; `guide
+    check` passes.
+  - Each measure's short title (bold under "MEASURE A"; most SD measures have
+    none) goes to `evidence/county/sd/measure-titles.json`. `sd-rov-ballot.ts`
+    reads it next to the index and uses it as the title's parenthetical, as LA
+    does; with no short title it's just "Body — Measure X".
+- **Findings:**
+  - "•" is a separate text run from its item's text, at the same y; the two
+    are joined.
+  - "AGE: 44" is set beside a name; it's dropped.
+  - A ballot designation can wrap onto two bold lines.
+  - Argument headings wrap ("REBUTTAL TO THE ARGUMENT IN FAVOR OF" / "MEASURE
+    A").
+  - The opinions caveat repeats atop every argument page.
+  - Signers come in two styles: CAPS name then a mixed-case title, one per
+    row; or a bold mixed-case name, two across in a grid (Oceanside S).
+  - A title's lines are one phrase where they wrap and separate roles where
+    they don't.
+  - Shared matching (`guide-common.ts`, `2c8af4e`) now folds ’ to ' and
+    ignores Dr./RN/MD; SF, LA and OC output is unchanged.
+  - SD's pamphlets do carry US House statements (CD 48–52). An earlier note here
+    said they didn't; that was the partial index.
+- **Done (2026-10-23, about 12:07 PM PDT (19:07Z)):**
+  - Index: all 654 ballot types (408 MB read through range requests), ballot
+    repo `dccd5ee`.
+  - Ballot source: 144 races and 20 measures; 152 of 164 subjects reuse
+    catalog titles (endorsements `6a4cbe4`; names `e860c05`).
+    - `measureKey` now ignores every parenthetical (`8f42f68`).
+    - Permanent Road Division zones are named as the catalog names them.
+  - Guide (`4065671`): 158 items.
+    - 283 statements (US House, Legislature and local offices).
+    - 20 measures and 32 arguments with signers.
+    - The scraper picks 67 pamphlets to download.
+  - `guide verify --files` over HTTPS: 158 of 158 files. `guides.json`:
+    `f06db35`.
+  - Checked live in an incognito tab: County Measure A (question, Yes/No,
+    arguments) and Escondido Mayor (two statements).
+  - Matching fixes on the way:
+    - credentials after a comma ("MARY GWIN, PH. D.");
+    - a surname printed in two words ("MC KELL");
+    - names set at 9 pt;
+    - "No Argument Against … was filed" in mixed case;
+    - the caveat repeated in mixed case.
+
+### Alameda (done 2026-10-23)
+
+- **Ballot source** (endorsements `scripts/alameda-rov-ballot.ts`, `7653f2d`,
+  pushed):
+  - 84 races and 28 measures; 110 of 112 subjects reuse catalog titles.
+  - Races come from the candidate list app:
+    - `alamedacountyca.gov/rov_app/candidatelist/<electionId>` returns the
+      race list as JSON.
+    - A POST to `/rov_app/candidatelist/` returns every race as an HTML table.
+      Send `raceStatus=onballot&candidateStatus=COMPLETED` and every field,
+      even empty ones; otherwise it answers HTTP 500.
+    - The list repeats some races; candidates are de-duplicated.
+  - Measures come from the guide's 14 pt bold headings ("CITY OF ALBANY
+    MEASURE O").
+  - City council seats print as "#2"; they're districts.
+  - The catalog files the City of Alameda under `us/ca/city-of-alameda`, AC
+    Transit under `us/ca/alameda`, and the county under `us/ca/alameda-county`.
+- **Guide source:** one 965-page `vig_nov2026_eng.pdf`.
+  - Candidate statements are on pp. 632–757; measures on pp. 758–964.
+  - Footer codes are set per contest ("CD10-1", "RTM-1").
+  - Statements come in two formats:
+    1. The standard one: NAME, "Occupation:", "Age:", then "My education and
+       qualifications are: …".
+    2. Berkeley's and Oakland's declaration ("I, NAME, hereby declare…", a
+       numbered list), each with a photo at the top left (39 photos, 300×415).
+       No other city prints photos.
+- **Broken fonts:** the measure pages use subset fonts with no Unicode map, so
+  pdf.js returns glyph numbers ("WUD൶F" for "traffic").
+  - Letters are 29 below their glyph numbers; ligatures and quotes have their
+    own table.
+  - pdf.js's text layer turns codes 9–13 into spaces, and two of those are the
+    parentheses. They're restored by aligning each text item with the font's
+    glyphs from the operator list.
+  - This is now `pdfPages(bytes, {repairGlyphFonts: true})` in the ballot repo
+    (`45e038a`); SF and OC are unchanged.
+  - In the scraper, symbol-font bullets (`Ɣ ƒ ƕ භ ō`) become "•", and both
+    signature forms ("s/ NAME" and "s NAME/", where the "/" is drawn over the
+    name) are read. Two `·` characters on pp. 940 and 952 are left as printed:
+    their context doesn't settle what they stand for.
+- **Photos** are stored as ink amounts for one separation, so the raw JPEG is
+  a negative. `scripts/lib/pdf-images.ts` (`84d0e64`) has pdf.js decode each
+  image through its colour space and encodes it with jpeg-js. pdf-lib was
+  tried and dropped.
+- **Other findings:**
+  - The guide prints Water District Ward 2's page twice (p689 among Newark's,
+    and p705); a repeated page reads once.
+  - One footer is misprinted "BMX-BMX-4".
+  - Measures CC and HH print no full text.
+  - Some headings are drawn twice ("SCHOOLSCHOOL"); `pdf-layout` now reads
+    them once (`dd7055c`).
+  - Decoded spaces and pdf.js's gap spaces doubled up; the block reader now
+    keeps one (`3241617`).
+- **Shared code:** `scripts/lib/pamphlet.ts` holds what SD and Alameda share:
+  - items and writing the guide;
+  - `raceFor`, which matches printed names to a race and breaks ties by
+    heading words, seat numbers included;
+  - `measureParts` and `votesMean`.
+- **Done (2026-10-23, about 11:05 AM PDT (18:05Z)):**
+  - Ballot repo `a2a044b`: 121 items, with:
+    - 202 statements, 39 with photos;
+    - 28 measures and 74 arguments, with signers (an organization's signer is
+      "by" someone).
+  - `guide verify --files` over HTTPS: 160 of 160 files.
+  - `guides.json` entry: endorsements `f7c2c1f`.
+  - Checked live on openslate.us: Berkeley City Council District 1 (five
+    candidates with correct photos) and Oakland Measure EE (question and
+    arguments).
+- **For the user:** Berkeley's declaration format includes each candidate's
+  home address (item 3, required by the city). The guide republishes the
+  official text as printed. See "Open questions for the user".
 
 ### County survey (2026-10-23, real fetches)
 
@@ -502,6 +692,14 @@ LA findings:
 - Biome flagged the scrapers' generated JSON (state guide too). Generated
   `guide/`, `county/`, `evidence/` are now ignored by biome.
 
+## Open questions for the user
+
+1. Berkeley's declaration statements print each candidate's home address
+   (item 3, "That my residence is …"), and the Alameda guide republishes them
+   as printed. Keep the official text whole (current), or drop that one line?
+   Recommendation: keep it. It's the official publication, printed by
+   Berkeley's rules, and the guide's value is being a faithful copy.
+
 ## Progress log
 
 - [x] Survey of current data model and ballot-source pipeline
@@ -537,3 +735,12 @@ LA findings:
   along. Ship from a worktree cut from `origin/master` (as done for this work).
 - Don't present a candidate statement or ballot argument as checked fact: carry
   the guide's own "not checked for accuracy" line.
+- Don't run `biome check --write` on a directory in the endorsements repo. It
+  reformats scripts nobody touched (it reflowed `ca-ballot-arguments.ts` and
+  turned twelve files' CRLF into LF; restored 2026-10-23). Name the files.
+- Don't write regexes through Python or Perl heredocs: escapes become control
+  bytes (`\t` turned into a tab in `pdf-layout.ts`). Use the Edit tool.
+- Don't feed non-ASCII text to Python through a shell heredoc on this machine.
+  Python reads stdin as cp1252, so "←" and "…" in a replacement string get
+  garbled, and an unchecked `str.replace` then silently does nothing. Two plan
+  edits were lost that way on 2026-10-23.
