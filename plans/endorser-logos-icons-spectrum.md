@@ -71,6 +71,18 @@ Three parts:
 9. [x] README updates in both repos.
 10. [x] Pushed (user approved, 2026-10-22). Live on openslate.us and the
     catalog republished at 1:40 AM PDT (08:40Z).
+11. [x] **More logos** (user, 2026-10-23: "more logos is more better",
+    which answered both open questions: fill the gaps *and* replace the small
+    ones).
+    - [x] `fetch-logos.ts`: Google favicon fallback for bot-blocked sites and
+      small icons; `--icon <url>` for a hand-picked image (`4286b4d`); refuses
+      WordPress's default "W" and ClubExpress's favicon (`0da326a`).
+    - [x] Five agents found and confirmed homepages for orgs with no `uri` and
+      hand-picked larger marks for small icons; every changed logo reviewed
+      on a contact sheet (three bad picks rejected).
+    - [x] `90eb602`: 289 of 335 orgs have a logo (was 177). Pushed; publish
+      run 40037507047 succeeded, live catalog: 362 entries, 316 with a logo,
+      at 4:05 PM PDT (23:05Z).
 
 ## Findings / gotchas
 
@@ -101,6 +113,24 @@ Three parts:
 - The catalog's `index.json` is served `max-age=600`, so a browser that just
   fetched it keeps the old one (no logos) for up to 10 minutes after a
   republish. The app's catalog query adds up to an hour (`staleTime`).
+- 2026-10-23 run: of 151 orgs without a logo, ~125 had no `uri` at all in
+  meta.yaml (the ballot-argument scripts create meta.yaml without one). Adding
+  `uri:` is safe: signed slates carry `attribution.of` from positions.json,
+  never meta.yaml, so source ids don't change.
+- Google's favicon service
+  (`t3.gstatic.com/faviconV2?...&size=256&url=<site>`) serves icons for sites
+  that 403 us, returns 404 for unknown sites, and doesn't upscale.
+- A `uri` that's a third-party page yields the third party's icon:
+  long-beach-young-democrats got Blue Voter Guide's (since fixed: lbyd.org).
+- Google's fallback returns WordPress's default "W" for some WordPress sites
+  (now refused by hash). A failed re-run leaves the old logo file in place,
+  so a bad pick needs `--reject`, not just a re-run.
+- Still without a logo (46 orgs): ~33 have no findable website (small clubs,
+  coalitions, parked or dead domains); a few have only a white-on-transparent
+  logo that vanishes on the avatar's white tile (Lincoln Club OC, BizFed
+  Central Valley, PSR-LA), and Haight Ashbury NC and SF Community Land Trust
+  show faintly for the same reason. A per-logo dark tile would fix those;
+  not done.
 - `bun run lint` still fails on CRLF in a Windows checkout (ISSUES.md); lint
   was run with `--formatter-enabled=false` plus `biome format --write`.
 
@@ -117,15 +147,14 @@ Three parts:
 - [x] Endorsements repo rebased onto that thread's voter-guide commits and
   pushed (`52b2a40`..`2fa856b`); publish run succeeded. Live catalog: 267
   entries, 200 with a logo, 248 with a lean.
-- [ ] Logos for the 40 orgs added from ballot arguments (`3956a00`) after the
-  logo run: run `bun scripts/fetch-logos.ts` (skips orgs that have one).
+- [x] Logos for the orgs added after the first logo run, and better ones for
+  small logos: step 11.
 
 ## Open questions for the user
 
-1. Lower-quality logos (28 under 64 px, several only 16 px): accept for now,
-   or hand-source better ones for the most-followed orgs?
-2. Fetch logos for the 40 newly added orgs now? (Recommended: yes, same
-   script, then review the contact sheet.)
+1. White-only logos (5 orgs): add a `logo_background: dark` option so they
+   sit on a dark tile? (Recommended if you want those last few; small change
+   across meta.yaml, catalog-extras and EndorserAvatar.)
 
 ## Things not to do
 
