@@ -255,11 +255,10 @@ User, 2026-10-22, accepting the recommendations:
 
 - After Nov 3: move the CA candidate list (ballot source) into the ballot repo.
 - **County guides: in progress**, see *Phase 2* below.
-- Incumbent photos from public-domain sources: **proposed to drop** (asked
-  2026-10-22). Photos of incumbents only would put a face next to the
-  officeholder and a blank next to every challenger, which tilts the page. An
-  official guide gives every candidate the same chance to print one. Keep to
-  guide photos (and later, photos candidates sign themselves).
+- Incumbent photos: **dropped** (user, 2026-10-23: "Incumbents aren't special
+  and don't get special picture handling"). Photos only from official guides,
+  where every candidate had the same chance to print one (and later, photos
+  candidates sign themselves).
 
 ## Phase 2: county guides (started 2026-10-22, about 3:40 PM PDT (22:40Z))
 
@@ -357,12 +356,12 @@ Findings (checked 2026-10-22):
    3:33 AM PDT (10:33Z)): Prop G (question, Yes/No, 4 official and 30 paid
    arguments, legal text link to p.222); CD-15 (Mullin's statement from the SF
    guide, Hoelter "no statement"), signed by the real key.
-7. [ ] Signer organizations from SF's official and paid arguments (decision 3)
-   ← **next, awaiting go-ahead with step 8's choice**
-8. [ ] Next counties, in order of value for effort (survey below): Los
-   Angeles **done**; then Orange ← **next, awaiting go-ahead**, then San
-   Diego. Alameda only if we want photos. Santa Clara and San Mateo
-   postponed.
+7. [ ] Signer organizations from SF's official and paid arguments (decision 3),
+   after the counties
+8. [ ] Next counties (user, 2026-10-23: "Keep going"), in order of value for
+   effort (survey below): Los Angeles **done**; Orange ← **current**; then San
+   Diego; then Alameda (the one big county that prints photos). Santa Clara
+   and San Mateo postponed.
 
 ### County survey (2026-10-23, real fetches)
 
