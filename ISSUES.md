@@ -83,3 +83,15 @@ console shows an error. Either turn off the automatic beacon injection for
 the zone (a Cloudflare setting: needs the owner's authorization, through the
 ops repo), or decide to allow it in the CSP (which the `_headers` comment rules
 out on purpose).
+
+## Race pages for local offices show the Governor's polls
+
+On https://openslate.us, the race page for a local office (e.g.
+`#/race/t%3ALos%20Angeles%20Community%20College%20District%20Board%2C%20Seat%204|j%3Aus%2Fca%2Flos-angeles|e%3A2026-11-03`,
+seen 2026-10-23, 4:32 AM PDT (11:32Z)) lists "Recent polls" that are all
+Xavier Becerra vs Steve Hilton, the Governor's race. The panel's lookup tries
+`2026 California`, then `California`, then the race's own slug, and the
+statewide rollup matches first. A poll shown on a race it isn't about reads as
+data about that race. The statewide rollup should only be used for statewide
+races (or the panel should say what the polls are about).
+
