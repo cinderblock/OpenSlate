@@ -72,6 +72,9 @@ function voteHubLookup(subject: Subject): PollsLookup {
   };
 }
 
+/** A House district subject key, as `voteHubLookup` builds it: "2026 CA-22". */
+const HOUSE_DISTRICT_KEY = /^\d{4} [A-Z]{2}-\d{2,3}$/;
+
 /** "Oakland Mayor", "Mayor of San Francisco" → the city. */
 function mayorCity(title: string): string | undefined {
   const m = /^(?:mayor\s+of\s+(?:the\s+city\s+of\s+)?(.+)|(?:city\s+of\s+)?(.+?)\s+mayor)$/i.exec(
@@ -124,9 +127,18 @@ export function createVoteHubSource(): PollsSource {
     license: "CC BY 4.0",
     lookup: voteHubLookup,
     async pollsForKey(key) {
-      const res = await fetch(pollsUrl("/api/polls", { subject: key }));
+      // VoteHub's `subject` filter returns nothing for a House district
+      // ("2026 CA-22"), though the polls carry that subject. Ask for every
+      // House poll instead (one response, HTTP-cached across House pages) and
+      // keep the district's.
+      const district = HOUSE_DISTRICT_KEY.test(key);
+      const params: Record<string, string> = district
+        ? { poll_type: "us-representative" }
+        : { subject: key };
+      const res = await fetch(pollsUrl("/api/polls", params));
       if (!res.ok) throw new Error(`polls lookup failed: HTTP ${res.status}`);
-      return (await res.json()) as Poll[];
+      const polls = (await res.json()) as Poll[];
+      return district ? polls.filter((p) => p.subject === key) : polls;
     },
     matches: voteHubMatches,
   };

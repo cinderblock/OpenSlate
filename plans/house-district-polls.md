@@ -47,9 +47,26 @@ that district.
 3. Checks; a browser check on a House race with polls (CA-22 has 2); commit;
    close the issue.
 
+- **The app persists its query cache to IndexedDB** (`apps/web/src/lib/query.ts`,
+  15-minute `staleTime` for polls), so a browser that visited a House page
+  before the fix keeps showing "No representative polls found" until that
+  entry goes stale. That's fine for visitors (it heals itself in 15 minutes).
+  To check by hand, invalidate from the page:
+  `(await import('/src/lib/query.ts')).queryClient.invalidateQueries({ queryKey: ['polls'] })`.
+- **`performance.getEntriesByType('resource')` is useless for checking fetches
+  in `vite` dev:** module loads fill the 250-entry buffer, so the polls request
+  never shows up.
+- **A race link opened in a profile without that race's slate** (e.g. fresh
+  incognito) doesn't resolve: the heading is the raw route key and there's no
+  jurisdiction, so no polls. Pre-existing; logged in ISSUES.md.
+
 ## Progress log
 
-- [x] Confirmed upstream behaviour; plan written; issue claimed
-- [ ] Adapter change and test
-- [ ] Checks and browser verification
-- [ ] Commit, close the issue
+- [x] Confirmed upstream behaviour; plan written; issue claimed (`5f83ab2`)
+- [x] Adapter change, plus tests in `apps/web/test/polls.test.ts` (fetch stubbed)
+- [x] Checks: `bun test` (414 pass), typecheck (5/5), Biome on the touched
+      files
+- [x] Browser check, 2026-10-23 (dev server with live polls): CA-22's
+      page lists its 2 polls (Tulchin Research 2026-06-21, Public Policy Polling
+      2025-08-08)
+- [x] Committed; ISSUES.md entry closed

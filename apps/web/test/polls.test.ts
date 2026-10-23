@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import type { Poll, Subject } from "@openslate/core";
 import { pollsSource } from "../src/lib/polls";
 
@@ -97,5 +97,38 @@ describe("VoteHub matching", () => {
     expect(pollsSource.matches(prop50, pollsSource.lookup(prop50In2026))).toBe(false);
     const prop50In2025 = { ...prop50In2026, election: "2025-11-04" };
     expect(pollsSource.matches(prop50, pollsSource.lookup(prop50In2025))).toBe(true);
+  });
+});
+
+describe("VoteHub fetching", () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  /** Stub `fetch` with VoteHub's answer; returns the URLs asked for. */
+  function stubFetch(polls: Poll[]): string[] {
+    const urls: string[] = [];
+    globalThis.fetch = (async (input: string | URL | Request) => {
+      urls.push(String(input));
+      return new Response(JSON.stringify(polls));
+    }) as typeof fetch;
+    return urls;
+  }
+
+  test("a House district asks for every House poll and keeps its own", async () => {
+    const own = poll("us-representative", "2026 CA-22");
+    const urls = stubFetch([own, poll("us-representative", "2026 CA-11")]);
+    expect(await pollsSource.pollsForKey("2026 CA-22")).toEqual([own]);
+    expect(urls).toHaveLength(1);
+    const params = new URL(urls[0] ?? "", "http://x").searchParams;
+    expect(params.get("poll_type")).toBe("us-representative");
+    expect(params.has("subject")).toBe(false);
+  });
+
+  test("other keys filter by subject upstream", async () => {
+    const urls = stubFetch([governor]);
+    expect(await pollsSource.pollsForKey("2026 California")).toEqual([governor]);
+    expect(new URL(urls[0] ?? "", "http://x").searchParams.get("subject")).toBe("2026 California");
   });
 });
