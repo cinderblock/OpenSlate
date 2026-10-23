@@ -87,6 +87,8 @@ out on purpose).
 
 ## A race link opened without that race's slate shows the raw route key
 
+**In progress — master, `plans/race-link-unresolved.md`.**
+
 Opening a race page in a browser that hasn't imported a slate with that race
 (seen 2026-10-23 in a fresh incognito T3 preview on a local dev server, e.g.
 `#/race/t%3AUS%20House%20of%20Representatives%2C%20California%20District%2022|j%3Aus%2Fca%2Fcd-22|e%3A2026-11-03`)
