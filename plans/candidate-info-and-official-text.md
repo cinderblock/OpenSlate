@@ -356,13 +356,35 @@ Findings (checked 2026-10-22):
    3:33 AM PDT (10:33Z)): Prop G (question, Yes/No, 4 official and 30 paid
    arguments, legal text link to p.222); CD-15 (Mullin's statement from the SF
    guide, Hoelter "no statement"), signed by the real key.
-7. [ ] Signer organizations from SF's official and paid arguments (decision 3),
-   after the counties
+7. [x] Signer organizations from the county guides' official and paid
+   arguments (decision 3), done for SF, Orange, San Diego and Alameda
+   (2026-10-23, about 12:20 PM PDT (19:20Z)). LA prints no arguments.
+   - Endorsements repo:
+     - the hand-reviewed signer table moved to
+       `scripts/lib/argument-signers.ts`, shared with the state script, whose
+       output is unchanged (`a1d8da7`);
+     - `scripts/county-ballot-arguments.ts` and the county table (`eaa1a7c`);
+     - 90 new sources with 143 positions (`eb92f9c`).
+   - Three ways an organization signs:
+     - as itself (SF);
+     - an officer who speaks for it, as "Role, Organization"; a title marked
+       "*" is for identification only and doesn't count;
+     - Alameda's "s/ Organization, by NAME, Title".
+   - Government bodies, people and fragments of wrapped names map to `null`.
+   - 43 signatures agree with positions the catalog already had; none
+     conflict.
+   - Checked live: the Costa Mesa Firefighters Association's position on Costa
+     Mesa Measure C.
+   - Before this: the SF scraper now joins signatures that wrap and reads
+     signatures set two across (ballot repo `4583b44`). One break remains:
+     "Chinatown Transportation" / "Research and Improvement Project".
 8. [x] Next counties (user, 2026-10-23: "Keep going"), in order of value for
    effort (survey below): Los Angeles, Orange, Alameda (built while San
    Diego's index ran) and San Diego all **done**. Santa Clara and San Mateo
    postponed: there's no machine-readable source, so ask the registrars.
-9. ← **current: step 7**, for every county guide's arguments, not only SF's.
+9. Phase 2 is complete apart from the open question below. A new county
+   needs the user's go-ahead: Santa Clara and San Mateo need the registrars'
+   files.
 
 ### Orange County (done 2026-10-23, about 9:50 AM PDT (16:50Z))
 
