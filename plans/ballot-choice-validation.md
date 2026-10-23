@@ -92,15 +92,31 @@ cases) and the gate itself, so this can't quietly regress.
   It's another thread's work, so leave it alone. The gate will still scan it
   locally.
 
+- 2026-10-23: applying the fixer made 71 edits. 69 were off-ballot choices.
+  The other 2 came from the new nickname parsing, which also groups
+  `Jocelyn "Joz" Sida` with `Joz Sida` and `Gabriel "Gabe" Teran` with
+  `Gabe Teran` on uncovered races, rewritten to the majority spelling. All 18
+  suggestions were checked against each race's other names before
+  `--suggested`. Every race has one or two names, and the other one is plainly
+  someone else (another party, or unopposed).
+- The repo's `tsc` wasn't clean before this work: 22 errors remain in
+  `adopt.ts`, `ca-sos-ballot.ts` and others, and Biome format errors in
+  `build-site.ts`, `fetch-logos.ts` and others. The new and changed files pass
+  both. `lib` went to `ES2024` for `Map.groupBy`, which the old
+  normalize-choices already used.
+- `bun test` with no path would also pick up OpenSlate's own tests under
+  `.openslate/`, so the script is `bun test scripts`.
+
 ## Progress log
 
 - [x] Investigate: no candidate IDs, so match on title and choice; measure the current failures
-- [ ] names.ts + tests
-- [ ] ballot.ts + tests
-- [ ] verify-positions gate + CI test step
-- [ ] normalize-choices on shared matcher; fix the 69 positions
-- [ ] README + scraper skill
-- [ ] Close ISSUES.md entry
+- [x] names.ts + tests (`b0455d2`)
+- [x] ballot.ts + tests (`b0455d2`)
+- [x] normalize-choices on the shared matcher (`b0455d2`); 71 edits applied (`6fb9c52`)
+- [x] verify-positions gate, plus CI test steps in verify.yml and publish.yml, and README (`531a90a`)
+- [x] Scraper skill step 4b (OpenSlate)
+- [x] ISSUES.md entry marked fixed, pending push
+- [ ] Push openslate-public-endorsements (publishes to Pages: needs the user's go-ahead), then remove the ISSUES.md entry
 
 ## Open questions for the user
 

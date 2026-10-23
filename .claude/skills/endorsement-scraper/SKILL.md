@@ -46,7 +46,12 @@ Ask the user for whatever you don't already have:
    - `subject.id` — leave unset if you don't have a `vip:<id>` mapping.
    - `stance` — `endorse` / `oppose` / `lean_for` / `lean_against` /
      `neutral` / `abstain`. Pick the one that matches the language used.
-   - `choice` — the named candidate or "Yes"/"No" for measures.
+   - `choice` — the named candidate or "Yes"/"No" for measures, spelled
+     **exactly as the official ballot prints it** when an election authority
+     bundle lists the race (see step 4b), e.g. `Donald P. (Don) Wagner`, not
+     the page's "Don Wagner". Within a race the ballot spelling is the
+     candidate's identity; a different spelling shows up as a second person.
+     Keep the page's own wording in `statement`.
    - `statement` — a short quote (~1–3 sentences) from the source page
      justifying the position. Quote, don't paraphrase.
    - `source` — the exact URL the position came from. REQUIRED for every
@@ -104,6 +109,34 @@ Ask the user for whatever you don't already have:
 
    Fix any issues. The closed schema rejects unknown fields, malformed
    URLs, and missing required fields — this is a free correctness pass.
+
+4b. **Check races and names against the ballot.** Copy the bundle into the
+   [`openslate-public-endorsements`](../../../../openslate-public-endorsements)
+   checkout (`orgs/<slug>/<election>/`) and run, from there:
+
+   ```sh
+   bun scripts/normalize-choices.ts <election>    # dry run: what it would fix
+   bun scripts/verify-positions.ts                # the CI gate
+   ```
+
+   In any jurisdiction an election authority bundle covers (California
+   statewide and legislative races, San Francisco), the gate fails a race
+   title that isn't on the authority's list and a `choice` that isn't one of
+   that race's ballot names. The publish workflow runs the same check, so a
+   failure here blocks publishing. For each failure:
+   - **"ballot spelling: …"**: the same person by rule. Run
+     `normalize-choices.ts <election> --apply`.
+   - **"did you mean …? check the source"**: only a resemblance (a typo, an
+     unusual short form). Check it against the evidence and the race's other
+     names, then add `--suggested`, or fix the choice by hand. Note each one in
+     `NOTES.md`.
+   - **no suggestion, or a race failure**: fix the title or name by hand from
+     the ballot bundle (`orgs/ca-secretary-of-state/<election>/`,
+     `orgs/sf-department-of-elections/<election>/`). If the org endorses
+     someone who really isn't on the ballot (a write-in), stop and ask the user.
+
+   Races in jurisdictions no authority covers aren't checked; match their
+   titles to other orgs' bundles by eye (`bun scripts/list-subjects.ts <election> [filter]`).
 
 5. **Write `evidence/NOTES.md`** summarizing: which positions you
    extracted, which positions you skipped and why, and any judgment calls

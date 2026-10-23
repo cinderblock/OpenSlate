@@ -60,7 +60,11 @@ known failures; take them off the list when fixed.
 
 ## Same candidate under two spellings: "Donald P. (Don) Wagner" / "Don Wagner"
 
-**In progress — ballot-choice validation thread** (`plans/ballot-choice-validation.md`).
+**Fixed in openslate-public-endorsements, not yet pushed:** `6fb9c52` snaps all
+71 off-ballot choices (8 names) to the ballot spelling, and `531a90a` makes CI
+fail any position whose race or choice isn't on an election authority's list
+(`plans/ballot-choice-validation.md`). Remove this entry once that's pushed and
+the publish workflow has run.
 
 Seen 2026-10-22 on My ballot, California Secretary of State race (Nov 3,
 2026): the SoS ballot lists "Donald P. (Don) Wagner" and the California
