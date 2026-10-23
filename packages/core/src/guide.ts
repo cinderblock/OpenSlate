@@ -130,20 +130,38 @@ export const argumentSchema = z
     side: z.string().min(1),
     /** A rebuttal answers the other side's argument. */
     rebuttal: z.boolean(),
+    /** Its headline, when the guide prints one (paid arguments usually do). */
+    title: z.string().min(1).optional(),
     blocks: z.array(blockSchema),
     signers: z.array(signerSchema),
+    /**
+     * Printed because someone paid the printing fee, not chosen as the official
+     * argument (San Francisco prints both kinds).
+     */
+    paid: z.boolean().optional(),
+    /** Who paid, as printed (e.g. "The true source(s) of funds for the printing fee …"). */
+    funding: z.string().min(1).optional(),
     source: z.string().url(),
     disclaimer: z.string().optional(),
   })
   .strict();
 export type Argument = z.infer<typeof argumentSchema>;
 
+/**
+ * A full text or other original. Either mirrored (`file`, checked by hash), or
+ * only linked: a page of a large original kept out of the guide, identified by
+ * the SHA-256 of what was retrieved from `source`.
+ */
 export const documentSchema = z
   .object({
     title: z.string().min(1),
-    file: relativePath,
+    file: relativePath.optional(),
     source: z.string().url(),
     mediaType: z.string().min(1),
+    /** 1-based page in the original where this document starts. */
+    page: z.number().int().positive().optional(),
+    /** SHA-256 of the original at `source` when it was retrieved. */
+    sha256: sha256Hex.optional(),
   })
   .strict();
 export type GuideDocument = z.infer<typeof documentSchema>;
@@ -301,6 +319,6 @@ export function guideItemFiles(item: GuideItem): string[] {
     if (candidate.statement) walk(candidate.statement.blocks);
   }
   for (const argument of item.arguments ?? []) walk(argument.blocks);
-  for (const document of item.documents ?? []) files.add(document.file);
+  for (const document of item.documents ?? []) if (document.file) files.add(document.file);
   return [...files];
 }

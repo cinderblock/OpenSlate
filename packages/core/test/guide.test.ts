@@ -155,4 +155,42 @@ describe("guide", () => {
   test("an item's files include images inside passages, photos and documents", () => {
     expect(guideItemFiles(ITEM).sort()).toEqual(["img/1/chart.jpg", "pdf/prop1.pdf"]);
   });
+
+  test("a document may be linked at a page instead of mirrored", () => {
+    const linked = {
+      ...ITEM,
+      documents: [
+        {
+          title: "Legal text",
+          source: SOURCE,
+          mediaType: "application/pdf",
+          page: 150,
+          sha256: "a".repeat(64),
+        },
+      ],
+    };
+    const parsed = guideItemSchema.parse(linked);
+    expect(guideItemFiles(parsed)).toEqual(["img/1/chart.jpg"]);
+    const badPage = { ...linked, documents: [{ ...linked.documents[0], page: 0 }] };
+    expect(guideItemSchema.safeParse(badPage).success).toBe(false);
+  });
+
+  test("paid arguments carry who paid for them", () => {
+    const paid = {
+      ...ITEM,
+      arguments: [
+        {
+          side: "No",
+          rebuttal: false,
+          title: "Vote no",
+          blocks: [{ type: "p", text: ["No."] }],
+          signers: [{ name: "Jane Doe" }],
+          paid: true,
+          funding: "The true source(s) of funds for the printing fee of this argument: Jane Doe.",
+          source: SOURCE,
+        },
+      ],
+    };
+    expect(guideItemSchema.safeParse(paid).success).toBe(true);
+  });
 });
