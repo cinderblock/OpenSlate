@@ -80,6 +80,8 @@ export const blockSchema: z.ZodType<Block> = z.lazy(() =>
 /** A passage as published: its content, where it came from, and the publisher's caveat. */
 export const passageSchema = z
   .object({
+    /** What the guide calls it, e.g. "Digest", "Controller's Statement on “B”". */
+    title: z.string().min(1).optional(),
     /** Who wrote it, e.g. "Attorney General", "Legislative Analyst", or the candidate. */
     by: z.string().min(1).optional(),
     blocks: z.array(blockSchema),
@@ -134,6 +136,8 @@ export const argumentSchema = z
     title: z.string().min(1).optional(),
     blocks: z.array(blockSchema),
     signers: z.array(signerSchema),
+    /** A note printed under the signatures (e.g. "*For identification purposes only …"). */
+    footnote: z.string().min(1).optional(),
     /**
      * Printed because someone paid the printing fee, not chosen as the official
      * argument (San Francisco prints both kinds).
