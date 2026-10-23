@@ -359,9 +359,33 @@ Findings (checked 2026-10-22):
 7. [ ] Signer organizations from SF's official and paid arguments (decision 3),
    after the counties
 8. [ ] Next counties (user, 2026-10-23: "Keep going"), in order of value for
-   effort (survey below): Los Angeles **done**; Orange ← **current**; then San
-   Diego; then Alameda (the one big county that prints photos). Santa Clara
-   and San Mateo postponed.
+   effort (survey below): Los Angeles **done**; Orange **done**; San Diego ←
+   **current**; then Alameda (the one big county that prints photos). Santa
+   Clara and San Mateo postponed.
+
+### Orange County (done 2026-10-23, about 9:50 AM PDT (16:50Z))
+
+- Ballot source (endorsements `959a052`, names `501f8c3`; shared matching
+  moved to `scripts/lib/ballot-subjects.ts`, `e5f9cc5`): 138 races, 15
+  measures; 129 of 153 subjects reuse catalog titles. OC's filing log
+  truncates and abbreviates names ("Rcho Santiago Coll Dist"); each is matched
+  to the qualified-contests page's full name by word prefixes in order, fewest
+  skipped words winning. Only filers marked "Qualified For The Ballot (Yes)"
+  count. Catalog subjects OC doesn't have: Newport Beach Measures P, Q, R
+  (OC's letters stop at O). No logo: OC's favicon is over the 200 KB limit.
+- Guide (ballot repo `e465d56`, `75ee8fa`… see git log; `county/oc/`): 168
+  items, 364 statements (one PDF each), 15 measures with question, Yes/No
+  meanings, impartial analysis and signer, 32 arguments and rebuttals with
+  signers, full text linked by page. Checked live: Costa Mesa Measure C.
+- Findings: OC sets columns ~8 pt apart, so `pdf-layout.ts` now splits a line
+  at a gap over 6 pt that straddles the page middle (SF unchanged). Yes/No sit
+  side by side, so they're read by position, not reading order. Sign-offs vary
+  ("s/", "/s/", "/s", name then title, before or after the notice). Item file
+  names must keep a race's "(Short Term)" (they had merged Moulton Niguel's
+  two seats; fixed in both OC and LA scrapers).
+- Python edits on Windows: text mode writes CRLF (biome then fails), and
+  `` in a non-raw string becomes a backspace. Use the Edit tool for regexes;
+  fix stray `` with `perl -pi -e 's//chr(92)."b"/ge'`.
 
 ### County survey (2026-10-23, real fetches)
 
