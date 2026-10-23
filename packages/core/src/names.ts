@@ -43,6 +43,7 @@ const SHORT_FORMS: Record<string, string[]> = {
   frederick: ["fred"],
   gerald: ["gerry", "jerry"],
   gregory: ["greg"],
+  jacqueline: ["jackie", "jacky", "jacqui"],
   james: ["jim", "jimmy", "jamie"],
   jeffrey: ["jeff"],
   jennifer: ["jen", "jenny"],
@@ -146,12 +147,19 @@ function editDistance(a: string, b: string): number {
 function resembles(a: string, b: string) {
   const ta = toks(a);
   const tb = toks(b);
-  // Same surname, and one given name starts the other (Mano / Manohar) or is
-  // among the other's names (David Liu / Long David Liu).
-  if (ta.length >= 2 && tb.length >= 2 && ta.at(-1) === tb.at(-1)) {
+  if (ta.length >= 2 && tb.length >= 2) {
     const [ga, gb] = [ta[0] ?? "", tb[0] ?? ""];
-    if (ga.length >= 3 && gb.length >= 3 && (ga.startsWith(gb) || gb.startsWith(ga))) return true;
-    if (sub(ta, tb) || sub(tb, ta)) return true;
+    const [sa, sb] = [ta.at(-1) ?? "", tb.at(-1) ?? ""];
+    if (sa === sb) {
+      // Same surname, and one given name starts the other (Mano / Manohar), is among the
+      // other's names (David Liu / Long David Liu), or is a typo away (Frederick / Fredrick).
+      if (ga.length >= 3 && gb.length >= 3 && (ga.startsWith(gb) || gb.startsWith(ga))) return true;
+      if (sub(ta, tb) || sub(tb, ta)) return true;
+      if (Math.min(ga.length, gb.length) >= 4 && editDistance(ga, gb) <= 2) return true;
+    }
+    // Same given name (or a short form of it) and a surname a typo away (Turnkey / Trunkey).
+    if (sameGiven(ga, gb) && Math.min(sa.length, sb.length) >= 4 && editDistance(sa, sb) <= 2)
+      return true;
   }
   // A typo or two (Gonzalez / Gonzales, Bourisquot / Boursiquot).
   return editDistance(ta.join(""), tb.join("")) <= 2;
@@ -174,6 +182,8 @@ export function matchBallotName(choice: string, ballot: Iterable<string>): Ballo
   const same = names.filter((n) => samePerson(choice, n));
   if (same.length === 1) return { name: same[0] as string, sure: true };
   if (same.length > 1) return undefined;
-  const like = names.filter((n) => variants(n).some((v) => resembles(choice, v)));
+  const like = names.filter((n) =>
+    variants(n).some((v) => variants(choice).some((c) => resembles(c, v))),
+  );
   return like.length === 1 ? { name: like[0] as string, sure: false } : undefined;
 }

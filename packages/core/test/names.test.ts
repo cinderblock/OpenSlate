@@ -33,6 +33,7 @@ describe("samePerson", () => {
     ["Eddie de la Riva", "Eduardo De La Riva"],
     ["Johnny Yoder", "Johnathon Yoder"],
     ["Andy Gerken", "Andrew Gerken"],
+    ["Jacqueline Elizalde", "Jacky Elizalde"],
   ])("%s = %s", (a, b) => {
     expect(samePerson(a, b)).toBe(true);
     expect(samePerson(b, a)).toBe(true);
@@ -71,6 +72,9 @@ describe("matchBallotName", () => {
     ["Gerald Bourisquot", ["Gerald C. Boursiquot", "Carl DeMaio"], "Gerald C. Boursiquot"],
     ["Mano Raju", ["Manohar Raju"], "Manohar Raju"],
     ["David Liu", ["Mike Fong", "Long David Liu"], "Long David Liu"],
+    ["Mesahl “Kash” Kashifalghita", ["Meshal Kashifalghita", "Richard Bowen"], "Meshal Kashifalghita"],
+    ["Chris Turnkey", ["Cindy Larae Hallman", "Christopher Trunkey"], "Christopher Trunkey"],
+    ["Frederick Sykes", ["Fredrick Fred Sykes", "Tony Wu"], "Fredrick Fred Sykes"],
   ])("%s only resembles a ballot name: a suggestion, not sure", (choice, ballot, name) => {
     expect(matchBallotName(choice, ballot)).toEqual({ name, sure: false });
   });
