@@ -84,3 +84,15 @@ console shows an error. Either turn off the automatic beacon injection for
 the zone (a Cloudflare setting: needs the owner's authorization, through the
 ops repo), or decide to allow it in the CSP (which the `_headers` comment rules
 out on purpose).
+
+## House race pages never show polls: VoteHub's subject filter ignores districts
+
+`/api/polls?subject=2026%20CA-22` returns `[]`, though `2026 CA-22` is listed in
+`/api/subjects` (also `[]` with `&poll_type=us-representative`; checked
+2026-10-23 against https://polls.openslate.us). District polls only come back
+from `/api/polls?poll_type=us-representative` (175 polls across all districts,
+each with `subject: "2026 CA-22"` and `seat_name: "CA-22"`). The VoteHub adapter
+(`apps/web/src/lib/polls.ts`) fetches by subject, so a House race page (e.g.
+"US House of Representatives, California District 22") shows "No representative
+polls found" even when VoteHub has some. Matters because House races are among
+the few local-to-the-voter races VoteHub does poll.
