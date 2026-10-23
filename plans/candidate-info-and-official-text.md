@@ -359,9 +359,10 @@ Findings (checked 2026-10-22):
    guide, Hoelter "no statement"), signed by the real key.
 7. [ ] Signer organizations from SF's official and paid arguments (decision 3)
    ← **next, awaiting go-ahead with step 8's choice**
-8. [ ] Next counties, in order of value for effort (survey below): **Los
-   Angeles** ← **current**, then Orange, then San Diego. Alameda only if we
-   want photos. Santa Clara and San Mateo postponed.
+8. [ ] Next counties, in order of value for effort (survey below): Los
+   Angeles **done**; then Orange ← **next, awaiting go-ahead**, then San
+   Diego. Alameda only if we want photos. Santa Clara and San Mateo
+   postponed.
 
 ### County survey (2026-10-23, real fetches)
 
@@ -429,10 +430,24 @@ LA progress (2026-10-23):
   unpushed)
 - [x] Ballot repo: HTML → blocks moved to `scripts/lib/html-blocks.ts`, state
   guide byte-identical (`40536de`); `scripts/scrape-la.ts` written
-- [ ] L1 `scripts/la-rrcc-ballot.ts` written; evidence fetch running
-- [ ] L1 review mapping (orphans, renames), apply, publish
-- [ ] L2 run `scrape-la.ts` (≈600 paced statement requests), review, publish
-- [ ] L3 catalog entry, live check
+- [x] L1 LA ballot source (endorsements `47ee8d1`): 248 races, 68 measures;
+  199 of 316 subjects reuse existing catalog titles; new seats follow the
+  body's existing seat style. `normalize-choices` applied 4 LA spellings to
+  other bundles (`c59ac93`). Catalog subjects LA doesn't list (reported, not
+  changed): 12 seats (likely uncontested), the LA Federation of Labor's
+  "Bellflower — Measure SM" (LA's is Bellflower *Unified School District*'s)
+  and "South Gate — Measure UUT", and a district-less "Monterey Park City
+  Council".
+- [x] L2 LA guide (ballot repo `b4f7f7a`, `e64af1c`, `54d145d`, pinned
+  OpenSlate `a32e2c1`): 307 items, 595 statements in 239 races, 68 measures
+  (question, impartial analysis with its author, 33 full texts; LA's data has
+  none for the rest, e.g. City of LA measures point to the city's own
+  pamphlet). `guide verify --files` over HTTPS: 307/307.
+- [x] L3 `guides.json` entry with covers (`90a329e`); checked live in a fresh
+  incognito tab (2026-10-23, 4:30 AM PDT (11:30Z)): County Measure A (question,
+  County Counsel's analysis, proposed ordinance as full text), LACCD Seat 4
+  (2 statements, 5 "no statement"). Races where nobody bought a statement
+  (LA Mayor, LACCD Seat 2) correctly show no guide card.
 
 LA findings:
 
