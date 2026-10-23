@@ -339,16 +339,60 @@ Findings (checked 2026-10-22):
 
 ### Phase 2 steps
 
-1. [ ] Core + CLI: `argument.paid`, `argument.funding`; `document.file`
-   optional with `page` and `sha256`; tests
-2. [ ] App: `covers` matching across guides; paid arguments; linked documents
-3. [ ] Ballot repo: PDF text extraction + `scripts/scrape-sf-vip.ts`
-   ← **current**
-4. [ ] Ballot repo: build and publish per-county guides; bump `.openslate-version`
-5. [ ] Endorsements repo: SF entry in `guides.json` with `covers`
-6. [ ] Check live
+1. [x] Core: `argument.paid`, `funding`, `title`, `footnote`; `document.file`
+   optional with `page` and `sha256`; `passage.title`; tests (`936c05f`,
+   `d20e8d2`)
+2. [x] App: `covers` matching across guides; paid arguments; linked
+   documents; passage titles; recovery from a republished guide (`aa38d3e`,
+   `450d7d5`, `232c37e`); README (`0323559`). Live on openslate.us.
+3. [x] Ballot repo: `scripts/lib/pdf-layout.ts`, `scripts/scrape-sf-vip.ts`,
+   shared `scripts/lib/guide-common.ts` (state guide rebuilds byte-identical)
+   (`637f9dd`, `dec0e00`). SF guide: 26 items, 46 statements, 44 official and
+   121 paid arguments (`ff024a3`).
+4. [x] Ballot repo: CI signs and verifies every guide; site publishes
+   `county/sf/`; pinned OpenSlate `0323559` (`2792587`). `guide verify
+   --files` over HTTPS: SF 26/26 files, state 132/132.
+5. [x] Endorsements repo: SF entry and `covers` for both guides (`cd906a8`)
+6. [ ] Check live on openslate.us ← **current**
 7. [ ] Signer organizations from SF's official and paid arguments (decision 3)
 8. [ ] Next counties: decide by what's publishable and where users are
+
+### Findings while building phase 2
+
+- **Telling a wrapped line from a deliberate break.** The pamphlet is ragged
+  right, and candidates and signers break their own lines (lists of
+  endorsers, signature blocks). Geometry alone can't decide within a few
+  points of the margin. What works: a line joins the next with a space unless
+  the next line's first word would *clearly* have fit (by 25 pt); in a
+  paragraph that is mostly breaks (a list), an uncertain join is a break
+  unless the line above is partway through a comma-separated run. Column edges
+  are per page (digest columns are narrower than statement columns), from the
+  90th percentile of line ends, because a stray wide line (a vote threshold)
+  throws off a maximum.
+- **Signatures.** A signature ending in `*` or `.` is complete; "Name, Title"
+  starts a new one; a capitalised wrap shows itself by carrying the signer's
+  `*` ("Development Center*"). A trailing "*For identification purposes
+  only…" paragraph is the argument's `footnote`. Six arguments with unusual
+  sign-off layouts come out with no signers; their names stay in the text.
+- **Paid arguments** end with "The true source(s) of funds…" and may continue
+  with "The three largest contributors…" or "The sole contributor…"
+  paragraphs. Count check: 121 funding lines in the PDF, 121 paid arguments.
+- **Names that differ from the ballot:** "Mano Raju" (ballot: Manohar Raju),
+  "Lisa Palagi Wynn II" (Lisa Wynn), "Joaquín Torres" (Joaquin Torres). The
+  matcher's last-name fallback handles them and the scraper lists them.
+- **The app persists its query cache** (`react-query-persist-client`), so a
+  manifest outlives reloads for up to an hour. After a republish, a page
+  would reject new files as not matching. Fixed: a mismatched file is fetched
+  again past the browser cache, then the manifest is refetched once per file
+  and hash (so real tampering can't loop), and manifests revalidate with
+  `cache: "no-cache"`.
+- Local testing without touching the real key: serve a local catalog mirror
+  (files present locally, everything else proxied to Pages, with CORS), sign
+  the county guide with a throwaway key generated in `%TEMP%`, and run vite
+  with `VITE_PUBLIC_ENDORSEMENTS_CATALOG` pointing at it. Use the incognito
+  preview profile: the default one holds the user's ballot data.
+- Biome flagged the scrapers' generated JSON (state guide too). Generated
+  `guide/`, `county/`, `evidence/` are now ignored by biome.
 
 ## Progress log
 
