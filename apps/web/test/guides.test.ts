@@ -1,5 +1,12 @@
-import { describe, expect, test } from "bun:test";
-import { type GuideEntry, guideListUrl, guidesFor } from "../src/lib/guides";
+import { afterEach, describe, expect, test } from "bun:test";
+import { type GuideManifest, sha256 } from "@openslate/core";
+import {
+  type GuideEntry,
+  GuideFileMismatch,
+  fetchGuideFile,
+  guideListUrl,
+  guidesFor,
+} from "../src/lib/guides";
 
 const CA: GuideEntry = {
   election: "2026-11-03",
@@ -61,5 +68,37 @@ describe("voter guides", () => {
     expect(
       guidesFor([SF], { title: "X", jurisdiction: "us/ca/cd-1", election: "2026-11-03" }),
     ).toEqual([]);
+  });
+});
+
+describe("fetching a guide's files", () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  async function setup(served: string[]) {
+    const fresh = new TextEncoder().encode('{"v":1}');
+    const manifest = { files: { "items/x.json": await sha256(fresh) } } as unknown as GuideManifest;
+    const caches: (RequestCache | undefined)[] = [];
+    globalThis.fetch = (async (_url: unknown, init?: RequestInit) => {
+      caches.push(init?.cache);
+      return new Response(served[caches.length - 1] ?? "");
+    }) as typeof fetch;
+    return { manifest, caches };
+  }
+
+  test("a stale cached copy is fetched again from the server", async () => {
+    const { manifest, caches } = await setup(['{"v":0}', '{"v":1}']);
+    const bytes = await fetchGuideFile(CA, manifest, "items/x.json");
+    expect(new TextDecoder().decode(bytes)).toBe('{"v":1}');
+    expect(caches).toEqual(["default", "no-cache"]);
+  });
+
+  test("a file that never matches is a mismatch, not a network error", async () => {
+    const { manifest } = await setup(['{"v":0}', '{"v":0}']);
+    await expect(fetchGuideFile(CA, manifest, "items/x.json")).rejects.toBeInstanceOf(
+      GuideFileMismatch,
+    );
   });
 });

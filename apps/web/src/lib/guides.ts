@@ -6,8 +6,8 @@ import {
   parseGuideItem,
   verifyGuide,
 } from "@openslate/core";
-import { useQueries, useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG } from "./query";
 import { subjectKey } from "./subjects";
 
@@ -73,7 +73,8 @@ export function guideManifestQueryOptions(entry: GuideEntry | undefined) {
     enabled: entry !== undefined,
     queryFn: async (): Promise<GuideManifest> => {
       if (!entry) throw new Error("no guide");
-      const response = await fetch(entry.url);
+      // Revalidate rather than trust the browser's copy: a guide's files change with it.
+      const response = await fetch(entry.url, { cache: "no-cache" });
       if (!response.ok) throw new Error(`Voter guide: HTTP ${response.status}`);
       const result = verifyGuide(await response.text(), { expectedKey: entry.key });
       if (!result.valid || !result.manifest) {
@@ -85,19 +86,51 @@ export function guideManifestQueryOptions(entry: GuideEntry | undefined) {
   };
 }
 
+/**
+ * A file whose bytes aren't the ones its manifest lists: one of the two is out
+ * of date (the guide was republished), or the file was tampered with.
+ */
+export class GuideFileMismatch extends Error {}
+
 /** A file listed in a verified manifest, fetched and checked against its hash. */
-async function fetchGuideFile(
+export async function fetchGuideFile(
   entry: GuideEntry,
   manifest: GuideManifest,
   path: string,
 ): Promise<Uint8Array> {
-  const response = await fetch(new URL(path, entry.url));
-  if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  if (!(await checkGuideFile(manifest, path, bytes))) {
-    throw new Error(`${path} doesn't match the signed guide`);
+  // The browser's cached copy may predate the manifest; ask the server once more before failing.
+  for (const cache of ["default", "no-cache"] as const) {
+    const response = await fetch(new URL(path, entry.url), { cache });
+    if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (await checkGuideFile(manifest, path, bytes)) return bytes;
   }
-  return bytes;
+  throw new GuideFileMismatch(`${path} doesn't match the signed guide`);
+}
+
+const retryUnlessMismatch = (failures: number, error: unknown) =>
+  !(error instanceof GuideFileMismatch) && failures < 3;
+
+/**
+ * When a file doesn't match, the manifest may be the stale one: it is cached,
+ * and kept across visits, for an hour. Fetch it again, once for each file and
+ * hash it lists, so a file that really was tampered with doesn't loop.
+ */
+function useRefetchManifestOnMismatch(
+  entry: GuideEntry | undefined,
+  manifest: GuideManifest | undefined,
+  path: string | undefined,
+  error: unknown,
+): void {
+  const queryClient = useQueryClient();
+  const tried = useRef(new Set<string>());
+  useEffect(() => {
+    if (!entry || !manifest || !path || !(error instanceof GuideFileMismatch)) return;
+    const attempt = `${entry.url}|${path}|${manifest.files[path] ?? ""}`;
+    if (tried.current.has(attempt)) return;
+    tried.current.add(attempt);
+    void queryClient.invalidateQueries({ queryKey: guideManifestQueryOptions(entry).queryKey });
+  }, [entry, manifest, path, error, queryClient]);
 }
 
 /** Guides for the subject's election that cover its area, in catalog order. */
@@ -150,8 +183,10 @@ export function useGuideItem(subject: Subject | undefined): {
       if (!entry || !manifest || !listed) throw new Error("no guide item");
       return parseGuideItem(await fetchGuideFile(entry, manifest, listed.file));
     },
+    retry: retryUnlessMismatch,
     staleTime: HOUR,
   });
+  useRefetchManifestOnMismatch(entry, manifest, listed?.file, item.error);
 
   if (entry && manifest && item.data) {
     return { status: "ready", guide: { entry, manifest, item: item.data } };
@@ -185,8 +220,10 @@ export function useGuideFileUrl(
       if (!path) throw new Error("no file");
       return await fetchGuideFile(guide.entry, guide.manifest, path);
     },
+    retry: retryUnlessMismatch,
     staleTime: HOUR,
   });
+  useRefetchManifestOnMismatch(guide.entry, guide.manifest, path, file.error);
   const [url, setUrl] = useState<string>();
   useEffect(() => {
     if (!file.data) return;
