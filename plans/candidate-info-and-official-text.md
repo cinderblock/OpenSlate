@@ -387,6 +387,63 @@ Findings (checked 2026-10-22):
   `` in a non-raw string becomes a backspace. Use the Edit tool for regexes;
   fix stray `` with `perl -pi -e 's//chr(92)."b"/ge'`.
 
+### San Diego (in progress, 2026-10-23)
+
+- **Source:** one pamphlet per ballot type, `SB-ENG-{n}.pdf` (about 650 of
+  them, 9–13 MB each). Each is assembled from shared sections, and each page
+  has its section code at the foot: `CS-<contest>-<page>-ENG` for a contest's
+  statements and `PR-<measure>-<page>-ENG` for a measure.
+- **Index** (ballot repo `scripts/sd-index.ts` →
+  `evidence/county/sd/ballot-types.json`): each pamphlet's bookmarks are read
+  through range requests (`scripts/lib/pdf-range.ts`), about 0.6 MB each.
+  - Paced, resumable, about 5–15 s per file.
+  - At SB-ENG-262 at about 10:17 AM PDT (17:17Z).
+- **Ballot source** (endorsements `scripts/sd-rov-ballot.ts`, uncommitted):
+  - Races come from the registrar's `candidate-list.pdf` layout; measures from
+    the index's bookmarks (a measure's own bookmark, e.g. "CITY OF OCEANSIDE
+    MEASURE R").
+  - `--index <path>` reads a local index before it's pushed.
+  - On the partial index: 144 races, 5 measures, 139 of 149 subjects reused.
+- **Guide** (ballot repo `scripts/scrape-sd.ts`):
+  1. A greedy cover picks the fewest pamphlets whose bookmarks cover every
+     contest (15 for the first 70 ballot types).
+  2. It downloads those pamphlets into `.cache/county/sd/`.
+  3. It reads each section code once.
+  - Statements go to the race whose ballot-source choices match every printed
+    name; the heading breaks ties, and the Secretary of State's titles are
+    used for Senate and Assembly districts.
+  - Measures map by the "<BODY> / MEASURE X" heading to `contest-subjects.json`.
+  - From each measure it takes the question, the Yes/No meanings (the end of
+    the analysis), the analysis with its author, the tax rate statement, the
+    arguments and rebuttals with their signers, and the full text's page.
+  - On the partial index: 64 items, 117 statements, 16 arguments; `guide
+    check` passes.
+- **Findings:**
+  - "•" is a separate text run from its item's text, at the same y; the two
+    are joined.
+  - "AGE: 44" is set beside a name; it's dropped.
+  - A ballot designation can wrap onto two bold lines.
+  - Argument headings wrap ("REBUTTAL TO THE ARGUMENT IN FAVOR OF" / "MEASURE
+    A").
+  - The opinions caveat repeats atop every argument page.
+  - Signers come in two styles: CAPS name then a mixed-case title, one per
+    row; or a bold mixed-case name, two across in a grid (Oceanside S).
+  - A title's lines are one phrase where they wrap and separate roles where
+    they don't.
+  - Shared matching (`guide-common.ts`, `2c8af4e`) now folds ’ to ' and
+    ignores Dr./RN/MD; SF, LA and OC output is unchanged.
+  - Congress statements aren't in SD's pamphlets.
+- **Remaining:**
+  1. Finish the index.
+  2. Rerun the ballot source with `--fetch`, then apply and commit it in the
+     endorsements repo (with `ballot-subjects.ts`, `pdf-layout.ts`,
+     `pdfjs-dist` and `bun.lock`).
+  3. Run `normalize-choices`.
+  4. Rerun `scrape-sd.ts` against the published ballot source.
+  5. Commit and push the ballot repo, so CI signs and publishes.
+  6. Add the `guides.json` entry with `covers`.
+  7. Check live.
+
 ### County survey (2026-10-23, real fetches)
 
 | County | Source | Statements | Photos | Measures | Effort |
