@@ -28,6 +28,11 @@ describe("samePerson", () => {
     ["Ell Jennison", 'Ellsworth "Ell" M. Jennison, Jr.'],
     ["Joe Smith", "Joseph Smith"],
     ["José Pérez", "Jose Perez"],
+    ["Danny Ivanov", "Daniel Ivanov"],
+    ["Dan Ivanov", "Danny Ivanov"],
+    ["Eddie de la Riva", "Eduardo De La Riva"],
+    ["Johnny Yoder", "Johnathon Yoder"],
+    ["Andy Gerken", "Andrew Gerken"],
   ])("%s = %s", (a, b) => {
     expect(samePerson(a, b)).toBe(true);
     expect(samePerson(b, a)).toBe(true);
@@ -37,6 +42,8 @@ describe("samePerson", () => {
     ["Don Wagner", "Shirley N. Weber"],
     ["Mike Fong", "Long David Liu"],
     ["Wagner", "Donald P. (Don) Wagner"],
+    ["Danny Ivanov", "Daniel Ivanova"],
+    ["Pat Smith", "Peter Smith"],
   ])("%s ≠ %s", (a, b) => {
     expect(samePerson(a, b)).toBe(false);
   });
@@ -74,5 +81,6 @@ describe("matchBallotName", () => {
 
   test("no match when two ballot names fit", () => {
     expect(matchBallotName("John Lee", ["John A. Lee", "John B. Lee"])).toBeUndefined();
+    expect(matchBallotName("Pat Smith", ["Patricia Smith", "Patrick Smith"])).toBeUndefined();
   });
 });
