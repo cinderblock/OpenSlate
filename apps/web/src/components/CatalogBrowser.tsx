@@ -1,9 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Download, Plus, RefreshCw, UserCheck } from "lucide-react";
 import { useMemo, useState } from "react";
+import { type BallotProblem, ballotProblems, problemReport } from "../lib/ballotCheck";
 import { importCatalogEntry } from "../lib/catalogImport";
 import { electionOf } from "../lib/collate";
 import { formatLocalDate } from "../lib/dates";
+import { reportFeedback } from "../lib/feedback";
 import {
   defaultToUnfollowed,
   localToday,
@@ -72,6 +74,18 @@ export function CatalogBrowser() {
     return set;
   }, [slates]);
   const knownTokens = useMemo(() => new Set(slates.map((s) => s.token)), [slates]);
+
+  // `<source id>|<election>` → what its endorsements name that the ballot
+  // listing doesn't have: likely an import that didn't go cleanly.
+  const offBallot = useMemo(() => {
+    const by = new Map<string, BallotProblem[]>();
+    for (const problem of ballotProblems(slates)) {
+      if (problem.kind === "write-in") continue;
+      const key = `${problem.sourceId}|${problem.election ?? ""}`;
+      by.set(key, [...(by.get(key) ?? []), problem]);
+    }
+    return by;
+  }, [slates]);
 
   const elections = useMemo(
     () => [...new Set(catalog?.entries.map((e) => e.election))].sort(),
@@ -225,6 +239,9 @@ export function CatalogBrowser() {
                       />
                     )}
                     {errors[key] && <div className="error">{errors[key]}</div>}
+                    {has && (
+                      <OffBallotLine problems={offBallot.get(`${sourceId}|${entry.election}`)} />
+                    )}
                   </div>
                   {ballot ? (
                     has ? (
@@ -324,6 +341,25 @@ export function CatalogBrowser() {
           </p>
         )}
       </details>
+    </div>
+  );
+}
+
+/** Under an imported entry: the names it gives that aren't on the ballot. */
+function OffBallotLine({ problems }: { problems: BallotProblem[] | undefined }) {
+  if (!problems?.length) return null;
+  return (
+    <div className="warning">
+      {problems.length === 1 ? "1 name" : `${problems.length} names`} here{" "}
+      {problems.length === 1 ? "isn't" : "aren't"} on the official ballot list, so{" "}
+      {problems.length === 1 ? "it" : "they"} may not have imported cleanly.{" "}
+      <button
+        type="button"
+        className="link"
+        onClick={() => reportFeedback("wrong-info", problemReport(problems))}
+      >
+        Report {problems.length === 1 ? "it" : "them"}
+      </button>
     </div>
   );
 }

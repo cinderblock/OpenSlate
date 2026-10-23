@@ -7,7 +7,7 @@ import {
   isBallotListing,
   resolveChoice,
 } from "@openslate/core";
-import type { DecodedSlate } from "./collate";
+import { type DecodedSlate, electionOf } from "./collate";
 
 /**
  * The import translator (SPEC §3.11). Endorsers name candidates their own
@@ -81,6 +81,7 @@ export interface BallotProblem {
   sourceId: string;
   sourceName: string;
   subject: Subject;
+  election?: string;
   /** As the slate wrote it; absent for a race that isn't listed. */
   choice?: string;
   kind: "race-unlisted" | "unlisted" | "write-in";
@@ -103,6 +104,9 @@ export function ballotProblems(slates: DecodedSlate[]): BallotProblem[] {
         sourceId: slate.source.id,
         sourceName: slate.source.name,
         subject: position.subject,
+        ...(electionOf(position.subject, slate.payload)
+          ? { election: electionOf(position.subject, slate.payload) }
+          : {}),
         ...(position.choice !== undefined && status !== "race-unlisted"
           ? { choice: position.choice }
           : {}),

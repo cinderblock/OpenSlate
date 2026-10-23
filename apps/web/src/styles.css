@@ -369,6 +369,18 @@ button.ui-info-bare {
   padding: 0.1rem 0.5rem;
   color: var(--muted);
 }
+/* SPEC §3.11/§3.12: a write-in, or a name the ballot listing doesn't have */
+.tag-warn {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+.ballot-notice {
+  border-left: 4px solid var(--warn);
+  background: color-mix(in oklab, var(--surface), var(--warn) 6%);
+}
+.ballot-notice p {
+  margin: 0.25rem 0;
+}
 .tag-inline {
   margin-left: 0.4rem;
   font-size: 0.7rem;

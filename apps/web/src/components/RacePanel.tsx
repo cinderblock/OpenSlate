@@ -2,10 +2,11 @@ import type { CandidateInfo, Passage, Stance, Subject } from "@openslate/core";
 import { Link, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useBallotDraft } from "../lib/ballotDraft";
-import { type ChoiceGroup, collateRaces, stanceTone } from "../lib/collate";
+import { type ChoiceGroup, type Race, collateRaces, stanceTone } from "../lib/collate";
 import { type GuideForSubject, useGuideItem } from "../lib/guides";
 import { useDecodedSlates, useFollows } from "../lib/myVote";
 import { subjectKey } from "../lib/subjects";
+import { ChoiceBallotTags, RaceUnlistedNote } from "./BallotTags";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { ForecastsPanel } from "./ForecastsPanel";
 import { CandidateGuide, GuideDetails, GuideMeans, GuideOverview } from "./GuideContent";
@@ -130,6 +131,7 @@ export function RacePanel() {
             </div>
           ) : (
             <>
+              <RaceUnlistedNote race={race} />
               {race.onBallot && (
                 <p className="hint">
                   {race.choices.filter((c) => c.onBallot).length} on the ballot ·{" "}
@@ -141,6 +143,7 @@ export function RacePanel() {
                 <ChoiceCard
                   key={group.choice}
                   group={group}
+                  race={race}
                   subjectTitle={race.subject.title}
                   guide={guide.guide}
                 />
@@ -156,10 +159,12 @@ export function RacePanel() {
 
 function ChoiceCard({
   group,
+  race,
   subjectTitle,
   guide,
 }: {
   group: ChoiceGroup;
+  race: Race;
   subjectTitle: string;
   guide?: GuideForSubject;
 }) {
@@ -178,6 +183,7 @@ function ChoiceCard({
       <div className="card-title">
         <strong>{group.choice || <em>(no specific choice)</em>}</strong>
         {group.ballotNote && <span className="hint">{group.ballotNote}</span>}
+        <ChoiceBallotTags group={group} race={race} />
         <span className="grow" />
         <span className="tag">
           {total.for} for · {total.against} against, followed or not
@@ -220,6 +226,7 @@ function ChoiceCard({
                 )}
                 <LeanMeter sourceId={position.source.id} name={position.source.name} withWord />
                 {!position.valid && <span className="warning"> (unverified)</span>}
+                {position.written && <div className="hint">Named as “{position.written}”.</div>}
                 {position.statement && <div className="hint">“{position.statement}”</div>}
               </span>
             </li>

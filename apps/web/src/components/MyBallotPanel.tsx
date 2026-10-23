@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProgressBar } from "react-aria-components";
+import { ballotProblems } from "../lib/ballotCheck";
 import { type DraftRow, NOTE_CHOICE, rowIdFor, useBallotDraft } from "../lib/ballotDraft";
 import { ballotFileName, ballotToCsv, ballotToJson } from "../lib/ballotExport";
 import {
@@ -51,6 +52,7 @@ import { type RaceStatus, isDecided, marksOn, raceStatus, stepThrough } from "..
 import { track } from "../lib/usage";
 import { openWizard } from "../lib/wizard";
 import { AreaPicker, describeArea } from "./AreaPicker";
+import { BallotProblemsNotice, ChoiceBallotTags, RaceUnlistedNote } from "./BallotTags";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { LeanSummary } from "./LeanMeter";
 import { QuickFill } from "./QuickFill";
@@ -157,6 +159,12 @@ export function MyBallotPanel() {
       }),
     [slates, follows, election, area, showUnfollowed],
   );
+
+  // What the shown races' endorsements name that the ballot listing doesn't have.
+  const offBallot = useMemo(() => {
+    const keys = new Set(races.map((race) => race.key));
+    return ballotProblems(slates).filter((p) => keys.has(subjectKey(p.subject)));
+  }, [slates, races]);
 
   // Races the area filter hid because a district kind isn't set, so the user
   // isn't left wondering where their Assembly race went.
@@ -439,6 +447,8 @@ export function MyBallotPanel() {
           </div>
         </div>
       )}
+
+      <BallotProblemsNotice problems={offBallot} />
 
       <QuickFill
         open={filling}
@@ -909,6 +919,7 @@ function RaceCardInner({
           {field && <span title={field.title}>{field.text}</span>}
         </span>
       </div>
+      <RaceUnlistedNote race={race} />
       {mine && mine.length > 0 && (
         <p className="my-slate hint no-print">
           <PenLine className="icon" /> You {mine.map(describeMine).join("; ")} · signed{" "}
@@ -999,6 +1010,7 @@ function ChoiceRow({
             {group.opposition > 0 && `${group.opposition} against`}
           </span>
           {group.ballotNote && <span className="ballot-note hint">{group.ballotNote}</span>}
+          <ChoiceBallotTags group={group} race={race} />
         </div>
         {(followed.length > 0 || others.length > 0) && (
           <div className="source-chips">
@@ -1029,6 +1041,11 @@ function ChoiceRow({
                     <strong>{what}</strong>
                   </div>
                   {position.statement && <p>“{position.statement}”</p>}
+                  {position.written && (
+                    <p className="hint">
+                      Named as “{position.written}”; the ballot spells it as above.
+                    </p>
+                  )}
                   {position.source.secondhand && (
                     <p className="hint">
                       Reported by {position.source.signerName ?? "a researcher"}, not signed by{" "}
