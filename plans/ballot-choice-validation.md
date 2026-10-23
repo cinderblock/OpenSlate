@@ -111,6 +111,13 @@ cases) and the gate itself, so this can't quietly regress.
   single-valued nickname table missed; the rest typos, wrong areas, a
   measure under another body's title, and 21 seats / measures not listed.
 - `openslate validate` takes a full payload, not sign input (ISSUES.md).
+- A county listing doesn't list uncontested seats (appointed in lieu of
+  election), and endorsers often endorse them anyway. The gate flags them as
+  races not on the ballot, which is right: drop them, with a note. A city can
+  also run its own ballot on the same day (Newport Beach P/Q/R): that needs
+  its own ballot source, not an exception.
+- `biome check --write scripts/` reformats every script, including other
+  threads' (and turns CRLF to LF). Name the files.
 - `apps/web/tsconfig.json` includes only `src`, so `tsc` doesn't check test
   fixtures; `bun test` is what catches them.
 - The web's `openFeedback` is used as `onClick={openFeedback}`, so it can't
@@ -127,7 +134,7 @@ cases) and the gate itself, so this can't quietly regress.
 - [x] verify-positions gate, plus CI test steps in verify.yml and publish.yml, and README (`531a90a`)
 - [x] Scraper skill step 4b (OpenSlate)
 - [x] ISSUES.md entry marked fixed, pending push
-- [ ] Push openslate-public-endorsements (publishes to Pages: needs the user's go-ahead), then remove the ISSUES.md entry
+- [x] Pushed with phase 2 (see below); ISSUES.md entry removed
 
 ## Phase 2: candidate ids, write-ins, import translator (started 2026-10-23)
 
@@ -220,11 +227,36 @@ endorsements repo follows with a `.openslate-version` bump.
       fixes (`7207c50`). `.openslate-version` = `1b68fd4` (feat/choice-ids,
       not on GitHub yet). Tests 19 pass. A throwaway-key sign of CAGOP's
       bundle verifies with `choice_id` in it.
-- [ ] Gate still fails 21 positions (7 bundles): LA / OC seats and measures
-      the county listings don't name (ISSUES.md). Needs the user's call.
-- [ ] Push OpenSlate `feat/choice-ids` → master (deploys the web app), then
-      the endorsements repo (needs the pin reachable on GitHub, and the 21
-      resolved). User's go-ahead for each.
+- [x] User, 2026-10-23: "merge and push. fix the failing endorsements. then
+      push the endorsement repo." OpenSlate: `feat/choice-ids` fast-forwarded
+      onto master, origin/master merged in (`79d8416`), 391 tests and
+      typecheck green, pushed; Workers Builds deployed it (the live
+      MyBallotPanel chunk has the new tags).
+- [x] Endorsements repo rebased again onto 12 upstream commits (San Diego
+      and Alameda listings, 90 signer-org sources): 713 more listing ids
+      (`5273dbe`), 992 more endorsement ids and 4 SD names (`e46efb8`), moves
+      across jurisdictions for school boards the listing files under the
+      county (`a814091`, `86da6b6`).
+- [x] The last 30 failures, researched against official sources (two
+      research agents, then checked):
+      - 20 seats not on any ballot, uncontested and filled by appointment in
+        lieu of election: 17 in LA (on the Registrar's tentative list of
+        canceled elections), AC Transit Ward 1 ("Not On Ballot" on Alameda's
+        list), EBMUD Wards 2 and 4 (appointed by EBMUD's board Aug 18).
+        Dropped, each noted in its org's evidence/NOTES.md (`d7bd8c4`).
+      - South Gate "Measure UUT" is the ballot's Measure SG (`d7bd8c4`).
+      - Newport Beach P, Q, R are on the city's own Special Municipal
+        Election ballot, not the county's: new ballot source
+        `orgs/newport-beach-city-clerk/` (`3deb821`).
+      - SD school boards (6) were on the ballot under the county's titles and
+        jurisdiction (`86da6b6`).
+- [x] Clean-worktree CI rehearsal (core fetched from GitHub at the pin): 22
+      tests, 362 OK / 0 failed, sign --batch 362, build-site OK. Pushed
+      (`eb92f9c..d7bd8c4`); publish workflow green. Live catalog: 362 slates
+      verify; CAGOP's Wagner carries the SoS `choice_id`; 0 CAGOP positions
+      off the ballot. Live openslate.us (fresh incognito): the Secretary of
+      State race shows one Wagner row with CAGOP's endorsement, no
+      off-ballot tags.
 - [ ] Certified write-in lists in the listings (CA SoS publishes one late
       October)
 
@@ -233,16 +265,8 @@ endorsements repo follows with a `.openslate-version` bump.
 1. Races: give listings a `Subject.id` too? Recommendation: not now (see
    Design). Revisit with a translator for race titles if a second catalog
    appears.
-2. Push order: OpenSlate (web app) has to deploy before the endorsements repo
-   publishes slates with `choice_id`, or the live app rejects them. Needs the
-   user's go-ahead for both pushes. Merge `feat/choice-ids` with a merge
-   commit (or fast-forward), not a squash: the endorsements repo pins
-   `1b68fd4`.
-3. The 21 endorsements on seats / measures the LA and OC listings don't
-   have (ISSUES.md): research each against the county's list (me, or the
-   county-guides thread), drop them, or allow a reviewed exceptions list?
-   Recommendation: research; the likely answer for most is "uncontested,
-   not on the ballot", and those positions should go.
+2. ~~Push order~~: done 2026-10-23 (web app first, then endorsements).
+3. ~~The unlisted county seats~~: researched and fixed 2026-10-23 (above).
 
 ## Things not to do
 

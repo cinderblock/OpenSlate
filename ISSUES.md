@@ -58,47 +58,6 @@ white-on-red fills worse, so the fix probably wants "on-colour" tokens for text
 on filled backgrounds. `apps/web/test/theme.test.ts` lists the `--bad` pairs as
 known failures; take them off the list when fixed.
 
-## Same candidate under two spellings: "Donald P. (Don) Wagner" / "Don Wagner"
-
-**Fixed, not yet pushed** (`plans/ballot-choice-validation.md`): in the
-endorsements repo, choices are snapped to the ballot spelling and `choice_id`
-and CI fails an off-ballot race or choice (`ab65d6b`…`7207c50`, rebased); in
-OpenSlate (branch `feat/choice-ids`) the web app also shows any slate's
-choices under the ballot's names. Remove this entry once both are pushed and
-the publish workflow has run.
-
-Seen 2026-10-22 on My ballot, California Secretary of State race (Nov 3,
-2026): the SoS ballot lists "Donald P. (Don) Wagner" and the California
-Republican Party's slate says "Don Wagner", so the race shows two rows and
-CAGOP's endorsement sits on a name that isn't on the ballot. The fix belongs
-in the endorsements repo's `scripts/normalize-choices.ts` (parenthesised
-nickname not matched). Matters because party/source quick fill and "your
-sources agree" both key on the exact name.
-
-## Endorsements name 21 LA and Orange County seats and measures the county ballot sources don't list
-
-Blocks pushing the endorsements repo's ballot gate (`7207c50` and before):
-with it, CI fails these, seen 2026-10-23 10:00 AM PDT (17:00Z) with
-`bun scripts/verify-positions.ts`. Each is an endorsement for a race in a
-jurisdiction `orgs/la-county-registrar/` or `orgs/oc-registrar-of-voters/`
-covers, that the listing doesn't name, and no listed race has the candidate:
-
-- Long Beach CCD Board Areas 1 and 3 (CNA, LA Fed; LA lists only Area 5)
-- Centinela Valley UHSD Trustee Area 5 (DSA-LA, LA Fed, LA Forward, UNITE HERE 11)
-- Pasadena Area CCD Trustee Area 7 (Equality CA, LA Fed, LA Forward; LA lists 1, 3, 5)
-- Alhambra USD Seat 4, Bellflower USD Area 1, Newhall SD Area 1, Paramount USD
-  Districts 1 and 5 (LA Fed); Garvey SD Area 1 (LA Forward)
-- South Gate Measure UUT (LA Fed; LA lists only Measure SG)
-- Newport Beach Measures P, Q and R (SCNG; OC lists only Measure H)
-
-Each is either a seat that isn't on this ballot (uncontested seats are filled
-without an election) or a contest the county listing missed. Check each
-against the county's own list, then drop the position, fix the listing, or
-decide on an exception. Also: Lincoln Club's page puts Grace Dañino Hickok in
-Newport-Mesa USD Area 2 and Craig Holiday in Area 7; OC's listing (from its
-filing log) has them the other way round, and `7207c50` follows the listing.
-Worth confirming against ocvote.gov.
-
 ## `openslate validate` rejects the positions.json the scraper skill tells you to validate
 
 `.claude/skills/endorsement-scraper/SKILL.md` step 4 says to run
