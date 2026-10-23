@@ -60,6 +60,8 @@ known failures; take them off the list when fixed.
 
 ## Same candidate under two spellings: "Donald P. (Don) Wagner" / "Don Wagner"
 
+**In progress — ballot-choice validation thread** (`plans/ballot-choice-validation.md`).
+
 Seen 2026-10-22 on My ballot, California Secretary of State race (Nov 3,
 2026): the SoS ballot lists "Donald P. (Don) Wagner" and the California
 Republican Party's slate says "Don Wagner", so the race shows two rows and
