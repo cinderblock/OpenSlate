@@ -5,7 +5,7 @@ import { useBallotDraft } from "../lib/ballotDraft";
 import { type ChoiceGroup, type Race, collateRaces, stanceTone } from "../lib/collate";
 import { type GuideForSubject, useGuideItem } from "../lib/guides";
 import { useDecodedSlates, useFollows } from "../lib/myVote";
-import { subjectKey } from "../lib/subjects";
+import { subjectFromKey, subjectKey } from "../lib/subjects";
 import { ChoiceBallotTags, RaceUnlistedNote } from "./BallotTags";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { ForecastsPanel } from "./ForecastsPanel";
@@ -48,22 +48,30 @@ export function RacePanel() {
     [draft.rows, targetKey],
   );
 
-  const subject = race?.subject;
-  // The race's election and jurisdiction, which fall back to the slate's
-  // context when the subject leaves them out: the polls lookup needs both.
+  // A shared link can open a race no imported slate has: then the subject
+  // comes from my own picks, or from the key itself.
+  const keySubject = useMemo(() => subjectFromKey(targetKey), [targetKey]);
+  const knownSubject = race?.subject ?? myRows[0]?.subject ?? keySubject;
+
+  // The official voter guide's material on this race, when a guide covers it.
+  const guide = useGuideItem(knownSubject);
+
+  // The guide's subject has what a parsed key lacks (kind, id).
+  const subject = race || myRows[0] ? knownSubject : (guide.guide?.item.subject ?? knownSubject);
+  // The race's election and jurisdiction fall back to the slate's context when
+  // the subject leaves them out.
+  const jurisdiction = race?.jurisdiction ?? subject?.jurisdiction;
+  const election = race?.election ?? subject?.election;
   const pollSubject = useMemo<Subject>(
     () => ({
       title: subject?.title ?? targetKey,
       ...(subject?.id ? { id: subject.id } : {}),
       ...(subject?.kind ? { kind: subject.kind } : {}),
-      ...(race?.jurisdiction ? { jurisdiction: race.jurisdiction } : {}),
-      ...(race?.election ? { election: race.election } : {}),
+      ...(jurisdiction ? { jurisdiction } : {}),
+      ...(election ? { election } : {}),
     }),
-    [subject, race?.jurisdiction, race?.election, targetKey],
+    [subject, jurisdiction, election, targetKey],
   );
-
-  // The official voter guide's material on this race, when a guide covers it.
-  const guide = useGuideItem(subject);
 
   return (
     <section className="panel">
@@ -73,8 +81,8 @@ export function RacePanel() {
       <h2>{subject?.title ?? targetKey}</h2>
       <p className="hint">
         {subject?.kind && <span className="tag">{subject.kind}</span>}{" "}
-        {race?.jurisdiction && <span>{race.jurisdiction}</span>}
-        {race?.election && <span> · {race.election}</span>}
+        {jurisdiction && <span>{jurisdiction}</span>}
+        {election && <span> · {election}</span>}
         {subject?.id && (
           <>
             {" · "}
@@ -129,9 +137,15 @@ export function RacePanel() {
             </p>
           )}
           {!race ? (
-            <div className="card">
-              <p className="hint">No endorsements imported for this subject yet.</p>
-            </div>
+            <>
+              {guide.guide && <GuideChoices guide={guide.guide} />}
+              <div className="card">
+                <p className="hint">
+                  No endorsements imported for this race yet. Add some in{" "}
+                  <Link to="/sources">Sources</Link>.
+                </p>
+              </div>
+            </>
           ) : (
             <>
               <RaceUnlistedNote race={race} />
@@ -157,6 +171,35 @@ export function RacePanel() {
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * The guide's candidates, or what each vote on a measure means, for a race no
+ * imported slate lists choices for (a shared link opened by a new visitor).
+ */
+function GuideChoices({ guide }: { guide: GuideForSubject }) {
+  const { candidates, means } = guide.item;
+  return (
+    <>
+      {candidates?.map((candidate) => (
+        <div key={candidate.choice} className="card">
+          <div className="card-title">
+            <strong>{candidate.choice}</strong>
+          </div>
+          <CandidateGuide candidate={candidate} guide={guide} />
+        </div>
+      ))}
+      {means &&
+        Object.entries(means).map(([choice, passage]) => (
+          <div key={choice} className="card">
+            <div className="card-title">
+              <strong>{choice}</strong>
+            </div>
+            <GuideMeans passage={passage} guide={guide} />
+          </div>
+        ))}
+    </>
   );
 }
 
