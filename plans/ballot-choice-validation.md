@@ -257,8 +257,13 @@ endorsements repo follows with a `.openslate-version` bump.
       off the ballot. Live openslate.us (fresh incognito): the Secretary of
       State race shows one Wagner row with CAGOP's endorsement, no
       off-ballot tags.
-- [ ] Certified write-in lists in the listings (CA SoS publishes one late
-      October)
+- [ ] Certified write-in lists in the listings. Not published yet: on
+      2026-10-23 1:20 PM PDT (20:20Z) the primary's list answers 200 at
+      `elections.cdn.sos.ca.gov/statewide-elections/2026-primary/certified-list-write-in.pdf`,
+      the same names under `2026-general/` 403 (missing). In a California
+      general, write-ins only count in nonpartisan and party-nominated
+      contests. When it's out: add each as a neutral `write_in: true`
+      position to the SoS bundle and run assign-choice-ids.
 
 ## Open questions for the user
 
