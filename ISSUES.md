@@ -2,6 +2,8 @@
 
 ## Hosted app shows raw HTTP 404 errors for elections and ballot lookup
 
+**In progress — master, `plans/elections-page-hosted.md`.**
+
 On https://openslate.us there is no `apps/server`, so `/api/elections` and
 `/api/ballot` (`apps/web/src/lib/query.ts`, `electionsQueryOptions` and
 `ballotQueryOptions`) get a plain 404 from the static-assets worker. The
