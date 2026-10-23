@@ -353,8 +353,12 @@ Findings (checked 2026-10-22):
    `county/sf/`; pinned OpenSlate `0323559` (`2792587`). `guide verify
    --files` over HTTPS: SF 26/26 files, state 132/132.
 5. [x] Endorsements repo: SF entry and `covers` for both guides (`cd906a8`)
-6. [ ] Check live on openslate.us ← **current**
+6. [x] Checked live on openslate.us in a fresh incognito tab (2026-10-23, about
+   3:33 AM PDT (10:33Z)): Prop G (question, Yes/No, 4 official and 30 paid
+   arguments, legal text link to p.222); CD-15 (Mullin's statement from the SF
+   guide, Hoelter "no statement"), signed by the real key.
 7. [ ] Signer organizations from SF's official and paid arguments (decision 3)
+   ← **next, awaiting go-ahead with step 8's choice**
 8. [ ] Next counties: decide by what's publishable and where users are
 
 ### Findings while building phase 2
