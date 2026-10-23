@@ -359,7 +359,96 @@ Findings (checked 2026-10-22):
    guide, Hoelter "no statement"), signed by the real key.
 7. [ ] Signer organizations from SF's official and paid arguments (decision 3)
    ← **next, awaiting go-ahead with step 8's choice**
-8. [ ] Next counties: decide by what's publishable and where users are
+8. [ ] Next counties, in order of value for effort (survey below): **Los
+   Angeles** ← **current**, then Orange, then San Diego. Alameda only if we
+   want photos. Santa Clara and San Mateo postponed.
+
+### County survey (2026-10-23, real fetches)
+
+| County | Source | Statements | Photos | Measures | Effort |
+| --- | --- | --- | --- | --- | --- |
+| Los Angeles | Open JSON: `apps.lavote.gov/statements-api/oc/read/election/year/2026` → election 4348; `.../read/election/4348/contest` (327 contests, 879 candidates, 595 English statements); `.../p/published/{contestId}/{candidateId}` (statement HTML). Sample ballot JSON at `isb.lavote.gov/parsed/4348/...` (contests with `statements[].FullHTML`: full text, impartial analysis). Behind Imperva; curl works. | House, Senate, Assembly, local | none | full text, impartial analysis as HTML; county A and E argument PDFs (text) | low |
+| Orange | `ocvote.gov/bin/voting/candidate_filing_log.php` (POST `election=GEN2026`, 169 contests) → `candidate_filing_log_submit.php?elecabbr=GEN2026&contest={id}` → 364 tagged statement PDFs; one 2-column PDF per measure A–O | House 38/40/41, Senate 30–36, Assembly, local | none | question, full text, arguments with `s/` signers, rebuttals, impartial analysis | low / medium |
+| San Diego | ~650 per-ballot-type PDFs `sdvote.com/content/dam/rov/en/sb/SB-ENG-{n}.pdf` (~9–11 MB each); address → ballot number via POST `/bin/sdc/electioninfo` (JSON, no login). Tagged, built from sections with stable codes (`CS-E00510-1-ENG`, `PR-Q00001-2-ENG`) | yes | none | arguments, rebuttals, full text | medium (download volume; dedupe by section code) |
+| Alameda | One 965-page, 11.7 MB composite guide `vig_nov2026_eng.pdf`; per-measure PDFs are scans | House 10/12/14/17, Senate 10, Assembly 14–24, local | **yes** (~300×415 JPEGs) | probably in the composite (unconfirmed) | medium |
+| Santa Clara | Cloudflare blocks all non-browser clients; guide only via address autocomplete lookup | unconfirmed | unconfirmed | unconfirmed | high |
+| San Mateo | Measures are scanned PDFs (no text); guide per ballot style behind a lookup needing birthdate | only in per-style guide | unconfirmed | scans | high |
+
+Notes: Git Bash's curl (Schannel) fails on LA, SD, OC and Santa Clara with
+"error 43"; `C:\Windows\System32\curl.exe` and Bun's fetch are the
+alternatives. For Santa Clara and San Mateo, asking the registrar for the
+files beats scraping.
+
+**LA's local races aren't in the app yet** (no LA ballot source), so an LA
+guide alone would only add Congress and Legislature statements. The statements
+API's contest list names every contest and candidate, so it doubles as LA's
+ballot source: build `orgs/la-county-registrar/2026-11-03` in the endorsements
+repo from it, the same way as SF's.
+
+### Los Angeles design
+
+LA data (checked 2026-10-23):
+
+- Statements API `apps.lavote.gov/statements-api/oc/read/election/4348/contest`:
+  327 candidate contests (statewide, House, Senate, Assembly, BOE, retentions,
+  Superior Court, Sheriff, LA City, 80+ cities, school, college, water and
+  library districts), 879 candidates *including* those without statements,
+  names in capitals, `occupation` = ballot designation.
+- Sample ballot JSON `isb.lavote.gov/parsed/4348/`: `ballots/{type}.json`
+  (type IDs like `2BV22`, from `street-segments/{3 letters}.json`
+  `partyBallotMap`) lists `cc…` (candidate), `bmc…` (measure) and `rc…`
+  (retention) contest IDs in the statements API's numbering (10371–10963).
+  `contests/{id}.json` (~475 KB each, all 20 languages) has candidates with
+  `statements[].FullHTML` and, for measures, the full text and impartial
+  analysis. Unknown IDs return Imperva's 99 KB HTML page with HTTP 404.
+
+Plan:
+
+- L1 **LA ballot source** (endorsements repo, `scripts/la-rrcc-ballot.ts` →
+  `orgs/la-county-registrar/2026-11-03/positions.json`): local contests and
+  measures only (state and federal contests are the Secretary of State's).
+  Titles and jurisdictions follow the catalog: **reuse an existing subject's
+  exact title and jurisdiction** whenever one names the same body and number
+  or measure letter (~110 LA-area subjects exist, with mixed conventions, e.g.
+  LACCD is `us/ca/los-angeles`, other districts `us/ca/los-angeles-county`,
+  cities `us/ca/<city>`); otherwise a default form ("<District> Board, Trustee
+  Area N", "<City> City Council, District N", "<Body> — Measure X
+  (<short title>)"). Names: reuse the catalog's existing spelling of the same
+  candidate when there is one, else careful title case (Mc/Mac, O', hyphens,
+  Jr./III kept). Ballot designation as the statement, like SF's.
+- L2 **LA guide** (ballot repo, `county/la/`): statements as HTML → blocks
+  (English only), measures' full text and impartial analysis, arguments if
+  the JSON has them; evidence keeps the English extracts, not the 20-language
+  files.
+- L3 `guides.json` entry with `covers`.
+
+LA progress (2026-10-23):
+
+- [x] Core: `fullText` passage on guide items (LA serves full texts as HTML;
+  mirroring HTML files would run them in the app's origin) (`effd0d8`,
+  unpushed)
+- [x] Ballot repo: HTML → blocks moved to `scripts/lib/html-blocks.ts`, state
+  guide byte-identical (`40536de`); `scripts/scrape-la.ts` written
+- [ ] L1 `scripts/la-rrcc-ballot.ts` written; evidence fetch running
+- [ ] L1 review mapping (orphans, renames), apply, publish
+- [ ] L2 run `scrape-la.ts` (≈600 paced statement requests), review, publish
+- [ ] L3 catalog entry, live check
+
+LA findings:
+
+- **Imperva bot wall.** ~700 requests in a burst (HEAD probes at full speed)
+  got this machine a challenge page (HTTP 200, `text/html`, ~1 KB) for every
+  GET on `isb.lavote.gov` for a few minutes; HEAD still answered. Scripts now
+  go one request at a time with a pause and stop at the first challenge page.
+- Measure contests (`bmc…`) found by probing: 82 in 10419–10961, of which
+  bmc10853–10866 are the 14 state propositions. Measure JSON has the question
+  (`long_description`, with a bold lead-in such as "CITY OF BURBANK CITY
+  SERVICES MEASURE: MEASURE C:") and documents in `statements[]` (full text,
+  "City Attorney's Impartial Analysis"), but no arguments for the measures
+  checked.
+- A statement's English record carries the Spanish translation after a second
+  `<h1>`; keep only what precedes it, and drop the leading "STATEMENT OF …",
+  "CANDIDATE FOR …" headings.
 
 ### Findings while building phase 2
 
