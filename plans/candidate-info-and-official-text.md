@@ -358,10 +358,11 @@ Findings (checked 2026-10-22):
    guide, Hoelter "no statement"), signed by the real key.
 7. [ ] Signer organizations from SF's official and paid arguments (decision 3),
    after the counties
-8. [ ] Next counties (user, 2026-10-23: "Keep going"), in order of value for
-   effort (survey below): Los Angeles **done**; Orange **done**; San Diego ←
-   **current**; then Alameda (the one big county that prints photos). Santa
-   Clara and San Mateo postponed.
+8. [x] Next counties (user, 2026-10-23: "Keep going"), in order of value for
+   effort (survey below): Los Angeles, Orange, Alameda (built while San
+   Diego's index ran) and San Diego all **done**. Santa Clara and San Mateo
+   postponed: there's no machine-readable source, so ask the registrars.
+9. ← **current: step 7**, for every county guide's arguments, not only SF's.
 
 ### Orange County (done 2026-10-23, about 9:50 AM PDT (16:50Z))
 
@@ -387,7 +388,7 @@ Findings (checked 2026-10-22):
   `` in a non-raw string becomes a backspace. Use the Edit tool for regexes;
   fix stray `` with `perl -pi -e 's//chr(92)."b"/ge'`.
 
-### San Diego (in progress, 2026-10-23)
+### San Diego (done 2026-10-23)
 
 - **Source:** one pamphlet per ballot type, `SB-ENG-{n}.pdf` (about 650 of
   them, 9–13 MB each). Each is assembled from shared sections, and each page
@@ -436,17 +437,29 @@ Findings (checked 2026-10-22):
     they don't.
   - Shared matching (`guide-common.ts`, `2c8af4e`) now folds ’ to ' and
     ignores Dr./RN/MD; SF, LA and OC output is unchanged.
-  - Congress statements aren't in SD's pamphlets.
-- **Remaining:**
-  1. Finish the index.
-  2. Rerun the ballot source with `--fetch`, then apply and commit it in the
-     endorsements repo (with `ballot-subjects.ts`, `pdf-layout.ts`,
-     `pdfjs-dist` and `bun.lock`).
-  3. Run `normalize-choices`.
-  4. Rerun `scrape-sd.ts` against the published ballot source.
-  5. Commit and push the ballot repo, so CI signs and publishes.
-  6. Add the `guides.json` entry with `covers`.
-  7. Check live.
+  - SD's pamphlets do carry US House statements (CD 48–52). An earlier note here
+    said they didn't; that was the partial index.
+- **Done (2026-10-23, about 12:07 PM PDT (19:07Z)):**
+  - Index: all 654 ballot types (408 MB read through range requests), ballot
+    repo `dccd5ee`.
+  - Ballot source: 144 races and 20 measures; 152 of 164 subjects reuse
+    catalog titles (endorsements `6a4cbe4`; names `e860c05`).
+    - `measureKey` now ignores every parenthetical (`8f42f68`).
+    - Permanent Road Division zones are named as the catalog names them.
+  - Guide (`4065671`): 158 items.
+    - 283 statements (US House, Legislature and local offices).
+    - 20 measures and 32 arguments with signers.
+    - The scraper picks 67 pamphlets to download.
+  - `guide verify --files` over HTTPS: 158 of 158 files. `guides.json`:
+    `f06db35`.
+  - Checked live in an incognito tab: County Measure A (question, Yes/No,
+    arguments) and Escondido Mayor (two statements).
+  - Matching fixes on the way:
+    - credentials after a comma ("MARY GWIN, PH. D.");
+    - a surname printed in two words ("MC KELL");
+    - names set at 9 pt;
+    - "No Argument Against … was filed" in mixed case;
+    - the caveat repeated in mixed case.
 
 ### Alameda (done 2026-10-23)
 
@@ -657,6 +670,14 @@ LA findings:
 - Biome flagged the scrapers' generated JSON (state guide too). Generated
   `guide/`, `county/`, `evidence/` are now ignored by biome.
 
+## Open questions for the user
+
+1. Berkeley's declaration statements print each candidate's home address
+   (item 3, "That my residence is …"), and the Alameda guide republishes them
+   as printed. Keep the official text whole (current), or drop that one line?
+   Recommendation: keep it. It's the official publication, printed by
+   Berkeley's rules, and the guide's value is being a faithful copy.
+
 ## Progress log
 
 - [x] Survey of current data model and ballot-source pipeline
@@ -697,3 +718,7 @@ LA findings:
   turned twelve files' CRLF into LF; restored 2026-10-23). Name the files.
 - Don't write regexes through Python or Perl heredocs: escapes become control
   bytes (`\t` turned into a tab in `pdf-layout.ts`). Use the Edit tool.
+- Don't feed non-ASCII text to Python through a shell heredoc on this machine.
+  Python reads stdin as cp1252, so "←" and "…" in a replacement string get
+  garbled, and an unchecked `str.replace` then silently does nothing. Two plan
+  edits were lost that way on 2026-10-23.
