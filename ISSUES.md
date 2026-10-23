@@ -87,6 +87,8 @@ out on purpose).
 
 ## House race pages never show polls: VoteHub's subject filter ignores districts
 
+**In progress — master, `plans/house-district-polls.md`.**
+
 `/api/polls?subject=2026%20CA-22` returns `[]`, though `2026 CA-22` is listed in
 `/api/subjects` (also `[]` with `&poll_type=us-representative`; checked
 2026-10-23 against https://polls.openslate.us). District polls only come back
