@@ -106,6 +106,11 @@ cases) and the gate itself, so this can't quietly regress.
   changed files, copy `biome.json` with `formatter.lineEnding: "crlf"` to a
   temp dir and run `biome check --config-path=<dir> <files>`. New files
   written LF pass the default config.
+- The endorsements gate on the new county listings (2026-10-23): 7,853
+  positions checked, 63 off at first. Most were short forms the old
+  single-valued nickname table missed; the rest typos, wrong areas, a
+  measure under another body's title, and 21 seats / measures not listed.
+- `openslate validate` takes a full payload, not sign input (ISSUES.md).
 - `apps/web/tsconfig.json` includes only `src`, so `tsc` doesn't check test
   fixtures; `bun test` is what catches them.
 - The web's `openFeedback` is used as `onClick={openFeedback}`, so it can't
@@ -155,7 +160,7 @@ endorsements repo follows with a `.openslate-version` bump.
   - New §8.2 *Ballot listings*: formalises the existing convention (an
     `election-authority` slate, one `neutral` position per choice, the ballot
     designation in `statement`), now with a `choice_id` on every choice.
-  - §8.1 gets the listing id prefixes (`ca-sos:`, `sf-elections:`); §4 notes
+  - §8.1 gets the listing id prefix (`<publisher>:`, the listing's org dir); §4 notes
     the one boolean; §10.1 changelog. Old verifiers reject the new fields
     (closed schema), so **the web app must deploy before the endorsements
     repo publishes slates that use them.**
@@ -201,9 +206,25 @@ endorsements repo follows with a `.openslate-version` bump.
       suggested, and its Report it opens the dialog prefilled; a write-in
       shows "Write-in, not certified"; writing in "Shirley Weber" picks the
       printed Shirley N. Weber instead.
-- [ ] Scraper skill: `choice_id` / `write_in` in step 2 and 4b
-- [ ] Endorsements repo: ids on listings, ids on endorsements, gate on ids,
-      `.openslate-version` bump (after OpenSlate is pushed)
+- [x] Matcher: ~50 short forms, multi-valued (Danny / Daniel, Eddie /
+      Eduardo, Johnny / Johnathon; "Pat" stays ambiguous) (`8d6e730`);
+      suggestions through typos in a given name, a surname, or a nickname
+      form (`1b68fd4`). Found by the gate on the new LA and OC listings.
+- [x] Scraper skill: `choice_id` / `write_in`, LA and OC (`87915f9`); spec
+      §8.1 prefix as minted (`d1e4d6b`); ISSUES.md (`97434ce`)
+- [x] Endorsements repo (rebased on 9 upstream commits from the county-guides
+      thread: LA and OC listings): gate on core's `resolveChoice`,
+      `assign-choice-ids.ts`, `position-edit.ts`, normalize writes ids /
+      spellings / moved titles, only on tracked files (`6a7df98`); 1,780
+      listing ids (`3b5b51d`); 7,650 endorsement ids and 42 hand-checked
+      fixes (`7207c50`). `.openslate-version` = `1b68fd4` (feat/choice-ids,
+      not on GitHub yet). Tests 19 pass. A throwaway-key sign of CAGOP's
+      bundle verifies with `choice_id` in it.
+- [ ] Gate still fails 21 positions (7 bundles): LA / OC seats and measures
+      the county listings don't name (ISSUES.md). Needs the user's call.
+- [ ] Push OpenSlate `feat/choice-ids` → master (deploys the web app), then
+      the endorsements repo (needs the pin reachable on GitHub, and the 21
+      resolved). User's go-ahead for each.
 - [ ] Certified write-in lists in the listings (CA SoS publishes one late
       October)
 
@@ -214,7 +235,14 @@ endorsements repo follows with a `.openslate-version` bump.
    appears.
 2. Push order: OpenSlate (web app) has to deploy before the endorsements repo
    publishes slates with `choice_id`, or the live app rejects them. Needs the
-   user's go-ahead for both pushes.
+   user's go-ahead for both pushes. Merge `feat/choice-ids` with a merge
+   commit (or fast-forward), not a squash: the endorsements repo pins
+   `1b68fd4`.
+3. The 21 endorsements on seats / measures the LA and OC listings don't
+   have (ISSUES.md): research each against the county's list (me, or the
+   county-guides thread), drop them, or allow a reviewed exceptions list?
+   Recommendation: research; the likely answer for most is "uncontested,
+   not on the ballot", and those positions should go.
 
 ## Things not to do
 
@@ -222,3 +250,8 @@ endorsements repo follows with a `.openslate-version` bump.
   suggestions for a human.
 - Don't rewrite an election authority's own list. It's the reference.
 - Don't touch `orgs/sd-green-party/` (another thread's uncommitted bundle).
+  `normalize-choices --apply` did once (2026-10-23, one `choice_id` line,
+  reverted by hand); both scripts now skip files git doesn't track.
+- Don't write regex-bearing edit scripts as Python string literals: `\b`
+  became a backspace and `\n` a real newline. Use raw strings or the Edit
+  tool, and write long scripts to `$TEMP` (big inline heredocs break bash).
