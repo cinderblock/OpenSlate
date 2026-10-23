@@ -6,6 +6,7 @@ import {
   MAX_MESSAGE_LENGTH,
   buildFeedbackReport,
   closeFeedback,
+  feedbackPrefill,
   githubIssueUrl,
   privateFeedbackConfig,
   sendPrivateFeedback,
@@ -52,8 +53,14 @@ export function FeedbackDialog() {
     },
   });
 
-  const [kind, setKind] = useState(draft.kind);
-  const [message, setMessage] = useState(draft.message);
+  // A "Report this" link's text goes after anything already typed.
+  const [prefill] = useState(feedbackPrefill);
+  const [kind, setKind] = useState(prefill?.kind ?? draft.kind);
+  const [message, setMessage] = useState(() => {
+    const typed = draft.message.trim();
+    if (!prefill) return draft.message;
+    return typed ? `${typed}\n\n${prefill.message}` : prefill.message;
+  });
   const [email, setEmail] = useState(draft.email);
   const [shot, setShot] = useState<Screenshot | null>(null);
   const [shotWanted, setShotWanted] = useState(false);

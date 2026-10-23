@@ -250,8 +250,29 @@ function setOpen(next: boolean): void {
   for (const listener of listeners) listener();
 }
 
-export const openFeedback = (): void => setOpen(true);
-export const closeFeedback = (): void => setOpen(false);
+/** Text a "Report this" link wants in the dialog while it's open. */
+let prefill: { kind: FeedbackKind; message: string } | null = null;
+
+export const openFeedback = (): void => {
+  prefill = null;
+  setOpen(true);
+};
+
+export const closeFeedback = (): void => {
+  prefill = null;
+  setOpen(false);
+};
+
+/** Open the dialog with a report already written (the user still reviews and sends it). */
+export function reportFeedback(kind: FeedbackKind, message: string): void {
+  prefill = { kind, message };
+  setOpen(true);
+}
+
+/** The prefilled report the dialog was opened with, if any. */
+export function feedbackPrefill(): { kind: FeedbackKind; message: string } | null {
+  return prefill;
+}
 
 export function useFeedbackOpen(): boolean {
   return useSyncExternalStore(

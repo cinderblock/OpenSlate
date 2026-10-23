@@ -1,4 +1,5 @@
 import { type SlatePayload, type Stance, type Subject, verifySlate } from "@openslate/core";
+import type { ChoiceCheck } from "./ballotCheck";
 import {
   type Area,
   inArea,
@@ -24,6 +25,12 @@ export interface DecodedSlate {
   payload: SlatePayload;
   valid: boolean;
   source: Source;
+  /**
+   * Where each position's choice stands against the ballot listings, by
+   * position index (`translateSlates`). Absent on listings themselves, and
+   * when no listing is imported.
+   */
+  checks?: ChoiceCheck[];
 }
 
 /**
@@ -69,6 +76,8 @@ export interface RacePosition {
   statement?: string;
   valid: boolean;
   followed: boolean;
+  /** The source's own spelling, when it's shown under the ballot's. */
+  written?: string;
 }
 
 export interface ChoiceGroup {
@@ -83,6 +92,13 @@ export interface ChoiceGroup {
   onBallot: boolean;
   /** What the ballot source says about the choice (party, ballot designation). */
   ballotNote?: string;
+  /** Not printed on the ballot: a voter writes the name in (SPEC §3.12). */
+  writeIn: boolean;
+  /**
+   * Not on the ballot listing: the listed name it most likely means, for a
+   * human to check (a likely typo, an unusual short form).
+   */
+  suggestion?: string;
 }
 
 export interface Race {
@@ -94,6 +110,8 @@ export interface Race {
   choices: ChoiceGroup[];
   /** A ballot source lists this race, so `choices` is the whole field. */
   onBallot: boolean;
+  /** A ballot source covers this race's jurisdiction but doesn't list it. */
+  unlisted: boolean;
   /** Distinct followed sources with a position here (ballot sources excluded). */
   followedSources: number;
   totalSources: number;
@@ -144,7 +162,8 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
   for (const slate of slates) {
     const ballot = isBallotSource(slate.source);
     const followed = ballot || isFollowed(options.follows, slate.source.id);
-    for (const position of slate.payload.positions) {
+    for (const [index, position] of slate.payload.positions.entries()) {
+      const check = slate.checks?.[index];
       const key = subjectKey(position.subject);
       if (newest.get(`${key}\u0000${slate.source.id}`)?.slate !== slate) continue;
       const election = electionOf(position.subject, slate.payload);
@@ -161,6 +180,7 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
           ...(jurisdiction ? { jurisdiction } : {}),
           choices: [],
           onBallot: false,
+          unlisted: false,
           followedSources: 0,
           totalSources: 0,
           sourceIds: new Set(),
@@ -173,9 +193,24 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
       const choiceName = position.choice ?? "";
       let group = race.choices.find((c) => c.choice === choiceName);
       if (!group) {
-        group = { choice: choiceName, positions: [], support: 0, opposition: 0, onBallot: false };
+        group = {
+          choice: choiceName,
+          positions: [],
+          support: 0,
+          opposition: 0,
+          onBallot: false,
+          writeIn: false,
+        };
         race.choices.push(group);
       }
+      if (position.write_in) group.writeIn = true;
+      if (check?.resolution.status === "race-unlisted") race.unlisted = true;
+      if (
+        !group.suggestion &&
+        (check?.resolution.status === "unlisted" || check?.resolution.status === "write-in") &&
+        check.resolution.suggestion
+      )
+        group.suggestion = check.resolution.suggestion.name;
 
       if (ballot) {
         race.onBallot = true;
@@ -194,6 +229,7 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
         ...(position.statement ? { statement: position.statement } : {}),
         valid: slate.valid,
         followed,
+        ...(check?.written ? { written: check.written } : {}),
       });
       if (followed) {
         const tone = stanceTone(position.stance);

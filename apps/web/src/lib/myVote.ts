@@ -1,5 +1,6 @@
 import { useLiveQuery } from "@tanstack/react-db";
 import { useMemo } from "react";
+import { translateSlates } from "./ballotCheck";
 import { type DecodedSlate, decodeSlates } from "./collate";
 import { slatesCollection } from "./collections";
 import { useKnownIdentities } from "./identities";
@@ -78,13 +79,15 @@ export function localToday(): string {
 }
 
 /**
- * Every imported slate, verified and decoded once, with firsthand sources named
- * by the user's nickname for the issuer when they've set one.
+ * Every imported slate, verified and decoded once, with choices shown under
+ * the ballot listing's spelling where they plainly mean a listed candidate
+ * (`translateSlates`), and firsthand sources named by the user's nickname for
+ * the issuer when they've set one.
  */
 export function useDecodedSlates(): { slates: DecodedSlate[]; isReady: boolean } {
   const { data, isReady } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
   const contacts = useKnownIdentities();
-  const decoded = useMemo(() => decodeSlates(data), [data]);
+  const decoded = useMemo(() => translateSlates(decodeSlates(data)), [data]);
   const slates = useMemo(() => {
     const nicknames = new Map(
       contacts
