@@ -448,7 +448,7 @@ Findings (checked 2026-10-22):
   6. Add the `guides.json` entry with `covers`.
   7. Check live.
 
-### Alameda (in progress, 2026-10-23)
+### Alameda (done 2026-10-23)
 
 - **Ballot source** (endorsements `scripts/alameda-rov-ballot.ts`, `7653f2d`,
   pushed):
@@ -483,16 +483,41 @@ Findings (checked 2026-10-22):
     glyphs from the operator list.
   - This is now `pdfPages(bytes, {repairGlyphFonts: true})` in the ballot repo
     (`45e038a`); SF and OC are unchanged.
-  - Still to handle in the scraper:
-    - bullets come out as `Ɣ ƒ ƕ භ ō ͦ` from symbol fonts;
-    - signatures read "s NAME/" because "/" is drawn over the name: rebuild them
-      as "s/ NAME";
-    - two `·` characters on pp. 940 and 952 are undecided.
-- **Next:**
-  1. `scripts/scrape-alameda.ts`: statements (both formats; photos extracted
-     as JPEG through pdf-lib, or re-encoded) and measures (question, analysis,
-     arguments, rebuttals, full text page).
-  2. Add the `guides.json` entry.
+  - In the scraper, symbol-font bullets (`Ɣ ƒ ƕ භ ō`) become "•", and both
+    signature forms ("s/ NAME" and "s NAME/", where the "/" is drawn over the
+    name) are read. Two `·` characters on pp. 940 and 952 are left as printed:
+    their context doesn't settle what they stand for.
+- **Photos** are stored as ink amounts for one separation, so the raw JPEG is
+  a negative. `scripts/lib/pdf-images.ts` (`84d0e64`) has pdf.js decode each
+  image through its colour space and encodes it with jpeg-js. pdf-lib was
+  tried and dropped.
+- **Other findings:**
+  - The guide prints Water District Ward 2's page twice (p689 among Newark's,
+    and p705); a repeated page reads once.
+  - One footer is misprinted "BMX-BMX-4".
+  - Measures CC and HH print no full text.
+  - Some headings are drawn twice ("SCHOOLSCHOOL"); `pdf-layout` now reads
+    them once (`dd7055c`).
+  - Decoded spaces and pdf.js's gap spaces doubled up; the block reader now
+    keeps one (`3241617`).
+- **Shared code:** `scripts/lib/pamphlet.ts` holds what SD and Alameda share:
+  - items and writing the guide;
+  - `raceFor`, which matches printed names to a race and breaks ties by
+    heading words, seat numbers included;
+  - `measureParts` and `votesMean`.
+- **Done (2026-10-23, about 11:05 AM PDT (18:05Z)):**
+  - Ballot repo `a2a044b`: 121 items, with:
+    - 202 statements, 39 with photos;
+    - 28 measures and 74 arguments, with signers (an organization's signer is
+      "by" someone).
+  - `guide verify --files` over HTTPS: 160 of 160 files.
+  - `guides.json` entry: endorsements `f7c2c1f`.
+  - Checked live on openslate.us: Berkeley City Council District 1 (five
+    candidates with correct photos) and Oakland Measure EE (question and
+    arguments).
+- **For the user:** Berkeley's declaration format includes each candidate's
+  home address (item 3, required by the city). The guide republishes the
+  official text as printed. See "Open questions for the user".
 
 ### County survey (2026-10-23, real fetches)
 
