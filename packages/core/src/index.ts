@@ -10,3 +10,5 @@ export * from "./polls";
 export * from "./forecasts";
 export * from "./lean";
 export * from "./guide";
+export * from "./ballot";
+export { type BallotMatch, matchBallotName, samePerson, variants } from "./names";
