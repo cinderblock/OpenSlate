@@ -84,3 +84,15 @@ console shows an error. Either turn off the automatic beacon injection for
 the zone (a Cloudflare setting: needs the owner's authorization, through the
 ops repo), or decide to allow it in the CSP (which the `_headers` comment rules
 out on purpose).
+
+## A race link opened without that race's slate shows the raw route key
+
+Opening a race page in a browser that hasn't imported a slate with that race
+(seen 2026-10-23 in a fresh incognito T3 preview on a local dev server, e.g.
+`#/race/t%3AUS%20House%20of%20Representatives%2C%20California%20District%2022|j%3Aus%2Fca%2Fcd-22|e%3A2026-11-03`)
+shows the heading `t:US House of Representatives, California District
+22|j:us/ca/cd-22|e:2026-11-03`. `RacePanel.tsx` falls back to the key as the
+title with no jurisdiction or election, so the polls, forecast and results
+panels find nothing, even though the key holds the title, jurisdiction and
+election (`subjectKey` in `apps/web/src/lib/subjects.ts`). Matters because race
+links get shared, and a first-time visitor lands on exactly this page.
