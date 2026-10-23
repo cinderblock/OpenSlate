@@ -102,6 +102,16 @@ cases) and the gate itself, so this can't quietly regress.
   normalize-choices already used.
 - `bun test` with no path would also pick up OpenSlate's own tests under
   `.openslate/`, so the script is `bun test scripts`.
+- Phase 2: `bun run lint` still fails on CRLF files (ISSUES.md). To lint
+  changed files, copy `biome.json` with `formatter.lineEnding: "crlf"` to a
+  temp dir and run `biome check --config-path=<dir> <files>`. New files
+  written LF pass the default config.
+- `apps/web/tsconfig.json` includes only `src`, so `tsc` doesn't check test
+  fixtures; `bun test` is what catches them.
+- The web's `openFeedback` is used as `onClick={openFeedback}`, so it can't
+  take arguments (it would get the click event). The prefilled version is a
+  separate `reportFeedback(kind, message)`; the prefill is read, not taken,
+  so StrictMode's double-run initializers see it, and cleared on open/close.
 
 ## Progress log
 
@@ -175,12 +185,23 @@ endorsements repo follows with a `.openslate-version` bump.
 
 ### Phase 2 progress
 
-- [ ] Spec text (SPEC.md §3.4, §3.11, §3.12, §4, §8.1, §8.2, §10.1)
-- [ ] Core schema + names.ts + ballot.ts, with tests
-- [ ] Web: translator in useDecodedSlates; ChoiceGroup write-in / off-ballot flags
-- [ ] Web: "Not on the ballot" tag + report link; import notice
-- [ ] Web: voter write-in on My ballot, carried into their slate
-- [ ] Repo checks (typecheck, lint, tests) green; README / docs updated
+- [x] Spec text (SPEC.md §3.4, §3.11, §3.12, §4, §8.1, §8.2, §10.1), schema,
+      JSON Schema `dependencies`, vectors (+2 negatives) (`26b5cc1`)
+- [x] Core `names.ts` + `ballot.ts` (`resolveChoice`), with tests (`6eb1f3d`)
+- [x] Web: `translateSlates` in `useDecodedSlates`; ChoiceGroup `writeIn` /
+      `suggestion`, Race `unlisted`; `reportFeedback` prefill (`304f7da`)
+- [x] Web: "Not on the ballot" / "Write-in" tags with Report it; My ballot
+      notice; per-entry line in the catalog browser (`4eac74d`)
+- [x] Web: voter write-in on My ballot; Compose signs `write_in` and the
+      listing's `choice_id`; print and export carry it (`e8064d6`)
+- [x] Repo checks: `bun run typecheck` clean, `bun test` 380 pass; README
+      (`25b8b92`). Checked in the running app (port 5291, live catalog):
+      CAGOP's "Don Wagner" lands on "Donald P. (Don) Wagner"; CAGOP's
+      "David Liu" (AD-49) is tagged Not on the ballot with "Long David Liu"
+      suggested, and its Report it opens the dialog prefilled; a write-in
+      shows "Write-in, not certified"; writing in "Shirley Weber" picks the
+      printed Shirley N. Weber instead.
+- [ ] Scraper skill: `choice_id` / `write_in` in step 2 and 4b
 - [ ] Endorsements repo: ids on listings, ids on endorsements, gate on ids,
       `.openslate-version` bump (after OpenSlate is pushed)
 - [ ] Certified write-in lists in the listings (CA SoS publishes one late
