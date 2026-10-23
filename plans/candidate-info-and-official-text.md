@@ -10,10 +10,10 @@ the official arguments for and against a measure (with rebuttals), and the raw
 text of a proposed law. Is there a standard published form we can load, and
 should any of it be modelled as an "endorsement" that can be shared?
 
-Status: **done and live** (2026-10-22, about 1:25 AM PDT (08:25Z)): the CA guide is
-published, race pages on openslate.us show it (checked in a fresh incognito
-browser), and 40 argument-signer organizations are in the catalog. Only the
-*Next* items remain, none started.
+Status: phase 1 (the state guide) **done and live** (2026-10-22, about
+1:25 AM PDT (08:25Z)): race pages on openslate.us show it, and 40
+argument-signer organizations are in the catalog. **Phase 2, county guides,
+in progress** (see below).
 
 ## Environment / context
 
@@ -251,12 +251,104 @@ User, 2026-10-22, accepting the recommendations:
 8. [x] READMEs (OpenSlate, endorsements, ballot repo). SPEC note deferred by
    decision 4.
 
-## Next (not started)
+## Next
 
 - After Nov 3: move the CA candidate list (ballot source) into the ballot repo.
-- County guides, one county at a time (SF, LA, San Mateo first).
-- Incumbent photos from public-domain sources for races the state guide
-  doesn't cover (Congress, Legislature).
+- **County guides: in progress**, see *Phase 2* below.
+- Incumbent photos from public-domain sources: **proposed to drop** (asked
+  2026-10-22). Photos of incumbents only would put a face next to the
+  officeholder and a blank next to every challenger, which tilts the page. An
+  official guide gives every candidate the same chance to print one. Keep to
+  guide photos (and later, photos candidates sign themselves).
+
+## Phase 2: county guides (started 2026-10-22, about 3:40 PM PDT (22:40Z))
+
+User: "let's get county guides."
+
+### What a county guide adds
+
+- Statements for Congress and the Legislature (the state guide has none), and
+  for every local office.
+- Local measures: a digest or impartial analysis, what Yes and No mean, a
+  fiscal statement, the official arguments and rebuttals, and the legal text.
+
+### San Francisco first
+
+SF is the only county whose local races the app knows (ballot source
+`orgs/sf-department-of-elections`). The guide only appears on races the app
+already shows, so a county without a ballot source only gains its Congress and
+Legislature statements.
+
+Findings (checked 2026-10-22):
+
+- The Nov 3 Voter Information Pamphlet is one 252-page PDF,
+  `https://media.api.sf.gov/documents/N26_EN_VIP.pdf` (7.9 MB; also CH, SP,
+  FI, VI). The "HTML edition" its cover mentions is the personalised Voter
+  Portal (login), and the old `voterguide.sfelections.org` site is gone
+  (Pantheon "404 Unknown site"). So the PDF is the public source.
+- `sfelections.gov` returns 403 to curl's default user agent; a browser user
+  agent works.
+- **No photos.** No image XObjects on any candidate page (pdf.js operator
+  list); only the page-footer form. SF prints statements as text only.
+- Statement layout: "Candidates for <office>" heading (20 pt Arial Black),
+  each name in capitals (15 pt), "My occupation is …", "My qualifications
+  are:", the text, often a web address, and the candidate's name as a
+  sign-off. Two columns, one candidate per column. Footer caveat: "Statements
+  are volunteered by the candidates and have not been checked for accuracy by
+  any official agency. Statements are printed as submitted. Spelling and
+  grammatical errors have not been corrected."
+- Measures: the question and vote threshold; a digest by the Ballot
+  Simplification Council ("The Way It Is Now", "The Proposal", what a Yes and
+  a No vote mean); the Controller's statement; "How X Got on the Ballot" (the
+  Supervisors' votes); proponent's and opponent's arguments with rebuttals;
+  then **paid arguments**, each ending "The true source(s) of funds for the
+  printing fee of this argument: …"; legal text from printed page 148.
+- Text extraction: pdf.js (`pdfjs-dist`, Apache-2.0) gives every run with its
+  position and font (`fontExtraProperties: true` resolves names such as
+  `Arial-Black`, `ArialMT`, `Arial-ItalicMT`). Items are not in reading order,
+  so sort by column, then by y.
+- The pamphlet also prints "Party Endorsements of Candidates" (official
+  party endorsements filed with the county). Possible endorsement data; not
+  in scope.
+
+### Design (phase 2)
+
+- **Same repo**, one guide per county: `county/<county>/` holds `guide.json`
+  and `items/`, published at `/county/<county>/guide.jws`. Each county is its
+  own manifest because each is a different authority's publication
+  (`attribution.of`), and one manifest for all 58 would grow large. The
+  repo's one key signs all of them.
+- **guides.json gains `covers`**: the jurisdictions a guide has items for.
+  Congress and Legislature subjects are `us/ca/cd-N`, `us/ca/ad-N`,
+  `us/ca/sd-N`, which a county jurisdiction (`us/ca/sf`) doesn't contain, so
+  prefix matching can't find them. The app tries every guide that covers the
+  subject's jurisdiction and uses the first whose manifest lists the subject.
+- **The pamphlet PDF stays out of git** (decision 5). The scraper caches it
+  outside git and records URL, SHA-256, size and retrieval time in
+  `evidence/county/<county>/index.json`. Each passage's `source` is the PDF
+  URL with `#page=N`.
+- **Legal text is linked, not extracted.** SF prints additions and deletions
+  both in italics, telling them apart by underline and strikethrough drawn as
+  lines, not as font properties. Extracted text would silently drop the
+  difference between added and deleted law. A `document` may now omit `file`
+  and give `page` (and the original's SHA-256) instead; the app links to the
+  official PDF at that page.
+- **Paid arguments** are kept, marked `paid: true`, with the printed
+  `funding` line. The app shows them after the official arguments, collapsed
+  and labelled as paid.
+
+### Phase 2 steps
+
+1. [ ] Core + CLI: `argument.paid`, `argument.funding`; `document.file`
+   optional with `page` and `sha256`; tests
+2. [ ] App: `covers` matching across guides; paid arguments; linked documents
+3. [ ] Ballot repo: PDF text extraction + `scripts/scrape-sf-vip.ts`
+   ← **current**
+4. [ ] Ballot repo: build and publish per-county guides; bump `.openslate-version`
+5. [ ] Endorsements repo: SF entry in `guides.json` with `covers`
+6. [ ] Check live
+7. [ ] Signer organizations from SF's official and paid arguments (decision 3)
+8. [ ] Next counties: decide by what's publishable and where users are
 
 ## Progress log
 
