@@ -115,6 +115,14 @@
                 "type": "string",
                 "minLength": 1
               },
+              "choice_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "write_in": {
+                "type": "boolean",
+                "const": true
+              },
               "weight": {
                 "type": "number",
                 "minimum": 0,
@@ -132,7 +140,15 @@
               "subject",
               "stance"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "dependencies": {
+              "choice_id": [
+                "choice"
+              ],
+              "write_in": [
+                "choice"
+              ]
+            }
           }
         },
         "endorsed_by": {

@@ -33,11 +33,18 @@ export const positionSchema = z
     subject: subjectSchema,
     stance: stanceSchema,
     choice: z.string().min(1).optional(),
+    /** Catalog id of the choice, from a ballot listing (SPEC §3.11). */
+    choice_id: z.string().min(1).optional(),
+    /** The choice isn't printed on the ballot (SPEC §3.12). Never `false`: omit it. */
+    write_in: z.literal(true).optional(),
     weight: z.number().min(0).max(1).optional(),
     statement: z.string().optional(),
     source: z.string().url().optional(),
   })
-  .strict();
+  .strict()
+  .refine((p) => p.choice !== undefined || (p.choice_id === undefined && !p.write_in), {
+    message: "choice_id and write_in need a choice",
+  });
 export type Position = z.infer<typeof positionSchema>;
 
 export const issuerSchema = z

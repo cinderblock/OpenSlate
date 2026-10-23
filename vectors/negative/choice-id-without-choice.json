@@ -1,0 +1,10 @@
+{
+  "name": "choice-id-without-choice",
+  "description": "Validly signed token whose position has a `choice_id` but no `choice`. MUST be rejected (SPEC §3.4).",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5In0sInBvc2l0aW9ucyI6W3siY2hvaWNlX2lkIjoidmlwOmMtMSIsInN0YW5jZSI6ImVuZG9yc2UiLCJzdWJqZWN0Ijp7InRpdGxlIjoiTWF5b3IifX1dLCJ2IjoxfQ.iW7q6sgqXxmp1Jfr29o0OxxWd8vKvnA6AnVJGkrz4kYpWNC6Ovc1Ck_Bwc-DKg_SWRi15xdWWPquLLZ6VWNbCA",
+  "expect": {
+    "error_contains": [
+      "choice"
+    ]
+  }
+}

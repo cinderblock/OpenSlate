@@ -123,9 +123,16 @@ export const POSITIVES: PositiveDef[] = [
           },
           stance: "endorse",
           choice: "A. Candidate",
+          choice_id: "vip:candidate-456",
           weight: 0.75,
           statement: "Strong record on transit.",
           source: "https://alice.example/endorsements/mayor",
+        },
+        {
+          subject: { title: "Water Board Seat 2", kind: "race" },
+          stance: "endorse",
+          choice: "C. Writein",
+          write_in: true,
         },
       ],
       nonce: "n1",
@@ -365,6 +372,46 @@ export const NEGATIVES: NegativeDef[] = [
       );
     },
     expect: { error_contains: ["attribution"] },
+  },
+  {
+    name: "write-in-false",
+    description:
+      "Validly signed token with `write_in: false`. Only `true` is allowed; MUST be rejected (SPEC §3.4).",
+    build: (h) => {
+      const key = h.pubkey("alice");
+      return h.sign(
+        { alg: "EdDSA", typ: "openslate+jws", kid: key },
+        {
+          v: 1,
+          issuer: { key },
+          issued_at: "2026-01-01T00:00:00Z",
+          positions: [
+            { subject: { title: "Mayor" }, stance: "endorse", choice: "A", write_in: false },
+          ],
+        },
+        h.seed("alice"),
+      );
+    },
+    expect: { error_contains: ["write_in"] },
+  },
+  {
+    name: "choice-id-without-choice",
+    description:
+      "Validly signed token whose position has a `choice_id` but no `choice`. MUST be rejected (SPEC §3.4).",
+    build: (h) => {
+      const key = h.pubkey("alice");
+      return h.sign(
+        { alg: "EdDSA", typ: "openslate+jws", kid: key },
+        {
+          v: 1,
+          issuer: { key },
+          issued_at: "2026-01-01T00:00:00Z",
+          positions: [{ subject: { title: "Mayor" }, stance: "endorse", choice_id: "vip:c-1" }],
+        },
+        h.seed("alice"),
+      );
+    },
+    expect: { error_contains: ["choice"] },
   },
   {
     name: "adopts-no-target",

@@ -105,7 +105,9 @@ Two positions refer to the same real-world item when their `id` matches. Absent 
 | --- | --- | --- | --- |
 | `subject` | `Subject` | yes | What this position is about. |
 | `stance` | `Stance` | yes | See §3.6. |
-| `choice` | string | no | The specific option/candidate chosen within a race. |
+| `choice` | string | no | The specific option/candidate chosen within a race, spelled as the ballot prints it. |
+| `choice_id` | string | no | Catalog id of the choice (§3.11). Requires `choice`. |
+| `write_in` | boolean | no | `true`: the choice is a write-in, not printed on the ballot (§3.12). Requires `choice`. MUST NOT be `false`; omit it instead. |
 | `weight` | number | no | Strength/confidence in `[0, 1]`. |
 | `statement` | string | no | Free-text endorsement / rationale. |
 | `source` | string | no | URL backing the position. |
@@ -254,6 +256,51 @@ Like a `Reference` (§3.5), an adoption is a claim by the adopting slate's
 signer. For a secondhand slate it is the researcher reporting that the named
 entity republished those picks; `source` is the evidence.
 
+### 3.11 Choice identity
+
+Within one subject (§3.10, *Subject identity*), two positions name the same
+choice when their `choice_id` values are equal. A `choice_id` is an opaque,
+source-namespaced string (§8.1), assigned by a ballot listing (§8.2). It is
+compared only within its subject; it need not be unique across subjects.
+
+Publishers SHOULD copy `choice_id` from the ballot listing for the subject
+when one exists, and SHOULD set `choice` to the listing's spelling. `choice`
+stays required alongside `choice_id`, so a slate reads correctly without the
+listing. Once published, a listing's ids MUST NOT change; a corrected
+spelling keeps its id.
+
+A position without a `choice_id` names its choice by `choice` alone. A
+consumer holding a ballot listing for the subject:
+
+- SHOULD resolve the name to one of the listing's choices when it is plainly
+  the same name (exact; or the same person by rule, such as a nickname the
+  ballot prints in parentheses or quotes, or a middle initial left out), and
+  show it under the listing's spelling.
+- MUST NOT resolve a name that only resembles a listed one (a likely typo, an
+  unusual short form) without telling the user. It MAY offer the resemblance
+  as a suggestion.
+- SHOULD show a name it can't resolve, or a `choice_id` the listing doesn't
+  contain, as *not on the ballot*, never silently as another candidate.
+
+Without a listing, consumers compare `choice` strings, and MAY group a
+position without a `choice_id` with others whose `choice_id` they know under
+the same spelling.
+
+### 3.12 Write-ins
+
+`write_in: true` says the choice isn't printed on the ballot: a voter has to
+write the name in. It applies to candidates, not to measures.
+
+A ballot listing (§8.2) MAY list the certified (qualified) write-in candidates
+for a contest as positions with `write_in: true`, each with a `choice_id`. A
+position for one of them SHOULD carry the same `write_in` and `choice_id`.
+
+A write-in position whose name the listing doesn't certify is still valid
+and MUST still be shown. Consumers SHOULD warn that in many jurisdictions
+only certified write-in candidates' votes are counted. A position for a name
+the listing *does* print on the ballot SHOULD NOT carry `write_in`;
+consumers SHOULD treat it as the printed candidate.
+
 ---
 
 ## 4. Canonical JSON
@@ -266,9 +313,9 @@ The `header` and `payload` JSON MUST be serialized using JSON Canonicalization S
 3. Strings escaped minimally per JSON.
 4. Numbers in ECMAScript `Number`-to-string form.
 
-OpenSlate payloads use only strings and a single bounded number (`weight` in `[0,1]`),
-so a conforming JCS implementation is a recursive key-sort plus standard JSON number
-formatting. Members whose value is `undefined`/absent MUST be omitted (not `null`),
+OpenSlate payloads use only strings, a single bounded number (`weight` in `[0,1]`)
+and the literal `true` (`write_in`), so a conforming JCS implementation is a recursive
+key-sort plus standard JSON number formatting. Members whose value is `undefined`/absent MUST be omitted (not `null`),
 unless `null` is explicitly meaningful (it is not, in v1).
 
 Canonicalization guarantees two independent implementations produce the *same* token
@@ -408,6 +455,11 @@ collision. The reference toolkit uses:
 | `vip:` | Voting Information Project (Google Civic Info) | `vip:2024-11-05:CA-SF:mayor` |
 | `civicapi:` | [civicAPI](https://civicapi.org) race ID | `civicapi:26131` |
 | `local:` | Tool-local key for subjects with no upstream id | `local:us-ca-sf\|2024-11-05\|prop-12` |
+| `ca-sos:` | `choice_id` from the California Secretary of State ballot listing (§8.2) | `ca-sos:2026-11-03/secretary-of-state/donald-p-don-wagner` |
+| `sf-elections:` | `choice_id` from the San Francisco Department of Elections ballot listing | `sf-elections:2026-11-03/mayor/jane-doe` |
+
+A ballot listing's `choice_id` values SHOULD start with a short prefix naming
+the listing's publisher, as above.
 
 `civicapi:<id>` references civicAPI's numeric `race.id` and is used by the
 reference toolkit for post-election results comparison. It SHOULD NOT replace
@@ -419,6 +471,25 @@ about civicAPI.
 Verifiers and collators MUST treat unrecognised prefixes as opaque strings —
 they may still be equal across slates (enabling cross-issuer collation) without
 being interpretable.
+
+### 8.2 Ballot listings
+
+A **ballot listing** is a slate that states what is on the ballot, not what to
+vote for. It is a secondhand report (§3.9) whose `attribution.of.kind` is
+`election-authority` (a Secretary of State, a county elections office), or a
+firsthand slate whose `issuer.kind` is `election-authority`. It lists:
+
+- one `neutral` position per choice in each contest it covers, in ballot
+  order, with the ballot's spelling in `choice` and an id in `choice_id`;
+- the ballot designation (party, occupation, measure type) in `statement`;
+- certified write-in candidates, when known, the same way with
+  `write_in: true`.
+
+Consumers treat a listing as the field of each contest it lists, not as a
+recommendation: its positions don't count as support or opposition. A listing
+*covers* the jurisdictions its positions name, for the election they name.
+In a covered jurisdiction, a contest the listing doesn't name is not on the
+ballot, and consumers SHOULD say so.
 
 ---
 
@@ -442,6 +513,12 @@ version by adding OPTIONAL fields (verifiers must already reject unknown fields,
 such additions ship with a coordinated spec revision). Incompatible changes bump `v`.
 
 ### 10.1 Changelog (within v1)
+
+- **2026-10-23** — Added optional `choice_id` and `write_in` to `Position`
+  (§3.4, §3.11, §3.12) and defined ballot listings (§8.2). Amended in place;
+  the format was unadopted at the time. Verifiers built before this revision
+  reject slates that use the new fields (closed schema, §3.8), so consumers
+  should upgrade before publishers use them.
 
 - **2026-10-19** — Added optional `adopts` field to `SlatePayload` (§3.10):
   adopting another slate's positions by reference. Verifiers built before this
@@ -495,6 +572,7 @@ newline-delimited list of tokens; implementations SHOULD NOT preempt that.
       "subject": { "title": "Mayor of Springfield", "id": "vip:contest-123", "kind": "race" },
       "stance": "endorse",
       "choice": "A. Candidate",
+      "choice_id": "vip:candidate-456",
       "weight": 1,
       "statement": "Strong record on transit."
     },
@@ -506,6 +584,12 @@ newline-delimited list of tokens; implementations SHOULD NOT preempt that.
       "subject": { "title": "City Council District 4", "kind": "race" },
       "stance": "lean_for",
       "choice": "B. Other"
+    },
+    {
+      "subject": { "title": "Water Board Seat 2", "kind": "race" },
+      "stance": "endorse",
+      "choice": "C. Writein",
+      "write_in": true
     }
   ]
 }

@@ -32,6 +32,15 @@ const headerGen = zodToJsonSchema(jwsHeaderSchema, {
   $refStrategy: "none",
 });
 
+// zod refinements don't reach JSON Schema; restate the Position one (SPEC §3.4).
+const slateDef = extractDefinition(slateGen, "SlatePayload") as {
+  properties: { positions: { items: Record<string, unknown> } };
+};
+slateDef.properties.positions.items.dependencies = {
+  choice_id: ["choice"],
+  write_in: ["choice"],
+};
+
 // Combined schema: top-level $ref points to SlatePayload; both SlatePayload
 // and JwsHeader are reachable via definitions so a single fetch is enough.
 const combined = {
@@ -45,7 +54,7 @@ const combined = {
     "See SPEC.md and vectors/ for the normative format and conformance test vectors.",
   $ref: "#/definitions/SlatePayload",
   definitions: {
-    SlatePayload: extractDefinition(slateGen, "SlatePayload"),
+    SlatePayload: slateDef,
     JwsHeader: extractDefinition(headerGen, "JwsHeader"),
   },
 };
