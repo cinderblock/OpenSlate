@@ -1,26 +1,5 @@
 # Issues
 
-## Hosted app shows raw HTTP 404 errors for elections and ballot lookup
-
-**In progress — master, `plans/elections-page-hosted.md`.**
-
-On https://openslate.us there is no `apps/server`, so `/api/elections` and
-`/api/ballot` (`apps/web/src/lib/query.ts`, `electionsQueryOptions` and
-`ballotQueryOptions`) get a plain 404 from the static-assets worker. The
-queries surface that as "Elections lookup failed: HTTP 404" / "Ballot lookup
-failed: HTTP 404" in Compose. Only a 501 gets the friendly "isn't configured"
-message, and that message talks about `.env`, which means nothing to a visitor.
-The README says the hosted mode is manual entry, so the UI should say that
-instead of showing an error (or not call the endpoints when no server is
-configured).
-
-**Update (branch `ui/two-modes`, 2026-10-20):** Compose no longer calls either
-endpoint (it signs My-ballot picks), and the Google address lookup (*Your
-server* under Find your districts, since `feat/find-my-districts`) only
-appears when `/api/health` reports `ballotLookup: true`, so the ballot half is
-moot. The Elections page (`ElectionsPanel.tsx`) still calls `/api/elections`
-and shows "Google elections list unavailable — HTTP 404" on the hosted app.
-
 ## `bun run lint` fails on every file in a Windows checkout
 
 With `core.autocrlf=true` the working tree is CRLF, but `biome.json` leaves

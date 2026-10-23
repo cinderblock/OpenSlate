@@ -1,94 +1,38 @@
-import { verifySlate } from "@openslate/core";
-import { useLiveQuery } from "@tanstack/react-db";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useBallotDraft } from "../lib/ballotDraft";
-import { slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
-import { localToday, useMyElection } from "../lib/myVote";
-import { electionsQueryOptions } from "../lib/query";
+import { type ElectionEntry, electionEntries } from "../lib/electionList";
+import { localToday, useDecodedSlates, useMyElection } from "../lib/myVote";
+import { electionsQueryOptions, serverHealthOptions } from "../lib/query";
 import { Switch } from "./ui/Switch";
-
-interface ElectionEntry {
-  id: string;
-  name?: string;
-  electionDay?: string;
-  ocdDivisionId?: string;
-  sources: { google: boolean; slates: number; drafts: number };
-  /** undefined = unknown date (no electionDay). */
-  past: boolean | undefined;
-}
 
 const TODAY = localToday();
 
-/** Draft rows are keyed by election date; older ones carried a Google election id. */
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
-
 export function ElectionsPanel() {
-  const electionsQuery = useQuery(electionsQueryOptions());
-  const { data: slates } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
+  // Google's list comes through a self-hosted server with a Civic API key; the
+  // hosted app has none, so it doesn't ask.
+  const health = useQuery(serverHealthOptions());
+  const hasGoogle = health.data?.ballotLookup === true;
+  const electionsQuery = useQuery({ ...electionsQueryOptions(), enabled: hasGoogle });
+  const { slates } = useDecodedSlates();
   const draft = useBallotDraft();
   const [myElection, setMyElection] = useMyElection();
   const [showPast, setShowPast] = useState(false);
 
-  const entries = useMemo<ElectionEntry[]>(() => {
-    const map = new Map<string, ElectionEntry>();
-
-    for (const election of electionsQuery.data ?? []) {
-      map.set(election.id, {
-        id: election.id,
-        name: election.name,
-        electionDay: election.electionDay,
-        ocdDivisionId: election.ocdDivisionId,
-        sources: { google: true, slates: 0, drafts: 0 },
-        past: election.electionDay ? election.electionDay < TODAY : undefined,
-      });
-    }
-
-    // Count distinct slates per electionId (extracted from vip:<id>:... in subject.id).
-    const slateCounts = new Map<string, number>();
-    for (const slate of slates) {
-      const result = verifySlate(slate.token);
-      if (!result.payload) continue;
-      const ids = new Set<string>();
-      for (const position of result.payload.positions) {
-        if (position.subject.id?.startsWith("vip:")) {
-          const electionId = position.subject.id.slice(4).split(":")[0];
-          if (electionId) ids.add(electionId);
-        }
-      }
-      for (const id of ids) slateCounts.set(id, (slateCounts.get(id) ?? 0) + 1);
-    }
-    for (const [id, count] of slateCounts) {
-      const existing = map.get(id);
-      if (existing) existing.sources.slates = count;
-      else
-        map.set(id, { id, sources: { google: false, slates: count, drafts: 0 }, past: undefined });
-    }
-
-    // Drafts.
-    const draftCounts = new Map<string, number>();
-    for (const row of Object.values(draft.rows)) {
-      if (!row.electionId) continue;
-      draftCounts.set(row.electionId, (draftCounts.get(row.electionId) ?? 0) + 1);
-    }
-    for (const [key, count] of draftCounts) {
-      const existing = map.get(key) ?? [...map.values()].find((e) => e.electionDay === key);
-      if (existing) existing.sources.drafts += count;
-      else {
-        const dated = DATE.test(key);
-        map.set(key, {
-          id: key,
-          ...(dated ? { electionDay: key } : {}),
-          sources: { google: false, slates: 0, drafts: count },
-          past: dated ? key < TODAY : undefined,
-        });
-      }
-    }
-
-    return [...map.values()];
-  }, [electionsQuery.data, slates, draft.rows]);
+  const entries = useMemo(
+    () =>
+      electionEntries(
+        electionsQuery.data ?? [],
+        slates.map((slate) => slate.payload),
+        Object.values(draft.rows)
+          .map((row) => row.electionId)
+          .filter((id) => id !== ""),
+        TODAY,
+      ),
+    [electionsQuery.data, slates, draft.rows],
+  );
 
   const visible = useMemo(() => {
     const filtered = showPast ? entries : entries.filter((e) => e.past !== true && e.id !== "2000");
@@ -110,9 +54,9 @@ export function ElectionsPanel() {
     <section className="panel">
       <h2>Elections</h2>
       <p className="hint">
-        Every election we know about — from Google's list, from imported slates' subject IDs, and
-        from your local drafts. Picking one as <em>active</em> sets the election My ballot and
-        Compose show.
+        Every election we know about: {hasGoogle && "from Google's list, "}from your imported
+        slates, and from your local drafts. Picking one as <em>active</em> sets the election My
+        ballot and Compose show.
       </p>
 
       <div className="card">
@@ -121,7 +65,7 @@ export function ElectionsPanel() {
         </Switch>
       </div>
 
-      {electionsQuery.isLoading && <p className="hint">Loading elections…</p>}
+      {(health.isLoading || electionsQuery.isLoading) && <p className="hint">Loading elections…</p>}
       {electionsQuery.error && (
         <p className="hint" title={electionsQuery.error.message}>
           Google elections list unavailable — {electionsQuery.error.message}
@@ -178,11 +122,13 @@ function ElectionCard({
         <code className="key">id {entry.id}</code>
       </p>
       <p className="hint">
-        {entry.sources.google
-          ? "ballot data available"
-          : "no ballot data (id only from your local data)"}
-        {entry.sources.slates > 0 && ` · ${entry.sources.slates} imported slate(s)`}
-        {entry.sources.drafts > 0 && ` · ${entry.sources.drafts} draft row(s)`}
+        {[
+          entry.sources.google && "on Google's list, with ballot data",
+          entry.sources.slates > 0 && `${entry.sources.slates} imported slate(s)`,
+          entry.sources.drafts > 0 && `${entry.sources.drafts} draft row(s)`,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
       </p>
       <div className="row">
         {!isActive && setActive && (
