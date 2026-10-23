@@ -306,7 +306,9 @@ export function GuideDetails({ guide }: { guide: GuideForSubject }) {
   const sides = [...new Set(official.map((a) => a.side))];
   const paidSides = [...new Set(paid.map((a) => a.side))];
   const disclaimer = item.arguments?.find((a) => a.disclaimer)?.disclaimer;
-  if (!item.summary && !item.analysis && !item.arguments && !item.documents) return null;
+  if (!item.summary && !item.analysis && !item.arguments && !item.fullText && !item.documents) {
+    return null;
+  }
   return (
     <div className="card guide-details">
       <div className="card-title">
@@ -391,6 +393,19 @@ export function GuideDetails({ guide }: { guide: GuideForSubject }) {
           <GuideBlocks blocks={item.analysis.blocks} guide={guide} />
           <p className="hint">
             <Source passage={item.analysis} />
+          </p>
+        </details>
+      )}
+
+      {item.fullText && (
+        <details>
+          <summary>
+            {item.fullText.title ?? "Full text"}
+            {item.fullText.by && <span className="hint"> · {item.fullText.by}</span>}
+          </summary>
+          <GuideBlocks blocks={item.fullText.blocks} guide={guide} />
+          <p className="hint">
+            <Source passage={item.fullText} />
           </p>
         </details>
       )}

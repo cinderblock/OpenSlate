@@ -184,6 +184,11 @@ export const guideItemSchema = z
     summary: passageSchema.optional(),
     analysis: passageSchema.optional(),
     arguments: z.array(argumentSchema).optional(),
+    /**
+     * The measure's full text, when the guide publishes it as text rather than as a
+     * document (e.g. HTML on a county's site).
+     */
+    fullText: passageSchema.optional(),
     /** Full text and other originals, mirrored (e.g. the proposed law as a PDF). */
     documents: z.array(documentSchema).optional(),
   })
@@ -316,7 +321,13 @@ export function guideItemFiles(item: GuideItem): string[] {
         for (const entry of block.items) walk(entry);
     }
   };
-  const passages = [item.about, item.summary, item.analysis, ...Object.values(item.means ?? {})];
+  const passages = [
+    item.about,
+    item.summary,
+    item.analysis,
+    item.fullText,
+    ...Object.values(item.means ?? {}),
+  ];
   for (const passage of passages) if (passage) walk(passage.blocks);
   for (const candidate of item.candidates ?? []) {
     if (candidate.photo) files.add(candidate.photo.file);

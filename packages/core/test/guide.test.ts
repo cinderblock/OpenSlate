@@ -175,6 +175,21 @@ describe("guide", () => {
     expect(guideItemSchema.safeParse(badPage).success).toBe(false);
   });
 
+  test("a measure's full text may be a passage, and its images count as files", () => {
+    const withText = guideItemSchema.parse({
+      ...ITEM,
+      fullText: {
+        title: "Full text of Measure C",
+        blocks: [
+          { type: "p", text: ["Section 1."] },
+          { type: "img", file: "img/c/map.png" },
+        ],
+        source: SOURCE,
+      },
+    });
+    expect(guideItemFiles(withText)).toContain("img/c/map.png");
+  });
+
   test("paid arguments carry who paid for them", () => {
     const paid = {
       ...ITEM,
