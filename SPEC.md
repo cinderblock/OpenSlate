@@ -455,8 +455,7 @@ collision. The reference toolkit uses:
 | `vip:` | Voting Information Project (Google Civic Info) | `vip:2024-11-05:CA-SF:mayor` |
 | `civicapi:` | [civicAPI](https://civicapi.org) race ID | `civicapi:26131` |
 | `local:` | Tool-local key for subjects with no upstream id | `local:us-ca-sf\|2024-11-05\|prop-12` |
-| `ca-sos:` | `choice_id` from the California Secretary of State ballot listing (§8.2) | `ca-sos:2026-11-03/secretary-of-state/donald-p-don-wagner` |
-| `sf-elections:` | `choice_id` from the San Francisco Department of Elections ballot listing | `sf-elections:2026-11-03/mayor/jane-doe` |
+| `<publisher>:` | `choice_id` from a ballot listing (§8.2); the reference catalog uses the listing's directory name | `ca-secretary-of-state:2026-11-03/california-secretary-of-state/donald-p-don-wagner` |
 
 A ballot listing's `choice_id` values SHOULD start with a short prefix naming
 the listing's publisher, as above.
