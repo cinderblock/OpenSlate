@@ -45,7 +45,15 @@ The web app has two modes:
   where the two parties split (races between a Democrat and a Republican, and
   races and measures the parties' endorsements disagree on). It's arithmetic
   on picks (`leanOf` in `@openslate/core`), not a rating; tap any meter for
-  the counts.
+  the counts. Where an official candidate list is imported, every source's
+  choices are matched to it, so "Don Wagner" and the ballot's "Donald P. (Don)
+  Wagner" are one candidate (by the list's `choice_id`, or by name: nicknames,
+  middle initials). A name the list doesn't have is marked *Not on the
+  ballot* (with the listed name it most resembles), and *Report it* sends a
+  prefilled "wrong information" report; each imported catalog entry says how
+  many of its names didn't match. Any candidate race takes a *write-in*: a
+  name not printed on the ballot, signed as one, and flagged when the list
+  doesn't certify it.
 - **Publish**: create a signing identity, sign your My-ballot picks (plus any
   other race or issue, on your ballot or not) as a slate, see the slates you've
   signed, and verify or inspect any block.

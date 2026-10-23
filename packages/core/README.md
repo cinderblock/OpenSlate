@@ -28,6 +28,11 @@ const result = verifySlate(token);
 - `envelope` — JWS-compact encode/decode + signature check.
 - `slate` — high-level `buildSlate` / `signSlate` / `createSlate` / `verifySlate` / `parseSlate`.
 - `identity` — key pair + metadata, with secure-storage (de)serialization.
+- `ballot` — ballot listings (SPEC §8.2) and `resolveChoice`: where a position's
+  choice stands against them (listed by `choice_id`, name or nickname rule; a
+  suggestion only; an uncertified write-in; off the ballot).
+- `names` — candidate-name matching behind `resolveChoice` (`samePerson`,
+  `matchBallotName`).
 
 ## Dependencies
 
