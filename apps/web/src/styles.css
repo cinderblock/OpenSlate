@@ -1566,8 +1566,15 @@ button.source-chip {
   margin: 0.5rem 0 0;
 }
 .guide-disclaimer,
-.guide-attribution {
+.guide-attribution,
+.guide-funding {
   font-size: 0.85em;
+}
+.guide-paid > summary .hint {
+  font-weight: normal;
+}
+.guide-paid .guide-side > details > summary {
+  font-weight: normal;
 }
 
 /* Sources */

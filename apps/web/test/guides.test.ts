@@ -39,4 +39,27 @@ describe("voter guides", () => {
     );
     expect(guidesFor([CA], { title: "X", election: "2026-11-03" })).toEqual([]);
   });
+
+  test("a county guide covers the districts it lists, beside its own area", () => {
+    const SF: GuideEntry = {
+      election: "2026-11-03",
+      jurisdiction: "us/ca/sf",
+      covers: ["us/ca/sf", "us/ca/cd-11", "us/ca/bart-8"],
+      url: "https://example.org/ca/county/sf/guide.jws",
+      key: "ed25519:test",
+    };
+    const house = {
+      title: "US House of Representatives, California District 11",
+      jurisdiction: "us/ca/cd-11",
+      election: "2026-11-03",
+    };
+    // The state guide's area contains the district too; both are tried, in catalog order.
+    expect(guidesFor([CA, SF], house)).toEqual([CA, SF]);
+    expect(
+      guidesFor([SF], { title: "X", jurisdiction: "us/ca/cd-12", election: "2026-11-03" }),
+    ).toEqual([]);
+    expect(
+      guidesFor([SF], { title: "X", jurisdiction: "us/ca/cd-1", election: "2026-11-03" }),
+    ).toEqual([]);
+  });
 });

@@ -1,4 +1,11 @@
-import type { Argument, Block, CandidateInfo, Inline, Passage } from "@openslate/core";
+import type {
+  Argument,
+  Block,
+  CandidateInfo,
+  GuideDocument,
+  Inline,
+  Passage,
+} from "@openslate/core";
 import { Fragment, type ReactNode } from "react";
 import { formatLocalDate } from "../lib/dates";
 import { type GuideForSubject, useGuideFileUrl } from "../lib/guides";
@@ -256,6 +263,11 @@ export function GuideOverview({ guide }: { guide: GuideForSubject }) {
 function ArgumentText({ argument, guide }: { argument: Argument; guide: Guide }) {
   return (
     <>
+      {argument.title && (
+        <p>
+          <strong>{argument.title}</strong>
+        </p>
+      )}
       <GuideBlocks blocks={argument.blocks} guide={guide} />
       {argument.signers.length > 0 && (
         <ul className="guide-signers">
@@ -273,6 +285,7 @@ function ArgumentText({ argument, guide }: { argument: Argument; guide: Guide })
           ))}
         </ul>
       )}
+      {argument.funding && <p className="hint guide-funding">{argument.funding}</p>}
     </>
   );
 }
@@ -287,7 +300,10 @@ function sideLabel(argument: Argument): string {
 /** A measure's official summary, analysis, arguments and full text. */
 export function GuideDetails({ guide }: { guide: GuideForSubject }) {
   const { item } = guide;
-  const sides = [...new Set((item.arguments ?? []).map((a) => a.side))];
+  const official = (item.arguments ?? []).filter((a) => !a.paid);
+  const paid = (item.arguments ?? []).filter((a) => a.paid);
+  const sides = [...new Set(official.map((a) => a.side))];
+  const paidSides = [...new Set(paid.map((a) => a.side))];
   const disclaimer = item.arguments?.find((a) => a.disclaimer)?.disclaimer;
   if (!item.summary && !item.analysis && !item.arguments && !item.documents) return null;
   return (
@@ -296,7 +312,7 @@ export function GuideDetails({ guide }: { guide: GuideForSubject }) {
         <strong>From the official voter guide</strong>
       </div>
 
-      {item.arguments && item.arguments.length > 0 && (
+      {official.length > 0 && (
         <section aria-label="Arguments">
           <h4>Arguments</h4>
           <p className="hint">
@@ -306,7 +322,7 @@ export function GuideDetails({ guide }: { guide: GuideForSubject }) {
             {sides.map((side) => (
               <div key={side} className="guide-side">
                 <h5>For “{side}”</h5>
-                {(item.arguments ?? [])
+                {official
                   .filter((a) => a.side === side)
                   // The argument first, then its side's rebuttal of the other.
                   .sort((a, b) => Number(a.rebuttal) - Number(b.rebuttal))
@@ -324,6 +340,32 @@ export function GuideDetails({ guide }: { guide: GuideForSubject }) {
           </div>
           {disclaimer && <p className="hint guide-disclaimer">{disclaimer}</p>}
         </section>
+      )}
+
+      {paid.length > 0 && (
+        <details className="guide-paid">
+          <summary>
+            Paid arguments ({paid.length})
+            <span className="hint"> · printed for a fee by whoever submitted them</span>
+          </summary>
+          <div className="guide-arguments">
+            {paidSides.map((side) => (
+              <div key={side} className="guide-side">
+                <h5>For “{side}”</h5>
+                {paid
+                  .filter((a) => a.side === side)
+                  .map((argument, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: published order, never reordered
+                    <details key={i}>
+                      <summary>{argument.title ?? `Paid argument ${i + 1}`}</summary>
+                      <ArgumentText argument={{ ...argument, title: undefined }} guide={guide} />
+                    </details>
+                  ))}
+              </div>
+            ))}
+          </div>
+          {!official.length && disclaimer && <p className="hint guide-disclaimer">{disclaimer}</p>}
+        </details>
       )}
 
       {item.summary && (
@@ -354,19 +396,38 @@ export function GuideDetails({ guide }: { guide: GuideForSubject }) {
       {item.documents && item.documents.length > 0 && (
         <ul className="guide-documents">
           {item.documents.map((doc) => (
-            <li key={doc.file}>
-              <GuideDocumentLink
-                guide={guide}
-                file={doc.file}
-                title={doc.title}
-                mediaType={doc.mediaType}
-                source={doc.source}
-              />
+            <li key={doc.file ?? `${doc.source}|${doc.page ?? ""}`}>
+              {doc.file ? (
+                <GuideDocumentLink
+                  guide={guide}
+                  file={doc.file}
+                  title={doc.title}
+                  mediaType={doc.mediaType}
+                  source={doc.source}
+                />
+              ) : (
+                <LinkedDocument doc={doc} />
+              )}
             </li>
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+/** A document only linked, at its page in the original (too large to mirror). */
+function LinkedDocument({ doc }: { doc: GuideDocument }) {
+  const href = doc.page ? `${doc.source.replace(/#.*$/, "")}#page=${doc.page}` : doc.source;
+  return (
+    <>
+      <a href={href} target="_blank" rel="noreferrer">
+        {doc.title}
+      </a>{" "}
+      <span className="hint">
+        ({doc.page ? `page ${doc.page} of the original` : "the original"}, not mirrored here)
+      </span>
+    </>
   );
 }
 

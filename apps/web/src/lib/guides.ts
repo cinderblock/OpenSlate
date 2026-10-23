@@ -6,7 +6,7 @@ import {
   parseGuideItem,
   verifyGuide,
 } from "@openslate/core";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG } from "./query";
 import { subjectKey } from "./subjects";
@@ -24,6 +24,13 @@ export interface GuideEntry {
   election: string;
   jurisdiction: string;
   title?: string;
+  /**
+   * The jurisdictions the guide has items for. A county guide covers its
+   * districts for Congress and the Legislature too, which its own
+   * jurisdiction doesn't contain. Without it, the guide covers its
+   * jurisdiction and every area inside it.
+   */
+  covers?: string[];
   /** The signed manifest (`guide.jws`); its files are relative to it. */
   url: string;
   /** The key the manifest must be signed with. */
@@ -93,13 +100,15 @@ async function fetchGuideFile(
   return bytes;
 }
 
-/** Guides whose election matches and whose area contains the subject's. */
+/** Guides for the subject's election that cover its area, in catalog order. */
 export function guidesFor(entries: GuideEntry[], subject: Subject): GuideEntry[] {
+  const area = subject.jurisdiction;
+  if (!area) return [];
+  const within = (outer: string) => area === outer || area.startsWith(`${outer}/`);
   return entries.filter(
     (g) =>
       g.election === subject.election &&
-      (subject.jurisdiction === g.jurisdiction ||
-        subject.jurisdiction?.startsWith(`${g.jurisdiction}/`) === true),
+      (g.covers ? g.covers.some(within) : within(g.jurisdiction)),
   );
 }
 
@@ -110,8 +119,9 @@ export interface GuideForSubject {
 }
 
 /**
- * The voter guide's item for a subject, if any guide in the default catalog
- * covers it. `status` separates "nothing to show" from "couldn't load".
+ * The voter guide's item for a subject, from the first guide in the default
+ * catalog that lists it (a district can appear in several county guides).
+ * `status` separates "nothing to show" from "couldn't load".
  */
 export function useGuideItem(subject: Subject | undefined): {
   guide?: GuideForSubject;
@@ -119,33 +129,43 @@ export function useGuideItem(subject: Subject | undefined): {
   error?: Error;
 } {
   const list = useQuery(guideListQueryOptions(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG));
-  const candidates = useMemo(
+  const entries = useMemo(
     () => (subject && list.data ? guidesFor(list.data, subject) : []),
     [list.data, subject],
   );
-  // One guide per election and area in practice; the first that lists the subject wins.
-  const entry = candidates[0];
-  const manifest = useQuery(guideManifestQueryOptions(entry));
+  const manifests = useQueries({ queries: entries.map((e) => guideManifestQueryOptions(e)) });
   const key = subject ? subjectKey(subject) : undefined;
-  const listed = manifest.data?.items.find((i) => subjectKey(i.subject) === key);
+  const found = manifests
+    .map((m, i) => ({
+      entry: entries[i],
+      manifest: m.data,
+      listed: m.data?.items.find((it) => subjectKey(it.subject) === key),
+    }))
+    .find((m) => m.listed);
+  const { entry, manifest, listed } = found ?? {};
   const item = useQuery({
-    queryKey: ["guide-item", entry?.url, listed?.file, manifest.data?.files[listed?.file ?? ""]],
-    enabled: entry !== undefined && manifest.data !== undefined && listed !== undefined,
+    queryKey: ["guide-item", entry?.url, listed?.file, manifest?.files[listed?.file ?? ""]],
+    enabled: entry !== undefined && manifest !== undefined && listed !== undefined,
     queryFn: async (): Promise<GuideItem> => {
-      if (!entry || !manifest.data || !listed) throw new Error("no guide item");
-      return parseGuideItem(await fetchGuideFile(entry, manifest.data, listed.file));
+      if (!entry || !manifest || !listed) throw new Error("no guide item");
+      return parseGuideItem(await fetchGuideFile(entry, manifest, listed.file));
     },
     staleTime: HOUR,
   });
 
-  const error = (list.error ?? manifest.error ?? item.error) as Error | null;
-  if (error) return { status: "error", error };
-  if (list.isPending || (entry && manifest.isPending) || (listed && item.isPending)) {
+  if (entry && manifest && item.data) {
+    return { status: "ready", guide: { entry, manifest, item: item.data } };
+  }
+  const error = (list.error ?? item.error ?? manifests.find((m) => m.error)?.error) as
+    | Error
+    | null
+    | undefined;
+  // A guide that failed only matters if no other guide has the subject.
+  if (found && item.error) return { status: "error", error: item.error as Error };
+  if (list.isPending || manifests.some((m) => m.isPending) || (found && item.isPending)) {
     return { status: subject ? "loading" : "none" };
   }
-  if (entry && manifest.data && item.data) {
-    return { status: "ready", guide: { entry, manifest: manifest.data, item: item.data } };
-  }
+  if (error) return { status: "error", error };
   return { status: "none" };
 }
 
