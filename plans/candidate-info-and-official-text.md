@@ -397,7 +397,7 @@ Findings (checked 2026-10-22):
   `evidence/county/sd/ballot-types.json`): each pamphlet's bookmarks are read
   through range requests (`scripts/lib/pdf-range.ts`), about 0.6 MB each.
   - Paced, resumable, about 5–15 s per file.
-  - At SB-ENG-262 at about 10:17 AM PDT (17:17Z).
+  - At SB-ENG-432 at about 11:20 AM PDT (18:20Z).
 - **Ballot source** (endorsements `scripts/sd-rov-ballot.ts`, uncommitted):
   - Races come from the registrar's `candidate-list.pdf` layout; measures from
     the index's bookmarks (a measure's own bookmark, e.g. "CITY OF OCEANSIDE
@@ -418,6 +418,10 @@ Findings (checked 2026-10-22):
     arguments and rebuttals with their signers, and the full text's page.
   - On the partial index: 64 items, 117 statements, 16 arguments; `guide
     check` passes.
+  - Each measure's short title (bold under "MEASURE A"; most SD measures have
+    none) goes to `evidence/county/sd/measure-titles.json`. `sd-rov-ballot.ts`
+    reads it next to the index and uses it as the title's parenthetical, as LA
+    does; with no short title it's just "Body — Measure X".
 - **Findings:**
   - "•" is a separate text run from its item's text, at the same y; the two
     are joined.
@@ -443,6 +447,52 @@ Findings (checked 2026-10-22):
   5. Commit and push the ballot repo, so CI signs and publishes.
   6. Add the `guides.json` entry with `covers`.
   7. Check live.
+
+### Alameda (in progress, 2026-10-23)
+
+- **Ballot source** (endorsements `scripts/alameda-rov-ballot.ts`, `7653f2d`,
+  pushed):
+  - 84 races and 28 measures; 110 of 112 subjects reuse catalog titles.
+  - Races come from the candidate list app:
+    - `alamedacountyca.gov/rov_app/candidatelist/<electionId>` returns the
+      race list as JSON.
+    - A POST to `/rov_app/candidatelist/` returns every race as an HTML table.
+      Send `raceStatus=onballot&candidateStatus=COMPLETED` and every field,
+      even empty ones; otherwise it answers HTTP 500.
+    - The list repeats some races; candidates are de-duplicated.
+  - Measures come from the guide's 14 pt bold headings ("CITY OF ALBANY
+    MEASURE O").
+  - City council seats print as "#2"; they're districts.
+  - The catalog files the City of Alameda under `us/ca/city-of-alameda`, AC
+    Transit under `us/ca/alameda`, and the county under `us/ca/alameda-county`.
+- **Guide source:** one 965-page `vig_nov2026_eng.pdf`.
+  - Candidate statements are on pp. 632–757; measures on pp. 758–964.
+  - Footer codes are set per contest ("CD10-1", "RTM-1").
+  - Statements come in two formats:
+    1. The standard one: NAME, "Occupation:", "Age:", then "My education and
+       qualifications are: …".
+    2. Berkeley's and Oakland's declaration ("I, NAME, hereby declare…", a
+       numbered list), each with a photo at the top left (39 photos, 300×415).
+       No other city prints photos.
+- **Broken fonts:** the measure pages use subset fonts with no Unicode map, so
+  pdf.js returns glyph numbers ("WUD൶F" for "traffic").
+  - Letters are 29 below their glyph numbers; ligatures and quotes have their
+    own table.
+  - pdf.js's text layer turns codes 9–13 into spaces, and two of those are the
+    parentheses. They're restored by aligning each text item with the font's
+    glyphs from the operator list.
+  - This is now `pdfPages(bytes, {repairGlyphFonts: true})` in the ballot repo
+    (`45e038a`); SF and OC are unchanged.
+  - Still to handle in the scraper:
+    - bullets come out as `Ɣ ƒ ƕ භ ō ͦ` from symbol fonts;
+    - signatures read "s NAME/" because "/" is drawn over the name: rebuild them
+      as "s/ NAME";
+    - two `·` characters on pp. 940 and 952 are undecided.
+- **Next:**
+  1. `scripts/scrape-alameda.ts`: statements (both formats; photos extracted
+     as JPEG through pdf-lib, or re-encoded) and measures (question, analysis,
+     arguments, rebuttals, full text page).
+  2. Add the `guides.json` entry.
 
 ### County survey (2026-10-23, real fetches)
 
@@ -617,3 +667,8 @@ LA findings:
   along. Ship from a worktree cut from `origin/master` (as done for this work).
 - Don't present a candidate statement or ballot argument as checked fact: carry
   the guide's own "not checked for accuracy" line.
+- Don't run `biome check --write` on a directory in the endorsements repo. It
+  reformats scripts nobody touched (it reflowed `ca-ballot-arguments.ts` and
+  turned twelve files' CRLF into LF; restored 2026-10-23). Name the files.
+- Don't write regexes through Python or Perl heredocs: escapes become control
+  bytes (`\t` turned into a tab in `pdf-layout.ts`). Use the Edit tool.
