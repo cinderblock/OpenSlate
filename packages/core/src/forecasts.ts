@@ -68,7 +68,7 @@ export interface ForecastSource {
 
 // ---- Reusable helpers for Kalshi-style ticker derivation -------------------
 
-import { inferUsHouseDistrict, inferUsStateCode, inferYear } from "./polls";
+import { inferUsHouseDistrict, inferUsStateCode, inferYear, isUsStatewide } from "./polls";
 import { inferOfficeFromTitle } from "./polls";
 
 /**
@@ -79,14 +79,16 @@ import { inferOfficeFromTitle } from "./polls";
  * - Event ticker: `<SERIES>-<YY>` for the canonical annual event
  *
  * This returns up to 4 plausible tickers per office; callers try them in
- * order. Returns `[]` when neither year nor jurisdiction is parseable.
+ * order. Returns `[]` when neither year nor jurisdiction is parseable. State
+ * tickers are only derived for statewide subjects, so a county Treasurer
+ * doesn't get the state Treasurer's market.
  */
 export function inferKalshiEventTickers(subject: Subject): string[] {
   const office = inferOfficeFromTitle(subject);
-  const stateCode = inferUsStateCode(subject);
+  const stateCode = isUsStatewide(subject) ? inferUsStateCode(subject) : undefined;
   const year = inferYear(subject);
   const yy = year ? year.slice(-2) : undefined;
-  const district = inferUsHouseDistrict(subject);
+  const district = office === "representative" ? inferUsHouseDistrict(subject) : undefined;
   if (!yy) return [];
 
   const ids: string[] = [];

@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
   US_STATE_NAMES,
+  inferMeasureNumber,
   inferOfficeFromTitle,
   inferUsHouseDistrict,
   inferUsStateCode,
   inferYear,
+  isUsStatewide,
 } from "../src/polls";
 import type { Subject } from "../src/schema";
 
@@ -44,6 +46,58 @@ describe("inferOfficeFromTitle", () => {
   });
   test("other when nothing matches", () => {
     expect(inferOfficeFromTitle(s("Local Library Trustee"))).toBe("other");
+  });
+  test("offices that contain a bigger one's name aren't it", () => {
+    expect(inferOfficeFromTitle(s("Lieutenant Governor of California"))).toBe("other");
+    expect(inferOfficeFromTitle(s("California State Senate, District 10"))).toBe("other");
+    expect(inferOfficeFromTitle(s("State Senator, District 5"))).toBe("other");
+    expect(inferOfficeFromTitle(s("State Representative, District 12"))).toBe("other");
+  });
+  test("a measure whose title names an office is a measure", () => {
+    expect(inferOfficeFromTitle(s("Palmdale – Measure DE (Directly Elected Mayor)"))).toBe(
+      "measure",
+    );
+    expect(inferOfficeFromTitle({ title: "Directly Elected Mayor", kind: "measure" })).toBe(
+      "measure",
+    );
+  });
+});
+
+describe("inferMeasureNumber", () => {
+  test("numbered propositions", () => {
+    expect(inferMeasureNumber(s("California – Proposition 1 (Authorizes Bonds)"))).toBe(
+      "proposition 1",
+    );
+    expect(inferMeasureNumber(s("Prop. 50"))).toBe("proposition 50");
+    expect(inferMeasureNumber(s("Amendment 1"))).toBe("amendment 1");
+  });
+  test("lettered local measures", () => {
+    expect(inferMeasureNumber(s("Berkeley – Measure AA (Soda Tax Measure)"))).toBe("measure aa");
+    expect(inferMeasureNumber(s("San Francisco – Proposition A (Charter Changes)"))).toBe(
+      "proposition a",
+    );
+  });
+  test("skips words that aren't an id", () => {
+    expect(inferMeasureNumber(s("Ramona – Measure P (Amendment of Proposition 218)"))).toBe(
+      "measure p",
+    );
+    expect(inferMeasureNumber(s("Amendment of the charter"))).toBeUndefined();
+    expect(inferMeasureNumber(s("Statewide referendum"))).toBeUndefined();
+  });
+});
+
+describe("isUsStatewide", () => {
+  test("a state", () => {
+    expect(isUsStatewide(s("x", "us/ca"))).toBe(true);
+  });
+  test("a place or district within one", () => {
+    expect(isUsStatewide(s("x", "us/ca/los-angeles"))).toBe(false);
+    expect(isUsStatewide(s("x", "us/ca/cd-10"))).toBe(false);
+  });
+  test("national, foreign or missing", () => {
+    expect(isUsStatewide(s("x", "us"))).toBe(false);
+    expect(isUsStatewide(s("x", "gb/eng"))).toBe(false);
+    expect(isUsStatewide(s("x"))).toBe(false);
   });
 });
 
@@ -92,8 +146,16 @@ describe("inferUsHouseDistrict", () => {
   test("with space", () => {
     expect(inferUsHouseDistrict(s("Texas TX 7 district"))).toBe("TX-07");
   });
+  test("from a cd-NN jurisdiction", () => {
+    expect(
+      inferUsHouseDistrict(s("US House of Representatives, California District 10", "us/ca/cd-10")),
+    ).toBe("CA-10");
+  });
   test("no match", () => {
     expect(inferUsHouseDistrict(s("Mayor of San Francisco"))).toBeUndefined();
+    expect(inferUsHouseDistrict(s("California State Assembly, District 14", "us/ca/ad-14"))).toBe(
+      undefined,
+    );
   });
 });
 

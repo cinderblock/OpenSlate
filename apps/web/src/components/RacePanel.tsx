@@ -49,14 +49,17 @@ export function RacePanel() {
   );
 
   const subject = race?.subject;
+  // The race's election and jurisdiction, which fall back to the slate's
+  // context when the subject leaves them out: the polls lookup needs both.
   const pollSubject = useMemo<Subject>(
     () => ({
       title: subject?.title ?? targetKey,
       ...(subject?.id ? { id: subject.id } : {}),
-      ...(subject?.jurisdiction ? { jurisdiction: subject.jurisdiction } : {}),
-      ...(subject?.election ? { election: subject.election } : {}),
+      ...(subject?.kind ? { kind: subject.kind } : {}),
+      ...(race?.jurisdiction ? { jurisdiction: race.jurisdiction } : {}),
+      ...(race?.election ? { election: race.election } : {}),
     }),
-    [subject, targetKey],
+    [subject, race?.jurisdiction, race?.election, targetKey],
   );
 
   // The official voter guide's material on this race, when a guide covers it.

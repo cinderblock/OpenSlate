@@ -26,13 +26,13 @@ export function PollsPanel({ subject }: PollsPanelProps) {
     for (const q of queries) {
       for (const p of q.data ?? []) {
         if (seen.has(p.id)) continue;
-        if (!pollsSource.matchesOffice(p, lookup.office)) continue;
+        if (!pollsSource.matches(p, lookup)) continue;
         seen.add(p.id);
         merged.push(p);
       }
     }
     return sortPolls(merged);
-  }, [queries, lookup.office]);
+  }, [queries, lookup]);
 
   const officeLabel = lookup.office && lookup.office !== "other" ? lookup.office : undefined;
 
@@ -126,6 +126,14 @@ function EmptyPolls({
   subjectKeys: string[];
   officeLabel?: string;
 }) {
+  if (subjectKeys.length === 0) {
+    return (
+      <p className="hint">
+        VoteHub doesn't track polls of this race. It covers governor and U.S. Senate and House
+        races, some other statewide offices and measures, and big-city mayors.
+      </p>
+    );
+  }
   return (
     <p className="hint">
       No {officeLabel ?? ""} polls found. Tried{" "}
@@ -135,8 +143,7 @@ function EmptyPolls({
           <code className="key">{key}</code>
         </span>
       ))}
-      . VoteHub's API keys subjects by <code className="key">&lt;year&gt; &lt;state&gt;</code>{" "}
-      rollup; if no polls exist for this race in their dataset, none will show. Browse{" "}
+      . If VoteHub's dataset has no polls of this race, none will show. Browse{" "}
       <a href="https://votehub.com" target="_blank" rel="noreferrer">
         votehub.com
       </a>{" "}

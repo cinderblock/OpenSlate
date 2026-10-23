@@ -1,14 +1,15 @@
 import {
-  type OfficeKind,
   type Poll,
   type PollsLookup,
   type PollsSource,
   type Subject,
   US_STATE_NAMES,
+  inferMeasureNumber,
   inferOfficeFromTitle,
   inferUsHouseDistrict,
   inferUsStateCode,
   inferYear,
+  isUsStatewide,
 } from "@openslate/core";
 import { baseUrlFor } from "./routing";
 
@@ -27,44 +28,72 @@ function pollsUrl(path: string, params?: Record<string, string>): string {
 
 /**
  * VoteHub's subject taxonomy is `<year> <state-name>` (e.g. "2026 California",
- * "2025 New Jersey") with the office encoded in `poll_type` ("governor",
- * "us-senator", "us-representative", "attorney-general", "mayor",
- * "proposition-50", etc.). For House districts they use `<year> <STATE-DD>`
- * (e.g. "2026 CA-22"). Primary races append the party: "2026 Texas Democratic".
+ * "2025 New Jersey") for statewide races, with the office encoded in
+ * `poll_type` ("governor", "us-senator", "attorney-general", "proposition-50",
+ * etc.). House districts are `<year> <STATE-DD>` ("2026 CA-22"), mayors are
+ * keyed by city ("2025 New York City"), and primaries append the party
+ * ("2026 Texas Democratic").
  *
- * The mapper:
- * 1. Detects a House district pattern in the title → "<year> <STATE-DD>"
- * 2. Builds "<year> <state-name>" from jurisdiction + election year
- * 3. Falls back to bare "<state-name>" so multi-cycle subjects ("California"
- *    has 11 polls of various years) still surface anything
- * 4. As a last resort tries the literal title slug — preserves the legacy
- *    behaviour for subjects that happen to match VoteHub keys verbatim
+ * The mapper picks the one key the race's polls would be under:
+ * 1. A House race → "<year> <STATE-DD>"
+ * 2. A mayor → "<year> <city>", the city read from the title
+ * 3. A statewide race VoteHub has a `poll_type` for → "<year> <state-name>"
  *
- * Office filtering is done by the caller via `matchesOffice` so the panel
- * doesn't show Prop 50 polls under a Governor subject.
+ * Anything else (a city council seat, a school board, a state legislative
+ * district, a statewide office VoteHub doesn't poll) gets no keys. The state
+ * rollup can't be filtered down to such a race, and polls about another race
+ * read as data about this one.
  */
 function voteHubLookup(subject: Subject): PollsLookup {
   const office = inferOfficeFromTitle(subject);
   const year = inferYear(subject);
-  const stateCode = inferUsStateCode(subject);
-  const state = stateCode ? US_STATE_NAMES[stateCode] : undefined;
-  const district = inferUsHouseDistrict(subject);
+  const measure = office === "measure" ? inferMeasureNumber(subject) : undefined;
 
   const keys: string[] = [];
-  if (year && district) keys.push(`${year} ${district}`);
-  if (year && state) keys.push(`${year} ${state}`);
-  if (state) keys.push(state);
-  // Legacy fallback: literal slug. Won't usually match but doesn't hurt.
-  const titleSlug = slug(subject.title);
-  if (titleSlug && !keys.includes(titleSlug)) keys.push(titleSlug);
+  if (year) {
+    if (office === "representative") {
+      const district = inferUsHouseDistrict(subject);
+      if (district) keys.push(`${year} ${district}`);
+    } else if (office === "mayor") {
+      const city = mayorCity(subject.title);
+      if (city) keys.push(`${year} ${city}`);
+    } else if (office && office !== "other" && isUsStatewide(subject)) {
+      const stateCode = inferUsStateCode(subject);
+      const state = stateCode ? US_STATE_NAMES[stateCode] : undefined;
+      if (state && (office !== "measure" || measure)) keys.push(`${year} ${state}`);
+    }
+  }
 
-  return { subjectKeys: keys, office };
+  return {
+    subjectKeys: keys,
+    office,
+    ...(year ? { year } : {}),
+    ...(measure ? { measure } : {}),
+  };
+}
+
+/** "Oakland Mayor", "Mayor of San Francisco" → the city. */
+function mayorCity(title: string): string | undefined {
+  const m = /^(?:mayor\s+of\s+(?:the\s+city\s+of\s+)?(.+)|(?:city\s+of\s+)?(.+?)\s+mayor)$/i.exec(
+    title.trim(),
+  );
+  return (m?.[1] ?? m?.[2])?.trim() || undefined;
+}
+
+function voteHubMatches(poll: Poll, lookup: PollsLookup): boolean {
+  // VoteHub subjects lead with the election year; a poll from another cycle
+  // isn't about this race.
+  const pollYear = /^(\d{4})\b/.exec(poll.subject ?? "")?.[1];
+  if (lookup.year && pollYear && pollYear !== lookup.year) return false;
+  return voteHubMatchesOffice(poll, lookup);
 }
 
 /** Map our office taxonomy to VoteHub's `poll_type` values. */
-function voteHubMatchesOffice(poll: Poll, office: OfficeKind | undefined): boolean {
-  if (!office || office === "other") return true;
+function voteHubMatchesOffice(poll: Poll, { office, measure }: PollsLookup): boolean {
   switch (office) {
+    case undefined:
+    case "other":
+      return false;
     case "governor":
       return poll.poll_type === "governor";
     case "senator":
@@ -82,9 +111,9 @@ function voteHubMatchesOffice(poll: Poll, office: OfficeKind | undefined): boole
     case "president":
       return poll.poll_type === "president" || poll.poll_type === "presidential-primary";
     case "measure":
-      // VoteHub keys measures by their popular name ("proposition-50",
-      // "amendment-1"). Match the prefix family.
-      return /^(?:proposition|amendment|measure|referendum)/.test(poll.poll_type);
+      // VoteHub's poll_type names the measure ("proposition-50"); only its own
+      // polls match.
+      return measure !== undefined && poll.poll_type === measure.replace(" ", "-");
   }
 }
 
@@ -99,7 +128,7 @@ export function createVoteHubSource(): PollsSource {
       if (!res.ok) throw new Error(`polls lookup failed: HTTP ${res.status}`);
       return (await res.json()) as Poll[];
     },
-    matchesOffice: voteHubMatchesOffice,
+    matches: voteHubMatches,
   };
 }
 

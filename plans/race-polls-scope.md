@@ -83,14 +83,38 @@ this one, which is worse than showing nothing.
 5. typecheck, test, lint the touched files; check in the browser; commit; close
    the ISSUES.md entry.
 
+- **House district subjects return nothing from `?subject=`.** `2026 CA-22` is
+  in `/api/subjects`, but `/api/polls?subject=2026%20CA-22` returns `[]` (also
+  with `&poll_type=us-representative`). The polls only come back from
+  `?poll_type=us-representative` (175 across all districts, each with
+  `subject: "2026 CA-22"` and `seat_name: "CA-22"`). So House pages show no
+  polls, before this change and after it. Logged in ISSUES.md as its own fix.
+- **The dev server fetches polls same-origin** (`/api/polls`, proxied to the
+  local `apps/server`), so polls 404 in `vite` unless that server runs. To check
+  against live data, start Vite with `VITE_POLLS_BASE=https://polls.openslate.us`.
+- **Biome on Windows:** `--line-ending=crlf` on the CLI didn't take effect.
+  Pointing `--config-path` at a copy of `biome.json` with
+  `"formatter": {"lineEnding": "crlf"}` works (see the lint entry in
+  ISSUES.md).
+
 ## Progress log
 
-- [x] Diagnosed; plan written; issue claimed
-- [ ] Core helpers and interface
-- [ ] Web adapter, panel, RacePanel
-- [ ] Tests
-- [ ] Checks and browser verification
-- [ ] Commit, close the issue
+- [x] Diagnosed; plan written; issue claimed (`d63e961`)
+- [x] Core helpers and interface
+- [x] Web adapter, panel, RacePanel (`pollSubject` now uses the race's resolved
+      election and jurisdiction, which fall back to the slate's context)
+- [x] Tests: `packages/core/test/polls.test.ts`, new
+      `packages/core/test/forecasts.test.ts` and `apps/web/test/polls.test.ts`
+- [x] Checks: `bun test` (all pass), `bun run typecheck`, Biome (CRLF config)
+      on the touched files
+- [x] Browser check, 2026-10-23 (dev server with live polls), fresh
+      profile: Governor shows its 7 polls under one key (`2026 California`).
+      Lieutenant Governor shows no polls and no Kalshi forecast. Prop 1 shows
+      none (it used to get Prop 50's). CA-22 gets its district key and Kalshi
+      district tickers. The county guides weren't imported in that profile, so
+      the local races there ran unresolved; the resolved local path is covered
+      by the web test, using the reported race's exact subject.
+- [x] Committed; ISSUES.md entry closed
 
 ## Things not to do
 
