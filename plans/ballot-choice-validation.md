@@ -37,14 +37,10 @@ cases) and the gate itself, so this can't quietly regress.
 
 ## Decisions already made (don't re-ask)
 
-- **There is no candidate ID today, and this work doesn't add one.**
-  `Subject.id` exists in the spec for races but no published bundle sets it
-  (0 of 11,148 positions on 2026-11-03). Candidates are identified only by the
-  `choice` string within a race. Within a race, the election authority's exact
-  spelling acts as the candidate ID, and the gate enforces it. A real ID field
-  would be a protocol change (SPEC.md §3.3/§3.4) and still needs the same
-  name-to-ID matching at scrape time, so the validation is needed either way.
-  Left as an open question for the user.
+- **Phase 1 added no candidate ID; phase 2 does** (the user's call,
+  2026-10-23, see below). `Subject.id` exists in the spec for races but no
+  published bundle sets it (0 of 11,148 positions on 2026-11-03). Candidates
+  were identified only by the `choice` string within a race.
 - The check lives in the endorsements repo's verify script, not in the zod
   schema. The schema validates one slate; whether a name is on the ballot is a
   cross-file fact. The protocol allows arbitrary subjects and write-ins, so the
@@ -118,18 +114,86 @@ cases) and the gate itself, so this can't quietly regress.
 - [x] ISSUES.md entry marked fixed, pending push
 - [ ] Push openslate-public-endorsements (publishes to Pages: needs the user's go-ahead), then remove the ISSUES.md entry
 
+## Phase 2: candidate ids, write-ins, import translator (started 2026-10-23)
+
+The user answered the open questions on 2026-10-23: "We don't have users yet
+really. This is a good time for a spec change. Include a translator if you
+can. Or at least a detector and tell people to tell admin if the import
+doesn't work. We do need to support write-ins."
+
+Work happens on branch `feat/choice-ids` (its own worktree), then the
+endorsements repo follows with a `.openslate-version` bump.
+
+### Design (decided)
+
+- **Spec (v1, amended in place like the 2026-05-31 change; still unadopted):**
+  - `Position.choice_id` (string, optional): the catalog id of the chosen
+    candidate or option, source-namespaced like `Subject.id`. Compared only
+    within one subject. `choice` is required when `choice_id` is present, so a
+    slate stays readable without the catalog.
+  - `Position.write_in` (`true`, optional; `false` is invalid, omit it): the
+    choice isn't printed on the ballot and has to be written in. Requires
+    `choice`.
+  - New §3.11 *Choice identity*: equal `choice_id` = same choice. Without
+    one, a consumer holding a ballot listing SHOULD resolve the name against
+    it, MUST NOT treat a mere resemblance (typo distance) as certain, and
+    SHOULD show a name it can't resolve as unmatched, never silently as
+    another candidate.
+  - New §3.12 *Write-ins*: a listing MAY list certified write-in candidates
+    with `write_in: true`. A write-in for a name the listing doesn't certify
+    is shown with a warning that it may not be counted, but still shown.
+  - New §8.2 *Ballot listings*: formalises the existing convention (an
+    `election-authority` slate, one `neutral` position per choice, the ballot
+    designation in `statement`), now with a `choice_id` on every choice.
+  - §8.1 gets the listing id prefixes (`ca-sos:`, `sf-elections:`); §4 notes
+    the one boolean; §10.1 changelog. Old verifiers reject the new fields
+    (closed schema), so **the web app must deploy before the endorsements
+    repo publishes slates that use them.**
+- **Ids** are readable slugs, `<prefix>:<election>/<race-slug>/<choice-slug>`,
+  minted once by the endorsements repo and never changed afterwards (a
+  spelling correction keeps the id). Measures' Yes/No get ids too.
+- **Races keep `(title, jurisdiction, election)` identity.** Setting
+  `Subject.id` on listings would split every race from the id-less
+  endorsements and change every race key in the app; the gate already
+  enforces exact titles (0 mismatches). Open question 1.
+- **The name matcher moves into `@openslate/core`** (`names.ts`, plus a
+  `ballot.ts` resolver) so the web app's translator and the endorsements gate
+  share one implementation.
+- **Web app translator** runs over the decoded slates (`useDecodedSlates`):
+  a position whose `choice_id` or name resolves surely to a listed choice is
+  shown under the listing's spelling; the signed payload is untouched, the
+  rewrite is in memory only. Anything else stays as written and is flagged.
+- **Detector:** a race's choice that isn't on its listing (and isn't a
+  write-in) is tagged "Not on the ballot", with a link to report it through
+  the existing feedback dialog ("Wrong information"). Importing a slate with
+  such names shows a notice saying so, with the same report link.
+- **Voters can write in a name** on My ballot; their own slate marks it
+  `write_in: true`.
+- **Endorsements repo:** listings get `choice_id`s; `normalize-choices
+  --apply` writes `choice_id` on every endorsement it resolves; the gate
+  requires a listed `choice_id` (or `write_in: true`) in covered races.
+
+### Phase 2 progress
+
+- [ ] Spec text (SPEC.md §3.4, §3.11, §3.12, §4, §8.1, §8.2, §10.1)
+- [ ] Core schema + names.ts + ballot.ts, with tests
+- [ ] Web: translator in useDecodedSlates; ChoiceGroup write-in / off-ballot flags
+- [ ] Web: "Not on the ballot" tag + report link; import notice
+- [ ] Web: voter write-in on My ballot, carried into their slate
+- [ ] Repo checks (typecheck, lint, tests) green; README / docs updated
+- [ ] Endorsements repo: ids on listings, ids on endorsements, gate on ids,
+      `.openslate-version` bump (after OpenSlate is pushed)
+- [ ] Certified write-in lists in the listings (CA SoS publishes one late
+      October)
+
 ## Open questions for the user
 
-1. Add a real candidate ID (for example `Subject`-style `choice_id` minted by
-   the authority bundle)? Recommendation: not now. The exact-spelling gate gets
-   the same guarantee without a protocol change. Revisit if a second catalog,
-   such as VIP ids, starts being used.
-2. Write-in candidates: the gate would reject an endorsement for a certified
-   write-in, because the authority bundles don't list them. Recommendation:
-   add the certified write-in list to the authority bundles when one is
-   published, rather than an exception list.
-3. Should the web app also flag an imported slate whose choices aren't on the
-   ballot (a warning, not a rejection)? Recommendation: yes, as a follow-up.
+1. Races: give listings a `Subject.id` too? Recommendation: not now (see
+   Design). Revisit with a translator for race titles if a second catalog
+   appears.
+2. Push order: OpenSlate (web app) has to deploy before the endorsements repo
+   publishes slates with `choice_id`, or the live app rejects them. Needs the
+   user's go-ahead for both pushes.
 
 ## Things not to do
 
