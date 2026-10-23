@@ -49,9 +49,13 @@ Ask the user for whatever you don't already have:
    - `choice` — the named candidate or "Yes"/"No" for measures, spelled
      **exactly as the official ballot prints it** when an election authority
      bundle lists the race (see step 4b), e.g. `Donald P. (Don) Wagner`, not
-     the page's "Don Wagner". Within a race the ballot spelling is the
-     candidate's identity; a different spelling shows up as a second person.
-     Keep the page's own wording in `statement`.
+     the page's "Don Wagner". Keep the page's own wording in `statement`.
+   - `choice_id` — the listing's id for that choice (SPEC §3.11), copied
+     from the election authority bundle. Don't type it:
+     `normalize-choices.ts --apply` (step 4b) fills it in for every choice
+     it can place. Never make one up for a race no authority lists.
+   - `write_in: true` — only for a candidate who isn't printed on the
+     ballot and has to be written in (SPEC §3.12). Never `false`; omit it.
    - `statement` — a short quote (~1–3 sentences) from the source page
      justifying the position. Quote, don't paraphrase.
    - `source` — the exact URL the position came from. REQUIRED for every
@@ -119,21 +123,31 @@ Ask the user for whatever you don't already have:
    bun scripts/verify-positions.ts                # the CI gate
    ```
 
-   In any jurisdiction an election authority bundle covers (California
-   statewide and legislative races, San Francisco), the gate fails a race
-   title that isn't on the authority's list and a `choice` that isn't one of
-   that race's ballot names. The publish workflow runs the same check, so a
-   failure here blocks publishing. For each failure:
-   - **"ballot spelling: …"**: the same person by rule. Run
+   `normalize-choices.ts` edits only files git tracks, so `git add` the new
+   bundle first (don't commit yet). In any jurisdiction an election authority
+   bundle covers (California statewide and legislative races, San Francisco,
+   Los Angeles and Orange County local races), the gate fails a race title
+   that isn't on the authority's list, and a `choice` that isn't one of that
+   race's ballot names spelled as the ballot spells it with its `choice_id`.
+   The publish workflow runs the same check, so a failure here blocks
+   publishing. For each failure:
+   - **"is the ballot's …; fix with normalize-choices --apply"**: the same
+     person by rule, or the right name without its id. Run
      `normalize-choices.ts <election> --apply`.
-   - **"did you mean …? check the source"**: only a resemblance (a typo, an
-     unusual short form). Check it against the evidence and the race's other
-     names, then add `--suggested`, or fix the choice by hand. Note each one in
-     `NOTES.md`.
+   - **"did you mean …? check the source"** or **"… is on the ballot for …:
+     the wrong race?"**: only a resemblance (a typo, an unusual short form),
+     or a listed candidate under another race. Check it against the evidence
+     and the race's other names, then add `--suggested`, or fix it by hand.
+     Note each one in `NOTES.md`.
    - **no suggestion, or a race failure**: fix the title or name by hand from
-     the ballot bundle (`orgs/ca-secretary-of-state/<election>/`,
-     `orgs/sf-department-of-elections/<election>/`). If the org endorses
-     someone who really isn't on the ballot (a write-in), stop and ask the user.
+     the authority bundles (`orgs/ca-secretary-of-state/<election>/`,
+     `orgs/sf-department-of-elections/<election>/`,
+     `orgs/la-county-registrar/<election>/`,
+     `orgs/oc-registrar-of-voters/<election>/`). If the org endorses someone
+     who really isn't on the ballot, ask the user; a write-in candidate gets
+     `"write_in": true` (it passes with a warning unless the authority lists
+     them as a certified write-in). A seat that isn't on this ballot at all
+     (uncontested, or not up this year) is a question for the user too.
 
    Races in jurisdictions no authority covers aren't checked; match their
    titles to other orgs' bundles by eye (`bun scripts/list-subjects.ts <election> [filter]`).
