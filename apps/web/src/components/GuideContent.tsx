@@ -285,6 +285,7 @@ function ArgumentText({ argument, guide }: { argument: Argument; guide: Guide })
           ))}
         </ul>
       )}
+      {argument.footnote && <p className="hint guide-funding">{argument.footnote}</p>}
       {argument.funding && <p className="hint guide-funding">{argument.funding}</p>}
     </>
   );
@@ -371,7 +372,7 @@ export function GuideDetails({ guide }: { guide: GuideForSubject }) {
       {item.summary && (
         <details>
           <summary>
-            Official title and summary
+            {item.summary.title ?? "Official title and summary"}
             {item.summary.by && <span className="hint"> · {item.summary.by}</span>}
           </summary>
           <GuideBlocks blocks={item.summary.blocks} guide={guide} />
@@ -384,7 +385,8 @@ export function GuideDetails({ guide }: { guide: GuideForSubject }) {
       {item.analysis && (
         <details>
           <summary>
-            Analysis{item.analysis.by && <span className="hint"> · {item.analysis.by}</span>}
+            {item.analysis.title ?? "Analysis"}
+            {item.analysis.by && <span className="hint"> · {item.analysis.by}</span>}
           </summary>
           <GuideBlocks blocks={item.analysis.blocks} guide={guide} />
           <p className="hint">
