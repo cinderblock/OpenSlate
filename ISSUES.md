@@ -47,6 +47,12 @@ entirely (snapshot and evaluate timed out for over a minute). Since `bce1106`
 the area step has no forward button while loading (Next waits for the
 picker), so a stuck load now leaves only Back and "Skip setup".
 
+Not reproduced 2026-10-23 3:42 PM PDT (22:42Z) on https://openslate.us in a
+fresh incognito T3 preview (hidden tab): the area step loaded and the wizard
+went through to the sources step. One snapshot timed out (15 s) while the
+endorsements were loading, so the main thread is busy for that long; it may
+only hang on the dev server, or on a slower machine.
+
 ## Dark theme: some text and white-on-colour fills fall below 4.5:1
 
 Dark `--bad` (`#e74c3c`) as text measures 4.41:1 on `--surface` and 4.02:1 on
