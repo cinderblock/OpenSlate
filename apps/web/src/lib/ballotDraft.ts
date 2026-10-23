@@ -9,6 +9,8 @@ export interface DraftRow {
   subject: Subject;
   /** The candidate or option name; absent for measure-style subjects. */
   choice?: string;
+  /** A name the user wrote in: not printed on the ballot (SPEC §3.12). */
+  writeIn?: true;
   /** Public stance — included in generated slates. */
   stance?: Stance;
   /** Public statement — included in generated slates. */
@@ -97,6 +99,7 @@ function isEmpty(row: DraftRow): boolean {
 }
 
 interface RowFields {
+  writeIn?: true;
   stance?: Stance;
   statement?: string;
   privateNote?: string;
@@ -123,6 +126,9 @@ function applyPatch(
     electionId,
     subject,
     choice,
+    ...(("writeIn" in fields ? fields.writeIn : existing?.writeIn)
+      ? { writeIn: true as const }
+      : {}),
     stance: "stance" in fields ? fields.stance : existing?.stance,
     statement: "statement" in fields ? fields.statement : existing?.statement,
     privateNote: "privateNote" in fields ? fields.privateNote : existing?.privateNote,

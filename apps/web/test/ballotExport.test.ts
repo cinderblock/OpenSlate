@@ -22,6 +22,7 @@ const governor: Race = {
   election: E,
   jurisdiction: "us/ca",
   onBallot: true,
+  unlisted: false,
   followedSources: 2,
   totalSources: 3,
   choices: [
@@ -29,6 +30,7 @@ const governor: Race = {
       choice: "Ada",
       onBallot: true,
       ballotNote: "Democratic · Engineer",
+      writeIn: false,
       support: 2,
       opposition: 0,
       positions: [
@@ -43,7 +45,7 @@ const governor: Race = {
         { source: source("Someone"), stance: "oppose", valid: true, followed: false },
       ],
     },
-    { choice: "Bob", onBallot: true, support: 0, opposition: 0, positions: [] },
+    { choice: "Bob", onBallot: true, writeIn: false, support: 0, opposition: 0, positions: [] },
   ],
 };
 
@@ -102,12 +104,12 @@ describe("ballotToCsv", () => {
   test("one quoted line per choice, notes column only when asked", () => {
     const lines = ballotToCsv(input, { privateNotes: false }).split("\n");
     expect(lines[0]).toBe(
-      '"Election","Jurisdiction","Race","Kind","Choice","OnBallot","BallotNote","For","Against","Sources","MyPick","MyStatement"',
+      '"Election","Jurisdiction","Race","Kind","Choice","OnBallot","WriteIn","BallotNote","For","Against","Sources","MyPick","MyStatement"',
     );
     expect(lines[1]).toBe(
-      `"${E}","us/ca","Governor","race","Ada","yes","Democratic · Engineer","2","0","Sierra Club: endorse; Chronicle: endorse; Someone: oppose (not followed)","endorse","My reasons"`,
+      `"${E}","us/ca","Governor","race","Ada","yes","","Democratic · Engineer","2","0","Sierra Club: endorse; Chronicle: endorse; Someone: oppose (not followed)","endorse","My reasons"`,
     );
-    expect(lines[2]).toBe(`"${E}","us/ca","Governor","race","Bob","yes","","0","0","","",""`);
+    expect(lines[2]).toBe(`"${E}","us/ca","Governor","race","Bob","yes","","","0","0","","",""`);
 
     const noted = ballotToCsv(input, { privateNotes: true }).split("\n");
     expect(noted[0]?.endsWith(',"MyNote"')).toBe(true);
@@ -118,4 +120,37 @@ describe("ballotToCsv", () => {
 test("ballotFileName", () => {
   expect(ballotFileName(E, "csv")).toBe("openslate.ballot.2026-11-03.csv");
   expect(ballotFileName(undefined, "json")).toBe("openslate.ballot.all.json");
+});
+
+test("a name the user wrote in is exported as a write-in choice", () => {
+  const id = `${E}|${governor.key}|Cy Writein`;
+  const withWriteIn = {
+    ...input,
+    rows: {
+      ...rows,
+      [id]: {
+        id,
+        electionId: E,
+        subject: governor.subject,
+        choice: "Cy Writein",
+        writeIn: true as const,
+        stance: "endorse" as const,
+        updatedAt: "",
+      },
+    },
+  };
+  const out = JSON.parse(ballotToJson(withWriteIn, { privateNotes: false }));
+  expect(out.races[0].choices.at(-1)).toEqual({
+    choice: "Cy Writein",
+    onBallot: false,
+    writeIn: true,
+    for: 0,
+    against: 0,
+    sources: [],
+    myPick: "endorse",
+  });
+  const csv = ballotToCsv(withWriteIn, { privateNotes: false }).split("\n");
+  expect(csv.at(-1)).toBe(
+    `"${E}","us/ca","Governor","race","Cy Writein","","yes","","0","0","","endorse",""`,
+  );
 });

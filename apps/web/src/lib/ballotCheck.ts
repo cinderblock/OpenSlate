@@ -137,3 +137,27 @@ export function problemReport(problems: BallotProblem[]): string {
     ...problems.map((p) => `- ${describeProblem(p)}`),
   ].join("\n");
 }
+
+/**
+ * A position the user is about to sign, carrying the listing's spelling and
+ * id for its choice (SPEC §3.11: publishers SHOULD copy them), and the
+ * listing's say on whether it's a write-in.
+ */
+export function withBallotIds(
+  position: Position,
+  listing: BallotListing,
+  election: string | undefined,
+): Position {
+  if (position.choice === undefined) return position;
+  const resolution = resolveChoice(listing, position, { context: { election } });
+  if (resolution.status !== "listed") return position;
+  const { choice } = resolution;
+  const out: Position = {
+    ...position,
+    choice: choice.name,
+    ...(choice.id ? { choice_id: choice.id } : {}),
+  };
+  if (choice.writeIn) out.write_in = true;
+  else delete out.write_in;
+  return out;
+}

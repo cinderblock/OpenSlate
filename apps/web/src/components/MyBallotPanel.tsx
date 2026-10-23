@@ -1,4 +1,4 @@
-import type { Stance } from "@openslate/core";
+import { type Stance, matchBallotName } from "@openslate/core";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -62,7 +62,7 @@ import { InfoPopover } from "./ui/InfoPopover";
 import { Segmented } from "./ui/Segmented";
 import { Select } from "./ui/Select";
 import { Switch } from "./ui/Switch";
-import { TextArea } from "./ui/TextField";
+import { TextArea, TextField } from "./ui/TextField";
 
 /** Same order as `compareRaces`: numbers in labels sort numerically. */
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -873,8 +873,30 @@ const RaceCard = memo(
     prev.patch === next.patch &&
     prev.mine === next.mine &&
     prev.numbered === next.numbered &&
-    raceRowIds(next.race, next.election).every((id) => prev.rows[id] === next.rows[id]),
+    raceRowIds(next.race, next.election).every((id) => prev.rows[id] === next.rows[id]) &&
+    sameRows(
+      writeInRows(prev.rows, prev.race, prev.election),
+      writeInRows(next.rows, next.race, next.election),
+    ),
 );
+
+/** Names the user wrote in on this race that no source or listing names. */
+function writeInRows(rows: Record<string, DraftRow>, race: Race, election: string): DraftRow[] {
+  const prefix = `${election}|${race.key}|`;
+  const named = new Set(race.choices.map((c) => c.choice));
+  return Object.values(rows).filter(
+    (row) => row.writeIn && row.choice && row.id.startsWith(prefix) && !named.has(row.choice),
+  );
+}
+
+function sameRows(a: DraftRow[], b: DraftRow[]): boolean {
+  return a.length === b.length && a.every((row, i) => row === b[i]);
+}
+
+/** A choice row for a name only the user wrote in. */
+function writeInGroup(name: string): ChoiceGroup {
+  return { choice: name, positions: [], support: 0, opposition: 0, onBallot: false, writeIn: true };
+}
 
 function RaceCardInner({
   race,
@@ -938,7 +960,20 @@ function RaceCardInner({
             patch={patch}
           />
         ))}
+        {writeInRows(rows, race, election).map((row) => (
+          <ChoiceRow
+            key={row.id}
+            group={writeInGroup(row.choice ?? "")}
+            race={race}
+            election={election}
+            row={row}
+            patch={patch}
+          />
+        ))}
       </ul>
+      {race.subject.kind !== "measure" && (
+        <WriteInField race={race} election={election} patch={patch} />
+      )}
       <details className="race-note no-print">
         <summary>{noteRow?.privateNote ? "My note ✎" : "Add a private note"}</summary>
         <TextArea
@@ -1117,6 +1152,63 @@ function ChoiceRow({
   );
 }
 
+/**
+ * Write in a name (SPEC §3.12). A name that is plainly someone already on the
+ * list picks them instead, so a write-in never duplicates a printed candidate.
+ */
+function WriteInField({ race, election, patch }: { race: Race; election: string; patch: Patch }) {
+  const [name, setName] = useState("");
+  const [said, setSaid] = useState<string | null>(null);
+  function add() {
+    const typed = name.trim().replace(/\s+/g, " ");
+    if (!typed) return;
+    const named = race.choices.filter((c) => c.choice);
+    const match = matchBallotName(
+      typed,
+      named.map((c) => c.choice),
+    );
+    const existing = match?.sure ? named.find((c) => c.choice === match.name) : undefined;
+    if (existing?.onBallot && !existing.writeIn) {
+      patch(election, race.subject, existing.choice, { stance: "endorse" });
+      setSaid(`${existing.choice} is on the ballot, so they're picked instead of written in.`);
+    } else {
+      patch(election, race.subject, existing?.choice ?? typed, {
+        stance: "endorse",
+        writeIn: true,
+      });
+      setSaid(null);
+    }
+    setName("");
+  }
+  return (
+    <details className="write-in no-print">
+      <summary>Write in a name</summary>
+      <div className="row">
+        <TextField
+          className="grow"
+          aria-label={`Write-in candidate for ${race.subject.title}`}
+          placeholder="Name, as you'll write it on the ballot"
+          value={name}
+          onChange={setName}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") add();
+          }}
+        />
+        <button type="button" onClick={add} disabled={!name.trim()}>
+          Add
+        </button>
+      </div>
+      {said && <p className="hint">{said}</p>}
+      {race.onBallot && (
+        <p className="hint">
+          In many places, including California, a write-in vote counts only for a certified write-in
+          candidate.
+        </p>
+      )}
+    </details>
+  );
+}
+
 /** Printed instead of the page: just the races the user picked, ballot-ordered. */
 function PrintPicks({
   election,
@@ -1146,7 +1238,9 @@ function PrintPicks({
         {picked.map(({ race, picks, note }) => (
           <li key={race.key}>
             <strong>{race.subject.title}</strong>:{" "}
-            {picks.map((row) => row.choice ?? "Yes").join(", ")}
+            {picks
+              .map((row) => `${row.choice ?? "Yes"}${row.writeIn ? " (write in)" : ""}`)
+              .join(", ")}
             {note && <div className="print-note">{note}</div>}
           </li>
         ))}

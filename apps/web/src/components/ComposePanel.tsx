@@ -10,6 +10,7 @@ import {
 } from "@openslate/core";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { listingOf, withBallotIds } from "../lib/ballotCheck";
 import { type DraftRow, NOTE_CHOICE, useBallotDraft } from "../lib/ballotDraft";
 import { type ElectionSummary, defaultElection, electionsOf } from "../lib/collate";
 import { rememberPublished } from "../lib/collections";
@@ -63,6 +64,7 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "bas
 export function ComposePanel() {
   const { active: identity, all: myIdentities, activeKey, setActiveKey } = useActiveIdentity();
   const { slates } = useDecodedSlates();
+  const listing = useMemo(() => listingOf(slates), [slates]);
   const [follows] = useFollows();
   const [chosenElection, setChosenElection] = useMyElection();
   const draft = useBallotDraft();
@@ -117,12 +119,19 @@ export function ComposePanel() {
     const fromPicks = picks
       .filter((row): row is DraftRow & { stance: Stance } => Boolean(row.stance))
       .filter((row) => !leftOut.has(row.id))
-      .map((row) => ({
-        subject: row.subject,
-        stance: row.stance,
-        ...(row.choice ? { choice: row.choice } : {}),
-        ...(row.statement?.trim() ? { statement: row.statement.trim() } : {}),
-      }));
+      .map((row) =>
+        withBallotIds(
+          {
+            subject: row.subject,
+            stance: row.stance,
+            ...(row.choice ? { choice: row.choice } : {}),
+            ...(row.choice && row.writeIn ? { write_in: true as const } : {}),
+            ...(row.statement?.trim() ? { statement: row.statement.trim() } : {}),
+          },
+          listing,
+          row.electionId,
+        ),
+      );
     const fromOthers = others.map((entry) => ({
       subject: entry.subject,
       stance: entry.stance,
@@ -130,7 +139,7 @@ export function ComposePanel() {
       ...(entry.statement?.trim() ? { statement: entry.statement.trim() } : {}),
     }));
     return [...fromPicks, ...fromOthers];
-  }, [picks, leftOut, others]);
+  }, [picks, leftOut, others, listing]);
 
   function toggleLeftOut(id: string) {
     setLeftOut((current) => {
@@ -404,6 +413,7 @@ function PickRow({
             <>
               {" → "}
               <strong>{row.choice}</strong>
+              {row.writeIn && <span className="tag tag-inline">write-in</span>}
             </>
           ) : (
             <em> (as a whole)</em>

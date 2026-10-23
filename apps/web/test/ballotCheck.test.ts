@@ -3,8 +3,10 @@ import { type Position, createSlate, generateKeyPair } from "@openslate/core";
 import {
   ballotProblems,
   describeProblem,
+  listingOf,
   problemReport,
   translateSlates,
+  withBallotIds,
 } from "../src/lib/ballotCheck";
 import { collateRaces, decodeSlates } from "../src/lib/collate";
 
@@ -151,5 +153,51 @@ describe("ballotProblems", () => {
     expect(race && describeProblem(race)).toContain('race "Secretary of Stat"');
     expect(writeIn && describeProblem(writeIn)).toContain("isn't a certified write-in candidate");
     expect(problemReport(ballotProblems(translated())).split("\n")).toHaveLength(5);
+  });
+});
+
+describe("withBallotIds", () => {
+  const ballot = () => listingOf(decodeSlates([listing]));
+
+  test("a pick on a listed name gets its spelling and id", () => {
+    const signed = withBallotIds(
+      { subject: SOS, stance: "endorse", choice: "Don Wagner" },
+      ballot(),
+      E,
+    );
+    expect(signed).toEqual({
+      subject: SOS,
+      stance: "endorse",
+      choice: "Donald P. (Don) Wagner",
+      choice_id: "ca-sos:sos/wagner",
+    });
+  });
+
+  test("a written-in certified write-in gets its id and stays a write-in", () => {
+    expect(
+      withBallotIds(
+        { subject: SOS, stance: "endorse", choice: "Jane Q. Writein", write_in: true },
+        ballot(),
+        E,
+      ),
+    ).toMatchObject({ choice_id: "ca-sos:sos/writein", write_in: true });
+  });
+
+  test("an uncertified write-in is left as the user wrote it", () => {
+    const pick = {
+      subject: SOS,
+      stance: "endorse" as const,
+      choice: "My Neighbour",
+      write_in: true as const,
+    };
+    expect(withBallotIds(pick, ballot(), E)).toEqual(pick);
+  });
+
+  test("the election comes from the draft row when the subject has none", () => {
+    const { election: _, ...bare } = SOS;
+    expect(
+      withBallotIds({ subject: bare, stance: "endorse", choice: "Don Wagner" }, ballot(), E)
+        .choice_id,
+    ).toBe("ca-sos:sos/wagner");
   });
 });
