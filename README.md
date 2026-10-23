@@ -31,10 +31,12 @@ The web app has two modes:
   one source recommends, followed or not. It only fills what you haven't
   marked and can be undone. A race's own page compares every source's
   position and, where the catalog lists the election's official **voter
-  guide**, shows it too: what the office does or what the measure would do,
+  guide** (the state's, or a county's for Congress, the Legislature and local
+  races), shows it too: what the office does or what the measure would do,
   each candidate's photo and statement in their own words, what a Yes and a No
-  vote mean, the arguments and rebuttals with who signed them, the official
-  summary and analysis, and the full text. That material is reference, not
+  vote mean, the arguments and rebuttals with who signed them (and, where a
+  county prints them, paid arguments with who paid), the official summary and
+  analysis, and the full text. That material is reference, not
   endorsement: it's never counted as anyone backing anything. *Sources* is
   where you follow or unfollow sources, browse the public catalog, and add
   slates from a link, file, QR code or paste. Each endorser shows its logo
@@ -190,9 +192,14 @@ rather than positions, so it isn't a slate. It is one signed manifest
 published file with its SHA-256; clients fetch only the files a page needs and
 check each one. `openslate guide check|sign|verify` builds and checks one. The
 format lives in [`packages/core/src/guide.ts`](./packages/core/src/guide.ts) and
-isn't part of SPEC.md yet. California's Nov 3, 2026 guide is
+isn't part of SPEC.md yet. California's Nov 3, 2026 guides (the state's, and
+San Francisco's pamphlet) are in
 [openslate-ballot-ca-2026-11-03](https://github.com/cinderblock/openslate-ballot-ca-2026-11-03),
-one repo per state and election.
+one repo per state and election with one manifest per publisher. A county
+pamphlet is one large PDF, so its full texts are linked by page (with the
+PDF's SHA-256) rather than mirrored. The catalog's `guides.json` lists each
+guide's URL, key, and the jurisdictions it `covers`, so a race page finds a
+county's statements for a congressional district.
 
 ## Repository layout
 
