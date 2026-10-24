@@ -20,7 +20,7 @@ export function ForecastsPanel({ subject }: ForecastsPanelProps) {
   });
 
   const loading = queries.some((q) => q.isLoading);
-  const firstError = queries.find((q) => q.error)?.error;
+  const failed = queries.some((q) => q.error);
 
   // Pick the first non-null result. We don't merge across events because each
   // event is a distinct market question.
@@ -32,6 +32,11 @@ export function ForecastsPanel({ subject }: ForecastsPanelProps) {
   }, [queries]);
 
   if (lookup.eventIds.length === 0) return null;
+
+  // Kalshi errored (often a rate limit) and the relay had no earlier copy: say
+  // so in one line rather than showing the error. The ticker that failed may
+  // be the one that exists, so this isn't "no market matched".
+  const unavailable = !loading && failed && !forecast;
 
   return (
     <div className="card">
@@ -51,14 +56,9 @@ export function ForecastsPanel({ subject }: ForecastsPanelProps) {
 
       {loading && !forecast && <p className="hint">Loading forecast…</p>}
 
-      {firstError && !forecast && (
-        <p className="hint warning">
-          Couldn't load forecast:{" "}
-          {firstError instanceof Error ? firstError.message : "unknown error"}
-        </p>
-      )}
+      {unavailable && <p className="hint">Kalshi isn't answering right now. Try again later.</p>}
 
-      {!loading && !firstError && !forecast && (
+      {!loading && !failed && !forecast && (
         <p className="hint">
           No Kalshi market matched. Tried{" "}
           {lookup.eventIds.map((id, i) => (
@@ -73,20 +73,33 @@ export function ForecastsPanel({ subject }: ForecastsPanelProps) {
 
       {forecast && <ForecastBody forecast={forecast} />}
 
-      <p className="hint">
-        Forecast data via{" "}
-        <a href="https://kalshi.com" target="_blank" rel="noreferrer">
-          Kalshi
-        </a>{" "}
-        — these are <strong>market-implied probabilities</strong> from a regulated prediction
-        market, not polls. Subject to{" "}
-        <a href="https://kalshi.com/legal" target="_blank" rel="noreferrer">
-          Kalshi's terms
-        </a>
-        .
-      </p>
+      {!unavailable && (
+        <p className="hint">
+          Forecast data via{" "}
+          <a href="https://kalshi.com" target="_blank" rel="noreferrer">
+            Kalshi
+          </a>{" "}
+          — these are <strong>market-implied probabilities</strong> from a regulated prediction
+          market, not polls. Subject to{" "}
+          <a href="https://kalshi.com/legal" target="_blank" rel="noreferrer">
+            Kalshi's terms
+          </a>
+          .
+        </p>
+      )}
     </div>
   );
+}
+
+/** "Oct 24, 3:12 PM PDT" in the reader's own time zone. */
+function formatAsOf(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
 }
 
 function ForecastBody({ forecast }: { forecast: Forecast }) {
@@ -94,6 +107,13 @@ function ForecastBody({ forecast }: { forecast: Forecast }) {
   const hasParty = candidates.some((c) => c.party);
   return (
     <>
+      {forecast.staleAsOf && (
+        <p className="hint warning">
+          Kalshi isn't answering right now. These prices are from{" "}
+          <time dateTime={forecast.staleAsOf}>{formatAsOf(forecast.staleAsOf)}</time> and may have
+          moved since.
+        </p>
+      )}
       <p className="hint">
         <a href={forecast.url} target="_blank" rel="noreferrer">
           {forecast.title}
