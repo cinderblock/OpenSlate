@@ -152,15 +152,22 @@ Three parts:
 
 ## Open questions for the user
 
-1. White-only logos (5 orgs): which tile? Mocked up side by side on
-   2026-10-24 (page script in `$TEMP/openslate-edits/tiles/page.html`):
-   A today (monogram / faint), B fixed dark #1b1f24, C dark tile in the
-   logo's own hue (neutral dark when it has none), D the monogram's hue,
-   E recolour the logo to black on white. Recommended: C, set by hand per
-   org in meta.yaml (`logo_background: dark` or a colour), since automatic
-   detection by share of near-white pixels misses HANC (38%) and BizFed
-   (53%). E breaks any logo with filled shapes. PSR-LA's only mark is a
-   wide "45 PSR LA" anniversary logo.
+1. White-only logos: which tile? Mocked up side by side on 2026-10-24
+   (page in `$TEMP/openslate-edits/tiles/page.html`): A today (monogram /
+   faint), B fixed dark #1b1f24, C dark tile in the logo's own hue, D the
+   monogram's hue, E recolour to black on white. User leans B or C, and
+   asked whether the orgs publish a light-background version first:
+   - BizFed CV and SFCLT do (found in their WordPress media libraries via
+     `/wp-json/wp/v2/media?search=logo`); swapped in, endorsements `e90825e`
+     (local, not pushed).
+   - PSR-LA, Lincoln Club OC and HANC don't, as far as I could find
+     (crawled 30 pages of each site; social avatars: PSR-LA's are blocked,
+     HANC's X avatar is a photo of the street sign, and an @LincolnClubOC X
+     avatar is a different Lincoln sketch from an account I couldn't
+     confirm is theirs).
+   - Those three logos have no colour, so B and C draw them identically.
+     Recommended: B, as a hand-set `logo_background: dark` in meta.yaml
+     (automatic detection by near-white share misses HANC at 38%).
 
 ## Things not to do
 
