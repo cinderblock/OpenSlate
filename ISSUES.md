@@ -45,6 +45,14 @@ edge too (`CF-Cache-Status: HIT`), so one 429 is served to everyone for a
 while. Why it matters: the hosted app shows no market forecasts, nine days
 before the election.
 
+Update 2026-10-24 (branch `fix/kalshi-forecasts-429`, not merged): the relays
+no longer cache Kalshi's errors and serve a last good copy, marked stale
+(`54d97c0`); the web app degrades quietly (`0d0a003`). Cause: Kalshi answers
+429 to all Cloudflare Workers egress (a Playground worker on another account
+too, with any UA, even before auth), so the worker never gets a good copy.
+Still open: a source Kalshi will answer. Options in
+`plans/kalshi-forecasts-429.md`, waiting on the user.
+
 ## `bun run lint` fails on every file in a Windows checkout
 
 With `core.autocrlf=true` the working tree is CRLF, but `biome.json` leaves
