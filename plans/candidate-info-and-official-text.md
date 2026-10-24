@@ -621,20 +621,48 @@ sources now, so neither needs files from the registrar.
 
 Steps:
 
-- [ ] SC1 Santa Clara ballot source (endorsements, `scripts/scc-rov-ballot.ts`
-  → `orgs/scc-registrar-of-voters/2026-11-03`), from the qualified list
-  (contests on the ballot) and OmniBallot's measure list.
-- [ ] SC2 Santa Clara guide (ballot repo, `scripts/scrape-scc.ts` →
-  `county/santa-clara/`):
-  - statements, matched to contests by box id and name;
-  - measures: question, analysis, full text, arguments with signers;
-  - `guides.json` entry.
+- [x] SC1 Santa Clara ballot source (endorsements `8204866`, fix `09a52fe`;
+  `scripts/scc-rov-ballot.ts` → `orgs/santa-clara-registrar-of-voters/2026-11-03`):
+  - 73 races and 20 measures, 249 choice_ids; 74 of 93 subjects reuse catalog
+    titles.
+  - 183 existing endorsements got their choice_ids (`494d74d`).
+  - Courage California's Foothill-De Anza CCD Area 2 endorsement was removed
+    (`005181a`): the seat is uncontested and "On Ballot: No".
+- [x] SC2 Santa Clara guide (ballot repo `42a937a`, `a05944f`; `guides.json`
+  endorsements `3cf317e`):
+  - 101 items: 185 statements in 81 races, and 20 measures with 46 arguments
+    and rebuttals.
+  - `guide verify --files` over HTTPS: 101 of 101.
+  - Statements go to the race whose candidates they name. Two lone names fit
+    several races (Gabriel Gutierrez, Karen Martinez). The scraper tries the
+    statement's "Occupation:" against the ballot designation, then the race
+    whose title the statement's words share most, and lists each call. Both
+    calls were checked by hand.
+  - Where Santa Clara's guide shares a subject with Alameda's or SF's (CD-17,
+    SD-10, AD-24, RTM), both hold the same candidates. So the app's
+    first-guide-wins rule hides nothing today.
 - [ ] SC3 Signer organizations from Santa Clara's arguments
   (`county-ballot-arguments.ts`).
 - [ ] SM1 San Mateo: check the measure PDFs' text, then the ballot source
   from the roster.
 - [ ] SM2 San Mateo guide (measures).
 - [ ] SM3 Signer organizations from San Mateo's arguments.
+- [ ] AL1 Fix found 2026-10-24: in Alameda's guide, the box labels beside a
+  bond question are merged into its text. Berkeley Measure U's `about` reads
+  "Shall the measure authorizing BONDS YES issuance of $300,000,000 … BONDS
+  NO …". Check every Alameda measure's question.
+
+Findings (Santa Clara):
+
+- `files.santaclaracounty.gov` and `vote.santaclaracounty.gov` began answering
+  Bun's fetch with Cloudflare 403s after the first run, while Windows curl
+  still got 200. Don't work around it: `scc-rov-ballot.ts --fetch --pdf <file>`
+  takes a saved copy (it was the same file by SHA-256).
+- The qualified list sometimes sets a candidate's name as a separate bold run
+  beside "Qualified 2" (Jason Lin). Rows now group lines within 1 pt of each
+  other: a website line sat 1.4 pt above the next name.
+- OmniBallot's pages can't be deep-linked without a session (they bounce to
+  the guide's home). So passages link to the published JSON files.
 
 ### County survey (2026-10-23, real fetches)
 
