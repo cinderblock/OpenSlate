@@ -150,17 +150,23 @@ async function proxyForecasts(reqPath: string, reqUrl: string) {
   const upstreamPath = reqPath.replace(/^\/api\/forecasts\/v2/, "");
   const search = new URL(reqUrl).search;
   try {
-    const { status, contentType, body, ttlMs } = await forecasts.proxy(upstreamPath, search);
-    const maxAge = Math.max(1, Math.floor(ttlMs / 1000));
-    return new Response(body, {
-      status,
-      headers: {
-        "content-type": contentType,
-        "cache-control": `public, max-age=${maxAge}, stale-while-revalidate=${maxAge * 4}`,
-        "x-data-source": "Kalshi",
-        "x-data-license": "https://kalshi.com/legal",
-      },
-    });
+    const { status, contentType, body, ttlMs, stale } = await forecasts.proxy(upstreamPath, search);
+    const maxAge = Math.floor(ttlMs / 1000);
+    // Same headers as the Cloudflare relay (apps/poll-cache/src/forecasts.ts):
+    // errors and stale copies are never cached, and a stale copy says so.
+    const headers: Record<string, string> = {
+      "content-type": contentType,
+      "cache-control":
+        maxAge > 0 ? `public, max-age=${maxAge}, stale-while-revalidate=${maxAge * 4}` : "no-store",
+      "x-data-source": "Kalshi",
+      "x-data-license": "https://kalshi.com/legal",
+    };
+    if (stale) {
+      headers["x-openslate-stale"] = "true";
+      headers["x-openslate-fetched-at"] = new Date(stale.fetchedAt).toISOString();
+      headers["x-openslate-upstream-status"] = String(stale.upstreamStatus);
+    }
+    return new Response(body, { status, headers });
   } catch (err) {
     return Response.json(
       { error: err instanceof Error ? err.message : "forecasts lookup failed" },
