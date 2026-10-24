@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { civicElections, useGoogleKey } from "../lib/civic";
+import { ReportCivicProblem } from "./ReportCivicProblem";
 import { TextField } from "./ui/TextField";
 
 type Check =
@@ -72,7 +73,12 @@ export function GoogleKeyPanel() {
                 It works: Google lists {check.elections} election{check.elections === 1 ? "" : "s"}.
               </p>
             )}
-            {check.state === "error" && <p className="error">{check.message}</p>}
+            {check.state === "error" && (
+              <p className="error">
+                {check.message}{" "}
+                <ReportCivicProblem lookup="key-check" route="key" message={check.message} />
+              </p>
+            )}
           </>
         ) : (
           <>

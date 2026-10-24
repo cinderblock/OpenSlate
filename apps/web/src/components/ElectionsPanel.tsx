@@ -6,6 +6,7 @@ import { civicElectionsQueryOptions, useCivicRoutes } from "../lib/civic";
 import { formatElectionDate } from "../lib/dates";
 import { type ElectionEntry, electionEntries } from "../lib/electionList";
 import { localToday, useDecodedSlates, useMyElection } from "../lib/myVote";
+import { ReportCivicProblem } from "./ReportCivicProblem";
 import { Switch } from "./ui/Switch";
 
 const TODAY = localToday();
@@ -74,6 +75,16 @@ export function ElectionsPanel() {
             <>
               {" "}
               Check your key in <Link to="/settings">Settings</Link>.
+            </>
+          )}
+          {route && (
+            <>
+              {" "}
+              <ReportCivicProblem
+                lookup="elections"
+                route={route}
+                message={electionsQuery.error.message}
+              />
             </>
           )}
         </p>

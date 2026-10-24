@@ -111,6 +111,34 @@ export async function civicBallot(
   return (await relayAnswer(response)) as CivicBallot;
 }
 
+export type CivicLookup = "ballot" | "elections" | "key-check";
+
+const LOOKUP_NAMES: Record<CivicLookup, string> = {
+  ballot: "the ballot lookup for an address",
+  elections: "the elections list",
+  "key-check": "checking my key in Settings",
+};
+
+/**
+ * A problem report for a failed Google lookup, for the feedback dialog (the
+ * user still reviews and sends it). It names the lookup and the route and
+ * quotes the error, never the address, and never a key should an error ever
+ * quote one.
+ */
+export function civicProblemReport(
+  lookup: CivicLookup,
+  route: CivicRoute,
+  message: string,
+): string {
+  return [
+    "A Google Civic Information lookup failed.",
+    "",
+    `Lookup: ${LOOKUP_NAMES[lookup]}`,
+    `Route: ${route === "key" ? "with my own Google API key" : "through OpenSlate's relay"}`,
+    `Error: ${message.replace(/AIza[0-9A-Za-z_-]{20,}/g, "[a key]")}`,
+  ].join("\n");
+}
+
 /** Google's elections list by `route`; disabled when there's no route. */
 export function civicElectionsQueryOptions(route: CivicRoute | undefined, key: string) {
   return {

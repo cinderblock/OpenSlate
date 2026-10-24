@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { civicBallot, civicElections } from "../src/lib/civic";
+import { civicBallot, civicElections, civicProblemReport } from "../src/lib/civic";
 import { parseConsents } from "../src/lib/lookups";
 
 const realFetch = globalThis.fetch;
@@ -84,5 +84,19 @@ describe("parseConsents", () => {
   test("keeps known lookups and drops the rest", () => {
     expect(parseConsents({ "google-key": "t", junk: "x", osm: 3 })).toEqual({ "google-key": "t" });
     expect(parseConsents(null)).toBeUndefined();
+  });
+});
+
+describe("civicProblemReport", () => {
+  test("names the lookup and route, and never a key", () => {
+    const report = civicProblemReport(
+      "ballot",
+      "relay",
+      "Google answered 403: key AIzaSyD-abcdefghijklmnopqrstuvwxyz12 is blocked",
+    );
+    expect(report).toContain("Lookup: the ballot lookup for an address");
+    expect(report).toContain("Route: through OpenSlate's relay");
+    expect(report).toContain("Error: Google answered 403: key [a key] is blocked");
+    expect(report).not.toContain("AIza");
   });
 });

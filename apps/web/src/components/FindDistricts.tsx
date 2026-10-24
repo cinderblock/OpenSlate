@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAddress } from "../lib/address";
 import { BASEMAP_SOURCE, type Basemap, useBasemap } from "../lib/basemap";
-import { civicBallot, useCivicRoutes } from "../lib/civic";
+import { type CivicRoute, civicBallot, useCivicRoutes } from "../lib/civic";
 import { areaFromLookup } from "../lib/civicArea";
 import type { AreaOptions } from "../lib/collate";
 import {
@@ -29,6 +29,7 @@ import {
   useLookupConsent,
 } from "../lib/lookups";
 import { DistrictMap, LAYER_NAMES } from "./DistrictMap";
+import { ReportCivicProblem } from "./ReportCivicProblem";
 import { Segmented } from "./ui/Segmented";
 import { TextField } from "./ui/TextField";
 
@@ -100,7 +101,10 @@ export function FindDistricts({
   const [method, setMethod] = useState<Method | null>(null);
   const [found, setFound] = useState<Found | null>(null);
   const [basemap] = useBasemap();
-  const [error, setError] = useState<string | null>(null);
+  // `google` says which Google route failed, so the error can offer a report.
+  const [error, setErrorState] = useState<{ message: string; google?: CivicRoute } | null>(null);
+  const setError = (message: string | null, google?: CivicRoute) =>
+    setErrorState(message === null ? null : { message, ...(google ? { google } : {}) });
   const { geo, error: geoError } = useStateGeo(method !== null);
 
   function choose(next: Method) {
@@ -234,7 +238,17 @@ export function FindDistricts({
         />
       )}
 
-      {error && <p className="error">{error}</p>}
+      {error && (
+        <p className="error">
+          {error.message}
+          {error.google && (
+            <>
+              {" "}
+              <ReportCivicProblem lookup="ballot" route={error.google} message={error.message} />
+            </>
+          )}
+        </p>
+      )}
       {found && method && (
         <FoundSummary
           found={found}
@@ -377,7 +391,8 @@ function AddressPanel({
   options: AreaOptions;
   onMatch: (match: AddressMatch, service: OnlineLookup) => void;
   onCivicArea: (area: Area, from: string, service: OnlineLookup) => void;
-  onError: (message: string) => void;
+  /** `google`: the Google route that failed, when it was Google. */
+  onError: (message: string, google?: CivicRoute) => void;
 }) {
   const civic = useCivicRoutes();
   const { consents, grant, revoke } = useLookupConsent();
@@ -405,13 +420,11 @@ function AddressPanel({
     setAddress(text);
     setBusy(true);
     setChoices(null);
+    const google: CivicRoute | undefined =
+      service === "google-key" ? "key" : service === "google" ? "relay" : undefined;
     try {
-      if (service === "google-key" || service === "google") {
-        const ballot = await civicBallot(
-          service === "google-key" ? "key" : "relay",
-          civic.key,
-          text,
-        );
+      if (google) {
+        const ballot = await civicBallot(google, civic.key, text);
         const found = areaFromLookup(ballot, options);
         if (!found) throw new Error("Google didn't say which state that address is in");
         onCivicArea(found.area, text, service);
@@ -428,7 +441,7 @@ function AddressPanel({
         setChoices(matches);
       }
     } catch (err) {
-      onError(err instanceof Error ? err.message : String(err));
+      onError(err instanceof Error ? err.message : String(err), google);
     } finally {
       setBusy(false);
     }
