@@ -2,20 +2,21 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useBallotDraft } from "../lib/ballotDraft";
+import { civicElectionsQueryOptions, useCivicRoutes } from "../lib/civic";
 import { formatElectionDate } from "../lib/dates";
 import { type ElectionEntry, electionEntries } from "../lib/electionList";
 import { localToday, useDecodedSlates, useMyElection } from "../lib/myVote";
-import { electionsQueryOptions, serverHealthOptions } from "../lib/query";
 import { Switch } from "./ui/Switch";
 
 const TODAY = localToday();
 
 export function ElectionsPanel() {
-  // Google's list comes through a self-hosted server with a Civic API key; the
-  // hosted app has none, so it doesn't ask.
-  const health = useQuery(serverHealthOptions());
-  const hasGoogle = health.data?.ballotLookup === true;
-  const electionsQuery = useQuery({ ...electionsQueryOptions(), enabled: hasGoogle });
+  // Google's list, with the user's own key when they've saved one, else through
+  // OpenSlate's relay when it can ask Google; neither, and the page doesn't ask.
+  const civic = useCivicRoutes();
+  const route = civic.routes[0];
+  const hasGoogle = route !== undefined;
+  const electionsQuery = useQuery(civicElectionsQueryOptions(route, civic.key));
   const { slates } = useDecodedSlates();
   const draft = useBallotDraft();
   const [myElection, setMyElection] = useMyElection();
@@ -65,10 +66,16 @@ export function ElectionsPanel() {
         </Switch>
       </div>
 
-      {(health.isLoading || electionsQuery.isLoading) && <p className="hint">Loading elections…</p>}
+      {(civic.isLoading || electionsQuery.isLoading) && <p className="hint">Loading elections…</p>}
       {electionsQuery.error && (
         <p className="hint" title={electionsQuery.error.message}>
-          Google elections list unavailable — {electionsQuery.error.message}
+          Couldn't get Google's elections list: {electionsQuery.error.message}
+          {route === "key" && (
+            <>
+              {" "}
+              Check your key in <Link to="/settings">Settings</Link>.
+            </>
+          )}
         </p>
       )}
 

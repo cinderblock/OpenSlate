@@ -1,7 +1,7 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useAddress } from "../lib/address";
 import { BASEMAP_SOURCE, type Basemap, useBasemap } from "../lib/basemap";
+import { civicBallot, useCivicRoutes } from "../lib/civic";
 import { areaFromLookup } from "../lib/civicArea";
 import type { AreaOptions } from "../lib/collate";
 import {
@@ -28,7 +28,6 @@ import {
   searchOpenStreetMap,
   useLookupConsent,
 } from "../lib/lookups";
-import { ballotQueryOptions, serverHealthOptions } from "../lib/query";
 import { DistrictMap, LAYER_NAMES } from "./DistrictMap";
 import { Segmented } from "./ui/Segmented";
 import { TextField } from "./ui/TextField";
@@ -216,10 +215,13 @@ export function FindDistricts({
               from: match.label,
             });
           }}
-          onCivicArea={(civicArea, from) => {
+          onCivicArea={(civicArea, from, service) => {
             onChange(mergeFoundArea(area, civicArea, geo));
             setFound({
-              via: "your server (Google Civic Information)",
+              via:
+                service === "google-key"
+                  ? "Google Civic Information, with your key"
+                  : "Google Civic Information, through OpenSlate",
               from,
               area: civicArea,
               places: civicArea.localities.map(jurisdictionLabel),
@@ -374,21 +376,25 @@ function AddressPanel({
 }: {
   options: AreaOptions;
   onMatch: (match: AddressMatch, service: OnlineLookup) => void;
-  onCivicArea: (area: Area, from: string) => void;
+  onCivicArea: (area: Area, from: string, service: OnlineLookup) => void;
   onError: (message: string) => void;
 }) {
-  const health = useQuery(serverHealthOptions());
-  const queryClient = useQueryClient();
+  const civic = useCivicRoutes();
   const { consents, grant, revoke } = useLookupConsent();
   const [address, setAddress] = useAddress();
   const [draft, setDraft] = useState(address);
-  const [service, setService] = useState<OnlineLookup>("census");
+  const [picked, setService] = useState<OnlineLookup>("census");
   const [busy, setBusy] = useState(false);
   const [choices, setChoices] = useState<AddressMatch[] | null>(null);
 
-  const services: OnlineLookup[] = health.data?.ballotLookup
-    ? ["census", "osm", "server"]
-    : ["census", "osm"];
+  // Google, when this browser has a key or OpenSlate's relay can ask it.
+  const services: OnlineLookup[] = [
+    "census",
+    "osm",
+    ...civic.routes.map((route): OnlineLookup => (route === "key" ? "google-key" : "google")),
+  ];
+  // A route can go away (the key forgotten in Settings): fall back to Census.
+  const service = services.includes(picked) ? picked : "census";
   const info = ONLINE_LOOKUPS[service];
   const allowed = consents[service];
 
@@ -400,11 +406,15 @@ function AddressPanel({
     setBusy(true);
     setChoices(null);
     try {
-      if (service === "server") {
-        const lookup = await queryClient.fetchQuery(ballotQueryOptions(text));
-        const civic = areaFromLookup(lookup, options);
-        if (!civic) throw new Error("the lookup didn't say which state that address is in");
-        onCivicArea(civic.area, text);
+      if (service === "google-key" || service === "google") {
+        const ballot = await civicBallot(
+          service === "google-key" ? "key" : "relay",
+          civic.key,
+          text,
+        );
+        const found = areaFromLookup(ballot, options);
+        if (!found) throw new Error("Google didn't say which state that address is in");
+        onCivicArea(found.area, text, service);
         return;
       }
       const matches =

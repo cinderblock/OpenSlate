@@ -1,6 +1,5 @@
-import type { SlatePayload } from "@openslate/core";
+import type { CivicElection, SlatePayload } from "@openslate/core";
 import { electionOf } from "./collate";
-import type { Election } from "./query";
 
 export interface ElectionEntry {
   id: string;
@@ -23,7 +22,7 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
  * id, and counts once per election either way.
  */
 export function electionEntries(
-  google: Election[],
+  google: CivicElection[],
   slates: SlatePayload[],
   draftElectionIds: string[],
   today: string,

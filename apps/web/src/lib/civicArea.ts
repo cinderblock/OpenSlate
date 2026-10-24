@@ -1,6 +1,6 @@
+import type { CivicBallot } from "@openslate/core";
 import type { AreaOptions } from "./collate";
 import { type Area, localityPathFor } from "./jurisdictions";
-import type { BallotLookup } from "./query";
 
 /**
  * "Where you vote" from a Civic Info ballot lookup. Each contest names its
@@ -29,7 +29,7 @@ export interface AreaFromLookup {
  * use are kept (`known`), so a lookup can't fill the area with places nothing
  * is filed under. Returns null when the state is unknown: paths need it.
  */
-export function areaFromLookup(lookup: BallotLookup, known: AreaOptions): AreaFromLookup | null {
+export function areaFromLookup(lookup: CivicBallot, known: AreaOptions): AreaFromLookup | null {
   if (!lookup.state) return null;
   const state = `us/${lookup.state}`;
   const area: Area = { localities: [], districts: {} };

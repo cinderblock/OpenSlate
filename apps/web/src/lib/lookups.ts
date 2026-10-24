@@ -9,7 +9,7 @@ import { envBase } from "./routing";
  * us and live in geo.ts. See plans/find-my-districts.md.
  */
 
-export type OnlineLookup = "osm" | "census" | "server";
+export type OnlineLookup = "osm" | "census" | "google-key" | "google";
 
 export interface OnlineLookupInfo {
   key: OnlineLookup;
@@ -49,26 +49,41 @@ export const ONLINE_LOOKUPS: Record<OnlineLookup, OnlineLookupInfo> = {
     how: "The Census Bureau matches the address to its official district maps. Our relay only forwards it: nothing is stored, logged or cached.",
     policyUrl: "https://www.census.gov/about/policies/privacy.html",
   },
-  server: {
-    key: "server",
-    name: "Your server (Google)",
-    recipient: "your self-hosted OpenSlate server, which asks Google's Civic Information API",
-    how: "Google returns the contests on that address's ballot; their districts fill in yours. Only offered when your own server has a Google key.",
+  "google-key": {
+    key: "google-key",
+    name: "Google (your key)",
+    recipient: "Google's Civic Information API, straight from this browser with your own API key",
+    how: "Google returns the contests on that address's ballot, and their districts fill in yours. Only this browser and Google see the address and the key.",
+    policyUrl: "https://policies.google.com/privacy",
+  },
+  google: {
+    key: "google",
+    name: "Google (via OpenSlate)",
+    recipient: relayHost
+      ? `OpenSlate's relay (${relayHost}), which asks Google's Civic Information API with OpenSlate's key`
+      : "this site's OpenSlate server, which asks Google's Civic Information API",
+    how: "Google returns the contests on that address's ballot, and their districts fill in yours. Our relay only forwards it: nothing is stored, logged or cached.",
     policyUrl: "https://policies.google.com/privacy",
   },
 };
 
-type Consents = Partial<Record<OnlineLookup, string>>;
+export type Consents = Partial<Record<OnlineLookup, string>>;
 
-const consentStore = createLocalStore<Consents>("openslate.lookupConsent.v1", {}, (raw) => {
+/** Stored consents (lookup → when) from localStorage. Pure; exported for tests. */
+export function parseConsents(raw: unknown): Consents | undefined {
   if (!raw || typeof raw !== "object") return undefined;
+  const stored = raw as Record<string, unknown>;
   const out: Consents = {};
   for (const key of Object.keys(ONLINE_LOOKUPS) as OnlineLookup[]) {
-    const value = (raw as Record<string, unknown>)[key];
+    const value = stored[key];
     if (typeof value === "string") out[key] = value;
   }
+  // "server" was the self-hosted server's Google lookup, now the relay route.
+  if (!out.google && typeof stored.server === "string") out.google = stored.server;
   return out;
-});
+}
+
+const consentStore = createLocalStore<Consents>("openslate.lookupConsent.v1", {}, parseConsents);
 
 /** Which online lookups the user has opted in to (key → when), and grant/revoke. */
 export function useLookupConsent(): {
