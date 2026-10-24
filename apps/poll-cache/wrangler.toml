@@ -21,3 +21,10 @@ preview_urls = false
 # explicit. Approved by the user 2026-10-20 (plans/find-my-districts.md).
 [observability]
 enabled = false
+
+# Google Civic Information relay (src/civic.ts). Its key is the secret
+# GOOGLE_CIVIC_API_KEY, set outside this repo (never commit it); without it
+# the civic routes answer 501 and the web app doesn't offer them. Only pages
+# from these origins (and localhost) get CORS headers on those routes.
+[vars]
+CIVIC_ALLOWED_ORIGINS = "https://openslate.us"

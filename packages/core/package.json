@@ -5,7 +5,8 @@
   "description": "OpenSlate reference implementation: types, canonical JSON, Ed25519 signing & verification.",
   "license": "MIT",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./civic": "./src/civic.ts"
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",

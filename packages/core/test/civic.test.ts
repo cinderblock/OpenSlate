@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { type VipVoterInfo, normalize } from "../src/ballot";
+import {
+  CivicError,
+  type VipVoterInfo,
+  civicErrorMessage,
+  civicUrl,
+  normalizeVoterInfo,
+  parseCivicElections,
+  readCivic,
+} from "../src/civic";
 
 // A trimmed voterInfoQuery response, the shape the Civic Information API
 // documents: district ids are relative to their scope, not OCD ids.
@@ -42,8 +50,8 @@ const response: VipVoterInfo = {
   ],
 };
 
-describe("normalize", () => {
-  const lookup = normalize(response);
+describe("normalizeVoterInfo", () => {
+  const lookup = normalizeVoterInfo(response);
 
   test("carries the address's state", () => {
     expect(lookup.state).toBe("ca");
@@ -73,6 +81,69 @@ describe("normalize", () => {
   });
 
   test("omits the state when the address wasn't normalized", () => {
-    expect(normalize({ contests: [] })).toEqual({ contests: [] });
+    expect(normalizeVoterInfo({ contests: [] })).toEqual({ contests: [] });
+  });
+});
+
+describe("civicUrl", () => {
+  test("puts the parameters and the key in the query", () => {
+    const url = civicUrl("voterinfo", "KEY", { address: "1 Dr Carlton B Goodlett Pl" });
+    expect(url.origin + url.pathname).toBe(
+      "https://civicinfo.googleapis.com/civicinfo/v2/voterinfo",
+    );
+    expect(url.searchParams.get("address")).toBe("1 Dr Carlton B Goodlett Pl");
+    expect(url.searchParams.get("key")).toBe("KEY");
+  });
+});
+
+describe("parseCivicElections", () => {
+  test("keeps the fields OpenSlate reads, by date", () => {
+    expect(
+      parseCivicElections({
+        kind: "civicinfo#electionsQueryResponse",
+        elections: [
+          {
+            id: "9000",
+            name: "General",
+            electionDay: "2026-11-03",
+            ocdDivisionId: "ocd-division/country:us",
+          },
+          { id: "2000", name: "VIP Test Election", electionDay: "2017-06-06", extra: true },
+          { id: "bad" },
+        ],
+      }),
+    ).toEqual([
+      { id: "2000", name: "VIP Test Election", electionDay: "2017-06-06" },
+      {
+        id: "9000",
+        name: "General",
+        electionDay: "2026-11-03",
+        ocdDivisionId: "ocd-division/country:us",
+      },
+    ]);
+  });
+  test("nothing when the answer has no list", () => {
+    expect(parseCivicElections({})).toEqual([]);
+  });
+});
+
+describe("readCivic", () => {
+  test("an error carries Google's reason", async () => {
+    const body = JSON.stringify({
+      error: {
+        code: 400,
+        message: "API key not valid. Please pass a valid API key.",
+        errors: [{ reason: "badRequest" }],
+      },
+    });
+    const error = await readCivic(new Response(body, { status: 400 })).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(CivicError);
+    expect((error as CivicError).status).toBe(400);
+    expect((error as CivicError).message).toBe(
+      "Google answered 400: API key not valid. Please pass a valid API key. — badRequest",
+    );
+  });
+  test("a non-JSON error body is cut short", () => {
+    expect(civicErrorMessage("x".repeat(300))).toHaveLength(200);
   });
 });

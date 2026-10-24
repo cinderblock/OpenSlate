@@ -11,4 +11,5 @@ export * from "./forecasts";
 export * from "./lean";
 export * from "./guide";
 export * from "./ballot";
+export * from "./civic";
 export { type BallotMatch, matchBallotName, samePerson, variants } from "./names";

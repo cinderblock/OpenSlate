@@ -1,4 +1,18 @@
+import {
+  CIVIC_ELECTIONS_PATH,
+  CIVIC_VOTERINFO_PATH,
+  civicCors,
+  handleCivicElections,
+  handleCivicVoterInfo,
+} from "./civic";
 import { GEOCODE_PATH, handleGeocode } from "./geocode";
+
+export interface Env {
+  /** Secret: OpenSlate's Google Civic Information API key. Unset → the civic routes answer 501. */
+  GOOGLE_CIVIC_API_KEY?: string;
+  /** Comma-separated origins whose pages may use the civic routes (wrangler.toml). */
+  CIVIC_ALLOWED_ORIGINS?: string;
+}
 
 const POLLS_UPSTREAM = "https://api.votehub.com";
 const RESULTS_UPSTREAM = "https://civicapi.org/api/v2";
@@ -56,7 +70,26 @@ function corsHeaders(): HeadersInit {
 }
 
 export default {
-  async fetch(req: Request): Promise<Response> {
+  async fetch(req: Request, env: Env = {}): Promise<Response> {
+    // Google Civic lookups use the relay's own key (see civic.ts), so they only
+    // answer pages from OpenSlate's origins.
+    const pathname = new URL(req.url).pathname;
+    if (pathname === CIVIC_ELECTIONS_PATH || pathname === CIVIC_VOTERINFO_PATH) {
+      const elections = pathname === CIVIC_ELECTIONS_PATH;
+      const cors = civicCors(
+        req.headers.get("Origin"),
+        (env.CIVIC_ALLOWED_ORIGINS ?? "")
+          .split(",")
+          .map((o) => o.trim())
+          .filter(Boolean),
+        elections ? "GET, OPTIONS" : "POST, OPTIONS",
+      );
+      if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+      const config = { key: env.GOOGLE_CIVIC_API_KEY };
+      return elections
+        ? handleCivicElections(req, config, cors)
+        : handleCivicVoterInfo(req, config, cors);
+    }
     // The address relay is the one POST route; it keeps nothing (see geocode.ts).
     if (new URL(req.url).pathname === GEOCODE_PATH) {
       const cors = { ...corsHeaders(), "Access-Control-Allow-Methods": "POST, OPTIONS" };
@@ -81,6 +114,11 @@ export default {
           results_upstream: RESULTS_UPSTREAM,
           forecasts_upstream: FORECASTS_UPSTREAM,
           geocode: GEOCODE_PATH,
+          // Whether this relay can ask Google (it has a key): the web app
+          // offers "Google (via OpenSlate)" only then.
+          civic: Boolean(env.GOOGLE_CIVIC_API_KEY),
+          civic_elections: CIVIC_ELECTIONS_PATH,
+          civic_voterinfo: CIVIC_VOTERINFO_PATH,
         },
         { headers: corsHeaders() },
       );

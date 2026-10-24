@@ -1,21 +1,41 @@
 import { verifySlate } from "@openslate/core";
+import {
+  CIVIC_ELECTIONS_PATH,
+  CIVIC_VOTERINFO_PATH,
+  type CivicRelayConfig,
+  civicCors,
+  handleCivicElections,
+  handleCivicVoterInfo,
+} from "@openslate/poll-cache/civic";
 import { GEOCODE_PATH, handleGeocode } from "@openslate/poll-cache/geocode";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { createBallotSource, createElectionsSource } from "./ballot";
 import { createForecastsSource } from "./forecasts";
 import { createPollsSource } from "./polls";
 import { createResultsSource } from "./results";
 
 const VERSION = "0.0.0";
-const ballot = createBallotSource();
-const elections = createElectionsSource();
+// Optional Google Civic Information (elections list, ballot by address), the
+// same relay the public worker runs (apps/poll-cache/src/civic.ts), with this
+// server's own key. Without GOOGLE_API_KEY those routes answer 501.
+const civic: CivicRelayConfig = {
+  ...(process.env.GOOGLE_API_KEY ? { key: process.env.GOOGLE_API_KEY } : {}),
+  ...(process.env.GOOGLE_API_BASE ? { base: process.env.GOOGLE_API_BASE } : {}),
+};
+const civicOrigins = (process.env.CIVIC_ALLOWED_ORIGINS ?? "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+const CIVIC_PATHS = new Set([CIVIC_ELECTIONS_PATH, CIVIC_VOTERINFO_PATH]);
 const polls = createPollsSource();
 const results = createResultsSource();
 const forecasts = createForecastsSource();
 const app = new Hono();
 
-app.use("/api/*", cors());
+// Open CORS everywhere but the civic routes: those spend this server's Google
+// key, so only its own pages (same origin) and CIVIC_ALLOWED_ORIGINS may use them.
+const openCors = cors();
+app.use("/api/*", (c, next) => (CIVIC_PATHS.has(c.req.path) ? next() : openCors(c, next)));
 
 app.get("/api/health", (c) =>
   c.json({
@@ -23,8 +43,8 @@ app.get("/api/health", (c) =>
     service: "openslate",
     version: VERSION,
     storesUserData: false,
-    // Lets the web app show "Use my address" only when a lookup can answer.
-    ballotLookup: ballot !== null,
+    // Lets the web app offer Google only when this server can ask it.
+    civic: civic.key !== undefined,
   }),
 );
 
@@ -41,35 +61,22 @@ app.post("/api/verify", async (c) => {
   return c.json(verifySlate(token));
 });
 
-// Optional ballot lookup proxy (Google Civic Information API). The address is
-// forwarded upstream and never stored. Returns 501 when GOOGLE_API_KEY is unset.
-app.get("/api/ballot", async (c) => {
-  const address = c.req.query("address");
-  const electionId = c.req.query("electionId");
-  if (!address) return c.json({ error: "address query param required" }, 400);
-  if (!ballot) return c.json({ error: "ballot lookup not configured (set GOOGLE_API_KEY)" }, 501);
-  try {
-    return c.json(await ballot.lookup(address, electionId));
-  } catch (err) {
-    return c.json({ error: err instanceof Error ? err.message : "ballot lookup failed" }, 502);
-  }
-});
-
 // Address → districts via the Census geocoder, the same relay the public
 // worker runs (apps/poll-cache/src/geocode.ts): opt-in in the web app, the
 // address is forwarded and forgotten.
 app.post(GEOCODE_PATH, (c) => handleGeocode(c.req.raw, {}));
 
-// List available elections (so the UI can let the user pick one). 501 when no key.
-app.get("/api/elections", async (c) => {
-  if (!elections)
-    return c.json({ error: "elections lookup not configured (set GOOGLE_API_KEY)" }, 501);
-  try {
-    return c.json({ elections: await elections.list() });
-  } catch (err) {
-    return c.json({ error: err instanceof Error ? err.message : "elections lookup failed" }, 502);
-  }
-});
+// Google Civic Information: the elections list and the ballot for an address.
+for (const [path, handle, methods] of [
+  [CIVIC_ELECTIONS_PATH, handleCivicElections, "GET, OPTIONS"],
+  [CIVIC_VOTERINFO_PATH, handleCivicVoterInfo, "POST, OPTIONS"],
+] as const) {
+  app.on(["GET", "POST", "OPTIONS"], path, (c) => {
+    const headers = civicCors(c.req.header("Origin") ?? null, civicOrigins, methods);
+    if (c.req.method === "OPTIONS") return new Response(null, { status: 204, headers });
+    return handle(c.req.raw, civic, headers);
+  });
+}
 
 // Polls passthrough — matches @openslate/poll-cache (Cloudflare Worker) so the
 // web client treats either as the source of truth. Short in-memory TTL keeps
