@@ -562,6 +562,80 @@ Findings (checked 2026-10-22):
   home address (item 3, required by the city). The guide republishes the
   official text as printed; the user agreed (decision 6).
 
+### Santa Clara and San Mateo (user, 2026-10-24: "keep going")
+
+Re-surveyed 2026-10-24, about 1:00 PM PDT (20:00Z). Both have usable public
+sources now, so neither needs files from the registrar.
+
+**Santa Clara:**
+
+- `vote.santaclaracounty.gov` answers plain requests now. The address lookup
+  `rovservices.sccgov.org` is still behind Cloudflare.
+- The lookup hands off to Democracy Live's **OmniBallot**:
+  `ca.omniballot.us/sites/06085/site/app/cvig/vg/info?pid=<ballot style>`.
+  Account `06085`, election id `1968`.
+- **Public, no session:**
+  `https://ca.omniballot.us/published/06085/1968/vg/lookups.json` (122 KB)
+  lists:
+  - `candidate_profiles`: 185 statements, keyed `"<contest box id>-<option
+    id>"`, each with a URL `/published/06085/1968/vg/<id>_cp.json`. The
+    statement is HTML (`written_statement[0].value`, with translations).
+    `photo` is empty: Santa Clara prints no photos.
+  - `measure_details`: 20 measures (RTM, A–S), each `<id>_md.json`. All of a
+    measure is one HTML document (`content[0].value`, "layout raw"): the
+    question in a bordered div, then `h2` sections for the impartial
+    analysis, complete text, and arguments and rebuttals, with signers as
+    `<p>/s/ Name<br>Title</p>`.
+- The HTML is the county's machine extraction from its printed guide
+  ("voter-guide-extraction 1.1; SCC_Measures.pdf p1-13"). It has small flaws,
+  for example RTM's argument has a paragraph starting "'s clear", missing its
+  "It". Mirror it as published and note the flaws, as with SF.
+- **Not used:** the per-style API (`/api/public/account/06085/styles`) needs a
+  session that's gated by reCAPTCHA. Contest names come from the qualified
+  list instead.
+- **Contest names and the ballot source:** "Final Qualified List of Local
+  Eligible Candidates":
+  `files.santaclaracounty.gov/exjcpb1296/2026-09/qualified-list-of-local-candidates-9-28-26.pdf`,
+  41 pages, real text.
+  - Per contest: number, name, "On Ballot: Yes/No" and "Vote For".
+  - Per candidate: name and ballot designation, plus contact details we don't
+    use.
+  - `files.santaclaracounty.gov` returns 403 without a browser user agent.
+- The catalog already names 81 Santa Clara-area subjects, from the county
+  parties, the South Bay Labor Council and others. The conventions:
+  - districts under `us/ca/santa-clara-county`, as "<District> Board, Trustee
+    Area N";
+  - cities under `us/ca/<city>`;
+  - measures as "<Body> — Measure X (<short title>)".
+
+**San Mateo:**
+
+- `smcacre.gov/elections/current-election` links about 150 per-measure PDFs:
+  resolutions, arguments, rebuttals and impartial analyses, contest codes
+  M101–M304.
+- It also has a "Roster of Candidates", which can serve as the ballot source.
+- Candidate statements are only in the per-voter guide, behind a lookup that
+  asks for a birthdate. So San Mateo's guide will be measures only.
+- To check: whether those PDFs have a text layer (in 2026-10-23's survey,
+  they were scans).
+
+Steps:
+
+- [ ] SC1 Santa Clara ballot source (endorsements, `scripts/scc-rov-ballot.ts`
+  → `orgs/scc-registrar-of-voters/2026-11-03`), from the qualified list
+  (contests on the ballot) and OmniBallot's measure list.
+- [ ] SC2 Santa Clara guide (ballot repo, `scripts/scrape-scc.ts` →
+  `county/santa-clara/`):
+  - statements, matched to contests by box id and name;
+  - measures: question, analysis, full text, arguments with signers;
+  - `guides.json` entry.
+- [ ] SC3 Signer organizations from Santa Clara's arguments
+  (`county-ballot-arguments.ts`).
+- [ ] SM1 San Mateo: check the measure PDFs' text, then the ballot source
+  from the roster.
+- [ ] SM2 San Mateo guide (measures).
+- [ ] SM3 Signer organizations from San Mateo's arguments.
+
 ### County survey (2026-10-23, real fetches)
 
 | County | Source | Statements | Photos | Measures | Effort |
