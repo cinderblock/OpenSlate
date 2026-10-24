@@ -1,5 +1,18 @@
 # Issues
 
+## Kalshi answers the forecasts relay 429, and the worker caches it
+
+Seen 2026-10-24 12:30 PM PDT (19:30Z): every
+`https://api.openslate.us/api/forecasts/v2/events/<ticker>` tried
+(`KXSOSCA-26`, `KXGOVCA-26`, `KXAGCA-26`; `polls.openslate.us` the same)
+answers `429 {"error":{"code":"too_many_requests",...}}`, Kalshi's body, while
+Kalshi answers this machine directly. `apps/poll-cache/src/index.ts`
+(`proxyForecasts`) passes the 429 through with `Cache-Control: public,
+max-age=30, stale-while-revalidate=300`, and `cf.cacheTtl` caches it at the
+edge too (`CF-Cache-Status: HIT`), so one 429 is served to everyone for a
+while. Why it matters: the hosted app shows no market forecasts, nine days
+before the election.
+
 ## `bun run lint` fails on every file in a Windows checkout
 
 With `core.autocrlf=true` the working tree is CRLF, but `biome.json` leaves

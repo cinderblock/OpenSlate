@@ -60,8 +60,8 @@ Three phases:
        `/api/civic/elections` (CORS for openslate.us).
 3. [x] The app points at `api.`; README and `wrangler.toml` say so; the
        usage script.
-4. [ ] **Current step.** Push, then check openslate.us calls `api.` only.
-5. [ ] Watch `polls.` with the script. **Ready to remove when both hold:**
+4. [x] Pushed (`5fa22c1`); openslate.us now calls `api.` only.
+5. [ ] **Current step.** Watch `polls.` with the script. **Ready to remove when both hold:**
    - The 2026-11-03 election has passed and results have settled: not before
      2026-11-17. A broken install on election night is the one thing worth
      avoiding.
@@ -98,7 +98,7 @@ Three phases:
 ## Progress log
 
 - [x] 2026-10-24: steps 1–3 (see above).
-- [ ] Step 4: push and check.
+- [x] Step 4: pushed `5fa22c1`; openslate.us serves a bundle naming only `api.` (an installed copy switched on its next load), and `api.` answers the openslate.us page with CORS.
 - [ ] Steps 5–7: from 2026-11-17 at the earliest.
 
 ## Open questions for the user
