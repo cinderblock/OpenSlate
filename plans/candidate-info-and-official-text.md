@@ -160,6 +160,14 @@ User, 2026-10-22, accepting the recommendations:
 5. **County guide PDFs stay out of git.** Store each race's extracted text
    plus the original's URL and sha256.
 
+User, 2026-10-23:
+
+6. **Candidates' printed home addresses stay, as Berkeley prints them.** They
+   are public record and part of the official text. A condensed view may set
+   the residence line small or leave it out to save room; a race's own page
+   always shows it. Today statements appear only on the race page (inside "In
+   their own words"), so nothing is hidden anywhere yet.
+
 ## Hosting today (checked 2026-10-22)
 
 - The web app (`openslate.us`) is Cloudflare Workers static assets
@@ -550,9 +558,9 @@ Findings (checked 2026-10-22):
   - Checked live on openslate.us: Berkeley City Council District 1 (five
     candidates with correct photos) and Oakland Measure EE (question and
     arguments).
-- **For the user:** Berkeley's declaration format includes each candidate's
+- **Home addresses:** Berkeley's declaration format includes each candidate's
   home address (item 3, required by the city). The guide republishes the
-  official text as printed. See "Open questions for the user".
+  official text as printed; the user agreed (decision 6).
 
 ### County survey (2026-10-23, real fetches)
 
@@ -694,11 +702,8 @@ LA findings:
 
 ## Open questions for the user
 
-1. Berkeley's declaration statements print each candidate's home address
-   (item 3, "That my residence is …"), and the Alameda guide republishes them
-   as printed. Keep the official text whole (current), or drop that one line?
-   Recommendation: keep it. It's the official publication, printed by
-   Berkeley's rules, and the guide's value is being a faithful copy.
+None open. (Berkeley's printed home addresses: answered 2026-10-23, decision
+6.)
 
 ## Progress log
 
