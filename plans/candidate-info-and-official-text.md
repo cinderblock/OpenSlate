@@ -641,16 +641,40 @@ Steps:
   - Where Santa Clara's guide shares a subject with Alameda's or SF's (CD-17,
     SD-10, AD-24, RTM), both hold the same candidates. So the app's
     first-guide-wins rule hides nothing today.
-- [ ] SC3 Signer organizations from Santa Clara's arguments
-  (`county-ballot-arguments.ts`).
-- [ ] SM1 San Mateo: check the measure PDFs' text, then the ballot source
-  from the roster.
-- [ ] SM2 San Mateo guide (measures).
-- [ ] SM3 Signer organizations from San Mateo's arguments.
-- [ ] AL1 Fix found 2026-10-24: in Alameda's guide, the box labels beside a
-  bond question are merged into its text. Berkeley Measure U's `about` reads
-  "Shall the measure authorizing BONDS YES issuance of $300,000,000 … BONDS
-  NO …". Check every Alameda measure's question.
+- [x] SC3 Signer organizations from Santa Clara's arguments (endorsements
+  `505d226` script, `d51dbdb` bundles): 12 new sources, 17 positions, among
+  them Silicon Valley Taxpayers Association (No on RTM, B, J, M, N).
+  - Santa Clara prints "President: X", "President─X" and "Pres. Cup. Chamber",
+    so the role pattern now takes ":" and dashes after the role, plus "Pres.".
+  - A person signing twice with the title punctuated two ways is named once.
+  - The other counties' and the state guide's output is unchanged.
+  - Left out: school boards, a city advisory committee, and "Cal. Cricket"
+    (which organization it is isn't clear).
+- [x] SM1 San Mateo ballot source (endorsements `95d589a`; also `56dfaef`,
+  `6bce23b`; `scripts/smc-elections-ballot.ts` →
+  `orgs/san-mateo-county-elections/2026-11-03`):
+  - 62 races and 29 measures, 198 choice_ids; 66 of 91 subjects reuse
+    catalog titles (all 29 measures do).
+  - The Roster of Candidates is the same CFMR009 report as Santa Clara's,
+    read by the shared `scripts/lib/qualified-list.ts` (`e7d115a`).
+  - San Mateo publishes no measure list, so `MEASURES` is a reviewed table,
+    checked against each measure's impartial analysis.
+  - 200 existing endorsements got choice_ids.
+  - 5 San Mateo Democratic Party endorsements of uncontested seats were
+    removed, with a note in their NOTES.md.
+- [ ] SM2 San Mateo guide: **waiting on the user** (Open questions, 1).
+  Measure documents checked 2026-10-24: 6 of 8 sampled have no text layer
+  (scans, "_Redacted"); the two with text are OCR'd resolutions ("Ju1y24").
+- [ ] SM3 Signer organizations from San Mateo's arguments: needs SM2's text.
+- [x] AL1 Alameda bond questions (ballot `5d75cc4`): the "BONDS YES/NO" box
+  labels no longer merge into Alameda L, Berkeley U and Sunol Glen K. The same
+  check found San Diego's two Permanent Road Division zones carrying "Tax –
+  YES/NO" (`5dd1c92`). All counties' questions scanned; no others.
+  Republished and verified (160/160, 158/158).
+- [x] CI fix (endorsements `3ffd028`): `verify-positions.ts` read bundles in
+  filesystem order. RTM is on four listings, so Linux CI took San Mateo's
+  choice_ids and failed. The design question is logged in ISSUES.md
+  (`3445154`).
 
 Findings (Santa Clara):
 
@@ -804,8 +828,23 @@ LA findings:
 
 ## Open questions for the user
 
-None open. (Berkeley's printed home addresses: answered 2026-10-23, decision
-6.)
+1. **San Mateo's guide (SM2).** Candidate statements and the typeset measure
+   pages exist only in the per-ballot-style pamphlets. The app at
+   `smcacre.gov/elections/my-election-info` serves them from
+   `vlu.smcacre.gov/sites/default/files/<election>/<election>_<style>_N-P…`,
+   but only after a lookup with a voter's house number, ZIP and birthdate.
+   Nothing links the files. Options:
+   a. Ask San Mateo Elections for the pamphlets, or the list of ballot styles.
+      **Recommended.** I'd draft the email for the user to send.
+   b. Now: a measures-only guide that links each measure's filed PDFs
+      (resolution, impartial analysis, arguments, rebuttals). These are
+      scans, so no text and no signers.
+   c. OCR the scans (Windows' built-in OCR) for text and signers, marked as
+      machine-read. Errors are likely.
+   d. Guess the pamphlet file names by ballot style. **Not recommended:** the
+      county keeps them behind a voter-identity lookup.
+
+(Berkeley's printed home addresses: answered 2026-10-23, decision 6.)
 
 ## Progress log
 
