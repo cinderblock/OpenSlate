@@ -422,9 +422,20 @@ function AddressPanel({
     setChoices(null);
     const google: CivicRoute | undefined =
       service === "google-key" ? "key" : service === "google" ? "relay" : undefined;
+    // Google's ballot data comes state by state, and late: an address it has no
+    // election or no contests for yet tells us nothing. That's not a bug to report.
+    const NO_BALLOT_YET =
+      "Google has no ballot for that address yet, so it can't tell your districts. Try Census or OpenStreetMap.";
     try {
       if (google) {
-        const ballot = await civicBallot(google, civic.key, text);
+        const ballot = await civicBallot(google, civic.key, text).catch((err: unknown) => {
+          if (err instanceof Error && /Election unknown/i.test(err.message)) return null;
+          throw err;
+        });
+        if (!ballot || ballot.contests.length === 0) {
+          onError(NO_BALLOT_YET);
+          return;
+        }
         const found = areaFromLookup(ballot, options);
         if (!found) throw new Error("Google didn't say which state that address is in");
         onCivicArea(found.area, text, service);
