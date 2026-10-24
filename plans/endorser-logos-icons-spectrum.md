@@ -152,9 +152,15 @@ Three parts:
 
 ## Open questions for the user
 
-1. White-only logos (5 orgs): add a `logo_background: dark` option so they
-   sit on a dark tile? (Recommended if you want those last few; small change
-   across meta.yaml, catalog-extras and EndorserAvatar.)
+1. White-only logos (5 orgs): which tile? Mocked up side by side on
+   2026-10-24 (page script in `$TEMP/openslate-edits/tiles/page.html`):
+   A today (monogram / faint), B fixed dark #1b1f24, C dark tile in the
+   logo's own hue (neutral dark when it has none), D the monogram's hue,
+   E recolour the logo to black on white. Recommended: C, set by hand per
+   org in meta.yaml (`logo_background: dark` or a colour), since automatic
+   detection by share of near-white pixels misses HANC (38%) and BizFed
+   (53%). E breaks any logo with filled shapes. PSR-LA's only mark is a
+   wide "45 PSR LA" anniversary logo.
 
 ## Things not to do
 
