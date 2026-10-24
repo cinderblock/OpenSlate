@@ -104,32 +104,75 @@ the hosted app never offers Google.
 
 ## Plan / steps
 
-1. [ ] `packages/core/src/civic.ts` + tests (move from `apps/server/src/ballot.ts`).
-2. [ ] `apps/poll-cache/src/civic.ts` handlers + tests; wire into the worker
-       (health, origin allowlist, secret) and into `apps/server` (drop old
-       routes).
-3. [ ] Web: Civic client (direct with your key / relay), key store, queries.
-4. [ ] Web: lookups + consent migration, FindDistricts, ElectionsPanel,
-       Settings section.
-5. [ ] README (hosting table, self-host env, privacy), `.env.example`.
-6. [ ] Checks (typecheck, tests, Biome, build, `wrangler deploy --dry-run`);
-       browser check against a local worker and server, with a bogus key for
-       the direct path (Google's real error comes back through CORS).
-7. [ ] **User:** an OpenSlate Google Cloud key (Civic Information API only);
-       set it as the worker secret through the ops repo; a real-key check;
-       merge and push to deploy.
+1. [x] `packages/core/src/civic.ts` + tests, moved from
+       `apps/server/src/ballot.ts` (`0fa78ae`). Also exported as
+       `@openslate/core/civic`, so the worker bundles only that file.
+2. [x] `apps/poll-cache/src/civic.ts` handlers + tests; worker (health,
+       origin allowlist, secret) and `apps/server` (old routes dropped)
+       (`0fa78ae`).
+3. [x] Web: `lib/civic.ts` (both routes, key store, relay health, queries)
+       (`625c09a`).
+4. [x] Web: lookups + consent migration, FindDistricts, ElectionsPanel,
+       Settings → *Your Google API key* (`625c09a`).
+5. [x] README, `apps/server/README.md`, `.env.example` (`64203fe`).
+6. [x] Checks and browser check (below).
+7. [ ] **User:** see Open questions.
+
+- **Checked with a bogus key against real Google** (2026-10-23):
+  - `apps/server` without a key answers `civic: false` and 501 on both
+    routes. With one: `civic: true`; elections 502 and voterinfo 502 carry
+    "Google answered 400: API key not valid…".
+  - The civic routes send no CORS headers to `https://evil.example`, while
+    `/api/health` keeps `*`.
+- **The worker bundle is 17.7 KiB** (`wrangler deploy --dry-run`), with no zod
+  or crypto code, and lists `CIVIC_ALLOWED_ORIGINS` as a binding.
+- **Google's real Cache-Control on `elections` is unknown** until there's a
+  real key. The relay passes Google's header through (an hour when there's
+  none); the web app's elections query is `staleTime` 1 h and persisted
+  (24 h `gcTime`). Check the header with the real key and tighten the
+  client's caching if Google allows less.
+- **Browser check gotchas:**
+  - The setup wizard froze a hidden incognito preview tab right after "Which
+    election? → Next": the known ISSUES.md wizard hang, not this change.
+  - Browser storage is per origin: the default preview profile's imported
+    slates are on `localhost:5191`, so run Vite there to get My ballot with
+    *Where you vote*.
 
 ## Progress log
 
 - [x] Research: terms, guidelines, CORS (above)
-- [ ] Steps 1–6
+- [x] Steps 1–6. Checks: `bun test` 445 pass; typecheck 5/5; Biome on every
+      changed file; `bun run build`; `wrangler deploy --dry-run`.
+- [x] Browser check (2026-10-23; `apps/server` on 8795 with a bogus key, Vite
+      with `VITE_POLLS_BASE=http://localhost:8795`):
+  - Settings lists both Google lookups. *Your Google API key* saves and masks
+    a key (`AIzaBog…1234`); "Check it" reaches Google from the browser and
+    shows "Google answered 400: API key not valid…".
+  - *Where you vote* → Type my address offers "Google (via OpenSlate)" with
+    no key saved, and "Google (your key)" too once one is. The relay route
+    POSTs `{address}` to `/api/civic/voterinfo`. The key route calls
+    `civicinfo.googleapis.com/…/voterinfo` with `referrerPolicy: origin` and
+    `cache: no-store`. Each records its consent and shows Google's error.
+  - The Elections page with a key says "Couldn't get Google's elections
+    list: … Check your key in Settings." and still lists the slates'
+    election.
+  - Test key, consents and address removed from the profile afterwards.
 - [ ] Step 7 (user)
 
 ## Open questions for the user
 
-1. A Google Cloud API key for OpenSlate's relay, restricted to the Civic
-   Information API. It's needed for the hosted relay and for a real-key check;
-   everything else can be built and tested without it.
+1. **A Google Cloud API key for OpenSlate's relay**, restricted to the Civic
+   Information API, so the hosted relay can answer and a real-key check can
+   run. The code is ready without it.
+2. **Setting it as the worker secret** `GOOGLE_CIVIC_API_KEY` on
+   `openslate-poll-cache`: an infrastructure change, done through the ops repo
+   with your yes.
+3. **Merging `feat/google-civic` into master and pushing**, which deploys both
+   workers. Until the secret is set, the relay answers 501 and the hosted app
+   simply doesn't offer "Google (via OpenSlate)"; bring-your-own-key works
+   right away.
+4. Optional: **Cloudflare rate limiting** on `/api/civic/*`. CORS only keeps
+   other sites' pages off the relay, not scripts.
 
 ## Things not to do
 
