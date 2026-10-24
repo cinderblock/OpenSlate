@@ -125,8 +125,8 @@ the hosted app never offers Google.
 9. [x] Edge rate limit, ops `02b0d8a` (user's yes): `/api/civic/*`, 10
        requests per 10 s per IP, block 10 s. Pushed to ops master; its CI
        applies it.
-10. [ ] **Current:** merge into master, push (deploys both workers), check
-        the live relay.
+10. [x] Merged and pushed (`612c12a`); both workers deployed. Live check
+        below.
 
 - **Checked with a bogus key against real Google** (2026-10-23):
   - `apps/server` without a key answers `civic: false` and 501 on both
@@ -181,7 +181,17 @@ the hosted app never offers Google.
   - Test key, consents and address removed from the profile afterwards.
 - [x] Steps 7â€“9 (2026-10-24, the user's yes to the key, the secret, the
       rate limit and the deploy). `bun test` 446 pass.
-- [ ] Step 10: deploy and live check.
+- [x] Step 10, live (2026-10-24 12:15 AM PDT, 07:15Z):
+  - `polls.openslate.us/api/health` says `civic: true`.
+  - `/api/civic/elections`: 200, `Cache-Control: public, max-age=3600`, CORS
+    for `https://openslate.us`, none for `https://evil.example`.
+  - `/api/civic/voterinfo`: Richmond, VA gives its contests (US Senate…). SF
+    City Hall gives 422 "Google answered 400: Election unknown — invalid",
+    which the app shows as no ballot yet.
+  - 13 quick requests: ten 200s, then 429s; 200 again after 10 s.
+  - openslate.us serves the new build (`ReportCivicProblem` chunk).
+  - Ops CI applied the rule; its verify step failed only on the pre-existing
+    Web Analytics drift (ops ISSUES.md).
 
 ## Open questions for the user
 

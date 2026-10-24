@@ -11,6 +11,20 @@ because lint can't be used as a gate on Windows, where the user works. Fix
 needs a choice that works on both OSes (e.g. a `.gitattributes` policy, or
 Biome 2's `lineEnding: "auto"`).
 
+## Biome errors on master, beyond the line endings
+
+With line endings set aside (Biome with `"lineEnding": "crlf"`), `bunx biome
+check apps packages` still fails on master `612c12a` (2026-10-24):
+
+- `apps/web/src/components/BallotTags.tsx:123`, `lint/a11y/useSemanticElements`
+  (from `4eac74d`)
+- `apps/web/src/lib/ballotCheck.ts:60` and `:161`, `lint/performance/noDelete`
+  (from `e8064d6`)
+- `packages/core/test/names.test.ts`, format (from `1b68fd4`)
+
+Why it matters: lint can't gate anything while it's red, and the a11y one may
+be a real accessibility problem.
+
 ## Setup wizard hangs on "Where do you vote?" while loading endorsements
 
 Seen 2026-10-21 in a fresh browser profile (T3 preview, local dev server):
