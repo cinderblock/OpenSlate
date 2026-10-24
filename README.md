@@ -359,10 +359,12 @@ dialog offers GitHub issues only. A self-hosted copy can set
 relay on `polls.openslate.us`, OpenStreetMap, Google with the visitor's own
 key, and Google through `polls.openslate.us`. That last one needs the Worker
 secret `GOOGLE_CIVIC_API_KEY` (a Google Cloud API key restricted to the Civic
-Information API); until it's set, the relay answers 501 and the app doesn't
-offer it. Its CORS answers only the origins in `CIVIC_ALLOWED_ORIGINS`
+Information API), set by hand with `wrangler secret put`; without it, the
+relay answers 501 and the app doesn't offer it. Its CORS answers only the
+origins in `CIVIC_ALLOWED_ORIGINS`
 ([`apps/poll-cache/wrangler.toml`](./apps/poll-cache/wrangler.toml)) and
-localhost.
+localhost, and Cloudflare rate-limits `/api/civic/*` per IP at the edge
+(10 requests per 10 s, set in the ops repo).
 
 Workers Builds settings, one connection per worker, both on this repo with
 production branch `master` and non-production branch builds off:

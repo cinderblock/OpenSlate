@@ -116,7 +116,17 @@ the hosted app never offers Google.
        Settings → *Your Google API key* (`625c09a`).
 5. [x] README, `apps/server/README.md`, `.env.example` (`64203fe`).
 6. [x] Checks and browser check (below).
-7. [ ] **User:** see Open questions.
+7. [x] The user's key, checked against Google, set as the worker secret
+       `GOOGLE_CIVIC_API_KEY` with `wrangler secret put` from the clipboard
+       on stdin (2026-10-24, user's yes). By hand, not ops: ops' README says
+       secrets a person supplies are set by hand.
+8. [x] "Report it" beside every Google error (`22b727c`); a plain message
+       when Google has no ballot for the address yet (`e9a3aa3`).
+9. [x] Edge rate limit, ops `02b0d8a` (user's yes): `/api/civic/*`, 10
+       requests per 10 s per IP, block 10 s. Pushed to ops master; its CI
+       applies it.
+10. [ ] **Current:** merge into master, push (deploys both workers), check
+        the live relay.
 
 - **Checked with a bogus key against real Google** (2026-10-23):
   - `apps/server` without a key answers `civic: false` and 501 on both
@@ -126,11 +136,23 @@ the hosted app never offers Google.
     `/api/health` keeps `*`.
 - **The worker bundle is 17.7 KiB** (`wrangler deploy --dry-run`), with no zod
   or crypto code, and lists `CIVIC_ALLOWED_ORIGINS` as a binding.
-- **Google's real Cache-Control on `elections` is unknown** until there's a
-  real key. The relay passes Google's header through (an hour when there's
-  none); the web app's elections query is `staleTime` 1 h and persisted
-  (24 h `gcTime`). Check the header with the real key and tighten the
-  client's caching if Google allows less.
+- **Google sends no Cache-Control** on `elections` or `voterinfo` (real key,
+  2026-10-24; headers are Vary, Date, Content-Type and the like). So the
+  relay's one-hour fallback applies, well inside the guidelines' no-header
+  limits (24 h for voting locations, 30 days for districts). The client's
+  `staleTime` 1 h stays.
+- **Google's ballot data is patchy, ten days before the 2026-11-03 general**
+  (election `12000`, real key, 2026-10-24):
+  - Richmond, VA: 6 contests. Los Angeles and San Francisco: the state and
+    polling places, but no contests. SF City Hall without an `electionId`:
+    400 "Election unknown".
+  - So for California the Google lookup can't tell districts yet. The app
+    now says "Google has no ballot for that address yet…" and points at
+    Census or OpenStreetMap, rather than finding nothing silently.
+  - `electionId=2000` is Google's "VIP Test Election", with test contests
+    for some addresses (25 for Los Angeles). Handy for testing; not real.
+- **The key needs no referrer restriction for the relay** (server-side calls
+  send none). A user's own key should have one (Settings says how).
 - **Browser check gotchas:**
   - The setup wizard froze a hidden incognito preview tab right after "Which
     election? → Next": the known ISSUES.md wizard hang, not this change.
@@ -157,22 +179,17 @@ the hosted app never offers Google.
     list: … Check your key in Settings." and still lists the slates'
     election.
   - Test key, consents and address removed from the profile afterwards.
-- [ ] Step 7 (user)
+- [x] Steps 7–9 (2026-10-24, the user's yes to the key, the secret, the
+      rate limit and the deploy). `bun test` 446 pass.
+- [ ] Step 10: deploy and live check.
 
 ## Open questions for the user
 
-1. **A Google Cloud API key for OpenSlate's relay**, restricted to the Civic
-   Information API, so the hosted relay can answer and a real-key check can
-   run. The code is ready without it.
-2. **Setting it as the worker secret** `GOOGLE_CIVIC_API_KEY` on
-   `openslate-poll-cache`: an infrastructure change, done through the ops repo
-   with your yes.
-3. **Merging `feat/google-civic` into master and pushing**, which deploys both
-   workers. Until the secret is set, the relay answers 501 and the hosted app
-   simply doesn't offer "Google (via OpenSlate)"; bring-your-own-key works
-   right away.
-4. Optional: **Cloudflare rate limiting** on `/api/civic/*`. CORS only keeps
-   other sites' pages off the relay, not scripts.
+1. **Rename `polls.openslate.us` to `api.openslate.us`?** It now carries
+   civic, geocoding and forecasts as well as polls. Recommendation: add
+   `api.openslate.us` as a second custom domain on the same worker (ops),
+   point `VITE_POLLS_BASE` at it, and keep `polls.` working as an alias for
+   installed copies of the app. Not started.
 
 ## Things not to do
 
@@ -181,3 +198,8 @@ the hosted app never offers Google.
   Google's headers allow (§5e).
 - Don't send an address before the user opted in to that lookup.
 - Don't set the worker secret or deploy without the user's yes for that change.
+- Don't run ops' sync from the shared ops checkout: other threads'
+  uncommitted config and CLI edits would be applied too. Use a clean worktree
+  at `origin/master`, and its `.env.local` copied in for the hooks.
+- The ops dry run's "1 to delete" (openslate.us Web Analytics site) is
+  pre-existing drift, logged in ops ISSUES.md, not part of the civic work.
