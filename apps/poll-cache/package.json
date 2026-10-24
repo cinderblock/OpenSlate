@@ -12,6 +12,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "host-usage": "bun scripts/host-usage.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

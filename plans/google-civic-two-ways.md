@@ -195,11 +195,8 @@ the hosted app never offers Google.
 
 ## Open questions for the user
 
-1. **Rename `polls.openslate.us` to `api.openslate.us`?** It now carries
-   civic, geocoding and forecasts as well as polls. Recommendation: add
-   `api.openslate.us` as a second custom domain on the same worker (ops),
-   point `VITE_POLLS_BASE` at it, and keep `polls.` working as an alias for
-   installed copies of the app. Not started.
+None. The rename to `api.openslate.us` (the user's yes, 2026-10-24) has its own
+plan: `plans/api-domain-rename.md`.
 
 ## Things not to do
 

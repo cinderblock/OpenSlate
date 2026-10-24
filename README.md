@@ -116,9 +116,9 @@ Deploy `apps/web/dist` to Cloudflare Pages (or any static host: GitHub Pages,
 Netlify, Vercel, plain S3). Build the SPA pointed at your own Worker:
 
 ```sh
-VITE_POLLS_BASE=https://polls.yourdomain.dev \
-VITE_RESULTS_BASE=https://polls.yourdomain.dev \
-VITE_FORECASTS_BASE=https://polls.yourdomain.dev \
+VITE_POLLS_BASE=https://api.yourdomain.dev \
+VITE_RESULTS_BASE=https://api.yourdomain.dev \
+VITE_FORECASTS_BASE=https://api.yourdomain.dev \
 bun run build
 ```
 
@@ -227,7 +227,7 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 | [`packages/cli`](./packages/cli) | `@openslate/cli` — `keygen` / `pubkey` / `sign` (incl. `--batch` for research bundles) / `validate` / `verify` / `inspect` / `adopt` (copy or reference another slate's positions). |
 | [`apps/web`](./apps/web) | React + Vite SPA. Two modes. *My vote*: a getting-started guide, My ballot (your followed sources' endorsements by race, for your election and area, with private picks), and Sources (follow/unfollow, the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/), import from link/file/QR/paste). *Publish*: identities, sign your picks (or any race) as a slate and share it, verify and inspect slates; view live polls, market forecasts, and election results; pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
 | [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + relays for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic, with your `GOOGLE_API_KEY`), opinion polls ([VoteHub](https://votehub.com)), election results ([civicAPI](https://civicapi.org)), and market forecasts ([Kalshi](https://kalshi.com)). |
-| [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls, [civicAPI](https://civicapi.org) results, and [Kalshi](https://kalshi.com) forecasts behind permissive CORS, relays opt-in address lookups to the [Census geocoder](https://geocoding.geo.census.gov/) (`POST /api/geocode/census`; nothing cached, logged or stored), and answers Google Civic Information lookups with the project's key (`GET /api/civic/elections`, `POST /api/civic/voterinfo`; only for openslate.us pages, addresses never cached, logged or stored). Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, `/api/forecasts/v2/*`, `/api/geocode/census` and `/api/civic/*` shapes so the web client treats either backend identically. Runs at `https://polls.openslate.us`. |
+| [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls, [civicAPI](https://civicapi.org) results, and [Kalshi](https://kalshi.com) forecasts behind permissive CORS, relays opt-in address lookups to the [Census geocoder](https://geocoding.geo.census.gov/) (`POST /api/geocode/census`; nothing cached, logged or stored), and answers Google Civic Information lookups with the project's key (`GET /api/civic/elections`, `POST /api/civic/voterinfo`; only for openslate.us pages, addresses never cached, logged or stored). Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, `/api/forecasts/v2/*`, `/api/geocode/census` and `/api/civic/*` shapes so the web client treats either backend identically. Runs at `https://api.openslate.us`. |
 | [`apps/desktop`](./apps/desktop) | [Electrobun](https://blackboard.sh/electrobun) wrapper around the web build (stub). |
 
 ## Hosting topologies
@@ -269,7 +269,7 @@ flowchart LR
     Hono["Hono server<br/>apps/server<br/><i>stateless, no user data</i>"]
   end
 
-  subgraph ProjectInfra["Optional — project-operated (polls.openslate.us)"]
+  subgraph ProjectInfra["Optional — project-operated (api.openslate.us)"]
     Worker["CF Worker poll-cache<br/>apps/poll-cache<br/><i>15min edge cache</i>"]
   end
 
@@ -338,13 +338,18 @@ The hosted app is two Cloudflare Workers, each built and deployed by
 | Worker | Serves | Config |
 | --- | --- | --- |
 | `openslate-web` | `https://openslate.us`, the web build as static assets | [`apps/web/wrangler.jsonc`](./apps/web/wrangler.jsonc), build settings in [`apps/web/.env.production`](./apps/web/.env.production) |
-| `openslate-poll-cache` | `https://polls.openslate.us` | [`apps/poll-cache/wrangler.toml`](./apps/poll-cache/wrangler.toml) |
+| `openslate-poll-cache` | `https://api.openslate.us` | [`apps/poll-cache/wrangler.toml`](./apps/poll-cache/wrangler.toml) |
 
 The workers themselves, their custom domains, the `www` redirect, Web
 Analytics and the zone settings are managed in
 [cinderblock/ops](https://github.com/cinderblock/ops)
 (`cloudflare/config/projects/openslate.yaml`). Nothing in this repo holds a
 Cloudflare credential.
+
+`polls.openslate.us` is the poll-cache worker's old name. It still answers so
+that copies of the app installed before the switch keep working, until they
+stop calling it; see [`plans/api-domain-rename.md`](./plans/api-domain-rename.md).
+`apps/poll-cache/scripts/host-usage.ts` counts requests under each name.
 
 `apps/web/.env.production` is committed on purpose: everything in it ships in
 the public bundle anyway. Usage statistics and private feedback go to the
@@ -356,8 +361,8 @@ itself ever lands in the output. A build without the secret, such as a local
 build or a fork's, reports nowhere: no usage statistics, and the feedback
 dialog offers GitHub issues only. A self-hosted copy can set
 `VITE_TELEMETRY_KEY` in an `.env` file instead. The hosted app's address lookups are the Census
-relay on `polls.openslate.us`, OpenStreetMap, Google with the visitor's own
-key, and Google through `polls.openslate.us`. That last one needs the Worker
+relay on `api.openslate.us`, OpenStreetMap, Google with the visitor's own
+key, and Google through `api.openslate.us`. That last one needs the Worker
 secret `GOOGLE_CIVIC_API_KEY` (a Google Cloud API key restricted to the Civic
 Information API), set by hand with `wrangler secret put`; without it, the
 relay answers 501 and the app doesn't offer it. Its CORS answers only the
