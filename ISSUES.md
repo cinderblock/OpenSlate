@@ -32,7 +32,7 @@ Related, same root:
 Why it matters: in the counties we cover, My ballot is about twice as long as
 the real ballot, and full of races the voter can't vote in.
 
-## Kalshi answers the forecasts relay 429, and the worker caches it
+## Kalshi answers the forecasts relay 429, and the worker caches it (in progress — fix/kalshi-forecasts-429)
 
 Seen 2026-10-24 12:30 PM PDT (19:30Z): every
 `https://api.openslate.us/api/forecasts/v2/events/<ticker>` tried
