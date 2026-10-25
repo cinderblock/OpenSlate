@@ -22,6 +22,8 @@ export const subjectSchema = z
     id: z.string().min(1).optional(),
     kind: z.string().min(1).optional(),
     jurisdiction: z.string().min(1).optional(),
+    /** Whose voters decide it, when narrower than `jurisdiction` (SPEC §3.3). Not identity. */
+    district: z.string().min(1).optional(),
     election: z.string().min(1).optional(),
     uri: z.string().url().optional(),
   })

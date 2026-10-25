@@ -86,6 +86,10 @@
                     "type": "string",
                     "minLength": 1
                   },
+                  "district": {
+                    "type": "string",
+                    "minLength": 1
+                  },
                   "election": {
                     "type": "string",
                     "minLength": 1
@@ -274,6 +278,10 @@
                       "minLength": 1
                     },
                     "jurisdiction": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "district": {
                       "type": "string",
                       "minLength": 1
                     },

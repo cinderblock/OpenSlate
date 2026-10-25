@@ -129,7 +129,12 @@ export const POSITIVES: PositiveDef[] = [
           source: "https://alice.example/endorsements/mayor",
         },
         {
-          subject: { title: "Water Board Seat 2", kind: "race" },
+          subject: {
+            title: "Water Board Seat 2",
+            kind: "race",
+            jurisdiction: "us/ca/springfield-county",
+            district: "us/ca/springfield-water/div-2",
+          },
           stance: "endorse",
           choice: "C. Writein",
           write_in: true,

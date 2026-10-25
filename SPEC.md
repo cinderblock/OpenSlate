@@ -93,11 +93,33 @@ Secret keys, when serialized (e.g. for backup), use the same scheme over the
 | `id` | string | no | Canonical id. Source-namespaced, e.g. `vip:<contest-id>` (Voting Information Project). |
 | `kind` | string | no | `candidate` \| `measure` \| `race` \| `option` \| other. |
 | `jurisdiction` | string | no | e.g. `us/ca/sf`. |
+| `district` | string | no | Whose voters decide it, when narrower than `jurisdiction`: a path like `jurisdiction`'s (below). Not part of identity. |
 | `election` | string | no | Election identifier or date. |
 | `uri` | string | no | Link for more info. |
 
 Two positions refer to the same real-world item when their `id` matches. Absent an
 `id`, consumers fall back to `(title, jurisdiction, election)` matching.
+
+**`district`** says who votes on a contest when that is narrower than its
+`jurisdiction`: a county lists a school board's trustee area under the county,
+but only that trustee area's voters have it on their ballot. It is a path in
+the form of `jurisdiction`: segments after the first two name ever smaller
+areas, each inside the one before it. A segment of the form `<family>-<id>`
+is district `<id>` of a family of districts drawn within the path before it;
+any other segment names a place (a city, a special district). For example:
+
+| `district` | Meaning |
+| --- | --- |
+| `us/ca/boe-2` | Board of Equalization district 2 |
+| `us/ca/unsd-17760/ta-4` | Trustee area 4 of the unified school district with Census LEA code 17760 |
+| `us/ca/orange-county/sup-4` | Orange County's supervisorial district 4 |
+| `us/ca/irvine-ranch-water-district/div-5` | Division 5 of Irvine Ranch Water District |
+
+Consumers MAY use `district` to decide whose ballot a contest is on. One that
+can't tell whether a voter is in a district SHOULD say so, not guess. Because
+`district` is not part of identity, slates that omit it, or disagree about
+it, still refer to the same subject; a ballot listing's (§8.2) value is the
+one to prefer.
 
 ### 3.4 `Position`
 
@@ -482,7 +504,9 @@ firsthand slate whose `issuer.kind` is `election-authority`. It lists:
   order, with the ballot's spelling in `choice` and an id in `choice_id`;
 - the ballot designation (party, occupation, measure type) in `statement`;
 - certified write-in candidates, when known, the same way with
-  `write_in: true`.
+  `write_in: true`;
+- for a contest only part of its jurisdiction votes on, that part in the
+  subject's `district` (§3.3).
 
 Consumers treat a listing as the field of each contest it lists, not as a
 recommendation: its positions don't count as support or opposition. A listing
@@ -512,6 +536,12 @@ version by adding OPTIONAL fields (verifiers must already reject unknown fields,
 such additions ship with a coordinated spec revision). Incompatible changes bump `v`.
 
 ### 10.1 Changelog (within v1)
+
+- **2026-10-24** — Added optional `district` to `Subject` (§3.3): who votes
+  on a contest, when narrower than its `jurisdiction`. Not part of identity.
+  Amended in place. Verifiers built before this revision reject slates that
+  use it (closed schema, §3.8), so consumers should upgrade before
+  publishers use it.
 
 - **2026-10-23** — Added optional `choice_id` and `write_in` to `Position`
   (§3.4, §3.11, §3.12) and defined ballot listings (§8.2). Amended in place;
