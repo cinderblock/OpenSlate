@@ -1,6 +1,6 @@
 # Kalshi answers the forecasts relay 429
 
-> **Outcome (2026-10-25):** Kalshi is out of the public app. The public worker
+> **Done (2026-10-25, `3e283c9`, live since 1:42 PM PDT):** Kalshi is out of the public app. The public worker
 > no longer relays it, and the web app shows forecasts only when its backend
 > is a self-hosted apps/server started with `KALSHI_FORECASTS=true`. The
 > ISSUES.md entry is closed with that change.
@@ -138,11 +138,14 @@ cost the reader as little as possible.
 9. [x] Kalshi opt-in for self-hosting only: worker relay removed, server
        behind `KALSHI_FORECASTS=true`, web asks `/api/health`; ISSUES.md
        entry closed
-10. [ ] **Current: merge step 9 to master** (redeploys both workers): needs
-        the user's yes
-11. [ ] After deploy: `https://api.openslate.us/api/forecasts/v2/events/KXGOVCA-26`
-        → 404, health has no `forecasts`, and the Governor page has no
-        Forecast card
+10. [x] Merge step 9 to master: the user said yes; pushed as `3e283c9`
+        (`6682181..3e283c9`), 2026-10-25 1:31 PM PDT (20:31Z)
+11. [x] Deploy verified 2026-10-25 1:42 PM PDT (20:42Z): the live relay
+        answers `/api/forecasts/v2/events/KXGOVCA-26` with a plain 404, its
+        health lists no forecasts upstream, `RacePanel-kT-hUlPZ.js` carries the
+        health gate, and the live Governor page (fresh incognito) shows only
+        Recent polls and Results, asks only `/api/polls` and `/api/health`, and
+        doesn't mention Kalshi
 
 ## Progress log
 
@@ -165,15 +168,13 @@ cost the reader as little as possible.
       without it, health says `forecasts: false`, `/api/forecasts/*` is 404,
       the race page shows only Polls and Results, no forecast requests are
       made, and Settings doesn't mention Kalshi
-- [ ] Merge + deploy (waiting on the user)
+- [x] Merged (`3e283c9`, 1:31 PM PDT / 20:31Z)
+- [x] Deploy verified (1:42 PM PDT, 20:42Z)
 
 ## Open questions for the user
 
-1. OK to merge the opt-in change to master? It redeploys both workers: the
-   public worker drops `/api/forecasts/*`, and the web app stops asking.
-2. Delete the unused local `openslate-forecasts` repo and the
-   `backup/kalshi-snapshot-reading` branch? Recommendation: yes; nothing
-   else refers to them.
+None. (2026-10-25: the user said to keep the local `openslate-forecasts`
+repo and the `backup/kalshi-snapshot-reading` branch.)
 
 ## Things not to do
 
