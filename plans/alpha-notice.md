@@ -53,7 +53,20 @@ lawyer-reviewed.
 - [x] footer paragraph + style, README section
 - [x] typecheck, tests, checked in the browser (desktop and phone)
 - [x] committed
-- [ ] deployed (waits on the user)
+- [x] deployed: another thread merged it into fix/sub-county-districts and
+      pushed (`5fce7fe`); live on openslate.us 2026-10-25 12:54 AM PDT (07:54Z)
+
+## Open questions for the user
+
+1. More protection, proposed 2026-10-25 (recommend 1a-1c, folded into a tighter
+   footer paragraph so it doesn't get longer):
+   a. Names and logos identify endorsers; showing them isn't an affiliation.
+   b. OpenSlate endorses no one; being in the catalog isn't an endorsement.
+   c. A corrections line for endorsers on the secondhand-report banner.
+   d. A one-line "not an official ballot" note on printed picks (print
+      hides the footer).
+2. Whether closing the welcome wizard should also count as "Got it" for the
+   alpha banner (recommend no until after the 2026-11-03 election).
 
 ## Findings / gotchas
 
