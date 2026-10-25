@@ -67,6 +67,24 @@ cost the reader as little as possible.
   So the User-Agent and an API key both look ineffective, and a Cron
   prefetch from a Worker would egress the same way. **Nothing inside a Worker
   can fix it.**
+- **GitHub-hosted Actions runners do get answers.** A throwaway workflow on a
+  `probe/kalshi-gh-runner` branch (run 40161812073; branch deleted after),
+  2026-10-24 9:25 PM PDT (2026-10-25 04:25Z), egress `132.196.15.178` (Azure),
+  three tries each: `/events/KXGOVCA-26?include_markets=true` → 200,
+  `/exchange/status` → 200, `https://kalshi.com/markets/kxgovca` → 429. So
+  only the website refuses runners; the API we need answers them. One run
+  from one runner IP; runners rotate through Azure ranges.
+- **Browsers can't call Kalshi directly, from any origin but kalshi.com.**
+  Re-tested 2026-10-24 9:20 PM PDT from this machine: no `Origin` → 200;
+  `Origin: https://openslate.us`, `http://localhost:5173` or `null` → 403
+  (`X-Cache: Error from cloudfront`), and the OPTIONS preflight → 403 too;
+  `Origin: https://kalshi.com` → 200 with `access-control-allow-origin:
+  https://kalshi.com`. Browsers always send `Origin` on cross-origin fetches,
+  so there is no way around it from the page.
+- A snapshot job can list what it needs cheaply: `/series?category=Elections`
+  returns 2,324 series in one request (`GOVPARTYFL`, `KXSENATEVAD`,
+  `HOUSECA47`, …), and `/events?status=open&with_nested_markets=true&limit=200`
+  pages through open events with a cursor (200 per page, mixed categories).
 - The relay probably never worked in production. Earlier forecast checks
   (plans/race-polls-scope.md) went through the local dev server.
 - 2026-10-24 4:15 PM PDT (23:15Z): relay → 429 with `CF-Cache-Status:
@@ -119,9 +137,12 @@ cost the reader as little as possible.
      (every 10–15 min, best effort) fetches the tickers OpenSlate can ask for
      and publishes them as static JSON on GitHub Pages, like the endorsements
      repo. The worker falls back to it when Kalshi refuses. It fits "no
-     central server" and needs no Cloudflare change. Unknowns: whether
-     Kalshi also refuses GitHub's runners (one workflow run would tell), and
-     which repo hosts it.
+     central server" and needs no Cloudflare change. Runners do get answers
+     (Findings). Still open: which repo hosts it, and whether the browser
+     reads the snapshot straight from Pages or through the worker.
+   - The user's direction (2026-10-24): test runners and browsers; if
+     neither works, strip forecasts from the public version and keep them as
+     a self-hosted option. Runners work, so that fallback isn't needed yet.
    - (b) Ask Kalshi to stop refusing Workers, or whether an API key gets
      past their edge limiter. Cheap to ask, but slow and out of our hands.
    - (c) Relay through a server of the user's (e.g. steamboat).
