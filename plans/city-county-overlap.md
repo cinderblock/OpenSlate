@@ -116,7 +116,8 @@ org bundles that reused the listings' subjects.
   re-file itself (143 subjects, 707 positions, 66 bundles, both elections);
   `91c4694` guides.json. Verify 376 OK, 36 tests pass. SD, Alameda and OC
   listings rebuild byte-identical; LA's rebuild renames four seats, but so
-  does master's (logged in that repo's ISSUES.md).
+  does master's (logged in that repo's ISSUES.md; fixed later that day by
+  its `0847c47`, see `plans/listing-rebuild-renames.md` there).
 - [x] Step 2, guides (2026-10-25, branch `fix/city-county-overlap`, not
   pushed): `68e0920`, `scripts/sync-subjects.ts` (103 items plus the SD
   guide's context). `bun run check` passes for all 8 guides.
@@ -164,9 +165,10 @@ org bundles that reused the listings' subjects.
 
 ## Open questions for the user
 
-None. Left for later, in the endorsements repo's ISSUES.md: LA's listing
-rebuild renaming four seats (it did so again during step 5; I reverted that
-part rather than ship renamed ids by accident).
+None. LA's listing rebuild renaming four seats (it did so again during
+step 5; I reverted that part rather than ship renamed ids by accident) was
+fixed afterwards in the endorsements repo (`0847c47`: a listing keeps its own
+last build's titles when no other bundle names a contest).
 
 ## Things not to do
 
