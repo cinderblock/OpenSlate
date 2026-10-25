@@ -3,7 +3,7 @@ import { useLiveQuery } from "@tanstack/react-db";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Code, FlaskConical, Lock, PenLine, Server, Vote } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { isPublicSite } from "../lib/alpha";
 import {
   type VerifiedSlate,
@@ -99,6 +99,7 @@ export function Wizard() {
   const bundleAbort = useRef<AbortController | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const escapeTarget = useRef<(() => void) | null>(null);
 
   // WizardHost starts this fetch as the wizard opens.
   const catalog = useQuery(catalogQueryOptions(CATALOG_URL));
@@ -131,7 +132,7 @@ export function Wizard() {
   }, [step]);
 
   // A modal <dialog> traps focus, makes the page behind it inert and handles
-  // Escape (as `cancel`, which we treat as "skip").
+  // Escape (as `cancel`, which opens the step's Skip or Stop nudge).
   useEffect(() => {
     const dialog = dialogRef.current;
     if (dialog && !dialog.open) dialog.showModal();
@@ -268,151 +269,155 @@ export function Wizard() {
       aria-labelledby="wizard-heading"
       onCancel={(e) => {
         e.preventDefault();
-        // Mid-import, leaving takes the guarded Stop button, not a stray Escape.
-        if (importing) return;
-        skip();
+        // Escape is a way out too, so it gets the same nudge as the step's
+        // Skip or Stop link rather than leaving outright. Steps without one
+        // (the import's error list) still close.
+        if (escapeTarget.current) escapeTarget.current();
+        else if (!importing) skip();
       }}
     >
-      {voteIndex >= 0 && (
-        <ol className="wizard-progress" aria-label={`Step ${voteIndex + 1} of 3`}>
-          {VOTE_STEPS.map((s, i) => (
-            <li key={s} className={i <= voteIndex ? "done" : ""} />
-          ))}
-        </ol>
-      )}
+      <EscapeContext.Provider value={escapeTarget}>
+        {voteIndex >= 0 && (
+          <ol className="wizard-progress" aria-label={`Step ${voteIndex + 1} of 3`}>
+            {VOTE_STEPS.map((s, i) => (
+              <li key={s} className={i <= voteIndex ? "done" : ""} />
+            ))}
+          </ol>
+        )}
 
-      {step === "welcome" && (
-        <>
-          <h2 id="wizard-heading" ref={headingRef} tabIndex={-1}>
-            Welcome to OpenSlate
-          </h2>
-          <p>
-            Endorsements you can verify, from the people and groups you choose. Everything stays in
-            this browser. What would you like to do?
-          </p>
-          {isPublicSite() && <AlphaWizardNote />}
-          <div className="wizard-choices">
-            <button type="button" className="wizard-choice" onClick={() => setStep("election")}>
-              <Vote className="wizard-choice-icon" />
-              <strong>Plan my vote</strong>
-              <span>
-                Pick the organizations you trust and see their endorsements side by side, race by
-                race.
-              </span>
-            </button>
-            <button type="button" className="wizard-choice" onClick={() => setStep("identity")}>
-              <PenLine className="wizard-choice-icon" />
-              <strong>Publish endorsements</strong>
-              <span>
-                Sign your own recommendations so friends or members can verify they came from you.
-              </span>
-            </button>
-          </div>
-          <AboutOpenSlate />
-          <WizardFooter onSkip={skip} />
-        </>
-      )}
+        {step === "welcome" && (
+          <>
+            <h2 id="wizard-heading" ref={headingRef} tabIndex={-1}>
+              Welcome to OpenSlate
+            </h2>
+            <p>
+              Endorsements you can verify, from the people and groups you choose. Everything stays
+              in this browser. What would you like to do?
+            </p>
+            {isPublicSite() && <AlphaWizardNote />}
+            <div className="wizard-choices">
+              <button type="button" className="wizard-choice" onClick={() => setStep("election")}>
+                <Vote className="wizard-choice-icon" />
+                <strong>Plan my vote</strong>
+                <span>
+                  Pick the organizations you trust and see their endorsements side by side, race by
+                  race.
+                </span>
+              </button>
+              <button type="button" className="wizard-choice" onClick={() => setStep("identity")}>
+                <PenLine className="wizard-choice-icon" />
+                <strong>Publish endorsements</strong>
+                <span>
+                  Sign your own recommendations so friends or members can verify they came from you.
+                </span>
+              </button>
+            </div>
+            <AboutOpenSlate />
+            <WizardFooter onSkip={skip} />
+          </>
+        )}
 
-      {step === "election" && (
-        <ElectionStep
-          headingRef={headingRef}
-          elections={elections}
-          today={today}
-          isLoading={catalog.isLoading}
-          error={catalog.error}
-          election={election}
-          setElection={setElection}
-          onBack={() => setStep("welcome")}
-          onNext={() => setStep("area")}
-          onSkip={skip}
-          onManual={() => {
-            finish("vote");
-            void navigate({ to: "/sources" });
-          }}
-        />
-      )}
+        {step === "election" && (
+          <ElectionStep
+            headingRef={headingRef}
+            elections={elections}
+            today={today}
+            isLoading={catalog.isLoading}
+            error={catalog.error}
+            election={election}
+            setElection={setElection}
+            onBack={() => setStep("welcome")}
+            onNext={() => setStep("area")}
+            onSkip={skip}
+            onManual={() => {
+              finish("vote");
+              void navigate({ to: "/sources" });
+            }}
+          />
+        )}
 
-      {step === "area" && catalog.data && (
-        <AreaStep
-          headingRef={headingRef}
-          summaries={summaries}
-          election={election}
-          area={area}
-          setArea={setArea}
-          onBack={() => setStep("election")}
-          onNext={() => setStep("sources")}
-          onSkip={skip}
-        />
-      )}
+        {step === "area" && catalog.data && (
+          <AreaStep
+            headingRef={headingRef}
+            summaries={summaries}
+            election={election}
+            area={area}
+            setArea={setArea}
+            onBack={() => setStep("election")}
+            onNext={() => setStep("sources")}
+            onSkip={skip}
+          />
+        )}
 
-      {step === "sources" && catalog.data && (
-        <SourcesStep
-          headingRef={headingRef}
-          summaries={summaries}
-          election={election}
-          area={area}
-          selected={selected}
-          setSelected={setSelected}
-          downloadAll={downloadAll}
-          setDownloadAll={setDownloadAll}
-          onBack={() => setStep("area")}
-          onNext={followSelected}
-          onSkip={skip}
-        />
-      )}
+        {step === "sources" && catalog.data && (
+          <SourcesStep
+            headingRef={headingRef}
+            summaries={summaries}
+            election={election}
+            area={area}
+            selected={selected}
+            setSelected={setSelected}
+            downloadAll={downloadAll}
+            setDownloadAll={setDownloadAll}
+            onBack={() => setStep("area")}
+            onNext={followSelected}
+            onSkip={skip}
+          />
+        )}
 
-      {step === "importing" && (
-        <>
-          <h2 id="wizard-heading" ref={headingRef} tabIndex={-1}>
-            {importErrors.length > 0 ? "Some sources didn't import" : "Setting up your ballot…"}
-          </h2>
-          {importing && (
-            <>
-              <ProgressBar
-                label={importing.label}
-                value={importing.value}
-                maxValue={importing.maxValue}
-              />
-              <p className="wizard-wait">
-                <strong>Please keep this open until it finishes.</strong> It usually takes a few
-                seconds. If you stop now, the sources still downloading won't be on your ballot.
-              </p>
-              <div className="wizard-footer">
-                <ConfirmLink
-                  label="Stop"
-                  nudge="We recommend waiting until it finishes."
-                  confirm="Stop anyway"
-                  onConfirm={stopImport}
+        {step === "importing" && (
+          <>
+            <h2 id="wizard-heading" ref={headingRef} tabIndex={-1}>
+              {importErrors.length > 0 ? "Some sources didn't import" : "Setting up your ballot…"}
+            </h2>
+            {importing && (
+              <>
+                <ProgressBar
+                  label={importing.label}
+                  value={importing.value}
+                  maxValue={importing.maxValue}
                 />
-              </div>
-            </>
-          )}
-          {importErrors.length > 0 && (
-            <>
-              <ul className="error">
-                {importErrors.map((e) => (
-                  <li key={e}>{e}</li>
-                ))}
-              </ul>
-              <div className="wizard-footer">
-                <span className="grow" />
-                <button type="button" className="primary" onClick={() => finish("vote")}>
-                  Continue to my ballot
-                </button>
-              </div>
-            </>
-          )}
-        </>
-      )}
+                <p className="wizard-wait">
+                  <strong>Please keep this open until it finishes.</strong> It usually takes a few
+                  seconds. If you stop now, the sources still downloading won't be on your ballot.
+                </p>
+                <div className="wizard-footer">
+                  <ConfirmLink
+                    label="Stop"
+                    nudge="We recommend waiting until it finishes."
+                    confirm="Stop anyway"
+                    onConfirm={stopImport}
+                  />
+                </div>
+              </>
+            )}
+            {importErrors.length > 0 && (
+              <>
+                <ul className="error">
+                  {importErrors.map((e) => (
+                    <li key={e}>{e}</li>
+                  ))}
+                </ul>
+                <div className="wizard-footer">
+                  <span className="grow" />
+                  <button type="button" className="primary" onClick={() => finish("vote")}>
+                    Continue to my ballot
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        )}
 
-      {step === "identity" && (
-        <IdentityStep
-          headingRef={headingRef}
-          onBack={() => setStep("welcome")}
-          onDone={() => finish("publish")}
-          onSkip={skip}
-        />
-      )}
+        {step === "identity" && (
+          <IdentityStep
+            headingRef={headingRef}
+            onBack={() => setStep("welcome")}
+            onDone={() => finish("publish")}
+            onSkip={skip}
+          />
+        )}
+      </EscapeContext.Provider>
     </dialog>
   );
 }
@@ -461,6 +466,9 @@ function WizardFooter({
 /** How long the "we recommend you don't" nudge shows before the real button appears. */
 const CONFIRM_ARM_DELAY_MS = 1200;
 
+/** Where the dialog sends Escape: the ConfirmLink on screen registers itself here. */
+const EscapeContext = createContext<React.MutableRefObject<(() => void) | null> | null>(null);
+
 function SkipSetup({ onSkip }: { onSkip: () => void }) {
   return (
     <ConfirmLink
@@ -493,6 +501,8 @@ function ConfirmLink({
 }) {
   const [stage, setStage] = useState<"idle" | "hover" | "warned" | "armed">("idle");
   const timer = useRef<ReturnType<typeof setTimeout>>();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const escapeTarget = useContext(EscapeContext);
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -505,9 +515,24 @@ function ConfirmLink({
     if (stage !== "warned") setStage(next);
   }
 
+  // Escape counts as pressing the link, and moves focus to it so Tab reaches
+  // the confirm button next. Re-registered each render to see the current stage.
+  useEffect(() => {
+    if (!escapeTarget) return;
+    const onEscape = () => {
+      triggerRef.current?.focus();
+      warn("warned");
+    };
+    escapeTarget.current = onEscape;
+    return () => {
+      if (escapeTarget.current === onEscape) escapeTarget.current = null;
+    };
+  });
+
   return (
     <span className="wizard-skip">
       <button
+        ref={triggerRef}
         type="button"
         className="link"
         aria-expanded={stage !== "idle"}
