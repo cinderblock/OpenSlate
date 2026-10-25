@@ -36,6 +36,25 @@ themselves.
       only `bb2e377` and the six commits before it) and pushed; live on
       openslate.us 2026-10-24 10:13 PM PDT (05:13Z), checked in a fresh browser
 
+## Follow-up: legal disclaimer in the footer
+
+Asked for 2026-10-25: a general "don't hold us liable" line, framed as what
+OpenSlate is (public information in one consistent format, filtered to where
+you vote), plus collating it with endorsements shared privately and your own
+picks, whose views are their authors', not OpenSlate's. Plain language, not
+lawyer-reviewed.
+
+- **Every copy, not just the public site:** it names "its authors, and whoever
+  runs this copy", so it reads right on forks too.
+- **Where:** a small `.footer-legal` paragraph under the usage switch in
+  `App.tsx`; the README's License section (now "License and disclaimer") says
+  the same. The MIT license already covers the code itself.
+
+- [x] footer paragraph + style, README section
+- [x] typecheck, tests, checked in the browser (desktop and phone)
+- [x] committed
+- [ ] deployed (waits on the user)
+
 ## Findings / gotchas
 
 - **Checking the public-site look locally** means pretending localhost is

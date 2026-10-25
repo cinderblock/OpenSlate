@@ -189,6 +189,16 @@ export function RootLayout() {
             <MessageSquare className="icon" /> Send feedback
           </button>
           <UsageFooterToggle />
+          <p className="footer-legal">
+            OpenSlate gathers public information, like official voter guides and published
+            endorsements, shows it in one consistent format, and filters it to where you vote. You
+            can collate it with endorsements shared with you privately and with your own picks.
+            Endorsements, public or private, are their authors' views, not OpenSlate's. OpenSlate is
+            provided as is, without warranty of any kind: its authors, and whoever runs this copy,
+            aren't liable for errors, omissions, or anything that comes of using it. It isn't legal
+            advice or an official election resource; your official voter guide and county elections
+            office have the final word.
+          </p>
         </footer>
       </div>
     </EndorsersContext.Provider>
