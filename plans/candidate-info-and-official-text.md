@@ -168,6 +168,12 @@ User, 2026-10-23:
    always shows it. Today statements appear only on the race page (inside "In
    their own words"), so nothing is hidden anywhere yet.
 
+User, 2026-10-24:
+
+7. **San Mateo: measures only, linking the filed documents (option b).** Don't
+   contact the county yet ("I don't want to start asking around yet"). No OCR,
+   and no guessing at pamphlet file names.
+
 ## Hosting today (checked 2026-10-22)
 
 - The web app (`openslate.us`) is Cloudflare Workers static assets
@@ -662,10 +668,31 @@ Steps:
   - 200 existing endorsements got choice_ids.
   - 5 San Mateo Democratic Party endorsements of uncontested seats were
     removed, with a note in their NOTES.md.
-- [ ] SM2 San Mateo guide: **waiting on the user** (Open questions, 1).
+- [x] SM2 San Mateo guide, measures only (user, 2026-10-24: option b, "I don't
+  want to start asking around yet"). Ballot repo `3639c75` (script), `76d38cc`
+  (guide); endorsements `bc8098a` (`guides.json`, listed last). 29 measures,
+  132 documents (`scripts/scrape-smc.ts` → `county/san-mateo/`). `guide verify
+  --files` over HTTPS: 29/29. Checked live on openslate.us (Measure R, private
+  profile), 2026-10-24 about 10:48 PM PDT (05:48Z):
+  - Every measure has its resolution and impartial analysis; arguments and
+    rebuttals as filed (J, L and AA have none filed).
+  - Each measure lists its filed documents from the election page: resolution,
+    impartial analysis, arguments and rebuttals. Linked with SHA-256, not
+    mirrored: 132 PDFs, about 530 MB (one is 78 MB). Cached in `.cache/`.
+  - The filings are the submission forms plus the argument, so documents are
+    titled "…, as filed". "Rebuttal Argument in Favor" (RTM's title) is a
+    rebuttal *to* the argument in favor: its form ticks "Rebuttal to Argument
+    in Favor of Measure", signed by Mark Hinkle (No side).
+  - "San Mateo County Amendments" is the Board's resolution for all four
+    charter amendments (J, L, U, AA), with a real text layer.
+  - Contest codes in file names aren't unique (M207 is both East Palo Alto
+    measures), so filings titled by contest map through a reviewed `BY_NAME`
+    table, each checked against the file name's own kind ("Reso",
+    "ArgInFavor", "RebutArgAgainst").
   Measure documents checked 2026-10-24: 6 of 8 sampled have no text layer
   (scans, "_Redacted"); the two with text are OCR'd resolutions ("Ju1y24").
-- [ ] SM3 Signer organizations from San Mateo's arguments: needs SM2's text.
+- [ ] SM3 Signer organizations from San Mateo's arguments: needs text, which
+  option b doesn't give. Deferred until the user revisits options a or c.
 - [x] AL1 Alameda bond questions (ballot `5d75cc4`): the "BONDS YES/NO" box
   labels no longer merge into Alameda L, Berkeley U and Sunol Glen K. The same
   check found San Diego's two Permanent Road Division zones carrying "Tax –
@@ -828,7 +855,8 @@ LA findings:
 
 ## Open questions for the user
 
-1. **San Mateo's guide (SM2).** Candidate statements and the typeset measure
+1. **San Mateo's guide (SM2).** *Answered 2026-10-24: b, for now; a (ask the
+   county) later, perhaps.* Candidate statements and the typeset measure
    pages exist only in the per-ballot-style pamphlets. The app at
    `smcacre.gov/elections/my-election-info` serves them from
    `vlu.smcacre.gov/sites/default/files/<election>/<election>_<style>_N-P…`,
