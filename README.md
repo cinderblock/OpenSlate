@@ -130,11 +130,14 @@ Deploy `apps/web/dist` to Cloudflare Pages (or any static host: GitHub Pages,
 Netlify, Vercel, plain S3). Build the SPA pointed at your own Worker:
 
 ```sh
-VITE_POLLS_BASE=https://api.yourdomain.dev \
-VITE_RESULTS_BASE=https://api.yourdomain.dev \
-VITE_FORECASTS_BASE=https://api.yourdomain.dev \
+VITE_API_BASE=https://api.yourdomain.dev \
+VITE_RESULTS_BASE=https://api.yourdomain.dev/api/results/v2 \
+VITE_FORECASTS_BASE=https://api.yourdomain.dev/api/forecasts/v2 \
 bun run build
 ```
+
+`VITE_API_BASE` was called `VITE_POLLS_BASE` before 2026-10-24; the old name
+still works when the new one isn't set.
 
 #### Bare
 
@@ -338,7 +341,7 @@ flowchart LR
 | **+ Public Worker** (what `openslate.us` uses) | Above + project-operated Worker | yes | yes | yes (cached) | yes (cached) | + Census; + Google once the Worker has its key | yes (cached) |
 
 Modes are not mutually exclusive: run your own Hono for ballot lookup **and**
-point `VITE_POLLS_BASE` at the public Worker for cached polls. The web client
+point `VITE_API_BASE` at the public Worker for cached polls. The web client
 hits `/api/polls/*` on whichever backend the env var resolves to; the response
 shape is identical either way. `VITE_RESULTS_BASE` and `VITE_FORECASTS_BASE`
 work the same way for civicAPI results (reached directly by default, but

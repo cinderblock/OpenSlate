@@ -9,7 +9,7 @@ import {
 } from "@openslate/core";
 import { useQuery } from "@tanstack/react-query";
 import { createLocalStore, useLocalStore } from "./localStore";
-import { envBase } from "./routing";
+import { apiBase } from "./routing";
 
 /**
  * The two ways this browser can reach Google's Civic Information API (the
@@ -35,7 +35,7 @@ export function useGoogleKey(): [string, (key: string) => void] {
 
 /** Where the relay answers: the public worker in production, same origin (apps/server) in dev. */
 export function civicRelayBase(): string {
-  return envBase("VITE_POLLS_BASE", "");
+  return apiBase();
 }
 
 /** Whether the relay can ask Google (it reports `civic: true` once it has a key). */
