@@ -15,9 +15,12 @@ import {
   Users,
   Vote,
 } from "lucide-react";
+import { useRef } from "react";
+import { AlphaBadge, AlphaBanner } from "./components/AlphaNotice";
 import { FeedbackHost } from "./components/FeedbackHost";
 import { WizardHost } from "./components/WizardHost";
 import { Switch } from "./components/ui/Switch";
+import { useAlphaBannerOpen } from "./lib/alpha";
 import { useDbStatus } from "./lib/dbStatus";
 import { EndorsersContext, useEndorserDirectory } from "./lib/endorsers";
 import { REPO_URL, openFeedback } from "./lib/feedback";
@@ -84,14 +87,31 @@ export function RootLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const mode = modeOf(pathname);
   const endorsers = useEndorserDirectory();
+  const [alphaOpen, setAlphaOpen] = useAlphaBannerOpen();
+  const alphaBadge = useRef<HTMLButtonElement>(null);
 
   return (
     <EndorsersContext.Provider value={endorsers}>
       <div className="app">
+        {alphaOpen && (
+          <AlphaBanner
+            onClose={() => {
+              setAlphaOpen(false);
+              alphaBadge.current?.focus();
+            }}
+          />
+        )}
         <header className="app-header">
-          <Link to="/" className="brand">
-            <h1>OpenSlate</h1>
-          </Link>
+          <span className="brand-group">
+            <Link to="/" className="brand">
+              <h1>OpenSlate</h1>
+            </Link>
+            <AlphaBadge
+              ref={alphaBadge}
+              open={alphaOpen}
+              onToggle={() => setAlphaOpen(!alphaOpen)}
+            />
+          </span>
           <nav className="mode-switch" aria-label="Mode">
             {(Object.keys(MODES) as Mode[]).map((key) => {
               const ModeIcon = MODES[key].icon;

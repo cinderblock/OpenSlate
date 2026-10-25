@@ -2,14 +2,15 @@ import { type SlatePayload, createIdentity, serializeIdentity, verifySlate } fro
 import { useLiveQuery } from "@tanstack/react-db";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Code, Lock, PenLine, Server, Vote } from "lucide-react";
+import { Code, FlaskConical, Lock, PenLine, Server, Vote } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { isPublicSite } from "../lib/alpha";
 import { catalogEntryUrl, importCatalogEntry } from "../lib/catalogImport";
 import { areaOptionsOf } from "../lib/collate";
 import { addIdentity, slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
-import { useActiveIdentity } from "../lib/identities";
 import { REPO_URL } from "../lib/feedback";
+import { useActiveIdentity } from "../lib/identities";
 import { downloadIdentityBackup } from "../lib/identityBackup";
 import {
   type Area,
@@ -37,6 +38,7 @@ import { sourceIdOf } from "../lib/sources";
 import { subjectKey } from "../lib/subjects";
 import { track } from "../lib/usage";
 import { closeWizard } from "../lib/wizard";
+import { AlphaWizardNote } from "./AlphaNotice";
 import { AreaPicker } from "./AreaPicker";
 import { isBallotEntry } from "./CatalogBrowser";
 import { EndorserAvatar } from "./EndorserAvatar";
@@ -150,6 +152,7 @@ export function Wizard() {
             Endorsements you can verify, from the people and groups you choose. Everything stays in
             this browser. What would you like to do?
           </p>
+          {isPublicSite() && <AlphaWizardNote />}
           <div className="wizard-choices">
             <button type="button" className="wizard-choice" onClick={() => setStep("election")}>
               <Vote className="wizard-choice-icon" />
@@ -350,6 +353,15 @@ function AboutOpenSlate() {
         changed it along the way.
       </p>
       <ul>
+        {!isPublicSite() && (
+          <li>
+            <FlaskConical className="icon" />
+            <span>
+              <strong>Alpha.</strong> Written by AI with a human watching over it, so things might
+              be wrong, change, or break. Check what matters, and help fix what isn't right.
+            </span>
+          </li>
+        )}
         <li>
           <Lock className="icon" />
           <span>

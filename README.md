@@ -3,6 +3,16 @@
 **An open standard and toolkit for sharing verifiable endorsements — and using
 them to plan your own vote.**
 
+> [!WARNING]
+> **OpenSlate is alpha software, written by AI with a human watching over it.**
+> While it's in alpha, things might be wrong, change, or break: the app, the
+> data it shows, and the slate format itself ([SPEC.md](./SPEC.md) is still a
+> draft). Check anything that matters, like who's on your ballot or what an
+> endorser actually said, against your official voter guide and the original
+> source. Found a problem? Come help:
+> [open an issue](https://github.com/cinderblock/openslate/issues/new/choose),
+> use *Send feedback* in the app, or send a pull request.
+
 OpenSlate lets anyone publish a tamper-evident block of endorsements — for
 candidates, races, ballot measures, or any option people vote on — and share it
 over *any* medium (your website, a social post, an email). Each block is a single
@@ -60,15 +70,17 @@ The web app has two modes:
 
 A skippable getting-started guide sets up a first visit: pick an election,
 where you vote, and whose recommendations you trust (or create an identity to
-publish). Its first screen also says what OpenSlate is: no account, open
-source, and how to run your own copy instead of using the website (linking
-here). Reopen it any time from *Get started* in the header.
+publish). Its first screen also says what OpenSlate is: alpha software
+written by AI with a human watching over it, no account, open source, and how
+to run your own copy instead of using the website (linking here). Reopen it
+any time from *Get started* in the header. An *Alpha* badge beside the name
+opens the same warning at the top of the page. On the public site
+(openslate.us) that warning starts open, on every page, until you dismiss it,
+and the welcome screen puts it first; a copy you run yourself keeps it to the
+badge and one line on the welcome screen.
 
 The goal: give citizens deeper insight into the things they care about, without
 relying solely on simplified endorsements from a single newspaper or org.
-
-> Status: **early scaffold.** The wire format and core library are the priority;
-> apps are functional skeletons.
 
 ## How to Run
 
