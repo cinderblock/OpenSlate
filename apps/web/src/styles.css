@@ -2024,7 +2024,20 @@ p.wizard-wait {
 .wizard-skip button.link {
   color: var(--muted);
 }
-.wizard-skip-nudge > * {
+/* The nudge floats just above the footer (the sticky footer is its containing
+   block) instead of joining the row, so showing it never rewraps the footer
+   or resizes the dialog. Empty, it's still the live region, just no box. */
+.wizard-skip-nudge:not(:empty) {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 0.4rem);
+  width: max-content;
+  max-width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px var(--shadow);
   font-size: 0.9rem;
   animation: wizard-skip-in 0.2s ease-out;
 }
@@ -2032,13 +2045,18 @@ p.wizard-wait {
   color: var(--muted);
   font-style: italic;
 }
+.wizard-skip-nudge > button {
+  font-size: inherit;
+  animation: wizard-skip-in 0.2s ease-out;
+}
 @keyframes wizard-skip-in {
   from {
     opacity: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .wizard-skip-nudge > * {
+  .wizard-skip-nudge:not(:empty),
+  .wizard-skip-nudge > button {
     animation: none;
   }
 }
