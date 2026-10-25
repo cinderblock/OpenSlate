@@ -27,7 +27,7 @@ import {
   onboardingStore,
   setFollowed,
 } from "../lib/myVote";
-import { DESKTOP_DOWNLOADS_URL, IS_DESKTOP_APP } from "../lib/platform";
+import { DESKTOP_DOWNLOADS_URL, IS_DESKTOP_APP, THIS_DEVICE } from "../lib/platform";
 import {
   CATALOG_BUILT_IN,
   type CatalogEntry,
@@ -151,8 +151,8 @@ export function Wizard() {
             Welcome to OpenSlate
           </h2>
           <p>
-            Endorsements you can verify, from the people and groups you choose. Everything stays in
-            this browser. What would you like to do?
+            Endorsements you can verify, from the people and groups you choose. Everything stays{" "}
+            {IS_DESKTOP_APP ? "on" : "in"} {THIS_DEVICE}. What would you like to do?
           </p>
           {isPublicSite() && <AlphaWizardNote />}
           <div className="wizard-choices">
@@ -367,8 +367,9 @@ function AboutOpenSlate() {
         <li>
           <Lock className="icon" />
           <span>
-            <strong>No account.</strong> Your picks, notes and signing keys stay in this browser.
-            They're never sent to us, and reach others only when you share them.
+            <strong>No account.</strong> Your picks, notes and signing keys stay{" "}
+            {IS_DESKTOP_APP ? "on" : "in"} {THIS_DEVICE}. They're never sent to us, and reach others
+            only when you share them.
           </span>
         </li>
         <li>
@@ -857,7 +858,7 @@ function IdentityStep({
         <>
           <p>
             Your identity is a key pair. It signs your endorsements so anyone can check they came
-            from you and weren't changed. The secret half never leaves this browser.
+            from you and weren't changed. The secret half never leaves {THIS_DEVICE}.
           </p>
           {all.length > 0 && (
             <p className="hint">
@@ -906,8 +907,9 @@ function IdentityStep({
         <>
           <p>
             Created <strong>{created.name ?? "your identity"}</strong>. Download a backup now: if
-            this browser's data is cleared, the backup is the only way to keep signing as{" "}
-            {created.name ?? "you"}. Anyone with the file can sign as you, so keep it private.
+            {IS_DESKTOP_APP ? "the app's" : "this browser's"} data is cleared, the backup is the
+            only way to keep signing as {created.name ?? "you"}. Anyone with the file can sign as
+            you, so keep it private.
           </p>
           <code className="key">{created.publicKey}</code>
           <WizardFooter>
