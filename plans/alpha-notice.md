@@ -32,6 +32,9 @@ themselves.
 - [x] README callout and description
 - [x] typecheck, tests, checked in the browser (public and self-run)
 - [x] committed
+- [x] deployed: merged with origin in a temporary worktree (`95c5a0e`, carrying
+      only `bb2e377` and the six commits before it) and pushed; live on
+      openslate.us 2026-10-24 10:13 PM PDT (05:13Z), checked in a fresh browser
 
 ## Findings / gotchas
 
