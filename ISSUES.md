@@ -38,7 +38,7 @@ check apps packages` still fails on master `612c12a` (2026-10-24):
 Why it matters: lint can't gate anything while it's red, and the a11y one may
 be a real accessibility problem.
 
-## Setup wizard hangs on "Where do you vote?" while loading endorsements
+## Setup wizard hangs on "Where do you vote?" while loading endorsements (in progress — master, plans/wizard-catalog-summaries.md)
 
 Seen 2026-10-21 in a fresh browser profile (T3 preview, local dev server):
 Get started → Plan my vote → Nov 3, 2026 → Next. The "Where do you vote?" step
