@@ -3073,6 +3073,11 @@ button.tag.active {
   background: #fff;
   box-shadow: inset 0 0 0 1px var(--border);
 }
+/* A white-only logo (the catalog's `logo_background: dark`), on the app's
+   ink colour in either theme; the inset border keeps it off a dark page. */
+.avatar-logo-dark {
+  background: #1b1f24;
+}
 .avatar-logo img {
   width: 82%;
   height: 82%;

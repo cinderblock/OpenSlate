@@ -214,6 +214,7 @@ export function CatalogBrowser() {
                     name={name}
                     size="md"
                     logo={catalogEntryLogoUrl(entry, catalogUrl)}
+                    logoBackground={entry.logo_background}
                   />
                   <div className="grow">
                     {entry.attribution?.of.uri ? (

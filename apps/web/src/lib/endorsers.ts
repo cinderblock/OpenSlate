@@ -20,6 +20,8 @@ import { isBallotSource, sourceIdOf } from "./sources";
 export interface EndorserInfo {
   /** Absolute URL of the endorser's logo, served by the catalog's host. */
   logo?: string;
+  /** `"dark"` when the logo is white-only and goes on a dark tile. */
+  logoBackground?: "dark";
   lean?: EndorserLean;
 }
 
@@ -51,7 +53,10 @@ export function directoryFromCatalog(
   for (const entry of catalog.entries) {
     const id = sourceIdOf(entry);
     const info = out.get(id) ?? {};
-    if (!info.logo && entry.logo) info.logo = catalogEntryLogoUrl(entry, catalogUrl);
+    if (!info.logo && entry.logo) {
+      info.logo = catalogEntryLogoUrl(entry, catalogUrl);
+      if (info.logo && entry.logo_background === "dark") info.logoBackground = "dark";
+    }
     if (entry.lean) {
       info.lean = {
         left: (info.lean?.left ?? 0) + entry.lean.left,

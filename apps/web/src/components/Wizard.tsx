@@ -704,6 +704,7 @@ function SourcesStep({
           name={name}
           size="md"
           logo={catalogEntryLogoUrl(entry, CATALOG_URL)}
+          logoBackground={entry.logo_background}
         />
         <span className="grow">
           <strong>{name}</strong>
