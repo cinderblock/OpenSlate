@@ -66,9 +66,9 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
 
 ## Plan / steps
 
-1. ☐ Electrobun 2.0.4 research (config, artifacts, CI, `views://` storage,
-   signing) — in progress (background agent).
-2. ☐ Move this thread into a worktree on `feat/desktop-binaries`.
+1. ☑ Electrobun 2.0.4 research (config, artifacts, CI, `views://` storage,
+   signing): see Findings.
+2. ☐ **(current)** Move this thread into a worktree on `feat/desktop-binaries`.
 3. ☐ Snapshot script + web changes; test a snapshot build in a browser.
 4. ☐ Electrobun app builds and runs locally on Windows (both flavors);
    data persists across restarts.
@@ -79,6 +79,52 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
 8. ☐ Publish: merge, tag, release — needs the user's go-ahead (see questions).
 
 ## Findings / gotchas
+
+### Electrobun 2.0.4 (research 2026-10-24, from the v2.0.4 tag on GitHub; not yet run)
+
+- 2.x builds through **Hutch**; the `electrobun` npm package is a launcher that
+  downloads the paired Hutch. `bunx electrobun build --env=stable`. Config
+  needs `build.mainProcess: "bun"` explicitly; Bun entry imports from
+  `electrobun/main` (not `electrobun/bun` as the stub has). Add a
+  `hutch.config.ts` (`packageManager: "bun"`) and gitignore `.hutch/`.
+- `build.copy` takes whole nested folders but **rejects absolute paths and
+  `..`**: the web dist (and snapshot) must be staged inside `apps/desktop`
+  first. Vite's default `base: "/"` works (`views://mainview/assets/...`).
+- **No cross-building**: one runner per OS. Electrobun's own release uses
+  `macos-14`, `ubuntu-24.04`, `windows-2025`. **No Intel Mac on 2.0.4**
+  (returns in 2.0.5-beta.4).
+- Artifacts (`artifacts/`, names fixed, spaces stripped from the app name):
+  macOS `.dmg`; Windows `win-x64-<App>-Setup.zip` (zip around a setup exe);
+  Linux `linux-x64-<App>-Setup.tar.gz` (self-extracting installer; no
+  AppImage/deb; needs Ubuntu 24.04+-era glibc and `libwebkit2gtk-4.1-0`).
+  Plus updater files `stable-<os>-<arch>-<App>.app.tar.zst` and
+  `-update.json`, which must not be renamed. Installers can be renamed.
+- **Both flavors in one release need different app names**, or their updater
+  files collide. So: "OpenSlate" and "OpenSlate Offline", with identifiers
+  `us.openslate.desktop` and `us.openslate.desktop.offline`. Storage is keyed
+  by identifier, so the two flavors keep separate data.
+- Storage: default partition `persist:default`, keyed by identifier and
+  channel; Windows `%LOCALAPPDATA%\<identifier>\stable\WebView2\...`. The
+  uninstaller's "App and Data" option deletes it (users' keys!). Nobody has
+  tested IndexedDB/localStorage/`crypto.subtle` on `views://`: **must verify**.
+  OPFS is refused on `views://`. Service workers: assume none.
+- WebView2 runs with `--disable-web-security`: keep remote content out of the
+  window (navigation rules: block all but `views://*`, open http(s) in the
+  system browser from `will-navigate`).
+- `target=_blank` on Windows opens a bare WebView2 popup (no
+  `NewWindowRequested` handler); Linux probably does nothing. The SPA must
+  turn external `_blank` links into something the Bun side can open
+  externally.
+- Signing: macOS via `mac.codesign`/`notarize` + `ELECTROBUN_*` env vars;
+  unsigned CI downloads show as "damaged" until `xattr -cr` (ad-hoc
+  `ELECTROBUN_DEVELOPER_ID=-` may help; untested). macOS app must be dragged
+  to /Applications before first launch. Windows signing isn't built in;
+  unsigned gets SmartScreen's "Run anyway".
+- Updater: `release.baseUrl` set to
+  `https://github.com/cinderblock/openslate/releases/latest/download` is baked
+  into installs, so set it from the first release; wire the in-app check later.
+- Windows dark titlebar fix is in 2.0.4 (supersedes
+  `plans/electrobun-dark-mode.md`'s pin advice).
 
 - The Google Civic relay on `api.openslate.us` only answers origins listed in
   `CIVIC_ALLOWED_ORIGINS` (`apps/poll-cache/wrangler.toml`), so desktop
@@ -94,6 +140,9 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
 - [ ] Everything in Plan / steps from 1 on.
 
 ## Open questions for the user
+
+0. Is there a Mac (Apple Silicon) available to smoke-test the macOS build?
+   Without one, the macOS artifact ships untested at runtime.
 
 1. Code signing: unsigned builds trigger SmartScreen (Windows) and Gatekeeper
    (macOS: users must right-click → Open, or `xattr -d`). Signing needs an
