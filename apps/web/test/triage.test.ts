@@ -192,7 +192,7 @@ describe("partyFill", () => {
 describe("sourcesOn", () => {
   test("lists recommending sources, not the ballot source", () => {
     expect(sourcesOn(races)).toEqual([
-      { id: "of:county gop", name: "County GOP", followed: true, races: 4 },
+      { id: "of:county gop", name: "County GOP", standing: "follow", races: 4 },
     ]);
   });
 });

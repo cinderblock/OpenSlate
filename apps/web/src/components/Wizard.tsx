@@ -25,7 +25,7 @@ import {
   localToday,
   myElectionStore,
   onboardingStore,
-  setFollowed,
+  setStanding,
 } from "../lib/myVote";
 import {
   type CatalogEntry,
@@ -34,7 +34,7 @@ import {
   catalogQueryOptions,
   slateFromUrlOptions,
 } from "../lib/query";
-import { sourceIdOf } from "../lib/sources";
+import { type Standing, sourceIdOf } from "../lib/sources";
 import { subjectKey } from "../lib/subjects";
 import { track } from "../lib/usage";
 import { closeWizard } from "../lib/wizard";
@@ -43,7 +43,7 @@ import { AreaPicker } from "./AreaPicker";
 import { isBallotEntry } from "./CatalogBrowser";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { LeanSummary } from "./LeanMeter";
-import { Checkbox } from "./ui/Checkbox";
+import { StandingToggle } from "./StandingToggle";
 import { Radio, RadioGroup } from "./ui/Radio";
 import { TextField } from "./ui/TextField";
 
@@ -53,6 +53,9 @@ const VOTE_STEPS: Step[] = ["election", "area", "sources"];
 
 const CATALOG_URL = DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG;
 
+/** Catalog entry path → how the user picked it. Not in the map = not picked. */
+type Picks = ReadonlyMap<string, Exclude<Standing, "off">>;
+
 /** The getting-started wizard. Loaded and mounted by WizardHost while open. */
 export function Wizard() {
   const navigate = useNavigate();
@@ -60,7 +63,7 @@ export function Wizard() {
   const [step, setStep] = useState<Step>("welcome");
   const [election, setElection] = useState("");
   const [area, setArea] = useState<Area>(() => areaStore.get());
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Picks>(new Map());
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -115,7 +118,7 @@ export function Wizard() {
       if (result.kind === "error") {
         errors.push(`${entry.attribution?.of.name ?? entry.slug}: ${result.error}`);
       } else if (!isBallotEntry(entry)) {
-        setFollowed(sourceIdOf(entry), true);
+        setStanding(sourceIdOf(entry), selected.get(entry.path) ?? "follow");
       }
       setProgress({ done: i + 1, total: chosen.length });
     }
@@ -633,8 +636,8 @@ function SourcesStep({
   loaded: Loaded;
   election: string;
   area: Area;
-  selected: Set<string>;
-  setSelected: (next: Set<string>) => void;
+  selected: Picks;
+  setSelected: (next: Picks) => void;
   onBack: () => void;
   onNext: () => void;
   onSkip: () => void;
@@ -686,19 +689,28 @@ function SourcesStep({
     };
   }, [loaded, area]);
 
-  function toggle(path: string) {
-    const next = new Set(selected);
-    if (next.has(path)) next.delete(path);
-    else next.add(path);
+  function pick(path: string, standing: Standing) {
+    const next = new Map(selected);
+    if (standing === "off") next.delete(path);
+    else next.set(path, standing);
     setSelected(next);
   }
 
+  const following = [...selected.values()].filter((s) => s === "follow").length;
+  const disagreeing = selected.size - following;
+  const followLabel = [
+    following > 0 ? `follow ${following}` : "",
+    disagreeing > 0 ? `disagree with ${disagreeing}` : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   function renderItem(item: { entry: CatalogEntry; races: number }) {
     const { entry } = item;
-    const on = selected.has(entry.path);
+    const standing = selected.get(entry.path) ?? "off";
     const name = entry.attribution?.of.name ?? entry.slug;
     return (
-      <Checkbox key={entry.path} variant="card" isSelected={on} onChange={() => toggle(entry.path)}>
+      <div key={entry.path} className={`wizard-source standing-${standing}`}>
         <EndorserAvatar
           sourceId={sourceIdOf(entry)}
           name={name}
@@ -710,12 +722,7 @@ function SourcesStep({
           {entry.attribution?.of.uri && (
             <>
               {" "}
-              <a
-                href={entry.attribution.of.uri}
-                target="_blank"
-                rel="noreferrer"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <a href={entry.attribution.of.uri} target="_blank" rel="noreferrer">
                 site
               </a>
             </>
@@ -728,7 +735,8 @@ function SourcesStep({
             <LeanSummary sourceId={sourceIdOf(entry)} lean={{ ...entry.lean, via: "catalog" }} />
           )}
         </span>
-      </Checkbox>
+        <StandingToggle name={name} value={standing} onChange={(next) => pick(entry.path, next)} />
+      </div>
     );
   }
 
@@ -738,9 +746,9 @@ function SourcesStep({
         Whose recommendations do you trust?
       </h2>
       <p>
-        Pick a few for {formatElectionDate(election)}: a party, a newspaper, groups that share your
-        values. Pick ones you disagree with too if you want the contrast. You can change this later
-        on the Sources page.
+        Follow a few for {formatElectionDate(election)}: a party, a newspaper, groups that share
+        your values. Mark ones you disagree with too: what they back counts against it on your
+        ballot, and what they oppose counts for it. You can change this later on the Sources page.
       </p>
       {loaded.done < loaded.total && (
         <p className="hint">
@@ -787,7 +795,7 @@ function SourcesStep({
         <button type="button" className="primary" onClick={onNext} disabled={selected.size === 0}>
           {selected.size === 0
             ? "Follow and see my ballot →"
-            : `Follow ${selected.size} and see my ballot →`}
+            : `${followLabel.charAt(0).toUpperCase()}${followLabel.slice(1)} and see my ballot →`}
         </button>
       </WizardFooter>
     </>

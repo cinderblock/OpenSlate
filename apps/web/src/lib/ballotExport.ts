@@ -25,8 +25,11 @@ export interface BallotExportOptions {
 
 interface ExportedSource {
   name: string;
+  /** What the source said; a source you disagree with isn't rewritten. */
   stance: Stance;
   followed: boolean;
+  /** Followed to disagree: counted the other way in `for` / `against`. */
+  disagree?: true;
   statement?: string;
 }
 
@@ -36,6 +39,7 @@ interface ExportedChoice {
   /** Not printed on the ballot: written in (SPEC §3.12). */
   writeIn?: true;
   ballotNote?: string;
+  /** Followed sources counting for / against, a disagreed source the other way. */
   for: number;
   against: number;
   sources: ExportedSource[];
@@ -95,7 +99,8 @@ function racesOf(input: BallotExportInput, options: BallotExportOptions): Export
           sources: group.positions.map((p) => ({
             name: p.source.name,
             stance: p.stance,
-            followed: p.followed,
+            followed: p.standing !== "off",
+            ...(p.standing === "disagree" ? { disagree: true as const } : {}),
             ...(p.statement ? { statement: p.statement } : {}),
           })),
           ...(mine?.stance ? { myPick: mine.stance } : {}),
@@ -121,7 +126,7 @@ export function ballotToJson(input: BallotExportInput, options: BallotExportOpti
 
 const csvCell = (value: string) => `"${value.replace(/"/g, '""')}"`;
 
-/** One line per choice. Sources read "Name: stance", unfollowed ones marked. */
+/** One line per choice. Sources read "Name: stance", unfollowed and disagreed-with ones marked. */
 export function ballotToCsv(input: BallotExportInput, options: BallotExportOptions): string {
   const headers = [
     "Election",
@@ -154,7 +159,10 @@ export function ballotToCsv(input: BallotExportInput, options: BallotExportOptio
         String(choice.for),
         String(choice.against),
         choice.sources
-          .map((s) => `${s.name}: ${s.stance}${s.followed ? "" : " (not followed)"}`)
+          .map(
+            (s) =>
+              `${s.name}: ${s.stance}${s.disagree ? " (you disagree)" : s.followed ? "" : " (not followed)"}`,
+          )
           .join("; "),
         choice.myPick ?? "",
         choice.myStatement ?? "",

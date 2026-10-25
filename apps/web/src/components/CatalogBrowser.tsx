@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Download, Plus, RefreshCw, UserCheck } from "lucide-react";
+import { Check, Download, Plus, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 import { type BallotProblem, ballotProblems, problemReport } from "../lib/ballotCheck";
 import { importCatalogEntry } from "../lib/catalogImport";
@@ -9,7 +9,7 @@ import { reportFeedback } from "../lib/feedback";
 import {
   defaultToUnfollowed,
   localToday,
-  setFollowed,
+  setStanding,
   useDecodedSlates,
   useFollows,
 } from "../lib/myVote";
@@ -19,10 +19,11 @@ import {
   catalogEntryLogoUrl,
   catalogQueryOptions,
 } from "../lib/query";
-import { ELECTION_AUTHORITY, isFollowed, sourceIdOf } from "../lib/sources";
+import { ELECTION_AUTHORITY, type Standing, sourceIdOf, standingOf } from "../lib/sources";
 import { track } from "../lib/usage";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { LeanMeter } from "./LeanMeter";
+import { StandingToggle } from "./StandingToggle";
 import { electionOptions } from "./electionOptions";
 import { Select } from "./ui/Select";
 import { SearchField, UrlField } from "./ui/TextField";
@@ -39,7 +40,8 @@ export function isBallotEntry(entry: CatalogEntry): boolean {
 /**
  * A curated index of publicly-attributed slates. Every entry is a secondhand
  * report signed by the catalog's researcher, not by the named organization.
- * "Follow" imports the entry and puts its organization on My ballot.
+ * "Follow" or "Disagree" imports the entry and puts its organization on My
+ * ballot, counted for or against what it backs.
  */
 export function CatalogBrowser() {
   const queryClient = useQueryClient();
@@ -111,11 +113,11 @@ export function CatalogBrowser() {
     return imported.has(`${sourceIdOf(entry)}|${entry.election}`);
   }
 
-  async function follow(entry: CatalogEntry) {
+  async function follow(entry: CatalogEntry, standing: Standing = "follow") {
     const key = entryKey(entry);
     const sourceId = sourceIdOf(entry);
     if (isImported(entry)) {
-      setFollowed(sourceId, true);
+      setStanding(sourceId, standing);
       return;
     }
     setBusy((prev) => new Set(prev).add(key));
@@ -128,7 +130,7 @@ export function CatalogBrowser() {
     if (result.kind === "error") {
       setErrors((prev) => ({ ...prev, [key]: result.error }));
     } else if (!isBallotEntry(entry)) {
-      setFollowed(sourceId, true);
+      setStanding(sourceId, standing);
     }
   }
 
@@ -205,10 +207,16 @@ export function CatalogBrowser() {
               const sourceId = sourceIdOf(entry);
               const has = isImported(entry);
               const ballot = isBallotEntry(entry);
-              const following = has && (ballot || isFollowed(follows, sourceId));
+              const standing: Standing = has ? standingOf(follows, sourceId) : "off";
               const name = entry.attribution?.of.name ?? entry.slug;
+              const rowClass =
+                has && (ballot || standing === "follow")
+                  ? "following"
+                  : standing === "disagree"
+                    ? "disagreeing"
+                    : "";
               return (
-                <li key={key} className={following ? "following" : ""}>
+                <li key={key} className={rowClass}>
                   <EndorserAvatar
                     sourceId={sourceId}
                     name={name}
@@ -263,29 +271,18 @@ export function CatalogBrowser() {
                         )}
                       </button>
                     )
-                  ) : following ? (
-                    <button
-                      type="button"
-                      className="link"
-                      onClick={() => setFollowed(sourceId, false)}
-                      aria-label={`Following ${name}. Unfollow (keeps it imported)`}
-                    >
-                      <UserCheck className="icon" /> Following
-                    </button>
+                  ) : busy.has(key) ? (
+                    <span className="hint">Importing…</span>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => follow(entry)}
-                      disabled={busy.has(key) || bulk !== null}
-                    >
-                      {busy.has(key) ? (
-                        "Importing…"
-                      ) : (
-                        <>
-                          <Plus className="icon" /> Follow
-                        </>
-                      )}
-                    </button>
+                    // Releasing both keeps the slate imported, just off My ballot.
+                    <StandingToggle
+                      name={name}
+                      value={standing}
+                      isDisabled={bulk !== null}
+                      onChange={(next) =>
+                        next === "off" ? setStanding(sourceId, "off") : follow(entry, next)
+                      }
+                    />
                   )}
                 </li>
               );

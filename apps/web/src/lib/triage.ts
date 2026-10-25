@@ -1,6 +1,7 @@
 import type { Stance, Subject } from "@openslate/core";
 import { type DraftRow, rowIdFor } from "./ballotDraft";
 import { type Race, stanceTone } from "./collate";
+import type { Standing } from "./sources";
 
 /**
  * Working through My ballot to zero: where each race stands, and the quick
@@ -195,12 +196,12 @@ export function partyFill(
 export interface SourceSummary {
   id: string;
   name: string;
-  followed: boolean;
+  standing: Standing;
   /** Races (of the ones given) the source takes a position on. */
   races: number;
 }
 
-/** Every source with a position on these races: followed first, then by name. */
+/** Every source with a position on these races: followed, then disagreed with, then the rest; by name within each. */
 export function sourcesOn(races: Race[]): SourceSummary[] {
   const by = new Map<string, SourceSummary>();
   for (const race of races) {
@@ -216,14 +217,15 @@ export function sourcesOn(races: Race[]): SourceSummary[] {
           by.set(id, {
             id,
             name: position.source.name,
-            followed: position.followed,
+            standing: position.standing,
             races: 1,
           });
       }
     }
   }
+  const order: Record<Standing, number> = { follow: 0, disagree: 1, off: 2 };
   return [...by.values()].sort(
-    (a, b) => Number(b.followed) - Number(a.followed) || a.name.localeCompare(b.name),
+    (a, b) => order[a.standing] - order[b.standing] || a.name.localeCompare(b.name),
   );
 }
 

@@ -464,6 +464,11 @@ button.ui-info-bare {
   margin-left: 0.4rem;
   font-size: 0.7rem;
 }
+/* A source the user follows to disagree with. */
+.tag-disagree {
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 60%, var(--border));
+}
 .grow {
   flex: 1;
 }
@@ -1733,8 +1738,26 @@ button.source-chip {
   padding: 0.5rem 0;
   border-top: 1px solid var(--border);
 }
+/* On a phone the follow controls drop below the name rather than squeeze it. */
+.source-row,
+.catalog-list li {
+  flex-wrap: wrap;
+}
+.source-row > .grow,
+.catalog-list li > .grow {
+  min-width: min(100%, 13rem);
+}
 .catalog-list li.following {
   background: color-mix(in srgb, var(--ok) 6%, transparent);
+}
+.catalog-list li.disagreeing {
+  background: color-mix(in srgb, var(--bad) 6%, transparent);
+}
+.sources-subheading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 1rem 0 0;
 }
 .segmented {
   display: inline-flex;
@@ -1871,6 +1894,32 @@ dialog.wizard::backdrop {
 }
 .wizard-about-links {
   font-weight: 600;
+}
+/* One organization on the sources step: a card that lights up by how it's picked. */
+.wizard-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 0.95rem;
+  transition: background 0.12s, border-color 0.12s;
+}
+.wizard-source > .grow {
+  min-width: min(100%, 10rem);
+}
+.wizard-source.standing-follow {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.wizard-source.standing-disagree {
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 10%, var(--surface-2));
+  box-shadow: inset 3px 0 0 var(--bad);
 }
 .wizard-source-meta {
   display: flex;
@@ -2665,6 +2714,57 @@ button.tag.active {
 }
 .ui-segment[data-selected][data-focus-visible] {
   box-shadow: inset 0 0 0 2px #fff;
+}
+
+/* ToggleGroup: joined toggle buttons, at most one pressed. */
+.ui-toggle-group {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ui-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.65rem;
+  border: none;
+  border-radius: 0;
+  background: var(--surface-2);
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+  outline: none;
+}
+.ui-toggle + .ui-toggle {
+  border-left: 1px solid var(--border);
+}
+.ui-toggle[data-hovered] {
+  color: var(--text);
+}
+.ui-toggle[data-selected] {
+  background: var(--accent);
+  color: #fff;
+}
+.ui-toggle[data-focus-visible] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.ui-toggle[data-selected][data-focus-visible] {
+  box-shadow: inset 0 0 0 2px #fff;
+}
+.ui-toggle[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* Disagree reads as the "against" side, not as a second kind of yes. */
+.ui-toggle.standing-disagree[data-selected] {
+  background: color-mix(in srgb, var(--bad) 22%, var(--surface-2));
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--bad);
+}
+.ui-toggle.standing-disagree[data-selected][data-focus-visible] {
+  box-shadow: inset 0 0 0 2px var(--bad);
 }
 
 /* Stance colour on Select options and the closed control. */

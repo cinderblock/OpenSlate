@@ -3,6 +3,7 @@ import { type KeyPair, type Stance, createSlate, generateKeyPair } from "@opensl
 import {
   areaOptionsOf,
   collateRaces,
+  countedTone,
   decodeSlates,
   defaultElection,
   electionsOf,
@@ -76,6 +77,17 @@ const ballot = slate({
   ].map((p) => ({ ...p, election: E, jurisdiction: "us/ca" })),
 });
 
+describe("countedTone", () => {
+  test("a followed source counts as it says; one you disagree with, the other way", () => {
+    expect(countedTone("endorse", "follow")).toBe("for");
+    expect(countedTone("lean_against", "follow")).toBe("against");
+    expect(countedTone("endorse", "disagree")).toBe("against");
+    expect(countedTone("lean_for", "disagree")).toBe("against");
+    expect(countedTone("oppose", "disagree")).toBe("for");
+    expect(countedTone("neutral", "disagree")).toBe("neutral");
+  });
+});
+
 describe("collateRaces", () => {
   const slates = decodeSlates([
     slate({
@@ -112,7 +124,7 @@ describe("collateRaces", () => {
   });
 
   test("unfollowed sources stay on a race's choices, marked, without counting", () => {
-    const follows = { "of:growsf": false };
+    const follows = { "of:growsf": "off" } as const;
     const races = collateRaces(slates, { follows });
     const prop = races.find((r) => r.subject.title === "Prop 1");
     expect(prop?.choices.map((c) => c.choice)).toEqual(["Yes", "No"]);
@@ -120,11 +132,28 @@ describe("collateRaces", () => {
     expect(prop?.followedSources).toBe(1);
     const no = prop?.choices.find((c) => c.choice === "No");
     expect(no?.support).toBe(0);
-    expect(no?.positions[0]?.followed).toBe(false);
+    expect(no?.positions[0]?.standing).toBe("off");
+  });
+
+  test("a source you disagree with counts the other way, after the ones you agree with", () => {
+    const follows = { "of:tenants union": "disagree" } as const;
+    const governor = collateRaces(slates, { follows }).find((r) => r.subject.title === "Governor");
+    expect(governor?.followedSources).toBe(3);
+    // Tenants Union opposes A (so A gains) and backs B (so B loses).
+    expect(governor?.choices.map((c) => [c.choice, c.support, c.opposition])).toEqual([
+      ["A", 3, 0],
+      ["B", 0, 1],
+    ]);
+    const a = governor?.choices.find((c) => c.choice === "A");
+    expect(a?.positions.map((p) => [p.source.name, p.stance, p.standing])).toEqual([
+      ["GrowSF", "endorse", "follow"],
+      ["SPUR", "endorse", "follow"],
+      ["Tenants Union", "oppose", "disagree"],
+    ]);
   });
 
   test("races only unfollowed sources cover are listed on request", () => {
-    const follows = { "of:growsf": false };
+    const follows = { "of:growsf": "off" } as const;
     const extra = decodeSlates([
       slate({
         of: "GrowSF",
@@ -143,7 +172,7 @@ describe("collateRaces", () => {
 
   test("a ballot source supplies the field in ballot order, without being a source", () => {
     const races = collateRaces([...slates, ...decodeSlates([ballot])], {
-      follows: { "of:secretary of state": false },
+      follows: { "of:secretary of state": "off" },
     });
     const governor = races.find((r) => r.subject.title === "Governor");
     expect(governor?.onBallot).toBe(true);
@@ -225,7 +254,7 @@ describe("elections", () => {
   ]);
 
   test("summarises each election the slates cover", () => {
-    expect(electionsOf(slates, { "of:growsf": false })).toEqual([
+    expect(electionsOf(slates, { "of:growsf": "off" })).toEqual([
       { date: "2026-06-02", races: 1, sources: 1, followedSources: 1 },
       { date: E, races: 1, sources: 1, followedSources: 0 },
     ]);
@@ -250,7 +279,7 @@ describe("elections", () => {
   });
 
   test("prefers an upcoming election the user follows over an earlier unfollowed one", () => {
-    const summaries = electionsOf(slates, { "of:spur": false });
+    const summaries = electionsOf(slates, { "of:spur": "off" });
     expect(defaultElection(summaries, "2026-05-01")).toBe(E);
   });
 });

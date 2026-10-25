@@ -15,6 +15,7 @@ import {
   PenLine,
   Pencil,
   Printer,
+  ThumbsDown,
   WandSparkles,
   X,
 } from "lucide-react";
@@ -28,10 +29,10 @@ import {
   type Race,
   areaOptionsOf,
   collateRaces,
+  countedTone,
   defaultElection,
   electionsOf,
   positionJurisdictions,
-  stanceTone,
 } from "../lib/collate";
 import { formatElectionDate, formatLocalDate } from "../lib/dates";
 import { downloadText } from "../lib/download";
@@ -46,7 +47,7 @@ import {
 } from "../lib/jurisdictions";
 import { localToday, useArea, useDecodedSlates, useFollows, useMyElection } from "../lib/myVote";
 import { type MyPosition, useMyPositionsByRace } from "../lib/published";
-import { isBallotSource, isFollowed } from "../lib/sources";
+import { isBallotSource, isFollowed, standingOf } from "../lib/sources";
 import { subjectKey } from "../lib/subjects";
 import { type RaceStatus, isDecided, marksOn, raceStatus, stepThrough } from "../lib/triage";
 import { track } from "../lib/usage";
@@ -313,6 +314,9 @@ export function MyBallotPanel() {
     slates.filter((s) => !isBallotSource(s.source)).map((s) => s.source.id),
   );
   const followedCount = [...sourceIds].filter((id) => isFollowed(follows, id)).length;
+  const disagreeCount = [...sourceIds].filter(
+    (id) => standingOf(follows, id) === "disagree",
+  ).length;
   const summary = elections.find((e) => e.date === election);
 
   function exportBallot(format: "json" | "csv") {
@@ -480,6 +484,7 @@ export function MyBallotPanel() {
         <span>
           <Link to="/sources">
             <strong>{followedCount}</strong> of {sourceIds.size} sources followed
+            {disagreeCount > 0 && ` (${disagreeCount} to disagree)`}
           </Link>
         </span>
         <Switch isSelected={showUnfollowed} onChange={setShowUnfollowed}>
@@ -1029,8 +1034,8 @@ function ChoiceRow({
   patch: Patch;
 }) {
   const choice = group.choice || undefined;
-  const followed = group.positions.filter((p) => p.followed);
-  const others = group.positions.filter((p) => !p.followed);
+  const followed = group.positions.filter((p) => p.standing !== "off");
+  const others = group.positions.filter((p) => p.standing === "off");
   return (
     <li
       className={`choice-row${row?.stance === "endorse" ? " picked" : ""}${row?.stance === "oppose" ? " ruled-out" : ""}`}
@@ -1051,17 +1056,24 @@ function ChoiceRow({
           <div className="source-chips">
             {followed.map((position) => {
               const what = `${position.source.name} ${STANCE_WORD[position.stance]} ${group.choice || race.subject.title}`;
+              // Coloured and marked by how it counts for you: a source you
+              // disagree with counts the other way. ✗ = counts against.
+              const counted = countedTone(position.stance, position.standing);
+              const leaning = position.stance === "lean_for" || position.stance === "lean_against";
+              const disagree = position.standing === "disagree";
+              const countsAs = `you disagree with ${position.source.name}, so this counts ${counted === "for" ? "for" : "against"} ${group.choice || race.subject.title}`;
               return (
                 <InfoPopover
                   key={position.source.id}
-                  className={`source-chip tone-${stanceTone(position.stance)}`}
+                  className={`source-chip tone-${counted}${disagree ? " disagreed" : ""}`}
                   bare={false}
-                  label={what}
+                  label={disagree && counted !== "neutral" ? `${what}; ${countsAs}` : what}
                   trigger={
                     <>
                       <EndorserAvatar sourceId={position.source.id} name={position.source.name} />
-                      {stanceTone(position.stance) === "against" && "✗ "}
-                      {position.stance === "lean_for" && "~ "}
+                      {disagree && <ThumbsDown className="icon" aria-hidden="true" />}
+                      {counted === "against" && "✗ "}
+                      {counted === "for" && leaning && "~ "}
                       {position.source.name}
                       {!position.valid && " ⚠"}
                     </>
@@ -1075,6 +1087,12 @@ function ChoiceRow({
                     />
                     <strong>{what}</strong>
                   </div>
+                  {disagree && counted !== "neutral" && (
+                    <p className="hint">
+                      <ThumbsDown className="icon" aria-hidden="true" />{" "}
+                      {countsAs.charAt(0).toUpperCase() + countsAs.slice(1)}.
+                    </p>
+                  )}
                   {position.statement && <p>“{position.statement}”</p>}
                   {position.written && (
                     <p className="hint">
