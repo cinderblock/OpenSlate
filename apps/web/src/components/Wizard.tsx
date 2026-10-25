@@ -2,13 +2,14 @@ import { type SlatePayload, createIdentity, serializeIdentity, verifySlate } fro
 import { useLiveQuery } from "@tanstack/react-db";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { PenLine, Vote } from "lucide-react";
+import { Code, Lock, PenLine, Server, Vote } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { catalogEntryUrl, importCatalogEntry } from "../lib/catalogImport";
 import { areaOptionsOf } from "../lib/collate";
 import { addIdentity, slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
 import { useActiveIdentity } from "../lib/identities";
+import { REPO_URL } from "../lib/feedback";
 import { downloadIdentityBackup } from "../lib/identityBackup";
 import {
   type Area,
@@ -166,6 +167,7 @@ export function Wizard() {
               </span>
             </button>
           </div>
+          <AboutOpenSlate />
           <WizardFooter onSkip={skip} />
         </>
       )}
@@ -275,14 +277,112 @@ function WizardFooter({
           ← Back
         </button>
       )}
-      {onSkip && (
-        <button type="button" className="link" onClick={onSkip}>
-          Skip setup
-        </button>
-      )}
+      {onSkip && <SkipSetup onSkip={onSkip} />}
       <span className="grow" />
       {children}
     </div>
+  );
+}
+
+/** How long the "we recommend you don't" nudge shows before the real skip button appears. */
+const SKIP_ARM_DELAY_MS = 1200;
+
+/**
+ * Skipping takes two steps, so a newcomer eager to "get to the real thing"
+ * reads why setup is worth a minute first. Hovering (mouse) or pressing "Skip
+ * setup" (touch, keyboard) shows the nudge; after a short pause a separate
+ * "Skip anyway" button appears beside it, out from under a pointer that's
+ * still clicking the first one. Moving the mouse away before then backs out.
+ */
+function SkipSetup({ onSkip }: { onSkip: () => void }) {
+  const [stage, setStage] = useState<"idle" | "hover" | "warned" | "armed">("idle");
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  function warn(next: "hover" | "warned") {
+    if (stage === "armed") return;
+    if (stage === "idle") {
+      timer.current = setTimeout(() => setStage("armed"), SKIP_ARM_DELAY_MS);
+    }
+    // A press keeps the nudge open even if the mouse wanders off afterwards.
+    if (stage !== "warned") setStage(next);
+  }
+
+  return (
+    <span className="wizard-skip">
+      <button
+        type="button"
+        className="link"
+        aria-expanded={stage !== "idle"}
+        onClick={() => warn("warned")}
+        onPointerEnter={(e) => {
+          if (e.pointerType === "mouse") warn("hover");
+        }}
+        onPointerLeave={() => {
+          if (stage !== "hover") return;
+          clearTimeout(timer.current);
+          setStage("idle");
+        }}
+      >
+        Skip setup
+      </button>
+      <span className="wizard-skip-nudge" aria-live="polite">
+        {stage !== "idle" && <span>We recommend you don't. It only takes a minute.</span>}
+        {stage === "armed" && (
+          <button type="button" className="link" onClick={onSkip}>
+            Skip anyway
+          </button>
+        )}
+      </span>
+    </span>
+  );
+}
+
+/** The welcome step's answer to "what is this, and do I have to use this website?" */
+function AboutOpenSlate() {
+  return (
+    <section className="wizard-about" aria-labelledby="wizard-about-heading">
+      <h3 id="wizard-about-heading">What is OpenSlate?</h3>
+      <p>
+        A free tool for sharing endorsements anyone can check, and for lining up the ones you trust
+        on your ballot. Every endorsement is signed, so you can see who issued it and that nobody
+        changed it along the way.
+      </p>
+      <ul>
+        <li>
+          <Lock className="icon" />
+          <span>
+            <strong>No account.</strong> Your picks, notes and signing keys stay in this browser.
+            They're never sent to us, and reach others only when you share them.
+          </span>
+        </li>
+        <li>
+          <Code className="icon" />
+          <span>
+            <strong>Open source.</strong> Every line is public on GitHub under the MIT license: read
+            it, check it, or help build it.
+          </span>
+        </li>
+        <li>
+          <Server className="icon" />
+          <span>
+            <strong>Don't want to use this website?</strong> Run your own copy. The app is plain
+            files any web server can host, or that run on your own computer. A desktop app is on the
+            way.
+          </span>
+        </li>
+      </ul>
+      <p className="wizard-about-links">
+        <a href={REPO_URL} target="_blank" rel="noreferrer">
+          Source code on GitHub
+        </a>
+        {" · "}
+        <a href={`${REPO_URL}#how-to-run`} target="_blank" rel="noreferrer">
+          How to run your own
+        </a>
+      </p>
+    </section>
   );
 }
 

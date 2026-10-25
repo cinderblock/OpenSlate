@@ -1757,6 +1757,42 @@ dialog.wizard::backdrop {
   height: 1.75rem;
   color: var(--accent);
 }
+.wizard-about {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.wizard-about h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+.wizard-about p {
+  margin: 0 0 0.6rem;
+}
+.wizard-about ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.wizard-about li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+.wizard-about li .icon {
+  margin-top: 0.15em;
+  vertical-align: baseline;
+  color: var(--accent);
+}
+.wizard-about li span {
+  font-size: 0.95rem;
+}
+.wizard-about-links {
+  font-weight: 600;
+}
 .wizard-source-meta {
   display: flex;
   flex-direction: column;
@@ -1815,6 +1851,35 @@ dialog.wizard::backdrop {
   padding-bottom: 1.5rem;
   background: var(--surface);
   z-index: 1;
+}
+/* "Skip setup" → nudge → "Skip anyway" (Wizard.tsx SkipSetup). */
+.wizard-skip,
+.wizard-skip-nudge {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.wizard-skip button.link {
+  color: var(--muted);
+}
+.wizard-skip-nudge > * {
+  font-size: 0.9rem;
+  animation: wizard-skip-in 0.2s ease-out;
+}
+.wizard-skip-nudge > span {
+  color: var(--muted);
+  font-style: italic;
+}
+@keyframes wizard-skip-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wizard-skip-nudge > * {
+    animation: none;
+  }
 }
 
 @media print {

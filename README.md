@@ -60,7 +60,9 @@ The web app has two modes:
 
 A skippable getting-started guide sets up a first visit: pick an election,
 where you vote, and whose recommendations you trust (or create an identity to
-publish). Reopen it any time from *Get started* in the header.
+publish). Its first screen also says what OpenSlate is: no account, open
+source, and how to run your own copy instead of using the website (linking
+here). Reopen it any time from *Get started* in the header.
 
 The goal: give citizens deeper insight into the things they care about, without
 relying solely on simplified endorsements from a single newspaper or org.

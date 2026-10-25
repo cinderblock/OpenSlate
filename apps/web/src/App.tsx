@@ -20,7 +20,7 @@ import { WizardHost } from "./components/WizardHost";
 import { Switch } from "./components/ui/Switch";
 import { useDbStatus } from "./lib/dbStatus";
 import { EndorsersContext, useEndorserDirectory } from "./lib/endorsers";
-import { openFeedback } from "./lib/feedback";
+import { REPO_URL, openFeedback } from "./lib/feedback";
 import { useUsageEnabled } from "./lib/usage";
 import { openWizard } from "./lib/wizard";
 
@@ -161,8 +161,8 @@ export function RootLayout() {
         <footer>
           <span>Decentralized — your keys and data stay in this browser.</span>
           {" · "}
-          <a href="https://github.com/cinderblock/openslate" target="_blank" rel="noreferrer">
-            GitHub
+          <a href={REPO_URL} target="_blank" rel="noreferrer">
+            Open source on GitHub
           </a>
           {" · "}
           <button type="button" className="link" onClick={openFeedback}>
