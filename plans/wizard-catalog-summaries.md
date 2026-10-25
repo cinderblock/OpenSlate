@@ -17,8 +17,17 @@ strongly suggesting waiting rather than skipping.
 
 ## Environment / context
 
-- Repo `C:\Users\camer\git\Personal Projects\OpenSlate` (shared working tree,
-  branch `master`).
+- Repo `C:\Users\camer\git\Personal Projects\OpenSlate`. Core + CLI landed on
+  `master` in the shared tree (`7dbaf9c`); the web work moved to its own
+  worktree, branch `feat/wizard-catalog-summaries` (T3 handoff), because
+  `plans/disagree-sources.md` is reworking follow state (`setFollowed` →
+  `setStanding`, `Standing` = follow / disagree / off) and the wizard's sources
+  step at the same time. Rebase onto master once that thread commits, and use
+  its `setStanding` / selection control rather than `setFollowed`.
+- WIP carried over as files in `%TEMP%\wizard-catalog-wip\`: `query.patch`,
+  `styles-mine.patch` (only the progress-bar hunk), `ProgressBar.tsx`
+  (→ `components/ui/`), `catalogSummary.ts` and `fetchProgress.ts`
+  (→ `lib/`).
 - Catalog producer: `packages/cli/src/index.ts` `cmdSignBatch` writes
   `index.json`. The public catalog repo
   `C:\Users\camer\git\Personal Projects\openslate-public-endorsements`
@@ -58,8 +67,11 @@ strongly suggesting waiting rather than skipping.
 ## Plan / steps
 
 1. [x] Plan doc; claim the ISSUES.md wizard-hang entry.
-2. [ ] core: `racesByJurisdiction(payload)`, tested.
-3. [ ] CLI: `sign --batch` writes `scope` + `jurisdictions` per entry.
+2. [x] core: `racesByJurisdiction(payload)`, tested (`7dbaf9c`).
+3. [x] CLI: `sign --batch` writes `scope` + `jurisdictions` per entry
+   (`7dbaf9c`). Measured on the live bundle: +154 KB pretty-printed over 376
+   entries (index is 358 KB; gzip shrinks both); ballot slates have up to 212
+   jurisdictions.
 4. [ ] web: catalog types; prefetch the catalog when the wizard opens.
 5. [ ] web: wizard reads summaries; fallback fetch starts early with a bar.
 6. [ ] web: import step with a progress bar, concurrency, strong "wait"
@@ -72,6 +84,9 @@ strongly suggesting waiting rather than skipping.
 
 - `bundle.json` already exists in the public catalog (build-site.ts) but the
   app never used it.
+- `apps/web/src/lib/download.ts` already exists (`downloadText`). A Write to
+  that path clobbered it once this session; restored from HEAD (it matched HEAD
+  at session start). The download helpers live in `lib/fetchProgress.ts`.
 - GitHub Pages gzips `bundle.json`; a browser's `Content-Length` is then the
   compressed size while the stream yields decompressed bytes, so progress needs
   the uncompressed size from the catalog.
@@ -90,3 +105,4 @@ strongly suggesting waiting rather than skipping.
 
 - Don't `verifySlate` hundreds of tokens on the main thread for a preview.
 - Don't make the app depend on the new fields: catalogs without them must work.
+- Don't Write a new file without checking the path is free (see download.ts).
