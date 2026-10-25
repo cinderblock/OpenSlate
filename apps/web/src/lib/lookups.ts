@@ -1,5 +1,5 @@
 import { createLocalStore, useLocalStore } from "./localStore";
-import { envBase } from "./routing";
+import { apiBase } from "./routing";
 
 /**
  * The online ways to find someone's districts from a typed address, and the
@@ -26,7 +26,7 @@ export interface OnlineLookupInfo {
 /** The relay's host when it's a separate origin (the public worker), else "" (same origin). */
 const relayHost = (() => {
   try {
-    return new URL(envBase("VITE_POLLS_BASE", "")).host;
+    return new URL(apiBase()).host;
   } catch {
     return "";
   }
@@ -177,7 +177,7 @@ export async function searchOpenStreetMap(address: string): Promise<AddressMatch
 
 /** Where the Census relay answers: the public worker in production, same origin (apps/server) in dev. */
 export function censusRelayUrl(): string {
-  return `${envBase("VITE_POLLS_BASE", "")}/api/geocode/census`;
+  return `${apiBase()}/api/geocode/census`;
 }
 
 interface RelayMatch {

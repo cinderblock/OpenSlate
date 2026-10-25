@@ -143,11 +143,14 @@ Deploy `apps/web/dist` to Cloudflare Pages (or any static host: GitHub Pages,
 Netlify, Vercel, plain S3). Build the SPA pointed at your own Worker:
 
 ```sh
-VITE_POLLS_BASE=https://api.yourdomain.dev \
-VITE_RESULTS_BASE=https://api.yourdomain.dev \
-VITE_FORECASTS_BASE=https://api.yourdomain.dev \
+VITE_API_BASE=https://api.yourdomain.dev \
+VITE_RESULTS_BASE=https://api.yourdomain.dev/api/results/v2 \
+VITE_FORECASTS_BASE=https://api.yourdomain.dev/api/forecasts/v2 \
 bun run build
 ```
+
+`VITE_API_BASE` was called `VITE_POLLS_BASE` before 2026-10-24; the old name
+still works when the new one isn't set.
 
 #### Bare
 
@@ -349,14 +352,22 @@ flowchart LR
 | --- | --- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Pure client** (default) | Web SPA or desktop only | yes | yes (GH Pages) | — | — | map, location, OpenStreetMap; Google with your own key | yes (civicAPI direct) |
 | **+ Self-hosted Hono** | Above + your own `apps/server` | yes | yes | yes (VoteHub) | yes (Kalshi) | + Census; + Google with `GOOGLE_API_KEY` | yes (cached) |
-| **+ Public Worker** (what `openslate.us` uses) | Above + project-operated Worker | yes | yes | yes (cached) | yes (cached) | + Census; + Google once the Worker has its key | yes (cached) |
+| **+ Public Worker** (what `openslate.us` uses) | Above + project-operated Worker | yes | yes | yes (cached) | refused by Kalshi (see below) | + Census; + Google once the Worker has its key | yes (cached) |
 
 Modes are not mutually exclusive: run your own Hono for ballot lookup **and**
-point `VITE_POLLS_BASE` at the public Worker for cached polls. The web client
+point `VITE_API_BASE` at the public Worker for cached polls. The web client
 hits `/api/polls/*` on whichever backend the env var resolves to; the response
 shape is identical either way. `VITE_RESULTS_BASE` and `VITE_FORECASTS_BASE`
 work the same way for civicAPI results (reached directly by default, but
 configurable) and Kalshi forecasts (which always require a proxy).
+
+Kalshi answers `429` to every request from Cloudflare Workers (seen October
+2026; it refuses Workers' shared egress, whatever the request says), so the
+public Worker has no forecasts to relay. Neither relay caches Kalshi's errors.
+Each keeps its last good answer and serves it, marked stale, when Kalshi
+refuses. With no such copy the app says Kalshi isn't answering. A
+self-hosted Hono server reaches Kalshi from its own address. See
+[plans/kalshi-forecasts-429.md](./plans/kalshi-forecasts-429.md).
 
 ## Deployment
 

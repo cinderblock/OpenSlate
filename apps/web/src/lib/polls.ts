@@ -17,7 +17,7 @@ export type { Poll, PollAnswer } from "@openslate/core";
 
 // VoteHub doesn't permit browser-direct (no permissive CORS headers), so the
 // routing layer pins this provider to "proxy". The proxy URL flows from
-// VITE_POLLS_BASE; an empty string means same-origin (Vite dev proxy or a
+// VITE_API_BASE (apiBase); an empty string means same-origin (Vite dev proxy or a
 // sibling deployment).
 function pollsUrl(path: string, params?: Record<string, string>): string {
   const search = params ? `?${new URLSearchParams(params).toString()}` : "";

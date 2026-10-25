@@ -32,7 +32,7 @@ describe("handleGeocode", () => {
   });
 
   function post(body: unknown) {
-    return new Request(`https://polls.example${GEOCODE_PATH}`, {
+    return new Request(`https://api.example${GEOCODE_PATH}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: typeof body === "string" ? body : JSON.stringify(body),
@@ -57,7 +57,7 @@ describe("handleGeocode", () => {
 
   test("rejects anything but a POST with a short address", async () => {
     globalThis.fetch = mock(async () => Response.json(cityHall)) as unknown as typeof fetch;
-    const get = new Request(`https://polls.example${GEOCODE_PATH}?address=x`);
+    const get = new Request(`https://api.example${GEOCODE_PATH}?address=x`);
     expect((await handleGeocode(get, {})).status).toBe(405);
     expect((await handleGeocode(post("not json"), {})).status).toBe(400);
     expect((await handleGeocode(post({ address: "  " }), {})).status).toBe(400);
@@ -78,7 +78,7 @@ describe("handleGeocode", () => {
 
 test("the worker answers the geocode preflight with POST allowed", async () => {
   const res = await worker.fetch(
-    new Request(`https://polls.example${GEOCODE_PATH}`, { method: "OPTIONS" }),
+    new Request(`https://api.example${GEOCODE_PATH}`, { method: "OPTIONS" }),
   );
   expect(res.status).toBe(204);
   expect(res.headers.get("Access-Control-Allow-Methods")).toBe("POST, OPTIONS");

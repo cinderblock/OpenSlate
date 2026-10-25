@@ -36,6 +36,11 @@ export interface Forecast {
   /** When the provider last updated this event's data. */
   updatedAt?: string;
   /**
+   * Set when the provider couldn't be reached and this is the relay's last
+   * good copy: when that copy was fetched (ISO 8601). Prices may have moved.
+   */
+  staleAsOf?: string;
+  /**
    * Whether the candidate markets are mutually exclusive. When true, the
    * probabilities should approximately sum to 100% (modulo bid-ask spread).
    */
