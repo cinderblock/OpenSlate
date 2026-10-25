@@ -57,7 +57,7 @@ on overlap issues". The election is Nov 3.
 
 | Path | What's there | Effect |
 | --- | --- | --- |
-| `us/ca/san-diego` | ~110 county subjects and 5 City of San Diego ones (council D2/4/6/8, Measure A), no `san-diego-county` at all | everyone in the county gets the city's Measure A; the county is filed under the city's name |
+| `us/ca/san-diego` | ~110 county subjects and the City of San Diego's (council D2/4/6/8 in November; Measure A was June's), no `san-diego-county` at all | the county is filed under the city's name, so everyone in the county got the city's races (as maybes in November) |
 | `us/ca/alameda` | 9 county subjects (BoS, AC Transit, Oro Loma, Zone 7, Superior Court); the City of Alameda is under `city-of-alameda` | county residents never see the 9 (their county is `alameda-county`); City of Alameda residents get the bare path and so miss their mayor, council and measures |
 | `us/ca/imperial` | 4 county subjects; the city is `city-of-imperial` | same as Alameda |
 | `us/ca/orange` | City of Orange, plus "Orange County Board of Supervisors, District 5" | D5 only shows to City of Orange residents |
@@ -131,12 +131,27 @@ org bundles that reused the listings' subjects.
   city's path for the county, and the old catalog has nothing else); they
   arrive by themselves when the data lands (`found`). Data first would hide
   county races from every *saved* SD area instead, so app first.
-- [ ] Step 4, ship.
-- [ ] Step 5, cross-county duplicates.
+- [x] Step 4, ship (2026-10-25): app `c873159` pushed 12:53 PM PDT
+  (19:53Z) and live; catalog `df24caf` and guides `68e0920` pushed 12:54 PM
+  PDT, both publish runs green by 12:55. Checked live on openslate.us in a
+  fresh incognito tab: an old `["us/ca/san-diego"]` area with a mark on the
+  old Alpine USD race reads "San Diego · San Diego County", asks "Do you live
+  in the City of San Diego?", and the mark moved to the `san-diego-county`
+  key (it prints). "No" drops the city and its four council maybes (110 to
+  106) and keeps supervisorial district 2 under the county's path. A new
+  Chula Vista lookup gets Chula Vista and San Diego County, nothing of the
+  City of San Diego's.
+- [x] Step 5 (2026-10-25): EBRPD wards 3 and 5's org endorsements moved onto
+  Alameda's listed races (`5439a18`, published 12:59 PM PDT). Ward 7 (Contra
+  Costa, no listing) and Fullerton JUHSD's LA and OC copies need a subject
+  for races that cross a county line: logged in the endorsements repo's
+  ISSUES.md, not fixed.
+- [x] ISSUES.md: the San Diego entry removed (fixed).
 
 ## Open questions for the user
 
-None yet.
+None. Left for later, in the endorsements repo's ISSUES.md: races that cross
+a county line, and LA's listing rebuild renaming four seats.
 
 ## Things not to do
 

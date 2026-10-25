@@ -1,18 +1,5 @@
 # Issues
 
-## San Diego's city and county share `us/ca/san-diego`
-
-The San Diego registrar's listing files both county and City of San Diego
-contests under `us/ca/san-diego` (677 positions catalog-wide, none on
-`san-diego-county`), and `localityCandidates` maps the county there too. So
-anyone in San Diego County gets the City of San Diego's citywide races
-(mayor, city attorney, city measures) on My ballot. Its council races are
-tagged `us/ca/san-diego/council-N` and only show as "might be" outside the
-city. Fixing it means a new path for one of the two, an identity change for
-every slate that names those races. Split out of the sub-county races issue,
-fixed 2026-10-25 (`5fce7fe`, endorsements `7623d18`;
-plans/sub-county-districts.md).
-
 ## Kalshi answers the forecasts relay 429, and the worker caches it (in progress — fix/kalshi-forecasts-429)
 
 Seen 2026-10-24 12:30 PM PDT (19:30Z): every
