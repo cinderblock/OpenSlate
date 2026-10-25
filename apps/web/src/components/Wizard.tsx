@@ -465,7 +465,7 @@ function SkipSetup({ onSkip }: { onSkip: () => void }) {
   return (
     <ConfirmLink
       label="Skip setup"
-      nudge="We recommend you don't. It only takes a minute."
+      nudge="We recommend you don't. It's easier and faster than doing it manually."
       confirm="Skip anyway"
       onConfirm={onSkip}
     />
