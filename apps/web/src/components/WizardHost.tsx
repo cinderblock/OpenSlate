@@ -2,6 +2,11 @@ import { useLiveQuery } from "@tanstack/react-db";
 import { Suspense, lazy, useEffect } from "react";
 import { identityCollection, slatesCollection } from "../lib/collections";
 import { useOnboarding } from "../lib/myVote";
+import {
+  DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
+  catalogQueryOptions,
+  queryClient,
+} from "../lib/query";
 import { openWizard, useWizardOpen } from "../lib/wizard";
 
 // The wizard's own code (catalog import, area picker, its form controls) is
@@ -28,6 +33,13 @@ export function WizardHost() {
   useEffect(() => {
     if (firstVisit) openWizard();
   }, [firstVisit]);
+
+  // The catalog is the wizard's first need; fetch it while the wizard's own
+  // code is still loading, so the election and source lists are there at once.
+  useEffect(() => {
+    if (open)
+      void queryClient.prefetchQuery(catalogQueryOptions(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG));
+  }, [open]);
 
   return open ? (
     <Suspense fallback={null}>

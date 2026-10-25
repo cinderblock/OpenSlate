@@ -41,7 +41,7 @@ type ImportedSlateRow = z.infer<typeof importedSlateSchema>;
 // captured sync writer.
 
 // --- Imported slates ---
-let confirmSlateInsert: ((value: ImportedSlateRow) => void) | null = null;
+let confirmSlateInsert: ((values: ImportedSlateRow[]) => void) | null = null;
 let confirmSlateDelete: ((key: string) => void) | null = null;
 
 export const slatesCollection = createCollection({
@@ -50,9 +50,9 @@ export const slatesCollection = createCollection({
   getKey: (slate) => slate.token,
   sync: {
     sync: (params) => {
-      confirmSlateInsert = (value) => {
+      confirmSlateInsert = (values) => {
         params.begin();
-        params.write({ type: "insert", value });
+        for (const value of values) params.write({ type: "insert", value });
         params.commit();
       };
       confirmSlateDelete = (key) => {
@@ -72,11 +72,13 @@ export const slatesCollection = createCollection({
       return () => {};
     },
   },
+  // A bulk import inserts many slates in one transaction; persist them all and
+  // confirm them together, so views re-collate once rather than per slate.
   onInsert: async ({ transaction }) => {
-    const mutation = transaction.mutations[0];
-    if (!mutation) return;
-    await putSlate(mutation.modified);
-    confirmSlateInsert?.(mutation.modified);
+    const values = transaction.mutations.map((mutation) => mutation.modified);
+    if (values.length === 0) return;
+    await Promise.all(values.map(putSlate));
+    confirmSlateInsert?.(values);
   },
   onDelete: async ({ transaction }) => {
     const mutation = transaction.mutations[0];

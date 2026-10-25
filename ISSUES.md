@@ -70,29 +70,6 @@ check apps packages` still fails on master `612c12a` (2026-10-24):
 Why it matters: lint can't gate anything while it's red, and the a11y one may
 be a real accessibility problem.
 
-## Setup wizard hangs on "Where do you vote?" while loading endorsements (in progress — master, plans/wizard-catalog-summaries.md)
-
-Seen 2026-10-21 in a fresh browser profile (T3 preview, local dev server):
-Get started → Plan my vote → Nov 3, 2026 → Next. The "Where do you vote?" step
-showed "Loading endorsements… 173 of 197" and never finished. The console
-warned "Cannot update a component while rendering a different component" from
-`ElectionSlates` (`apps/web/src/components/Wizard.tsx`). Clicking "Skip, show
-everything →" didn't advance either, and hash navigation stopped re-rendering
-the page until a reload. The preview tab wasn't visible at the time, which may
-be a factor. Matters because this is the first thing a new visitor does.
-
-Seen again 2026-10-22 1:15 AM PDT (08:15Z), fresh incognito T3 preview (hidden
-tab): right after "Plan my vote" the page stopped answering automation
-entirely (snapshot and evaluate timed out for over a minute). Since `bce1106`
-the area step has no forward button while loading (Next waits for the
-picker), so a stuck load now leaves only Back and "Skip setup".
-
-Not reproduced 2026-10-23 3:42 PM PDT (22:42Z) on https://openslate.us in a
-fresh incognito T3 preview (hidden tab): the area step loaded and the wizard
-went through to the sources step. One snapshot timed out (15 s) while the
-endorsements were loading, so the main thread is busy for that long; it may
-only hang on the dev server, or on a slower machine.
-
 ## Dark theme: some text and white-on-colour fills fall below 4.5:1
 
 Dark `--bad` (`#e74c3c`) as text measures 4.41:1 on `--surface` and 4.02:1 on

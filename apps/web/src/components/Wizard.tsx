@@ -1,20 +1,34 @@
-import { type SlatePayload, createIdentity, serializeIdentity, verifySlate } from "@openslate/core";
+import { type SlatePayload, createIdentity, parseSlate, serializeIdentity } from "@openslate/core";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Code, FlaskConical, Lock, PenLine, Server, Vote } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isPublicSite } from "../lib/alpha";
-import { catalogEntryUrl, importCatalogEntry } from "../lib/catalogImport";
+import {
+  type VerifiedSlate,
+  catalogEntryUrl,
+  fetchCatalogBundle,
+  fetchCatalogSlate,
+  storeSlates,
+  verifyCatalogSlate,
+} from "../lib/catalogImport";
+import {
+  type EntrySummary,
+  isSummarized,
+  racesInArea,
+  summaryJurisdictions,
+  summaryOf,
+} from "../lib/catalogSummary";
 import { areaOptionsOf } from "../lib/collate";
 import { addIdentity, slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
 import { REPO_URL } from "../lib/feedback";
+import { forEachConcurrently } from "../lib/fetchProgress";
 import { useActiveIdentity } from "../lib/identities";
 import { downloadIdentityBackup } from "../lib/identityBackup";
 import {
   type Area,
-  inArea,
   isAreaSet,
   jurisdictionLabel,
   jurisdictionRank,
@@ -22,6 +36,7 @@ import {
 } from "../lib/jurisdictions";
 import {
   areaStore,
+  defaultToUnfollowed,
   localToday,
   myElectionStore,
   onboardingStore,
@@ -35,7 +50,6 @@ import {
   slateFromUrlOptions,
 } from "../lib/query";
 import { type Standing, sourceIdOf } from "../lib/sources";
-import { subjectKey } from "../lib/subjects";
 import { track } from "../lib/usage";
 import { closeWizard } from "../lib/wizard";
 import { AlphaWizardNote } from "./AlphaNotice";
@@ -44,6 +58,8 @@ import { isBallotEntry } from "./CatalogBrowser";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { LeanSummary } from "./LeanMeter";
 import { StandingToggle } from "./StandingToggle";
+import { Checkbox } from "./ui/Checkbox";
+import { ProgressBar } from "./ui/ProgressBar";
 import { Radio, RadioGroup } from "./ui/Radio";
 import { TextField } from "./ui/TextField";
 
@@ -56,6 +72,16 @@ const CATALOG_URL = DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG;
 /** Catalog entry path → how the user picked it. Not in the map = not picked. */
 type Picks = ReadonlyMap<string, Exclude<Standing, "off">>;
 
+/** Slates downloaded at once while importing. */
+const IMPORT_CONCURRENCY = 6;
+
+/** What the import step's bar shows. No `maxValue`: the total isn't known yet. */
+interface ImportProgress {
+  label: string;
+  value: number;
+  maxValue?: number;
+}
+
 /** The getting-started wizard. Loaded and mounted by WizardHost while open. */
 export function Wizard() {
   const navigate = useNavigate();
@@ -64,13 +90,38 @@ export function Wizard() {
   const [election, setElection] = useState("");
   const [area, setArea] = useState<Area>(() => areaStore.get());
   const [selected, setSelected] = useState<Picks>(new Map());
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [downloadAll, setDownloadAll] = useState(false);
+  const [importing, setImporting] = useState<ImportProgress | null>(null);
   const [importErrors, setImportErrors] = useState<string[]>([]);
+  const stopped = useRef(false);
+  /** Slates checked during the import, stored together at the end (or on Stop). */
+  const pending = useRef<VerifiedSlate[]>([]);
+  const bundleAbort = useRef<AbortController | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
+  // WizardHost starts this fetch as the wizard opens.
   const catalog = useQuery(catalogQueryOptions(CATALOG_URL));
   const { data: imported } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
+
+  const today = localToday();
+  const elections = useMemo(
+    () => electionsOf(catalog.data?.entries ?? [], today),
+    [catalog.data, today],
+  );
+
+  // Preselect the next upcoming election as soon as the catalog is in, so
+  // anything the next steps need about it starts loading right away.
+  useEffect(() => {
+    if (!election && elections[0]) setElection(elections[0][0]);
+  }, [election, elections]);
+
+  const summaries = useElectionSummaries(
+    catalog.data?.entries,
+    election,
+    // An older catalog's slates are only worth fetching for someone planning a vote.
+    step !== "welcome" && step !== "identity",
+  );
 
   // Move focus to each step's heading so keyboard and screen-reader users land
   // on the new content.
@@ -100,28 +151,110 @@ export function Wizard() {
     void navigate({ to: path === "vote" ? "/" : "/publish" });
   }
 
-  async function followSelected(entries: CatalogEntry[]) {
+  /** Store what the import has checked so far. */
+  function storePending() {
+    storeSlates(pending.current.splice(0));
+  }
+
+  /** Leave the import part-way: what's in so far stays, the rest is dropped. */
+  function stopImport() {
+    stopped.current = true;
+    bundleAbort.current?.abort();
+    storePending();
+    finish("vote");
+  }
+
+  async function followSelected() {
     areaStore.set(area);
     myElectionStore.set(election);
+    const entries = summaries.entries.map((s) => s.entry);
+    const picked = (entry: CatalogEntry) => selected.has(entry.path) && !isBallotEntry(entry);
     // Official candidate lists always come along: they're the ballot itself.
-    const chosen = entries.filter((e) => selected.has(e.path) || isBallotEntry(e));
+    const chosen = downloadAll
+      ? entries
+      : entries.filter((e) => selected.has(e.path) || isBallotEntry(e));
     if (chosen.length === 0) {
       finish("vote");
       return;
     }
     setStep("importing");
-    setProgress({ done: 0, total: chosen.length });
+    setImportErrors([]);
+    stopped.current = false;
+    pending.current = [];
     const known = new Set(imported.map((s) => s.token));
-    const errors: string[] = [];
-    for (const [i, entry] of chosen.entries()) {
-      const result = await importCatalogEntry(entry, CATALOG_URL, known, queryClient);
-      if (result.kind === "error") {
-        errors.push(`${entry.attribution?.of.name ?? entry.slug}: ${result.error}`);
-      } else if (!isBallotEntry(entry)) {
-        setStanding(sourceIdOf(entry), selected.get(entry.path) ?? "follow");
-      }
-      setProgress({ done: i + 1, total: chosen.length });
+
+    if (downloadAll) {
+      // The ones you didn't pick come along for comparison, not to trust:
+      // sources new to this browser start unfollowed.
+      const importedSources = new Set(imported.flatMap((s) => sourceIdOfToken(s.token) ?? []));
+      defaultToUnfollowed(
+        entries
+          .filter((e) => !isBallotEntry(e) && !picked(e))
+          .map(sourceIdOf)
+          .filter((id) => !importedSources.has(id)),
+      );
     }
+
+    // Everything at once from the catalog's bundle when it has one, so even
+    // the order of requests says nothing about your picks.
+    let bundled: Map<string, string> | undefined;
+    const bundle = catalog.data?.bundle;
+    if (downloadAll && catalog.data && bundle) {
+      const label = "Downloading every organization's endorsements";
+      setImporting({ label, value: 0, ...(bundle.bytes ? { maxValue: bundle.bytes } : {}) });
+      const controller = new AbortController();
+      bundleAbort.current = controller;
+      try {
+        bundled = await fetchCatalogBundle(
+          catalog.data,
+          CATALOG_URL,
+          (value, maxValue) => setImporting({ label, value, ...(maxValue ? { maxValue } : {}) }),
+          controller.signal,
+        );
+      } catch {
+        // Fetch them one by one instead.
+      }
+      bundleAbort.current = null;
+      if (stopped.current) return;
+    }
+
+    const label = downloadAll ? `Adding all ${chosen.length} lists` : importLabel(chosen, picked);
+    setImporting({ label, value: 0, maxValue: chosen.length });
+    const errors: string[] = [];
+    let done = 0;
+    await forEachConcurrently(
+      chosen,
+      IMPORT_CONCURRENCY,
+      async (entry) => {
+        let token = bundled?.get(entry.path);
+        try {
+          token ??= await fetchCatalogSlate(entry, CATALOG_URL, queryClient);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          errors.push(`${entry.attribution?.of.name ?? entry.slug}: ${message}`);
+        }
+        if (token) {
+          const result = verifyCatalogSlate(token, known);
+          if (result.kind === "error") {
+            errors.push(`${entry.attribution?.of.name ?? entry.slug}: ${result.error}`);
+          } else {
+            if (result.kind === "verified") pending.current.push(result.slate);
+            if (picked(entry)) {
+              setStanding(sourceIdOf(entry), selected.get(entry.path) ?? "follow");
+            }
+          }
+          // Checking hundreds of signatures in a row would freeze the page.
+          await new Promise((resolve) => setTimeout(resolve));
+        }
+        done++;
+        setImporting({ label, value: done, maxValue: chosen.length });
+      },
+      () => stopped.current,
+    );
+    // After a Stop this stores the ones that were still in flight.
+    storePending();
+    if (stopped.current) return;
+    setImporting(null);
     if (errors.length === 0) finish("vote");
     else setImportErrors(errors);
   }
@@ -135,6 +268,8 @@ export function Wizard() {
       aria-labelledby="wizard-heading"
       onCancel={(e) => {
         e.preventDefault();
+        // Mid-import, leaving takes the guarded Stop button, not a stray Escape.
+        if (importing) return;
         skip();
       }}
     >
@@ -181,7 +316,8 @@ export function Wizard() {
       {step === "election" && (
         <ElectionStep
           headingRef={headingRef}
-          entries={catalog.data?.entries}
+          elections={elections}
+          today={today}
           isLoading={catalog.isLoading}
           error={catalog.error}
           election={election}
@@ -196,35 +332,33 @@ export function Wizard() {
         />
       )}
 
-      {(step === "area" || step === "sources") && catalog.data && (
-        <ElectionSlates entries={catalog.data.entries} election={election}>
-          {(loaded) =>
-            step === "area" ? (
-              <AreaStep
-                headingRef={headingRef}
-                loaded={loaded}
-                election={election}
-                area={area}
-                setArea={setArea}
-                onBack={() => setStep("election")}
-                onNext={() => setStep("sources")}
-                onSkip={skip}
-              />
-            ) : (
-              <SourcesStep
-                headingRef={headingRef}
-                loaded={loaded}
-                election={election}
-                area={area}
-                selected={selected}
-                setSelected={setSelected}
-                onBack={() => setStep("area")}
-                onNext={() => followSelected(loaded.entries.map((l) => l.entry))}
-                onSkip={skip}
-              />
-            )
-          }
-        </ElectionSlates>
+      {step === "area" && catalog.data && (
+        <AreaStep
+          headingRef={headingRef}
+          summaries={summaries}
+          election={election}
+          area={area}
+          setArea={setArea}
+          onBack={() => setStep("election")}
+          onNext={() => setStep("sources")}
+          onSkip={skip}
+        />
+      )}
+
+      {step === "sources" && catalog.data && (
+        <SourcesStep
+          headingRef={headingRef}
+          summaries={summaries}
+          election={election}
+          area={area}
+          selected={selected}
+          setSelected={setSelected}
+          downloadAll={downloadAll}
+          setDownloadAll={setDownloadAll}
+          onBack={() => setStep("area")}
+          onNext={followSelected}
+          onSkip={skip}
+        />
       )}
 
       {step === "importing" && (
@@ -232,10 +366,26 @@ export function Wizard() {
           <h2 id="wizard-heading" ref={headingRef} tabIndex={-1}>
             {importErrors.length > 0 ? "Some sources didn't import" : "Setting up your ballot…"}
           </h2>
-          {progress && (
-            <p>
-              Imported {progress.done} of {progress.total}.
-            </p>
+          {importing && (
+            <>
+              <ProgressBar
+                label={importing.label}
+                value={importing.value}
+                maxValue={importing.maxValue}
+              />
+              <p className="wizard-wait">
+                <strong>Please keep this open until it finishes.</strong> It usually takes a few
+                seconds. If you stop now, the sources still downloading won't be on your ballot.
+              </p>
+              <div className="wizard-footer">
+                <ConfirmLink
+                  label="Stop"
+                  nudge="We recommend waiting until it finishes."
+                  confirm="Stop anyway"
+                  onConfirm={stopImport}
+                />
+              </div>
+            </>
           )}
           {importErrors.length > 0 && (
             <>
@@ -267,6 +417,24 @@ export function Wizard() {
   );
 }
 
+/** What the import bar says it's fetching: your picks, and the ballot lists that come along. */
+function importLabel(chosen: CatalogEntry[], picked: (entry: CatalogEntry) => boolean): string {
+  const picks = chosen.filter(picked).length;
+  const ballots = chosen.some(isBallotEntry);
+  const yours = picks === 1 ? "your pick" : `your ${picks} picks`;
+  if (picks === 0) return "Downloading the official ballot lists";
+  return ballots ? `Downloading ${yours} and the official ballot lists` : `Downloading ${yours}`;
+}
+
+/** The source a stored slate speaks for, or undefined if it doesn't parse. */
+function sourceIdOfToken(token: string): string | undefined {
+  try {
+    return sourceIdOf(parseSlate(token).payload);
+  } catch {
+    return undefined;
+  }
+}
+
 function WizardFooter({
   onBack,
   onSkip,
@@ -290,17 +458,39 @@ function WizardFooter({
   );
 }
 
-/** How long the "we recommend you don't" nudge shows before the real skip button appears. */
-const SKIP_ARM_DELAY_MS = 1200;
+/** How long the "we recommend you don't" nudge shows before the real button appears. */
+const CONFIRM_ARM_DELAY_MS = 1200;
+
+function SkipSetup({ onSkip }: { onSkip: () => void }) {
+  return (
+    <ConfirmLink
+      label="Skip setup"
+      nudge="We recommend you don't. It only takes a minute."
+      confirm="Skip anyway"
+      onConfirm={onSkip}
+    />
+  );
+}
 
 /**
- * Skipping takes two steps, so a newcomer eager to "get to the real thing"
- * reads why setup is worth a minute first. Hovering (mouse) or pressing "Skip
- * setup" (touch, keyboard) shows the nudge; after a short pause a separate
- * "Skip anyway" button appears beside it, out from under a pointer that's
- * still clicking the first one. Moving the mouse away before then backs out.
+ * A way out that takes two steps (skip setup, stop an import), so a newcomer
+ * eager to "get to the real thing" reads why staying is worth it first.
+ * Hovering (mouse) or pressing the link (touch, keyboard) shows the nudge;
+ * after a short pause a separate confirm button appears beside it, out from
+ * under a pointer that's still clicking the first one. Moving the mouse away
+ * before then backs out.
  */
-function SkipSetup({ onSkip }: { onSkip: () => void }) {
+function ConfirmLink({
+  label,
+  nudge,
+  confirm,
+  onConfirm,
+}: {
+  label: string;
+  nudge: string;
+  confirm: string;
+  onConfirm: () => void;
+}) {
   const [stage, setStage] = useState<"idle" | "hover" | "warned" | "armed">("idle");
   const timer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -309,7 +499,7 @@ function SkipSetup({ onSkip }: { onSkip: () => void }) {
   function warn(next: "hover" | "warned") {
     if (stage === "armed") return;
     if (stage === "idle") {
-      timer.current = setTimeout(() => setStage("armed"), SKIP_ARM_DELAY_MS);
+      timer.current = setTimeout(() => setStage("armed"), CONFIRM_ARM_DELAY_MS);
     }
     // A press keeps the nudge open even if the mouse wanders off afterwards.
     if (stage !== "warned") setStage(next);
@@ -331,13 +521,13 @@ function SkipSetup({ onSkip }: { onSkip: () => void }) {
           setStage("idle");
         }}
       >
-        Skip setup
+        {label}
       </button>
       <span className="wizard-skip-nudge" aria-live="polite">
-        {stage !== "idle" && <span>We recommend you don't. It only takes a minute.</span>}
+        {stage !== "idle" && <span>{nudge}</span>}
         {stage === "armed" && (
-          <button type="button" className="link" onClick={onSkip}>
-            Skip anyway
+          <button type="button" className="link" onClick={onConfirm}>
+            {confirm}
           </button>
         )}
       </span>
@@ -403,9 +593,27 @@ function AboutOpenSlate() {
 
 type HeadingRef = React.RefObject<HTMLHeadingElement>;
 
+/**
+ * The catalog's elections with how many organizations publish for each (a
+ * ballot list keeps an election on the menu without counting as one).
+ * Upcoming first (soonest first), then past (latest first).
+ */
+function electionsOf(entries: CatalogEntry[], today: string): Array<[string, number]> {
+  const counts = new Map<string, number>();
+  for (const entry of entries) {
+    counts.set(entry.election, (counts.get(entry.election) ?? 0) + (isBallotEntry(entry) ? 0 : 1));
+  }
+  return [...counts.entries()].sort(([a], [b]) => {
+    const ap = a < today;
+    const bp = b < today;
+    return ap !== bp ? Number(ap) - Number(bp) : ap ? b.localeCompare(a) : a.localeCompare(b);
+  });
+}
+
 function ElectionStep({
   headingRef,
-  entries,
+  elections,
+  today,
   isLoading,
   error,
   election,
@@ -416,7 +624,8 @@ function ElectionStep({
   onManual,
 }: {
   headingRef: HeadingRef;
-  entries: CatalogEntry[] | undefined;
+  elections: Array<[string, number]>;
+  today: string;
   isLoading: boolean;
   error: Error | null;
   election: string;
@@ -426,36 +635,12 @@ function ElectionStep({
   onSkip: () => void;
   onManual: () => void;
 }) {
-  const today = localToday();
-  const elections = useMemo(() => {
-    // Organizations per election; a ballot list keeps the election on the menu
-    // without counting as one.
-    const counts = new Map<string, number>();
-    for (const entry of entries ?? []) {
-      counts.set(
-        entry.election,
-        (counts.get(entry.election) ?? 0) + (isBallotEntry(entry) ? 0 : 1),
-      );
-    }
-    // Upcoming first (soonest first), then past (latest first).
-    return [...counts.entries()].sort(([a], [b]) => {
-      const ap = a < today;
-      const bp = b < today;
-      return ap !== bp ? Number(ap) - Number(bp) : ap ? b.localeCompare(a) : a.localeCompare(b);
-    });
-  }, [entries, today]);
-
-  // Preselect the next upcoming election.
-  useEffect(() => {
-    if (!election && elections[0]) setElection(elections[0][0]);
-  }, [election, elections, setElection]);
-
   return (
     <>
       <h2 id="wizard-heading" ref={headingRef} tabIndex={-1}>
         Which election?
       </h2>
-      {isLoading && <p className="hint">Loading the public catalog…</p>}
+      {isLoading && <ProgressBar label="Loading the public catalog" value={0} />}
       {error && (
         <>
           <p className="error">Couldn't load the public catalog: {error.message}</p>
@@ -498,63 +683,91 @@ function ElectionStep({
   );
 }
 
-interface LoadedEntry {
-  entry: CatalogEntry;
-  payload?: SlatePayload;
-}
-
-interface Loaded {
-  entries: LoadedEntry[];
+/** Each of the election's catalog entries, summarized; `done` of `total` slates read so far. */
+interface ElectionSummaries {
+  entries: EntrySummary[];
+  /** Slates read so far, for entries the catalog doesn't summarize. */
   done: number;
   total: number;
 }
 
-/** Fetch the election's catalog slates once; both the area and sources steps read them. */
-function ElectionSlates({
-  entries,
-  election,
-  children,
-}: {
-  entries: CatalogEntry[];
-  election: string;
-  children: (loaded: Loaded) => React.ReactNode;
-}) {
+/**
+ * Where each of the election's organizations has races, for the area and
+ * sources steps. A current catalog says so per entry, so this is immediate and
+ * downloads nothing. For an older catalog's entries it fetches the slates
+ * (once `active`), and reads them without checking signatures: it's only a
+ * preview, and the import checks every slate it keeps.
+ */
+function useElectionSummaries(
+  entries: CatalogEntry[] | undefined,
+  election: string,
+  active: boolean,
+): ElectionSummaries {
   const forElection = useMemo(
-    () => entries.filter((e) => e.election === election),
+    () => (entries ?? []).filter((e) => e.election === election),
     [entries, election],
   );
+  const unsummarized = useMemo(() => forElection.filter((e) => !isSummarized(e)), [forElection]);
   const results = useQueries({
-    queries: forElection.map((entry) => ({
+    queries: unsummarized.map((entry) => ({
       ...slateFromUrlOptions(catalogEntryUrl(entry, CATALOG_URL)),
       staleTime: 1000 * 60 * 5,
+      enabled: active,
     })),
   });
+  // Each slate is read once, however many times the list re-renders as the
+  // rest arrive.
+  const payloads = useRef(new Map<string, SlatePayload | undefined>());
   const tokens = results.map((r) => r.data);
   // useQueries returns new objects every render; key the memo on what matters.
   const resultKey = results.map((r) => `${r.status}:${r.data ?? ""}`).join("\n");
   // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on result contents
-  const loaded = useMemo<Loaded>(() => {
-    const out = forElection.map((entry, i) => {
-      const token = tokens[i];
-      const payload = token ? verifySlate(token).payload : undefined;
-      return payload ? { entry, payload } : { entry };
-    });
-    return {
-      entries: out,
-      done: results.filter((r) => !r.isLoading).length,
-      total: forElection.length,
+  return useMemo<ElectionSummaries>(() => {
+    const tokenOf = new Map(unsummarized.map((entry, i) => [entry.path, tokens[i]]));
+    const payloadOf = (token: string) => {
+      if (!payloads.current.has(token)) {
+        let payload: SlatePayload | undefined;
+        try {
+          payload = parseSlate(token).payload;
+        } catch {
+          payload = undefined;
+        }
+        payloads.current.set(token, payload);
+      }
+      return payloads.current.get(token);
     };
-  }, [forElection, resultKey]);
-  return <>{children(loaded)}</>;
+    return {
+      entries: forElection.map((entry) => {
+        const token = tokenOf.get(entry.path);
+        return summaryOf(entry, token ? payloadOf(token) : undefined);
+      }),
+      done: results.filter((r) => r.status !== "pending").length,
+      total: unsummarized.length,
+    };
+  }, [forElection, unsummarized, resultKey]);
 }
 
-function positionJurisdiction(payload: SlatePayload, index: number): string | undefined {
-  return payload.positions[index]?.subject.jurisdiction ?? payload.context?.jurisdiction;
+/**
+ * Shown while an older catalog's slates load: a bar, and a firm word against
+ * skipping, since without them the next steps can't match anyone to your ballot.
+ */
+function SummariesWait({ summaries }: { summaries: ElectionSummaries }) {
+  if (summaries.done >= summaries.total) return null;
+  return (
+    <div className="wizard-wait">
+      <ProgressBar label="Loading endorsements" value={summaries.done} maxValue={summaries.total} />
+      <p>
+        <strong>Please wait for this to finish.</strong> This catalog doesn't say where each
+        organization's endorsements are, so we read them all to match them to your ballot. If you
+        skip setup now, you'll have to find your sources by hand.
+      </p>
+    </div>
+  );
 }
 
 function AreaStep({
   headingRef,
-  loaded,
+  summaries,
   election,
   area,
   setArea,
@@ -563,7 +776,7 @@ function AreaStep({
   onSkip,
 }: {
   headingRef: HeadingRef;
-  loaded: Loaded;
+  summaries: ElectionSummaries;
   election: string;
   area: Area;
   setArea: (next: Area) => void;
@@ -571,18 +784,12 @@ function AreaStep({
   onNext: () => void;
   onSkip: () => void;
 }) {
-  const options = useMemo(() => {
-    const positions: Array<{ jurisdiction?: string }> = [];
-    for (const { payload } of loaded.entries) {
-      if (!payload) continue;
-      payload.positions.forEach((_, i) => {
-        positions.push({ jurisdiction: positionJurisdiction(payload, i) });
-      });
-    }
-    return areaOptionsOf(positions);
-  }, [loaded]);
+  const options = useMemo(
+    () => areaOptionsOf(summaryJurisdictions(summaries.entries)),
+    [summaries],
+  );
 
-  const loading = loaded.done < loaded.total;
+  const loading = summaries.done < summaries.total;
 
   return (
     <>
@@ -594,9 +801,7 @@ function AreaStep({
         browser, and you can change it any time.
       </p>
       {loading ? (
-        <p className="hint">
-          Loading endorsements… {loaded.done} of {loaded.total}
-        </p>
+        <SummariesWait summaries={summaries} />
       ) : (
         <AreaPicker options={options} area={area} election={election} onChange={setArea} />
       )}
@@ -623,21 +828,25 @@ function AreaStep({
 
 function SourcesStep({
   headingRef,
-  loaded,
+  summaries,
   election,
   area,
   selected,
   setSelected,
+  downloadAll,
+  setDownloadAll,
   onBack,
   onNext,
   onSkip,
 }: {
   headingRef: HeadingRef;
-  loaded: Loaded;
+  summaries: ElectionSummaries;
   election: string;
   area: Area;
   selected: Picks;
   setSelected: (next: Picks) => void;
+  downloadAll: boolean;
+  setDownloadAll: (next: boolean) => void;
   onBack: () => void;
   onNext: () => void;
   onSkip: () => void;
@@ -646,18 +855,12 @@ function SourcesStep({
 
   // Each organization with how many races on *your* ballot it weighs in on,
   // grouped by where it publishes for (statewide, a city…).
-  const ballots = loaded.entries.filter((l) => isBallotEntry(l.entry));
+  const ballots = summaries.entries.filter((s) => isBallotEntry(s.entry));
+  const organizations = summaries.entries.length - ballots.length;
   const { groups, others } = useMemo(() => {
-    const scored = loaded.entries
-      .filter((l) => !isBallotEntry(l.entry))
-      .map(({ entry, payload }) => {
-        const races = new Set<string>();
-        payload?.positions.forEach((position, i) => {
-          if (inArea(positionJurisdiction(payload, i), area))
-            races.add(subjectKey(position.subject));
-        });
-        return { entry, races: races.size, scope: payload?.context?.jurisdiction };
-      });
+    const scored = summaries.entries
+      .filter((s) => !isBallotEntry(s.entry))
+      .map((s) => ({ entry: s.entry, races: racesInArea(s, area), scope: s.scope }));
     // A group that publishes for another city still weighs in on statewide
     // races, but it isn't "yours": list it under "based elsewhere".
     const elsewhere = (s: (typeof scored)[number]) => {
@@ -687,7 +890,7 @@ function SourcesStep({
         .sort((a, b) => a.rank - b.rank || b.items.length - a.items.length),
       others: scored.filter(elsewhere).sort((a, b) => b.races - a.races),
     };
-  }, [loaded, area]);
+  }, [summaries, area]);
 
   function pick(path: string, standing: Standing) {
     const next = new Map(selected);
@@ -750,11 +953,7 @@ function SourcesStep({
         your values. Mark ones you disagree with too: what they back counts against it on your
         ballot, and what they oppose counts for it. You can change this later on the Sources page.
       </p>
-      {loaded.done < loaded.total && (
-        <p className="hint">
-          Loading endorsements… {loaded.done} of {loaded.total}
-        </p>
-      )}
+      <SummariesWait summaries={summaries} />
       <div className="wizard-scroll">
         {groups.map((group) => (
           <fieldset key={group.label} className="wizard-group">
@@ -780,16 +979,31 @@ function SourcesStep({
           <>
             {" "}
             The official candidate list from{" "}
-            {ballots.map((l) => l.entry.attribution?.of.name ?? l.entry.slug).join(" and ")} is
+            {ballots.map((s) => s.entry.attribution?.of.name ?? s.entry.slug).join(" and ")} is
             included, so every race shows its whole field.
           </>
         )}
       </p>
+      {organizations > 0 && (
+        <Checkbox
+          className="wizard-download-all"
+          isSelected={downloadAll}
+          onChange={setDownloadAll}
+        >
+          <span>
+            <strong>Download all {organizations} organizations' lists, not just my picks</strong>
+            <span className="hint ui-option-note">
+              More private: the server can't tell whose recommendations you use. The ones you didn't
+              pick are kept for comparison, not followed. It's a bigger download.
+            </span>
+          </span>
+        </Checkbox>
+      )}
       <WizardFooter onBack={onBack} onSkip={onSkip}>
         {/* Following someone is the way through, as on the area step. */}
         {selected.size === 0 && (
           <button type="button" className="hollow" onClick={onNext}>
-            Continue without sources
+            {downloadAll ? "Download without following" : "Continue without sources"}
           </button>
         )}
         <button type="button" className="primary" onClick={onNext} disabled={selected.size === 0}>

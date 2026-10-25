@@ -72,13 +72,19 @@ strongly suggesting waiting rather than skipping.
    (`7dbaf9c`). Measured on the live bundle: +154 KB pretty-printed over 376
    entries (index is 358 KB; gzip shrinks both); ballot slates have up to 212
    jurisdictions.
-4. [ ] web: catalog types; prefetch the catalog when the wizard opens.
-5. [ ] web: wizard reads summaries; fallback fetch starts early with a bar.
-6. [ ] web: import step with a progress bar, concurrency, strong "wait"
-       message, guarded stop; "download all" via bundle.
-7. [ ] public-endorsements: `bundle` field in `index.json`; types for the new
-       entry fields; bump `.openslate-version` once OpenSlate is pushed.
-8. [ ] Checks, browser check in a fresh profile, README, commit.
+4. [x] web: catalog types; prefetch the catalog when the wizard opens.
+5. [x] web: wizard reads summaries; fallback fetch starts early with a bar.
+6. [x] web: import step with a progress bar, concurrency 6, strong "wait"
+       message, guarded Stop (ConfirmLink, which SkipSetup now uses), Escape
+       ignored while running; "download all" via the bundle.
+7. [~] public-endorsements: `bundle: {path, bytes}` in `index.json`, types and
+       README for the new fields — committed locally there, not pushed.
+       **Next:** after OpenSlate master (with `7dbaf9c`) is on GitHub, bump
+       `.openslate-version` there and push, so CI re-signs with the new CLI.
+8. [x] Checks, browser check in a fresh profile, README, commit.
+9. [ ] Rebase `feat/wizard-catalog-summaries` onto master (disagree-sources
+       landed as `7fad8f5`: `setStanding`, `StandingToggle` in the wizard) and
+       merge. Then ask the user before pushing either repo.
 
 ## Findings / gotchas
 
@@ -87,6 +93,18 @@ strongly suggesting waiting rather than skipping.
 - `apps/web/src/lib/download.ts` already exists (`downloadText`). A Write to
   that path clobbered it once this session; restored from HEAD (it matched HEAD
   at session start). The download helpers live in `lib/fetchProgress.ts`.
+- Importing slates one `slatesCollection.insert` at a time made "download
+  all" take 40+ s for 346 slates: every insert re-collated the ballot behind
+  the dialog. Batched (verify each, then one insert) it takes ~3.6 s locally.
+  The collection's `onInsert` only persisted `mutations[0]`; it now persists
+  and confirms every row of a batch.
+- Browser check (2026-10-24, T3 incognito, a local catalog built from the live
+  bundle with summaries, served gzipped and slowed): area and sources steps
+  appear with no slate requests; picks import with the bar; download-all makes
+  one `bundle.json` request, the byte bar tracks it, 346 stored, 1 followed,
+  336 recorded unfollowed; Escape ignored mid-import; Stop → Stop anyway kept
+  the 227 checked so far. Old-format catalog: fetching starts on "Plan my
+  vote", wait bar + message on the area step, worst main-thread stall 126 ms.
 - GitHub Pages gzips `bundle.json`; a browser's `Content-Length` is then the
   compressed size while the stream yields decompressed bytes, so progress needs
   the uncompressed size from the catalog.
@@ -94,6 +112,11 @@ strongly suggesting waiting rather than skipping.
 ## Progress log
 
 - [x] Explored wizard, catalog producer and public catalog repo.
+- [x] Core + CLI summaries (`7dbaf9c` on master).
+- [x] Web wizard, batched import, progress bar, download all (branch
+      `feat/wizard-catalog-summaries`).
+- [x] public-endorsements build-site `bundle` field (local commit there).
+- [ ] Rebase onto master, merge, push (ask first), bump `.openslate-version`.
 
 ## Open questions for the user
 

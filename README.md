@@ -82,6 +82,14 @@ opens the same warning at the top of the page. On the public site
 and the welcome screen puts it first; a copy you run yourself keeps it to the
 badge and one line on the welcome screen.
 
+The guide works from the catalog's list alone: each entry says where its races
+are, so the area and source steps are there at once, and only the lists you
+pick are downloaded at the end (with the official ballot lists). Tick *Download
+all* to fetch every organization's list instead, in one request, so the server
+can't tell whose recommendations you use; the ones you didn't pick are kept
+unfollowed, for comparison. With an older catalog that doesn't list races, the
+guide reads every slate first, with a progress bar.
+
 The goal: give citizens deeper insight into the things they care about, without
 relying solely on simplified endorsements from a single newspaper or org.
 
@@ -267,7 +275,8 @@ The web app's **Sources** page (and the getting-started guide) additionally impo
 sibling repo, [openslate-public-endorsements][ope] — published as static files
 on GitHub Pages, fetched directly with no server in between. Its catalog also
 carries each org's logo and left-right counts, so the app never contacts the
-orgs' own sites.
+orgs' own sites, and where each slate's races are (`scope`, `jurisdictions`,
+written by `openslate sign --batch`), plus a `bundle` of every slate in one file.
 
 [ope]: https://github.com/cinderblock/openslate-public-endorsements
 

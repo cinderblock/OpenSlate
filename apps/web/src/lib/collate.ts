@@ -353,13 +353,21 @@ export interface AreaOptions {
   districts: Record<string, string[]>;
 }
 
-/** The localities and districts that races in these slates (optionally one election) cover. */
-export function areaOptionsOf(positions: Iterable<{ jurisdiction?: string }>): AreaOptions {
+/**
+ * The localities and districts that races in these slates (optionally one
+ * election) cover. Each item counts once, or `count` times when it stands for
+ * several races (a catalog's per-jurisdiction summary).
+ */
+export function areaOptionsOf(
+  positions: Iterable<{ jurisdiction?: string; count?: number }>,
+): AreaOptions {
   const localities = new Map<string, number>();
   const districts = new Map<string, Set<string>>();
-  for (const { jurisdiction } of positions) {
+  for (const { jurisdiction, count = 1 } of positions) {
     const part = parseJurisdiction(jurisdiction);
-    if (part.kind === "local") localities.set(part.path, (localities.get(part.path) ?? 0) + 1);
+    if (part.kind === "local") {
+      localities.set(part.path, (localities.get(part.path) ?? 0) + count);
+    }
     if (part.kind === "district") {
       const family = `${part.state}/${part.family}`;
       const set = districts.get(family) ?? new Set();

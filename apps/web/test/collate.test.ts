@@ -306,4 +306,14 @@ describe("areaOptionsOf", () => {
       districts: { "us/ca/cd": ["2", "12"], "us/ca/ad": ["17"] },
     });
   });
+
+  test("weighs each item by its race count", () => {
+    expect(
+      areaOptionsOf([
+        { jurisdiction: "us/ca/sf", count: 1 },
+        { jurisdiction: "us/ca/oakland", count: 3 },
+        { jurisdiction: "us/ca/sf" },
+      ]).localities,
+    ).toEqual(["us/ca/oakland", "us/ca/sf"]);
+  });
 });
