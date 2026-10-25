@@ -12,8 +12,13 @@ apps/*/dist/
 
 # electrobun
 .electrobun/
+.hutch/
+.cottontail-tmp/
 apps/desktop/build/
 apps/desktop/dist/
+apps/desktop/artifacts/
+# the web app staged for the desktop build (apps/desktop/scripts/build.ts)
+apps/desktop/web/
 
 # test / coverage
 coverage/

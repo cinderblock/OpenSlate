@@ -1,0 +1,9 @@
+{
+  "extends": ["../../tsconfig.base.json", "./.hutch/devkit/tsconfig.json"],
+  // Electrobun's SDK (projected into .hutch/devkit by `electrobun build`/`dev`)
+  // is TypeScript source that also mentions browser globals.
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"]
+  },
+  "include": ["src", "scripts", "electrobun.config.ts"]
+}

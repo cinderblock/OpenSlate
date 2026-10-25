@@ -1,41 +1,80 @@
 # @openslate/desktop
 
-A desktop wrapper around the OpenSlate web app, built with
-[Electrobun](https://blackboard.sh/electrobun). It renders the same React UI in a
-native window, so it's fully intercompatible with the web and CLI.
+The OpenSlate web app in a native window, for Windows, macOS and Linux, built
+with [Electrobun](https://blackboard.sh/electrobun) on each system's own
+webview (WebView2, WKWebView, WebKitGTK). It contains **no OpenSlate logic**:
+it loads the web app, which imports `@openslate/core` like every other
+surface, so signing, verification and the wire format live in one place.
 
-> **Status: stub.** The main-process entry ([`src/bun/index.ts`](./src/bun/index.ts))
-> follows Electrobun's documented pattern, but the build configuration and view
-> bundling still need to be generated and verified against the current Electrobun
-> release. Electrobun is intentionally *not* a dependency yet, to keep the root
-> install light.
+Two editions:
 
-## Finishing the setup
+| Edition | Name | Identifier | Public catalog |
+| --- | --- | --- | --- |
+| Standard | OpenSlate | `us.openslate.desktop` | read live, like openslate.us |
+| Offline | OpenSlate Offline | `us.openslate.desktop.offline` | a copy built in: every slate, logo and voter guide, checked when the copy was taken |
 
-1. Add Electrobun:
-   ```sh
-   bun add -d electrobun
-   ```
-2. Generate the canonical project skeleton / build config (this writes the config
-   file and view scaffolding for the installed version):
-   ```sh
-   bunx electrobun init
-   ```
-3. Point the app's `mainview` at the web build. Build the web app first
-   (`bun run build` at the repo root → `apps/web/dist`) and either copy that output
-   into the Electrobun views directory or configure Electrobun to bundle it as
-   `views://mainview`.
-4. Run it:
-   ```sh
-   bun run dev      # or: OPENSLATE_URL=http://localhost:5173 bun run dev
-   bun run build    # package a distributable
-   ```
+The offline edition plans a ballot with no internet at all. Polls, forecasts,
+results, address lookups and map images still need a connection, and say so.
+The two keep separate data, so both can be installed at once.
 
-`OPENSLATE_URL` lets you load a running Vite dev server instead of bundled assets
-during development.
+## Downloads
 
-## How it stays in sync
+Releases are on GitHub: <https://github.com/cinderblock/openslate/releases>.
 
-The desktop app contains **no OpenSlate logic** — it loads the web UI, which imports
-`@openslate/core` just like every other surface. Signing, verification, and the wire
-format live in one place.
+- **Windows** (x64): unzip `…-windows-x64-Setup.zip` and run the `Setup.exe`
+  inside, keeping the `.installer` folder beside it. It installs for the
+  current user (no admin), with Start menu and desktop shortcuts. The builds
+  aren't code-signed yet, so SmartScreen warns: *More info → Run anyway*.
+- **macOS** (Apple Silicon): open the `.dmg` and drag the app to
+  Applications; start it from there (it unpacks itself on first launch and
+  can't from the disk image). Unsigned, so macOS may call it damaged: run
+  `xattr -cr "/Applications/OpenSlate.app"` once, then open it.
+- **Linux** (x64, Ubuntu 24.04 or newer, or equivalent): extract
+  `…-linux-x64-Setup.tar.gz` and run the `installer` inside. Needs
+  `libwebkit2gtk-4.1-0` and `libgtk-3-0`.
+
+**Uninstalling:** the uninstaller offers *App* or *App and Data*. *App and
+Data* also deletes your signing keys, picks and notes. Download a backup of
+any identity you'll want again first (Publish → Identities).
+
+## Building
+
+```sh
+bun install
+bun run --filter @openslate/desktop build                     # standard → apps/desktop/artifacts/
+bun run --filter @openslate/desktop build --flavor offline    # offline edition
+bun run --filter @openslate/desktop dev [--flavor offline]    # build and launch a dev copy
+```
+
+[`scripts/build.ts`](./scripts/build.ts) builds the web app with
+`vite build --mode desktop` (settings from `apps/web/.env.desktop`, no service
+worker) into `web/`, adds a fresh catalog snapshot for the offline edition
+(`apps/web/scripts/snapshot-catalog.ts`; `--snapshot <dir>` reuses one), then
+runs `electrobun build`. Electrobun builds only for the machine it runs on;
+CI builds every platform on its own runner
+([`.github/workflows/desktop.yml`](../../.github/workflows/desktop.yml)).
+
+The first build downloads Electrobun's toolchain (Hutch) into `~/.hutch`; on
+Windows it also adds `~/.hutch/bin` to your PATH. `bun run typecheck` runs
+`electrobun prepare` first, which projects the SDK types into `.hutch/devkit`.
+
+Icons come from `apps/web/public/icon.svg`. After changing it, run
+`bun run --filter @openslate/desktop icons` (needs the `resvg` CLI) and
+commit `icons/`.
+
+## Self-test
+
+`OPENSLATE_SELFTEST=<report.json>` makes the app check itself in its own
+window (the page renders, localStorage and IndexedDB work, SHA-256, bundled
+files load, links to other sites leave through the system browser and the
+window stays on the app), write the results to the file, and quit. Run it
+twice: the second report's `previous` values show storage survived a
+restart. Links are recorded, not opened, during a self-test.
+
+## How links work
+
+The window only ever shows the app's own `views://` pages: WebView2 runs with
+web security off, so nothing from the web may load in it. A preload script
+hands `target=_blank` links and `window.open` calls to the main process, and
+navigation rules block anything else; the main process opens those in the
+system browser ([`src/bun/index.ts`](./src/bun/index.ts)).
