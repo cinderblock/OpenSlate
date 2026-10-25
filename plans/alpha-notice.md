@@ -81,8 +81,9 @@ Proposed and approved ("do it all") 2026-10-25:
       site: wizard closes the banner, the badge reopens it, the corrections
       line on 350 SF Action's secondhand report, the print note text
 - [x] committed
-- [ ] deployed (asked the user: local master also carries another thread's
-      unpushed `9254da1`)
+- [x] deployed with the user's OK (carrying another thread's docs commit
+      `9254da1`); live on openslate.us 2026-10-25 1:10 AM PDT (08:10Z), checked in
+      a fresh browser: wizard note shown, banner closed, new footer text
 
 ## Findings / gotchas
 
