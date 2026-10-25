@@ -100,8 +100,9 @@ wizard open: it closes at once and a banner over every page shows the bar.
 10. [x] OpenSlate master was pushed (by 2026-10-25, `5bf7594` is on
        `origin/master`).
 11. [x] Background import with a banner (the follow-up above); browser-checked.
-12. [ ] **Current step — waiting on the user:** push the background-import
-       commit (`6be78bb`, deploys). In openslate-public-endorsements, only
+12. [ ] **Current step — waiting on the user.** The background import
+       (`6be78bb`) reached `origin/master` with another thread's push. In
+       openslate-public-endorsements, only
        `25955d8` (the `bundle` field) is left: origin's pin is already
        `5fce7fe`, which includes `7dbaf9c`, and the live `index.json` has
        `scope` + `jurisdictions` on all 376 entries (checked 2026-10-25), just
@@ -159,15 +160,14 @@ wizard open: it closes at once and a banner over every page shows the bar.
 - [x] Rebased onto master and merged (`5bf7594`).
 - [x] OpenSlate master pushed (the wizard rework).
 - [x] Background import + banner (branch `feat/wizard-catalog-summaries`).
-- [ ] Push the background import (ask first); public-endorsements push and
-      `.openslate-version` bump (ask first).
+- [x] Background import pushed (`6be78bb`, with another thread's push).
+- [ ] public-endorsements: push `25955d8` (ask first).
 
 ## Open questions for the user
 
-1. Push? OpenSlate master deploys the app; `7dbaf9c` is on GitHub already, so
-   the catalog repo can bump `.openslate-version` now. Either order is safe
-   for users: the app falls back when the catalog has no summaries, and old
-   apps ignore the new fields. Recommendation: push both.
+1. Push `25955d8` (the catalog's `bundle` field) to openslate-public-endorsements,
+   cherry-picked onto `origin/master`? Its pin already has the CLI change.
+   Recommendation: yes; it makes Download all one request instead of ~346.
 
 ## Things not to do
 
