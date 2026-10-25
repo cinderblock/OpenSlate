@@ -27,7 +27,9 @@ import {
   onboardingStore,
   setFollowed,
 } from "../lib/myVote";
+import { DESKTOP_DOWNLOADS_URL, IS_DESKTOP_APP } from "../lib/platform";
 import {
+  CATALOG_BUILT_IN,
   type CatalogEntry,
   DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
   catalogEntryLogoUrl,
@@ -378,11 +380,22 @@ function AboutOpenSlate() {
         </li>
         <li>
           <Server className="icon" />
-          <span>
-            <strong>Don't want to use this website?</strong> Run your own copy. The app is plain
-            files any web server can host, or that run on your own computer. A desktop app is on the
-            way.
-          </span>
+          {IS_DESKTOP_APP ? (
+            <span>
+              <strong>Runs on your computer.</strong>{" "}
+              {CATALOG_BUILT_IN
+                ? "This edition carries a copy of the public endorsements and voter guides, so planning your ballot works with no internet. "
+                : ""}
+              Polls, forecasts and results still need a connection.
+            </span>
+          ) : (
+            <span>
+              <strong>Don't want to use this website?</strong> Run OpenSlate on your own computer:
+              the desktop app for Windows, macOS and Linux comes with or without a built-in copy of
+              the endorsements, for planning your ballot offline. Or host the app's plain files on
+              any web server.
+            </span>
+          )}
         </li>
       </ul>
       <p className="wizard-about-links">
@@ -390,9 +403,21 @@ function AboutOpenSlate() {
           Source code on GitHub
         </a>
         {" · "}
-        <a href={`${REPO_URL}#how-to-run`} target="_blank" rel="noreferrer">
-          How to run your own
-        </a>
+        {IS_DESKTOP_APP ? (
+          <a href={DESKTOP_DOWNLOADS_URL} target="_blank" rel="noreferrer">
+            Newer versions
+          </a>
+        ) : (
+          <>
+            <a href={DESKTOP_DOWNLOADS_URL} target="_blank" rel="noreferrer">
+              Download the desktop app
+            </a>
+            {" · "}
+            <a href={`${REPO_URL}#how-to-run`} target="_blank" rel="noreferrer">
+              How to run your own
+            </a>
+          </>
+        )}
       </p>
     </section>
   );

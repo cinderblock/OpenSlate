@@ -9,14 +9,20 @@
  */
 
 import { useEffect, useState } from "react";
+import { IS_DESKTOP_APP } from "./platform";
 
 /** Where the project's own copy answers (www redirects, but count it anyway). */
 export const PUBLIC_SITE_HOSTS: readonly string[] = ["openslate.us", "www.openslate.us"];
 
-export function isPublicSite(
-  hostname: string = typeof location === "undefined" ? "" : location.hostname,
-): boolean {
-  return PUBLIC_SITE_HOSTS.includes(hostname.toLowerCase());
+/**
+ * Whether this is the project's own copy: openslate.us, or the desktop app
+ * (whose pages have no hostname of their own). Pass a hostname to ask about
+ * that host alone.
+ */
+export function isPublicSite(hostname?: string): boolean {
+  if (hostname === undefined && IS_DESKTOP_APP) return true;
+  const host = hostname ?? (typeof location === "undefined" ? "" : location.hostname);
+  return PUBLIC_SITE_HOSTS.includes(host.toLowerCase());
 }
 
 const DISMISSED_KEY = "openslate.alphaNoticeDismissed.v1";
