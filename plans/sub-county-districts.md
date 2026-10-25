@@ -232,7 +232,8 @@ your ballot" section instead of on the ballot.
 1. ~~Ship?~~ Answered 2026-10-25: yes, data right after the app. Done.
 2. ~~Phase 6 next?~~ Answered 2026-10-25 ("keep going on boundary issues");
    BOE, college and supervisorial boundaries done.
-3. Still open: the remaining maybes are trustee areas (school and college) and water /
+3. ~~Chase trustee areas and water districts?~~ Answered 2026-10-25: stop
+   here for Nov 3. The remaining maybes are trustee areas (school and college) and water /
    special districts. Trustee areas would need each county's or district's
    GIS; water districts have no electoral-boundary source we trust. Worth
    chasing for OC first, or stop here? Recommendation: stop here for Nov 3
