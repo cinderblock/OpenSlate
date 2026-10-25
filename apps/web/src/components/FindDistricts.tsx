@@ -8,14 +8,18 @@ import {
   type GeoHit,
   type GeoLayer,
   NEAR_LINE_METERS,
+  SCHOOL_LAYERS,
   type StateGeo,
   areaFromHit,
   loadStateGeo,
   locate,
   mergeFoundArea,
+  schoolsAt,
 } from "../lib/geo";
 import {
   type Area,
+  DISTRICT_COUNTS,
+  NO_DISTRICT,
   districtFamilyLabel,
   jurisdictionLabel,
   noRaceReason,
@@ -193,13 +197,16 @@ export function FindDistricts({
               return;
             }
             if (service === "census" && match.districts) {
-              // The Census Bureau's own answer, from its full-resolution maps.
+              // The Census Bureau's own answer, from its full-resolution maps;
+              // school districts from ours, at the point it matched.
+              const schools = schoolsAt(geo, match.lon, match.lat);
               applyHit(
                 {
                   districts: match.districts,
                   county: match.county,
                   place: match.place,
                   nearLine: [],
+                  ...(schools ? { schools } : {}),
                 },
                 "the US Census Bureau geocoder",
                 { point: [match.lon, match.lat], from: match.label },
@@ -551,10 +558,13 @@ function FoundSummary({
   onShowMap?: () => void;
   onAdjust: () => void;
 }) {
-  const districts = Object.entries(found.area.districts);
+  const districts = Object.entries(found.area.districts).filter(([, n]) => n !== NO_DISTRICT);
   const near = found.nearLine.filter((l): l is "cd" | "sd" | "ad" =>
     ["cd", "sd", "ad"].includes(l),
   );
+  // School district families the lookup couldn't tell (the spot is near a line).
+  const schools = found.hit?.schools;
+  const schoolsUnsure = schools !== undefined && SCHOOL_LAYERS.some((l) => !schools[l]);
   return (
     <div className="find-found" aria-live="polite">
       <p>
@@ -563,8 +573,12 @@ function FoundSummary({
       </p>
       <ul className="find-found-list">
         {districts.map(([family, n]) => {
+          const label = found.area.labels?.[family];
+          // A school district only narrows races filed under the county: no
+          // race of its own to be missing.
+          if (label) return <li key={family}>{label}</li>;
           const present = options.districts[family] ?? [];
-          const hasRace = present.includes(n);
+          const hasRace = present.includes(n) || !(family in DISTRICT_COUNTS);
           return (
             <li key={family}>
               {jurisdictionLabel(`${family}-${n}`)}
@@ -581,6 +595,12 @@ function FoundSummary({
           {near.map((l) => LAYER_NAMES[l].toLowerCase()).join(" and ")} line, where the maps stored
           with the app may be off. Check it with an address lookup (the Census Bureau uses the exact
           lines).
+        </p>
+      )}
+      {schoolsUnsure && (
+        <p className="hint">
+          This spot is near a school district line, so OpenSlate can't tell which school district
+          you're in. Your ballot lists its school board races as ones that might be on it.
         </p>
       )}
       {found.notCovered.length > 0 && (

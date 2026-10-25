@@ -119,7 +119,11 @@ districts over a street (or satellite) map from the US Geological Survey;
 loading map images shows USGS roughly where you're looking, so the map says
 so and can switch the background off. A district with no race
 this election (e.g. an odd-numbered State Senate seat in 2026) says so on My
-ballot. Or skip all that and choose your city and district numbers from lists
+ballot. The lookups also find your school districts, so a county's school
+board races show only for the school districts you're in; races only part of a
+county votes on that the app can't place (a water district's division, a
+school board's trustee area) are listed apart, as *Might be on your ballot*.
+Or skip all that and choose your city and district numbers from lists
 yourself. The app is light or dark to match your device; Settings →
 Appearance picks one for this browser instead.
 
@@ -166,8 +170,8 @@ public Worker. To turn on Google through your server, copy `.env.example` →
 from the browser, with no server: Settings → *Your Google API key*.) Vite proxies `/api` → `localhost:8787` so the SPA finds the
 backend automatically.
 
-The district boundaries (`apps/web/public/geo/us-ca.topo.json`, ~600 KB
-gzipped, fetched only when someone opens the finder) are built from Census
+The district boundaries (`apps/web/public/geo/us-ca.topo.json`, ~1 MB
+gzipped with school districts, fetched only when someone opens the finder) are built from Census
 TIGERweb by `bun run --filter '@openslate/web' geo`; rerun it after
 redistricting.
 

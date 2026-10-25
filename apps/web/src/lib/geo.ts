@@ -2,7 +2,7 @@ import type { Feature, MultiPolygon, Polygon, Position } from "geojson";
 import { feature, neighbors } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import type { AreaOptions } from "./collate";
-import { type Area, localityPathFor } from "./jurisdictions";
+import { type Area, NO_DISTRICT, districtId, localityPathFor } from "./jurisdictions";
 
 /**
  * Finding someone's districts on their own device: boundary data shipped with
@@ -15,6 +15,13 @@ import { type Area, localityPathFor } from "./jurisdictions";
 export type GeoLayer = "cd" | "sd" | "ad" | "county" | "place";
 export const DISTRICT_LAYERS = ["cd", "sd", "ad"] as const;
 export type DistrictLayer = (typeof DISTRICT_LAYERS)[number];
+/**
+ * School districts (Census TIGER: unified, elementary, secondary), by 5-digit
+ * LEA code. Looked up, not drawn: they place school board races
+ * (`us/ca/elsd-18030/ta-4`; plans/sub-county-districts.md).
+ */
+export const SCHOOL_LAYERS = ["unsd", "elsd", "scsd"] as const;
+export type SchoolLayer = (typeof SCHOOL_LAYERS)[number];
 
 /** States with boundary data, and the file each loads. */
 export const GEO_FILES: Record<string, string> = {
@@ -29,6 +36,8 @@ export interface GeoShape {
   polygons: Rings[];
   /** [minX, minY, maxX, maxY] */
   bbox: [number, number, number, number];
+  /** What it's called, when the id doesn't say (school districts). */
+  name?: string;
   /**
    * Map colour, 0–3, different from every neighbour's in the same layer (see
    * `fourColor`). Cities aren't coloured (always 0).
@@ -39,13 +48,15 @@ export interface GeoShape {
 export interface StateGeo {
   state: string;
   layers: Record<GeoLayer, GeoShape[]>;
+  /** School districts; empty in boundary data built without them. */
+  schools: Record<SchoolLayer, GeoShape[]>;
   /** [minX, minY, maxX, maxY] of the whole state. */
   bbox: [number, number, number, number];
   /** Where the data came from, for the map's footnote. */
   vintage: string;
 }
 
-function shapeOf(f: Feature<Polygon | MultiPolygon>): GeoShape {
+function shapeOf(f: Feature<Polygon | MultiPolygon, { name?: unknown } | null>): GeoShape {
   const polygons =
     f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates;
   let [x0, y0, x1, y1] = [
@@ -63,7 +74,14 @@ function shapeOf(f: Feature<Polygon | MultiPolygon>): GeoShape {
       if (y > y1) y1 = y;
     }
   }
-  return { id: String(f.id), polygons, bbox: [x0, y0, x1, y1], color: 0 };
+  const name = f.properties?.name;
+  return {
+    id: String(f.id),
+    polygons,
+    bbox: [x0, y0, x1, y1],
+    ...(typeof name === "string" ? { name } : {}),
+    color: 0,
+  };
 }
 
 /**
@@ -173,9 +191,17 @@ export function decodeStateGeo(state: string, topology: Topology): StateGeo {
       f.geometry ? [{ ...shapeOf(f), color: colors[i] ?? 0 }] : [],
     );
   }
+  const schools = {} as Record<SchoolLayer, GeoShape[]>;
+  for (const name of SCHOOL_LAYERS) {
+    const object = topology.objects[name] as GeometryCollection | undefined;
+    const collection = object
+      ? (feature(topology, object) as unknown as { features: Feature<Polygon | MultiPolygon>[] })
+      : { features: [] };
+    schools[name] = collection.features.flatMap((f) => (f.geometry ? [shapeOf(f)] : []));
+  }
   const bbox = (topology.bbox ?? [0, 0, 0, 0]) as [number, number, number, number];
   const metadata = (topology as { metadata?: { vintage?: string } }).metadata;
-  return { state, layers, bbox, vintage: metadata?.vintage ?? "Census TIGERweb" };
+  return { state, layers, schools, bbox, vintage: metadata?.vintage ?? "Census TIGERweb" };
 }
 
 const geoCache = new Map<string, Promise<StateGeo>>();
@@ -270,6 +296,13 @@ export interface GeoHit {
    * be wrong there (simplified boundaries, imprecise location).
    */
   nearLine: GeoLayer[];
+  /**
+   * The point's school district per family (`NO_DISTRICT` id: in none), when
+   * the boundary data has them. A family is left out when the point is near
+   * one of its lines: better a school board race listed as "might be on your
+   * ballot" than hidden by a guess.
+   */
+  schools?: Partial<Record<SchoolLayer, { id: string; name?: string }>>;
 }
 
 /** Default "near a line" distance: the shipped boundaries are simplified to within tens of metres. */
@@ -301,7 +334,45 @@ export function locate(
     const n = found[layer];
     if (n) districts[layer] = String(Number(n));
   }
-  return { districts, county: found.county, place: found.place, nearLine };
+  const schools = schoolsAt(geo, lon, lat, nearMeters);
+  return {
+    districts,
+    county: found.county,
+    place: found.place,
+    nearLine,
+    ...(schools ? { schools } : {}),
+  };
+}
+
+/**
+ * A point's school districts (`GeoHit.schools`), undefined when the boundary
+ * data has none. Also for an address the Census geocoder placed: its relay
+ * returns legislative districts, not school ones.
+ */
+export function schoolsAt(
+  geo: StateGeo,
+  lon: number,
+  lat: number,
+  nearMeters = NEAR_LINE_METERS,
+): GeoHit["schools"] {
+  if (SCHOOL_LAYERS.every((layer) => geo.schools[layer].length === 0)) return undefined;
+  // Shapes whose box comes within `nearMeters` of the point: the only ones
+  // whose line could be that close.
+  const dx = nearMeters / (METERS_PER_DEGREE_LON_AT_EQUATOR * Math.cos((lat * Math.PI) / 180));
+  const dy = nearMeters / METERS_PER_DEGREE_LAT;
+  const out: NonNullable<GeoHit["schools"]> = {};
+  for (const layer of SCHOOL_LAYERS) {
+    const nearby = geo.schools[layer].filter(
+      ({ bbox: [x0, y0, x1, y1] }) =>
+        lon >= x0 - dx && lon <= x1 + dx && lat >= y0 - dy && lat <= y1 + dy,
+    );
+    if (nearby.some((shape) => distanceToEdge(shape, lon, lat) < nearMeters)) continue;
+    const shape = nearby.find((s) => shapeContains(s, lon, lat));
+    out[layer] = shape
+      ? { id: shape.id, ...(shape.name ? { name: shape.name } : {}) }
+      : { id: NO_DISTRICT };
+  }
+  return out;
 }
 
 /**
@@ -356,6 +427,12 @@ export function areaFromHit(hit: GeoHit, state: string, known: AreaOptions): Are
   for (const [layer, n] of Object.entries(hit.districts)) districts[`${state}/${layer}`] = n;
   const coa = hit.county ? COURT_OF_APPEAL_BY_COUNTY[hit.county] : undefined;
   if (state === "us/ca" && coa) districts[`${state}/coa`] = coa;
+  const labels: Record<string, string> = {};
+  for (const [layer, school] of Object.entries(hit.schools ?? {})) {
+    const family = `${state}/${layer}`;
+    districts[family] = school.id === NO_DISTRICT ? NO_DISTRICT : districtId(school.id);
+    if (school.name) labels[family] = school.name;
+  }
 
   const localities: string[] = [];
   const add = (kind: "place" | "county", name: string | undefined) => {
@@ -377,13 +454,22 @@ export function areaFromHit(hit: GeoHit, state: string, known: AreaOptions): Are
       ? [`${hit.county} County`]
       : []),
   ];
-  return { area: { localities, districts }, places, notCovered };
+  const area: Area = { localities, districts };
+  if (Object.keys(labels).length > 0) area.labels = labels;
+  return { area, places, notCovered };
+}
+
+/** School district families of an area (`us/ca/elsd`…). */
+function isSchoolFamily(family: string): boolean {
+  return (SCHOOL_LAYERS as readonly string[]).includes(family.split("/").pop() ?? "");
 }
 
 /**
  * Apply a lookup to the area someone already has. The lookup replaces what it
  * can know (its districts, and every locality that is a city or county); what
- * it can't (a BART district, EBMUD, a school district) is kept as it was.
+ * it can't (a BART district, EBMUD) is kept as it was. School districts are
+ * always replaced: one the lookup couldn't tell (near a line, or a lookup
+ * without them) is better unknown than left over from somewhere else.
  */
 export function mergeFoundArea(previous: Area, found: Area, geo: StateGeo): Area {
   const cityOrCounty = new Set<string>();
@@ -397,5 +483,16 @@ export function mergeFoundArea(previous: Area, found: Area, geo: StateGeo): Area
     ...found.localities,
     ...previous.localities.filter((p) => !cityOrCounty.has(p) && !found.localities.includes(p)),
   ];
-  return { localities, districts: { ...previous.districts, ...found.districts } };
+  const kept = (family: string) => !isSchoolFamily(family);
+  const districts = {
+    ...Object.fromEntries(Object.entries(previous.districts).filter(([f]) => kept(f))),
+    ...found.districts,
+  };
+  const labels = {
+    ...Object.fromEntries(Object.entries(previous.labels ?? {}).filter(([f]) => kept(f))),
+    ...found.labels,
+  };
+  return Object.keys(labels).length > 0
+    ? { localities, districts, labels }
+    : { localities, districts };
 }

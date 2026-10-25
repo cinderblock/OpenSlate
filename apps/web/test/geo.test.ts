@@ -11,6 +11,7 @@ import {
   localityCandidates,
   locate,
   mergeFoundArea,
+  schoolsAt,
   touching,
 } from "../src/lib/geo";
 
@@ -78,6 +79,28 @@ describe("locate (shipped California boundaries)", () => {
     expect(geo.layers.sd).toHaveLength(40);
     expect(geo.layers.ad).toHaveLength(80);
     expect(geo.layers.county).toHaveLength(58);
+  });
+
+  test("finds school districts, as the Census geocoder does (2026-10-24)", () => {
+    // Huntington Beach: an elementary and a high school district, no unified one.
+    expect(locate(geo, -117.998, 33.668)?.schools).toEqual({
+      unsd: { id: "none" },
+      elsd: { id: "18030", name: "Huntington Beach City Elementary School District" },
+      scsd: { id: "18060", name: "Huntington Beach Union High School District" },
+    });
+    expect(locate(geo, -122.41831, 37.778536)?.schools?.unsd?.id).toBe("34410"); // SFUSD
+    expect(locate(geo, -118.245594, 34.051623)?.schools?.unsd?.id).toBe("22710"); // LAUSD
+    expect(geo.schools.unsd).toHaveLength(346);
+    expect(geo.schools.elsd).toHaveLength(517);
+    expect(geo.schools.scsd).toHaveLength(112);
+  });
+
+  test("near a school district line, that family is left unknown", () => {
+    const line = geo.schools.elsd.find((s) => s.id === "18030")?.polygons[0]?.[0]?.[0];
+    if (!line) throw new Error("no HB City SD vertex");
+    const [lon = 0, lat = 0] = line;
+    const schools = schoolsAt(geo, lon, lat);
+    expect(schools?.elsd).toBeUndefined();
   });
 
   test("outside the state is null", () => {
@@ -226,6 +249,31 @@ describe("areaFromHit", () => {
     expect(la.places).toEqual(["Los Angeles", "Los Angeles County"]);
   });
 
+  test("sets school districts, with their names, and none where there is none", () => {
+    const hb = areaFromHit(
+      {
+        districts: { cd: "42" },
+        county: "Orange",
+        nearLine: [],
+        schools: {
+          unsd: { id: "none" },
+          elsd: { id: "18030", name: "Huntington Beach City Elementary School District" },
+        },
+      },
+      "us/ca",
+      known,
+    );
+    expect(hb.area.districts).toEqual({
+      "us/ca/cd": "42",
+      "us/ca/coa": "4",
+      "us/ca/unsd": "none",
+      "us/ca/elsd": "18030",
+    });
+    expect(hb.area.labels).toEqual({
+      "us/ca/elsd": "Huntington Beach City Elementary School District",
+    });
+  });
+
   test("a county filed under its bare name still matches", () => {
     const hit = { districts: {}, county: "Marin", nearLine: [] };
     expect(areaFromHit(hit, "us/ca", known).area.localities).toEqual(["us/ca/marin"]);
@@ -258,5 +306,19 @@ test("mergeFoundArea replaces cities, counties and found districts, keeps the re
   expect(mergeFoundArea(previous, found, geo)).toEqual({
     localities: ["us/ca/sf", "us/ca/ebmud"],
     districts: { "us/ca/cd": "11", "us/ca/bart": "4" },
+  });
+});
+
+test("mergeFoundArea always replaces school districts", () => {
+  const previous = {
+    localities: ["us/ca/oakland"],
+    districts: { "us/ca/cd": "12", "us/ca/unsd": "29150" },
+    labels: { "us/ca/unsd": "Oakland Unified School District" },
+  };
+  // A lookup near a school district line: no unified district to set.
+  const found = { localities: ["us/ca/sf"], districts: { "us/ca/cd": "11" } };
+  expect(mergeFoundArea(previous, found, geo)).toEqual({
+    localities: ["us/ca/sf"],
+    districts: { "us/ca/cd": "11" },
   });
 });

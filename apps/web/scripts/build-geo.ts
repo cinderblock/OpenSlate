@@ -1,8 +1,10 @@
 /**
  * Builds `public/geo/us-ca.topo.json`: California's congressional, State
- * Senate, Assembly, county and city boundaries, for finding someone's districts
- * on their own device (the map picker and "Use my location"; see
- * src/lib/geo.ts and plans/find-my-districts.md).
+ * Senate, Assembly, county, city and school district boundaries, for finding
+ * someone's districts on their own device (the map picker and "Use my
+ * location"; see src/lib/geo.ts and plans/find-my-districts.md). School
+ * districts (unified, elementary, secondary) are looked up, not drawn: they
+ * place a county's school board races (plans/sub-county-districts.md).
  *
  * Source: the Census Bureau's TIGERweb "Current" map service (the boundaries in
  * force for this year's elections: the 120th Congress districts, 2026 state
@@ -33,14 +35,21 @@ const SERVICE =
   "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer";
 const STATE_FIPS = "06";
 
-/** Our layer name → TIGERweb layer id, and which attribute becomes the feature id. */
-const LAYERS = {
+/**
+ * Our layer name → TIGERweb layer id, which attribute becomes the feature id,
+ * and for school districts the name kept beside it (their id, the LEA code,
+ * says nothing to a voter).
+ */
+const LAYERS: Record<string, { id: number; key: string; name?: string }> = {
   cd: { id: 54, key: "BASENAME" }, // 120th Congressional Districts
   sd: { id: 56, key: "BASENAME" }, // 2026 State Legislative Districts - Upper
   ad: { id: 58, key: "BASENAME" }, // 2026 State Legislative Districts - Lower
   county: { id: 82, key: "BASENAME" },
   place: { id: 28, key: "BASENAME" }, // Incorporated Places
-} as const;
+  unsd: { id: 14, key: "GEOID", name: "NAME" }, // Unified School Districts
+  elsd: { id: 18, key: "GEOID", name: "NAME" }, // Elementary School Districts
+  scsd: { id: 16, key: "GEOID", name: "NAME" }, // Secondary School Districts
+};
 type LayerName = keyof typeof LAYERS;
 
 /**
@@ -64,10 +73,10 @@ async function fetchLayer(name: LayerName): Promise<FeatureCollection> {
   if (!args.has("--refresh") && existsSync(cached)) {
     return JSON.parse(readFileSync(cached, "utf8")) as FeatureCollection;
   }
-  const { id, key } = LAYERS[name];
+  const { id, key, name: nameKey } = LAYERS[name] ?? { id: 0, key: "" };
   const params = new URLSearchParams({
     where: `STATE='${STATE_FIPS}'`,
-    outFields: key,
+    outFields: nameKey ? `${key},${nameKey}` : key,
     returnGeometry: "true",
     outSR: "4326",
     // ~1 m: near full resolution, but drops TIGER's collinear vertices.
@@ -89,14 +98,23 @@ async function fetchLayer(name: LayerName): Promise<FeatureCollection> {
   return collection;
 }
 
-/** Keep only the id: every byte here ships to every visitor who opens the map. */
-function slim(collection: FeatureCollection, key: string): FeatureCollection {
+/**
+ * Keep only the id (and a school district's name): every byte here ships to
+ * every visitor who opens the map. A GEOID loses its state prefix, leaving the
+ * 5-digit LEA code that `district` paths use (`us/ca/elsd-18030`).
+ */
+function slim(collection: FeatureCollection, layer: LayerName): FeatureCollection {
+  const { key, name: nameKey } = LAYERS[layer] ?? { key: "" };
   return {
     type: "FeatureCollection",
     features: collection.features.map((f): Feature => {
       const value = f.properties?.[key];
       if (typeof value !== "string" || !value) throw new Error(`feature without ${key}`);
-      return { type: "Feature", id: value, properties: {}, geometry: f.geometry };
+      const id = key === "GEOID" ? value.slice(STATE_FIPS.length) : value;
+      const name = nameKey ? f.properties?.[nameKey] : undefined;
+      if (nameKey && (typeof name !== "string" || !name))
+        throw new Error(`${id} without ${nameKey}`);
+      return { type: "Feature", id, properties: name ? { name } : {}, geometry: f.geometry };
     }),
   };
 }
@@ -133,7 +151,7 @@ function whichFeature(collection: FeatureCollection, x: number, y: number): stri
 
 const source: Record<LayerName, FeatureCollection> = {} as Record<LayerName, FeatureCollection>;
 for (const name of Object.keys(LAYERS) as LayerName[]) {
-  source[name] = slim(await fetchLayer(name), LAYERS[name].key);
+  source[name] = slim(await fetchLayer(name), name);
 }
 
 const meta = (await (await fetch(`${SERVICE}?f=json`)).json()) as {
@@ -188,7 +206,7 @@ if (args.has("--check")) {
       if (geometryContains(place.geometry, x, y)) return [x, y];
     }
   };
-  for (const name of ["cd", "sd", "ad"] as const) {
+  for (const name of ["cd", "sd", "ad", "unsd", "elsd", "scsd"] as const) {
     const shipped = feature(simplified, simplified.objects[name] as GeometryCollection);
     let compared = 0;
     let differ = 0;
