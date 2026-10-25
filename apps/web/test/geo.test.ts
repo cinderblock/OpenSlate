@@ -6,6 +6,7 @@ import type { GeometryCollection, Topology } from "topojson-specification";
 import {
   COURT_OF_APPEAL_BY_COUNTY,
   areaFromHit,
+  cityPaths,
   decodeStateGeo,
   fourColor,
   localityCandidates,
@@ -261,6 +262,7 @@ describe("areaFromHit", () => {
     expect(sf.area).toEqual({
       localities: ["us/ca/sf"],
       districts: { "us/ca/cd": "11", "us/ca/sd": "11", "us/ca/ad": "17", "us/ca/coa": "1" },
+      found: ["us/ca/sf", "us/ca/city-of-sf"],
     });
     expect(sf.notCovered).toEqual(["us/ca/bart"]);
     expect(sf.places).toEqual(["San Francisco"]);
@@ -306,31 +308,98 @@ describe("areaFromHit", () => {
       "us/ca/ccd": "Coast Community College District",
       "us/ca/orange-county/sup": "Orange County supervisorial district 1",
     });
-    // No county locality (nothing imported is filed under it): no supervisors.
+    // Nothing imported is filed under the county yet: its supervisorial
+    // district is still set, where its races would be.
     const bare = areaFromHit(
       { districts: {}, county: "Orange", nearLine: [], lookups: { sup: { id: "Orange|1" } } },
       "us/ca",
       known,
     );
-    expect(bare.area.districts["us/ca/orange-county/sup"]).toBeUndefined();
+    expect(bare.area.localities).toEqual([]);
+    expect(bare.area.districts["us/ca/orange-county/sup"]).toBe("1");
+    expect(bare.area.found).toEqual(["us/ca/orange-county", "us/ca/orange"]);
   });
 
   test("a county filed under its bare name still matches", () => {
     const hit = { districts: {}, county: "Marin", nearLine: [] };
     expect(areaFromHit(hit, "us/ca", known).area.localities).toEqual(["us/ca/marin"]);
   });
+
+  test("a county never takes the path of a city with its name", () => {
+    const cities = cityPaths(geo);
+    const options = {
+      localities: ["us/ca/orange", "us/ca/san-diego", "us/ca/san-diego-county"],
+      districts: {},
+    };
+    // Huntington Beach, in Orange County: the City of Orange's races aren't its.
+    const hb = { districts: {}, county: "Orange", place: "Huntington Beach", nearLine: [] };
+    expect(areaFromHit(hb, "us/ca", options, cities).area.localities).toEqual([]);
+    // Chula Vista, in San Diego County: the county's races, not the City of San Diego's.
+    const cv = { districts: {}, county: "San Diego", place: "Chula Vista", nearLine: [] };
+    expect(areaFromHit(cv, "us/ca", options, cities).area.localities).toEqual([
+      "us/ca/san-diego-county",
+    ]);
+    // In the City of San Diego: both.
+    const sd = { districts: {}, county: "San Diego", place: "San Diego", nearLine: [] };
+    expect(areaFromHit(sd, "us/ca", options, cities).area.localities).toEqual([
+      "us/ca/san-diego",
+      "us/ca/san-diego-county",
+    ]);
+  });
+
+  test("every path a city's races use, not just the first", () => {
+    const options = {
+      localities: [
+        "us/ca/alameda",
+        "us/ca/city-of-alameda",
+        "us/ca/alameda-county",
+        "us/ca/ventura",
+      ],
+      districts: {},
+    };
+    const alameda = { districts: {}, county: "Alameda", place: "Alameda", nearLine: [] };
+    expect(areaFromHit(alameda, "us/ca", options, cityPaths(geo)).area.localities).toEqual([
+      "us/ca/alameda",
+      "us/ca/city-of-alameda",
+      "us/ca/alameda-county",
+    ]);
+    // The Census's "San Buenaventura (Ventura)" is filed as Ventura.
+    const ventura = {
+      districts: {},
+      county: "Ventura",
+      place: "San Buenaventura (Ventura)",
+      nearLine: [],
+    };
+    expect(areaFromHit(ventura, "us/ca", options, cityPaths(geo)).area.localities).toEqual([
+      "us/ca/ventura",
+    ]);
+  });
 });
 
 test("localityCandidates", () => {
-  expect(localityCandidates("us/ca", "county", "San Mateo")).toEqual([
+  const cities = cityPaths(geo);
+  // A city has San Mateo's name; no city has Marin's.
+  expect(localityCandidates("us/ca", "county", "San Mateo", cities)).toEqual([
     "us/ca/san-mateo-county",
-    "us/ca/san-mateo",
+  ]);
+  expect(localityCandidates("us/ca", "county", "Marin", cities)).toEqual([
+    "us/ca/marin-county",
+    "us/ca/marin",
+  ]);
+  expect(localityCandidates("us/ca", "county", "Ventura", cities)).toEqual([
+    "us/ca/ventura-county",
   ]);
   expect(localityCandidates("us/ca", "place", "Alameda")).toEqual([
     "us/ca/alameda",
     "us/ca/city-of-alameda",
   ]);
-  expect(localityCandidates("us/ca", "county", "San Francisco")).toEqual(["us/ca/sf"]);
+  expect(localityCandidates("us/ca", "place", "El Paso de Robles (Paso Robles)")).toEqual([
+    "us/ca/el-paso-de-robles",
+    "us/ca/city-of-el-paso-de-robles",
+    "us/ca/paso-robles",
+    "us/ca/city-of-paso-robles",
+  ]);
+  expect(localityCandidates("us/ca", "county", "San Francisco", cities)).toEqual(["us/ca/sf"]);
 });
 
 test("every California county has exactly one Court of Appeal district", () => {
@@ -348,6 +417,20 @@ test("mergeFoundArea replaces cities, counties and found districts, keeps the re
     localities: ["us/ca/sf", "us/ca/ebmud"],
     districts: { "us/ca/cd": "11", "us/ca/bart": "4" },
   });
+});
+
+test("mergeFoundArea keeps what the lookup found, and answers a recheck", () => {
+  const previous = {
+    localities: ["us/ca/san-diego", "us/ca/san-diego-county"],
+    districts: {},
+    recheck: ["us/ca/san-diego"],
+  };
+  const found = {
+    localities: ["us/ca/san-diego-county"],
+    districts: {},
+    found: ["us/ca/chula-vista", "us/ca/city-of-chula-vista", "us/ca/san-diego-county"],
+  };
+  expect(mergeFoundArea(previous, found, geo)).toEqual(found);
 });
 
 test("mergeFoundArea always replaces school districts", () => {

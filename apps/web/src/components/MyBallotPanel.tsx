@@ -39,6 +39,7 @@ import { formatElectionDate, formatLocalDate } from "../lib/dates";
 import { downloadText } from "../lib/download";
 import { useImportRunning } from "../lib/importQueue";
 import {
+  type Area,
   DISTRICT_COUNTS,
   EMPTY_AREA,
   NO_DISTRICT,
@@ -48,6 +49,7 @@ import {
   jurisdictionRank,
   noRaceReason,
   parseJurisdiction,
+  withFoundLocalities,
 } from "../lib/jurisdictions";
 import {
   localToday,
@@ -150,7 +152,7 @@ export function MyBallotPanel() {
   // screen; it stays put as the list around it changes.
   const [focusing, setFocusing] = useState(false);
   const [focusKey, setFocusKey] = useState<string | null>(null);
-  const { patch: draftPatch } = draft;
+  const { patch: draftPatch, refile } = draft;
 
   const today = localToday();
   const elections = useMemo(() => electionsOf(slates, follows), [slates, follows]);
@@ -162,6 +164,47 @@ export function MyBallotPanel() {
     () => areaOptionsOf(positionJurisdictions(slates, election)),
     [slates, election],
   );
+
+  // A city or county the area's lookup found that races have started using
+  // since joins the area (`withFoundLocalities`).
+  useEffect(() => {
+    const next = withFoundLocalities(area, areaOptions.localities);
+    if (next !== area) setArea(next);
+  }, [area, areaOptions.localities, setArea]);
+
+  // Marks on races the catalog has re-filed follow them (`refiledRows`).
+  const subjects = useMemo(
+    () => slates.flatMap((slate) => slate.payload.positions.map((p) => p.subject)),
+    [slates],
+  );
+  useEffect(() => {
+    if (isReady) refile(subjects);
+  }, [isReady, subjects, refile]);
+
+  // Localities an old area can't tell are the user's (`upgradeArea`), asked
+  // about once the county's own path is in use: answering "no" before then
+  // would drop the county's races.
+  const recheck = (area.recheck ?? []).filter((p) =>
+    areaOptions.localities.includes(`${p}-county`),
+  );
+
+  /** Answer "Do you live in the City of …?" for a locality the app couldn't place (`upgradeArea`). */
+  function answerRecheck(path: string, inCity: boolean) {
+    const { recheck: asked = [], ...rest } = area;
+    const under = (key: string) => key.startsWith(`${path}/`);
+    const next: Area = inCity
+      ? rest
+      : {
+          ...rest,
+          localities: rest.localities.filter((p) => p !== path),
+          districts: Object.fromEntries(Object.entries(rest.districts).filter(([f]) => !under(f))),
+        };
+    if (!inCity && rest.labels) {
+      next.labels = Object.fromEntries(Object.entries(rest.labels).filter(([f]) => !under(f)));
+    }
+    const left = asked.filter((p) => p !== path);
+    setArea(left.length > 0 ? { ...next, recheck: left } : next);
+  }
 
   const collated = useMemo(
     () =>
@@ -481,6 +524,27 @@ export function MyBallotPanel() {
           </div>
         </div>
       )}
+
+      {recheck.map((path) => (
+        <div key={path} className="card no-print">
+          <p>
+            <strong>Do you live in the City of {jurisdictionLabel(path)}?</strong>{" "}
+            {jurisdictionLabel(`${path}-county`)}'s races used to be filed under the city's name, so
+            the area you set before can't tell.
+          </p>
+          <div className="row">
+            <button type="button" onClick={() => answerRecheck(path, true)}>
+              Yes
+            </button>
+            <button type="button" onClick={() => answerRecheck(path, false)}>
+              No
+            </button>
+            <button type="button" className="link" onClick={() => setEditingArea(true)}>
+              Find my districts again
+            </button>
+          </div>
+        </div>
+      ))}
 
       {exporting && (
         <div className="card no-print">

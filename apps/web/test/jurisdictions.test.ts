@@ -8,6 +8,8 @@ import {
   noRaceReason,
   parseJurisdiction,
   placeRace,
+  upgradeArea,
+  withFoundLocalities,
 } from "../src/lib/jurisdictions";
 
 describe("parseJurisdiction", () => {
@@ -152,4 +154,50 @@ describe("districts with no race", () => {
       "Nothing you've imported has a State Senate race in district 12 this election.",
     );
   });
+});
+
+describe("upgradeArea", () => {
+  test("a re-filed county's old path gains the county's own, and asks about the city", () => {
+    const old = {
+      localities: ["us/ca/san-diego"],
+      districts: { "us/ca/cd": "50", "us/ca/san-diego/sup": "4" },
+      labels: { "us/ca/san-diego/sup": "San Diego County supervisorial district 4" },
+    };
+    expect(upgradeArea(old)).toEqual({
+      localities: ["us/ca/san-diego", "us/ca/san-diego-county"],
+      districts: { "us/ca/cd": "50", "us/ca/san-diego-county/sup": "4" },
+      labels: { "us/ca/san-diego-county/sup": "San Diego County supervisorial district 4" },
+      recheck: ["us/ca/san-diego"],
+    });
+  });
+
+  test("the City of Alameda gets its own path", () => {
+    const old = { localities: ["us/ca/alameda", "us/ca/alameda-county"], districts: {} };
+    expect(upgradeArea(old).localities).toEqual([
+      "us/ca/alameda",
+      "us/ca/alameda-county",
+      "us/ca/city-of-alameda",
+    ]);
+  });
+
+  test("leaves up-to-date areas alone", () => {
+    const answered = { localities: ["us/ca/san-diego", "us/ca/san-diego-county"], districts: {} };
+    expect(upgradeArea(answered)).toBe(answered);
+    const looked = { localities: ["us/ca/san-diego"], districts: {}, found: ["us/ca/san-diego"] };
+    expect(upgradeArea(looked)).toBe(looked);
+    const elsewhere = { localities: ["us/ca/oakland", "us/ca/alameda-county"], districts: {} };
+    expect(upgradeArea(elsewhere)).toBe(elsewhere);
+  });
+});
+
+test("withFoundLocalities adds what the lookup found that races now use", () => {
+  const area = {
+    localities: ["us/ca/chula-vista"],
+    districts: {},
+    found: ["us/ca/chula-vista", "us/ca/city-of-chula-vista", "us/ca/san-diego-county"],
+  };
+  expect(
+    withFoundLocalities(area, ["us/ca/chula-vista", "us/ca/san-diego-county"]).localities,
+  ).toEqual(["us/ca/chula-vista", "us/ca/san-diego-county"]);
+  expect(withFoundLocalities(area, ["us/ca/chula-vista"])).toBe(area);
 });

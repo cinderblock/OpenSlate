@@ -52,6 +52,18 @@ export interface Area {
   districts: Record<string, string>;
   /** What to call the user's district of a family, when its id says nothing (`"us/ca/elsd"` → a school district's name). */
   labels?: Record<string, string>;
+  /**
+   * Every path the city and county a lookup found may be filed under, used by
+   * imported races or not (`localityCandidates`). A path imported races start
+   * using later joins `localities` (`withFoundLocalities`), so the area keeps
+   * up with the catalog instead of staying as it was on the day of the lookup.
+   */
+  found?: string[];
+  /**
+   * Localities the app can't tell are the user's after the catalog re-filed
+   * them (`upgradeArea`): My ballot asks.
+   */
+  recheck?: string[];
 }
 
 /** A family's id for "in none of its districts" (most of the state has no unified school district). */
@@ -61,6 +73,73 @@ export const EMPTY_AREA: Area = { localities: [], districts: {} };
 
 export function isAreaSet(area: Area): boolean {
   return area.localities.length > 0 || Object.keys(area.districts).length > 0;
+}
+
+/**
+ * The area with each path its lookup found (`found`) that imported races now
+ * use (`known`) among its localities. The same area when there's none to add.
+ */
+export function withFoundLocalities(area: Area, known: readonly string[]): Area {
+  const add = (area.found ?? []).filter((p) => known.includes(p) && !area.localities.includes(p));
+  return add.length > 0 ? { ...area, localities: [...area.localities, ...add] } : area;
+}
+
+/**
+ * Counties the catalog filed under their city's path until 2026-10-25, then
+ * under their own. An area saved before then had the city's path as its
+ * county, its city, or both.
+ */
+const REFILED_COUNTIES: Record<string, string> = {
+  "us/ca/san-diego": "us/ca/san-diego-county",
+  "us/ca/imperial": "us/ca/imperial-county",
+};
+
+/** Cities filed as `city-of-<name>` while their county's races sat under the bare name. */
+const CITY_PATHS: Record<string, string> = {
+  "us/ca/alameda": "us/ca/city-of-alameda",
+};
+
+/**
+ * An area saved before the catalog re-filed counties under their own paths,
+ * brought up to date. Areas from a lookup since (`found`) are already.
+ *
+ * - A re-filed county's old path gains the county's own (anyone in the city is
+ *   in the county too), and its supervisorial district moves with it. Whether
+ *   the city's path is the user's too can't be told: it goes in `recheck`.
+ * - The City of Alameda's own races are under `city-of-alameda`, and the
+ *   county's sat under its bare name, so a lookup in the city picked the bare
+ *   one. Beside the county's own path the bare one was the city's, so the
+ *   city's real one is added.
+ */
+export function upgradeArea(area: Area): Area {
+  if (area.found) return area;
+  const localities = [...area.localities];
+  const districts = { ...area.districts };
+  const labels = { ...area.labels };
+  const recheck = new Set(area.recheck);
+  for (const path of area.localities) {
+    const county = REFILED_COUNTIES[path];
+    if (county && !localities.includes(county)) {
+      localities.push(county);
+      recheck.add(path);
+      for (const record of [districts, labels] as Record<string, string>[]) {
+        const old = record[`${path}/sup`];
+        if (old === undefined) continue;
+        delete record[`${path}/sup`];
+        record[`${county}/sup`] = old;
+      }
+    }
+    const city = CITY_PATHS[path];
+    if (city && localities.includes(`${path}-county`) && !localities.includes(city)) {
+      localities.push(city);
+    }
+  }
+  if (localities.length === area.localities.length) return area;
+  // No `found` here: an area from a lookup since is returned as it is.
+  const out: Area = { localities, districts };
+  if (Object.keys(labels).length > 0) out.labels = labels;
+  if (recheck.size > 0) out.recheck = [...recheck];
+  return out;
 }
 
 /** States the area implies (from its localities and districts). */

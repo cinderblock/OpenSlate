@@ -11,6 +11,7 @@ import {
   NEAR_LINE_METERS,
   type StateGeo,
   areaFromHit,
+  cityPaths,
   loadStateGeo,
   locate,
   lookupsAt,
@@ -133,7 +134,7 @@ export function FindDistricts({
     extra: { point?: [number, number]; from?: string } = {},
   ) {
     if (!geo) return;
-    const result = areaFromHit(hit, STATE, options);
+    const result = areaFromHit(hit, STATE, options, cityPaths(geo));
     onChange(mergeFoundArea(area, result.area, geo));
     setFound({ via, ...extra, hit, ...result, nearLine: hit.nearLine });
     setError(null);

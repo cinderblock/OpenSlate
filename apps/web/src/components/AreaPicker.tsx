@@ -70,10 +70,13 @@ export function AreaPicker({
 
   function toggleLocality(path: string) {
     const has = area.localities.includes(path);
-    onChange({
+    const next: Area = {
       ...area,
       localities: has ? area.localities.filter((p) => p !== path) : [...area.localities, path],
-    });
+    };
+    // One taken off by hand stays off, though the lookup found it.
+    if (has && area.found) next.found = area.found.filter((p) => p !== path);
+    onChange(next);
   }
 
   function setDistrict(family: string, number: string) {

@@ -411,21 +411,42 @@ export const COURT_OF_APPEAL_BY_COUNTY: Record<string, string> = Object.fromEntr
 );
 
 /**
- * Locality paths a city or county may be filed under. The catalog spells
- * counties `<name>-county` (sometimes bare `<name>`), cities by name
- * (sometimes `city-of-<name>`), and San Francisco, a city and county, `sf`.
+ * Locality paths a city or county may be filed under. A city is `<name>` (or
+ * `city-of-<name>`), by its Census name and, for one like "San Buenaventura
+ * (Ventura)", its everyday name too. A county is `<name>-county`, or its bare
+ * name when no city has that (`cities`, every city's paths, `cityPaths`):
+ * `us/ca/orange` is the City of Orange's, never the county's. San Francisco,
+ * one city and county, is `sf`.
  */
 export function localityCandidates(
   state: string,
   kind: "place" | "county",
   name: string,
+  cities: ReadonlySet<string> = new Set(),
 ): string[] {
-  const base = localityPathFor(state, name);
-  const slug = base.slice(state.length + 1);
   if (kind === "county") {
-    return base === `${state}/sf` ? [base] : [`${base}-county`, base];
+    const base = localityPathFor(state, name);
+    if (base === `${state}/sf`) return [base];
+    return cities.has(base) ? [`${base}-county`] : [`${base}-county`, base];
   }
-  return [base, `${state}/city-of-${slug}`];
+  const everyday = /^(.+?)\s*\(([^)]+)\)$/.exec(name.trim());
+  const names = everyday?.[1] && everyday[2] ? [everyday[1], everyday[2]] : [name];
+  return names.flatMap((n) => {
+    const base = localityPathFor(state, n);
+    return [base, `${state}/city-of-${base.slice(state.length + 1)}`];
+  });
+}
+
+const cityPathsOf = new WeakMap<StateGeo, ReadonlySet<string>>();
+
+/** Every path a city of the state may be filed under (`localityCandidates`). */
+export function cityPaths(geo: StateGeo): ReadonlySet<string> {
+  let paths = cityPathsOf.get(geo);
+  if (!paths) {
+    paths = new Set(geo.layers.place.flatMap((s) => localityCandidates(geo.state, "place", s.id)));
+    cityPathsOf.set(geo, paths);
+  }
+  return paths;
 }
 
 export interface AreaFromHit {
@@ -440,20 +461,32 @@ export interface AreaFromHit {
  * Turn a hit into an area. Districts are always set (a district with no race
  * this election is still the user's district); localities only when some
  * imported race is filed under them, so the area isn't filled with places
- * nothing uses.
+ * nothing uses. Every path the city and county may be filed under is kept in
+ * `found`, for when races start using one (`withFoundLocalities`). `cities`:
+ * the state's cities' paths (`cityPaths`), so a county never takes a city's.
  */
-export function areaFromHit(hit: GeoHit, state: string, known: AreaOptions): AreaFromHit {
+export function areaFromHit(
+  hit: GeoHit,
+  state: string,
+  known: AreaOptions,
+  cities?: ReadonlySet<string>,
+): AreaFromHit {
   const districts: Record<string, string> = {};
   for (const [layer, n] of Object.entries(hit.districts)) districts[`${state}/${layer}`] = n;
   const coa = hit.county ? COURT_OF_APPEAL_BY_COUNTY[hit.county] : undefined;
   if (state === "us/ca" && coa) districts[`${state}/coa`] = coa;
 
   const localities: string[] = [];
+  const found: string[] = [];
   const add = (kind: "place" | "county", name: string | undefined) => {
     if (!name) return undefined;
-    const path = localityCandidates(state, kind, name).find((p) => known.localities.includes(p));
-    if (path && !localities.includes(path)) localities.push(path);
-    return path;
+    const candidates = localityCandidates(state, kind, name, cities);
+    for (const path of candidates) {
+      if (!found.includes(path)) found.push(path);
+      if (known.localities.includes(path) && !localities.includes(path)) localities.push(path);
+    }
+    // The one its races use, else where they'd be filed (`<name>-county`).
+    return candidates.find((p) => known.localities.includes(p)) ?? candidates[0];
   };
   add("place", hit.place);
   const countyPath = add("county", hit.county);
@@ -487,6 +520,7 @@ export function areaFromHit(hit: GeoHit, state: string, known: AreaOptions): Are
   ];
   const area: Area = { localities, districts };
   if (Object.keys(labels).length > 0) area.labels = labels;
+  if (found.length > 0) area.found = found;
   return { area, places, notCovered };
 }
 
@@ -524,7 +558,9 @@ export function mergeFoundArea(previous: Area, found: Area, geo: StateGeo): Area
     ...Object.fromEntries(Object.entries(previous.labels ?? {}).filter(([f]) => kept(f))),
     ...found.labels,
   };
-  return Object.keys(labels).length > 0
-    ? { localities, districts, labels }
-    : { localities, districts };
+  // The lookup's own `found`; `recheck` is answered by the lookup.
+  const area: Area = { localities, districts };
+  if (Object.keys(labels).length > 0) area.labels = labels;
+  if (found.found) area.found = found.found;
+  return area;
 }

@@ -5,7 +5,7 @@ import { type DecodedSlate, type DisagreeMode, decodeSlates } from "./collate";
 import { slatesCollection } from "./collections";
 import { useKnownIdentities } from "./identities";
 import type { Area } from "./jurisdictions";
-import { EMPTY_AREA } from "./jurisdictions";
+import { EMPTY_AREA, upgradeArea } from "./jurisdictions";
 import { createLocalStore, useLocalStore } from "./localStore";
 import { type Standing, isStanding } from "./sources";
 
@@ -76,12 +76,14 @@ export function defaultToUnfollowed(sourceIds: Iterable<string>): void {
 /** Where the user votes. */
 export const areaStore = createLocalStore<Area>("openslate.area.v1", EMPTY_AREA, (raw) => {
   if (typeof raw !== "object" || raw === null) return undefined;
-  const { localities, districts, labels } = raw as Partial<Area>;
+  const { localities, districts, labels, found, recheck } = raw as Partial<Area>;
   if (!Array.isArray(localities) || !localities.every(isString)) return undefined;
   if (!isRecordOf(districts, isString)) return undefined;
-  return isRecordOf(labels, isString)
-    ? { localities, districts, labels }
-    : { localities, districts };
+  const area: Area = { localities, districts };
+  if (isRecordOf(labels, isString)) area.labels = labels;
+  if (Array.isArray(found) && found.every(isString)) area.found = found;
+  if (Array.isArray(recheck) && recheck.every(isString)) area.recheck = recheck;
+  return upgradeArea(area);
 });
 
 export const useArea = () => useLocalStore(areaStore);
