@@ -10,7 +10,7 @@ import {
 import { GEOCODE_PATH, handleGeocode } from "@openslate/poll-cache/geocode";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { createForecastsSource } from "./forecasts";
+import { type ForecastsProxySource, createForecastsSource } from "./forecasts";
 import { createPollsSource } from "./polls";
 import { createResultsSource } from "./results";
 
@@ -29,7 +29,9 @@ const civicOrigins = (process.env.CIVIC_ALLOWED_ORIGINS ?? "")
 const CIVIC_PATHS = new Set([CIVIC_ELECTIONS_PATH, CIVIC_VOTERINFO_PATH]);
 const polls = createPollsSource();
 const results = createResultsSource();
-const forecasts = createForecastsSource();
+// Kalshi forecasts are opt-in (KALSHI_FORECASTS=true): Kalshi's terms may not
+// allow relaying its prices, so a server only does it when its operator says so.
+const forecasts = process.env.KALSHI_FORECASTS === "true" ? createForecastsSource() : undefined;
 const app = new Hono();
 
 // Open CORS everywhere but the civic routes: those spend this server's Google
@@ -45,6 +47,8 @@ app.get("/api/health", (c) =>
     storesUserData: false,
     // Lets the web app offer Google only when this server can ask it.
     civic: civic.key !== undefined,
+    // Lets the web app show Kalshi forecasts only when this server relays them.
+    forecasts: forecasts !== undefined,
   }),
 );
 
@@ -139,21 +143,23 @@ async function proxyResults(reqPath: string, reqUrl: string) {
   }
 }
 
-// Kalshi forecasts passthrough — mounted at /api/forecasts/v2/* so the SPA's
-// VITE_FORECASTS_BASE points here. Kalshi's CORS only allows kalshi.com, so
-// this proxy is REQUIRED for browser access (the web client honours that and
-// pins kalshi to proxy mode in lib/routing.ts).
-app.get("/api/forecasts/v2/*", (c) => proxyForecasts(c.req.path, c.req.url));
-app.get("/api/forecasts/v2", (c) => proxyForecasts(c.req.path, c.req.url));
+// Kalshi forecasts passthrough, only with KALSHI_FORECASTS=true. Mounted at
+// /api/forecasts/v2/*, where the web app looks once /api/health says
+// `forecasts: true`. Kalshi's CORS only allows kalshi.com, so browsers can't
+// ask it themselves.
+if (forecasts) {
+  const source = forecasts;
+  app.get("/api/forecasts/v2/*", (c) => proxyForecasts(source, c.req.path, c.req.url));
+  app.get("/api/forecasts/v2", (c) => proxyForecasts(source, c.req.path, c.req.url));
+}
 
-async function proxyForecasts(reqPath: string, reqUrl: string) {
+async function proxyForecasts(source: ForecastsProxySource, reqPath: string, reqUrl: string) {
   const upstreamPath = reqPath.replace(/^\/api\/forecasts\/v2/, "");
   const search = new URL(reqUrl).search;
   try {
-    const { status, contentType, body, ttlMs, stale } = await forecasts.proxy(upstreamPath, search);
+    const { status, contentType, body, ttlMs, stale } = await source.proxy(upstreamPath, search);
     const maxAge = Math.floor(ttlMs / 1000);
-    // Same headers as the Cloudflare relay (apps/poll-cache/src/forecasts.ts):
-    // errors and stale copies are never cached, and a stale copy says so.
+    // Errors and stale copies are never cached, and a stale copy says so.
     const headers: Record<string, string> = {
       "content-type": contentType,
       "cache-control":

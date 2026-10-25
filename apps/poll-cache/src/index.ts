@@ -5,7 +5,6 @@ import {
   handleCivicElections,
   handleCivicVoterInfo,
 } from "./civic";
-import { FORECASTS_UPSTREAM, handleForecasts, isForecastsPath } from "./forecasts";
 import { GEOCODE_PATH, handleGeocode } from "./geocode";
 
 export interface Env {
@@ -51,7 +50,7 @@ function isLiveRaceDetailPath(pathname: string): boolean {
   return /^\/race\/[^/]+$/.test(inner) && !inner.startsWith("/race/search");
 }
 
-function corsHeaders(): Record<string, string> {
+function corsHeaders(): HeadersInit {
   return {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
@@ -61,7 +60,7 @@ function corsHeaders(): Record<string, string> {
 }
 
 export default {
-  async fetch(req: Request, env: Env = {}, ctx?: ExecutionContext): Promise<Response> {
+  async fetch(req: Request, env: Env = {}): Promise<Response> {
     // Google Civic lookups use the relay's own key (see civic.ts), so they only
     // answer pages from OpenSlate's origins.
     const pathname = new URL(req.url).pathname;
@@ -103,7 +102,6 @@ export default {
           service: "openslate-poll-cache",
           polls_upstream: POLLS_UPSTREAM,
           results_upstream: RESULTS_UPSTREAM,
-          forecasts_upstream: FORECASTS_UPSTREAM,
           geocode: GEOCODE_PATH,
           // Whether this relay can ask Google (it has a key): the web app
           // offers "Google (via OpenSlate)" only then.
@@ -120,13 +118,6 @@ export default {
     }
     if (isResultsProxyPath(url.pathname)) {
       return proxyResults(url);
-    }
-    if (isForecastsPath(url.pathname)) {
-      // caches.default is the worker runtime's; tests and other hosts have none.
-      return handleForecasts(url, corsHeaders(), {
-        cache: typeof caches === "undefined" ? undefined : caches.default,
-        waitUntil: ctx ? (promise) => ctx.waitUntil(promise) : undefined,
-      });
     }
 
     return new Response("Not Found", { status: 404, headers: corsHeaders() });

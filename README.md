@@ -24,8 +24,8 @@ endorsed** and **who endorsed them**.
 On the receiving end, the web app lines up the endorsements of the sources
 *you* follow, race by race, so you can see at a glance where the orgs and people
 you trust agree and split on each contest, and make **your own picks** from
-sources you can verify, alongside live polls, market forecasts, and (after polls
-close) results.
+sources you can verify, alongside live polls and (after polls close) results.
+A self-hosted server can add Kalshi market forecasts (opt-in, see below).
 
 The web app has two modes:
 
@@ -157,7 +157,6 @@ Netlify, Vercel, plain S3). Build the SPA pointed at your own Worker:
 ```sh
 VITE_API_BASE=https://api.yourdomain.dev \
 VITE_RESULTS_BASE=https://api.yourdomain.dev/api/results/v2 \
-VITE_FORECASTS_BASE=https://api.yourdomain.dev/api/forecasts/v2 \
 bun run build
 ```
 
@@ -182,6 +181,16 @@ public Worker. To turn on Google through your server, copy `.env.example` →
 `.env` and set `GOOGLE_API_KEY`. (Anyone can also use their own key straight
 from the browser, with no server: Settings → *Your Google API key*.) Vite proxies `/api` → `localhost:8787` so the SPA finds the
 backend automatically.
+
+**Kalshi market forecasts are an opt-in for your own server.** Start it with
+`KALSHI_FORECASTS=true` (in `.env`, or the environment) and it relays Kalshi's
+public market data at `/api/forecasts/v2/*` and says `forecasts: true` in
+`/api/health`; the app then shows a Forecast card on race pages. Without it,
+and on the public app, there is no Kalshi anywhere: Kalshi only accepts
+browser requests from kalshi.com, refuses Cloudflare Workers, and its terms
+may not allow a public relay or mirror. Check
+[Kalshi's terms](https://kalshi.com/legal) before turning it on for anyone but
+yourself. See [plans/kalshi-forecasts-429.md](./plans/kalshi-forecasts-429.md).
 
 The district boundaries (`apps/web/public/geo/us-ca.topo.json`, ~1.2 MB
 gzipped, fetched only when someone opens the finder) are built by
@@ -270,9 +279,9 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 | --- | --- |
 | [`packages/core`](./packages/core) | `@openslate/core` — the standard's reference impl: types, schema, canonical JSON, Ed25519 sign/verify, JSON Schema export. Pure TS, minimal audited deps. |
 | [`packages/cli`](./packages/cli) | `@openslate/cli` — `keygen` / `pubkey` / `sign` (incl. `--batch` for research bundles) / `validate` / `verify` / `inspect` / `adopt` (copy or reference another slate's positions). |
-| [`apps/web`](./apps/web) | React + Vite SPA. Two modes. *My vote*: a getting-started guide, My ballot (your followed sources' endorsements by race, for your election and area, with private picks), and Sources (follow, disagree with, or leave off, the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/), import from link/file/QR/paste). *Publish*: identities, sign your picks (or any race) as a slate and share it, verify and inspect slates; view live polls, market forecasts, and election results; pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
-| [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + relays for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic, with your `GOOGLE_API_KEY`), opinion polls ([VoteHub](https://votehub.com)), election results ([civicAPI](https://civicapi.org)), and market forecasts ([Kalshi](https://kalshi.com)). |
-| [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls, [civicAPI](https://civicapi.org) results, and [Kalshi](https://kalshi.com) forecasts behind permissive CORS, relays opt-in address lookups to the [Census geocoder](https://geocoding.geo.census.gov/) (`POST /api/geocode/census`; nothing cached, logged or stored), and answers Google Civic Information lookups with the project's key (`GET /api/civic/elections`, `POST /api/civic/voterinfo`; only for openslate.us pages, addresses never cached, logged or stored). Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, `/api/forecasts/v2/*`, `/api/geocode/census` and `/api/civic/*` shapes so the web client treats either backend identically. Runs at `https://api.openslate.us`. |
+| [`apps/web`](./apps/web) | React + Vite SPA. Two modes. *My vote*: a getting-started guide, My ballot (your followed sources' endorsements by race, for your election and area, with private picks), and Sources (follow, disagree with, or leave off, the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/), import from link/file/QR/paste). *Publish*: identities, sign your picks (or any race) as a slate and share it, verify and inspect slates; view live polls and election results (and Kalshi market forecasts, when a self-hosted server opts in); pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
+| [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + relays for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic, with your `GOOGLE_API_KEY`), opinion polls ([VoteHub](https://votehub.com)), election results ([civicAPI](https://civicapi.org)), and, opt-in with `KALSHI_FORECASTS=true`, market forecasts ([Kalshi](https://kalshi.com)). |
+| [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls and [civicAPI](https://civicapi.org) results behind permissive CORS, relays opt-in address lookups to the [Census geocoder](https://geocoding.geo.census.gov/) (`POST /api/geocode/census`; nothing cached, logged or stored), and answers Google Civic Information lookups with the project's key (`GET /api/civic/elections`, `POST /api/civic/voterinfo`; only for openslate.us pages, addresses never cached, logged or stored). Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, `/api/geocode/census` and `/api/civic/*` shapes so the web client treats either backend identically. Runs at `https://api.openslate.us`. |
 | [`apps/desktop`](./apps/desktop) | [Electrobun](https://blackboard.sh/electrobun) wrapper around the web build (stub). |
 
 ## Hosting topologies
@@ -280,14 +289,15 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 OpenSlate is **decentralized-first**: a slate is fully verifiable offline, and
 the web/desktop app works against browser storage alone. The optional Hono
 server and Cloudflare Worker exist only to fetch *public* data on the user's
-behalf (ballot contests, polls, forecasts, election results); neither stores
+behalf (ballot contests, polls, election results); neither stores
 user data, identity, or positions. Signing and verification always happen in
 the browser.
 
 Election results (civicAPI) already serve permissive CORS without an API key,
-so the SPA hits civicAPI directly by default. Polls (VoteHub) and forecasts
-(Kalshi) restrict cross-origin access, so the SPA *must* go through a proxy
-for those. The Settings page lets each user pick direct-vs-proxy per provider
+so the SPA hits civicAPI directly by default. Polls (VoteHub) restrict
+cross-origin access, so the SPA *must* go through a proxy for those. So do
+Kalshi's forecasts, which only a self-hosted server relays, and only when
+its operator opts in. The Settings page lets each user pick direct-vs-proxy per provider
 where both are possible. The Hono/Worker mirrors also help self-hosters who
 want a uniform fetch surface or edge caching on election night.
 
@@ -325,7 +335,7 @@ flowchart LR
   USGS[("USGS The National Map<br/>street/satellite tiles")]:::ext
   VH[("VoteHub<br/>opinion polls<br/>CC BY 4.0")]:::ext
   CA[("civicAPI<br/>election results")]:::ext
-  KS[("Kalshi<br/>market forecasts")]:::ext
+  KS[("Kalshi<br/>market forecasts<br/>(opt-in)")]:::ext
   OPE[("openslate-public-endorsements<br/>signed catalog (GH Pages)")]:::ext
   VG[("openslate-ballot-* repos<br/>signed voter guides (GH Pages)")]:::ext
 
@@ -336,8 +346,7 @@ flowchart LR
   Client -.->|"/api/polls/*"| Worker
   Client -.->|"/api/results/v2/*"| Hono
   Client -.->|"/api/results/v2/*"| Worker
-  Client -.->|"/api/forecasts/v2/*"| Hono
-  Client -.->|"/api/forecasts/v2/*"| Worker
+  Client -.->|"/api/forecasts/v2/*, opt-in"| Hono
   Client -->|"direct (default)"| CA
   Client -->|"index.json · signed.slate · guides.json"| OPE
   Client -->|"guide.jws · items · photos · PDFs"| VG
@@ -351,10 +360,9 @@ flowchart LR
   Hono -->|"address (forwarded, not stored)"| CEN
   Hono -->|"subject filter"| VH
   Hono -->|"race id / search"| CA
-  Hono -->|"market lookup"| KS
+  Hono -.->|"market lookup, KALSHI_FORECASTS=true"| KS
   Worker -->|"upstream fetch"| VH
   Worker -->|"upstream fetch"| CA
-  Worker -->|"upstream fetch"| KS
   Worker -->|"address (forwarded, not stored)"| CEN
 
   Client <-.->|"text block · URL · email · QR · file"| Peer
@@ -366,23 +374,23 @@ flowchart LR
 | Mode | What runs | Sign & verify | Catalog | Polls | Forecasts | Ballot lookup | Results |
 | --- | --- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Pure client** (default) | Web SPA or desktop only | yes | yes (GH Pages) | — | — | map, location, OpenStreetMap; Google with your own key | yes (civicAPI direct) |
-| **+ Self-hosted Hono** | Above + your own `apps/server` | yes | yes | yes (VoteHub) | yes (Kalshi) | + Census; + Google with `GOOGLE_API_KEY` | yes (cached) |
-| **+ Public Worker** (what `openslate.us` uses) | Above + project-operated Worker | yes | yes | yes (cached) | refused by Kalshi (see below) | + Census; + Google once the Worker has its key | yes (cached) |
+| **+ Self-hosted Hono** | Above + your own `apps/server` | yes | yes | yes (VoteHub) | opt-in (Kalshi, `KALSHI_FORECASTS=true`) | + Census; + Google with `GOOGLE_API_KEY` | yes (cached) |
+| **+ Public Worker** (what `openslate.us` uses) | Above + project-operated Worker | yes | yes | yes (cached) | — | + Census; + Google once the Worker has its key | yes (cached) |
 
 Modes are not mutually exclusive: run your own Hono for ballot lookup **and**
 point `VITE_API_BASE` at the public Worker for cached polls. The web client
 hits `/api/polls/*` on whichever backend the env var resolves to; the response
-shape is identical either way. `VITE_RESULTS_BASE` and `VITE_FORECASTS_BASE`
-work the same way for civicAPI results (reached directly by default, but
-configurable) and Kalshi forecasts (which always require a proxy).
+shape is identical either way. `VITE_RESULTS_BASE` works the same way for
+civicAPI results (reached directly by default, but configurable). Kalshi
+forecasts come from the same backend as `VITE_API_BASE`, when it says
+`forecasts: true` in `/api/health`.
 
-Kalshi answers `429` to every request from Cloudflare Workers (seen October
-2026; it refuses Workers' shared egress, whatever the request says), so the
-public Worker has no forecasts to relay. Neither relay caches Kalshi's errors.
-Each keeps its last good answer and serves it, marked stale, when Kalshi
-refuses. With no such copy the app says Kalshi isn't answering. A
-self-hosted Hono server reaches Kalshi from its own address. See
-[plans/kalshi-forecasts-429.md](./plans/kalshi-forecasts-429.md).
+The public Worker has no Kalshi forecasts. Kalshi answers `429` to every
+request from Cloudflare Workers (seen October 2026; it refuses Workers'
+shared egress, whatever the request says), and a public relay or mirror of
+its prices may not be something its terms allow. A self-hosted server can
+opt in (see [Bare](#bare)); it doesn't cache Kalshi's errors, and serves its
+last good answer, marked stale, when Kalshi refuses.
 
 ## Deployment
 

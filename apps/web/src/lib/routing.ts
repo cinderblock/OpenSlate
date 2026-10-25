@@ -4,8 +4,8 @@
  * decision — direct means the provider sees the user's IP + request pattern;
  * proxy means only our backend sees that and the provider sees us instead.
  *
- * Not every provider supports both. CORS-restricted providers (VoteHub,
- * Kalshi) can ONLY be reached through the proxy. The UI honours that —
+ * Not every provider supports both. CORS-restricted providers (VoteHub) can
+ * ONLY be reached through the proxy. The UI honours that —
  * `canDirect: false` means the toggle is disabled and the explanation reads
  * "the provider's CORS doesn't permit browser-direct access."
  */
@@ -83,17 +83,6 @@ export const PROVIDERS: Record<string, ProviderInfo> = {
     proxyUrl: apiBase(),
     privacyNote:
       "VoteHub's API doesn't send permissive CORS headers, so a browser can't read direct responses. All requests must go through the proxy.",
-  },
-  kalshi: {
-    key: "kalshi",
-    name: "Kalshi",
-    homepage: "https://kalshi.com",
-    canDirect: false,
-    defaultMode: "proxy",
-    directUrl: "https://api.elections.kalshi.com/trade-api/v2",
-    proxyUrl: envBase("VITE_FORECASTS_BASE", "/api/forecasts/v2"),
-    privacyNote:
-      "Kalshi only accepts browser requests from kalshi.com (returns 403 to other origins). All requests must go through the proxy.",
   },
 };
 

@@ -1,7 +1,11 @@
 import type { Forecast, Subject } from "@openslate/core";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { forecastEventQueryOptions, forecastsSource } from "../lib/forecasts";
+import {
+  forecastEventQueryOptions,
+  forecastsHealthOptions,
+  forecastsSource,
+} from "../lib/forecasts";
 
 interface ForecastsPanelProps {
   subject: Subject;
@@ -11,12 +15,19 @@ interface ForecastsPanelProps {
  * Surface Kalshi prediction-market data for a subject. These are
  * market-implied probabilities, NOT polls — labelled accordingly so a viewer
  * doesn't confuse them with survey data.
+ *
+ * Renders nothing unless the app's backend relays Kalshi, which only a
+ * self-hosted server opts into (lib/forecasts.ts).
  */
 export function ForecastsPanel({ subject }: ForecastsPanelProps) {
   const lookup = useMemo(() => forecastsSource.lookup(subject), [subject]);
+  const relay = useQuery(forecastsHealthOptions());
 
   const queries = useQueries({
-    queries: lookup.eventIds.map((id) => forecastEventQueryOptions(id)),
+    queries: lookup.eventIds.map((id) => ({
+      ...forecastEventQueryOptions(id),
+      enabled: relay.data === true,
+    })),
   });
 
   const loading = queries.some((q) => q.isLoading);
@@ -31,7 +42,7 @@ export function ForecastsPanel({ subject }: ForecastsPanelProps) {
     return null;
   }, [queries]);
 
-  if (lookup.eventIds.length === 0) return null;
+  if (relay.data !== true || lookup.eventIds.length === 0) return null;
 
   // Kalshi errored (often a rate limit) and the relay had no earlier copy: say
   // so in one line rather than showing the error. The ticker that failed may

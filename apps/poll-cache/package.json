@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "type": "module",
   "private": true,
-  "description": "Cloudflare Worker that caches public election data (VoteHub polls, civicAPI results, Kalshi forecasts) behind permissive CORS, relays opt-in address lookups to the Census geocoder, and answers Google Civic Information lookups with its own key. Stateless; stores and logs nothing.",
+  "description": "Cloudflare Worker that caches public election data (VoteHub polls, civicAPI results) behind permissive CORS, relays opt-in address lookups to the Census geocoder, and answers Google Civic Information lookups with its own key. Stateless; stores and logs nothing.",
   "license": "MIT",
   "exports": {
     "./civic": "./src/civic.ts",
