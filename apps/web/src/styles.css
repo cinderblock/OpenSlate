@@ -1150,6 +1150,24 @@ button.source-chip {
   opacity: 0.55;
   border-style: dashed;
 }
+/* Counted on the other side of a two-way race: the side the source named. */
+.chip-named {
+  color: var(--muted);
+}
+.disagree-mode .ui-radio-group {
+  gap: 0.35rem;
+}
+.disagree-mode-details {
+  margin-top: 0.5rem;
+}
+.disagree-mode-details > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.disagree-mode-details[open] > summary {
+  margin-bottom: 0.5rem;
+}
 .pick-buttons {
   border: none;
   padding: 0;

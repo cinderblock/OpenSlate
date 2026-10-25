@@ -1,6 +1,6 @@
 import type { Stance, Subject } from "@openslate/core";
 import { type DraftRow, rowIdFor } from "./ballotDraft";
-import { type Race, stanceTone } from "./collate";
+import { type Race, optionsOf, stanceTone, twoWayOptions } from "./collate";
 import type { Standing } from "./sources";
 
 /**
@@ -28,22 +28,6 @@ type Rows = Record<string, DraftRow>;
 
 function stanceOn(rows: Rows, election: string, race: Race, choice: string): Stance | undefined {
   return rows[rowIdFor(election, race.subject, choice || undefined)]?.stance;
-}
-
-/**
- * The options a voter chooses between: the official field when a ballot
- * source lists the race, else every named choice, else the race itself.
- */
-export function optionsOf(race: Race): string[] {
-  const named = race.choices.filter((c) => c.choice !== "" && (!race.onBallot || c.onBallot));
-  return named.length > 0 ? named.map((c) => c.choice) : [""];
-}
-
-/** A race with exactly two known options: a Yes/No measure, or a two-name ballot. */
-function twoWay(race: Race): [string, string] | undefined {
-  if (!race.onBallot && race.subject.kind !== "measure") return undefined;
-  const options = optionsOf(race);
-  return options.length === 2 ? [options[0] as string, options[1] as string] : undefined;
 }
 
 export function raceStatus(race: Race, rows: Rows, election: string): RaceStatus {
@@ -230,8 +214,9 @@ export function sourcesOn(races: Race[]): SourceSummary[] {
 }
 
 /**
- * One source's stances on a race. A stance on a Yes/No measure as a whole
- * becomes a stance on Yes (for) or No (against).
+ * One source's stances on a race, on the choices it named (a position listed
+ * on the other side keeps the one it named). A stance on a Yes/No measure as a
+ * whole becomes a stance on Yes (for) or No (against).
  */
 function stancesOf(race: Race, sourceId: string): Array<{ choice: string; stance: Stance }> {
   const out: Array<{ choice: string; stance: Stance }> = [];
@@ -248,7 +233,7 @@ function stancesOf(race: Race, sourceId: string): Array<{ choice: string; stance
       if (tone === "against") out.push({ choice: no, stance: lean ? "lean_for" : "endorse" });
       continue;
     }
-    out.push({ choice: group.choice, stance: position.stance });
+    out.push({ choice: position.named ?? group.choice, stance: position.stance });
   }
   return out;
 }
@@ -278,7 +263,7 @@ export function sourceFill(
     const picked = hasPick(race, rows, election);
     const unmarked = (choice: string) => !stanceOn(rows, election, race, choice);
 
-    const pair = twoWay(race);
+    const pair = twoWayOptions(race);
     if (pair) {
       if (picked) continue;
       const other = (choice: string) => (choice === pair[0] ? pair[1] : pair[0]);

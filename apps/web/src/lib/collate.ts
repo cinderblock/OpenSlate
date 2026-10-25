@@ -87,6 +87,28 @@ export function countedTone(stance: Stance, standing: Standing): StanceTone {
   return tone === "for" ? "against" : "for";
 }
 
+/**
+ * How a position counts on the choice it's listed under. One moved to the other
+ * side of a two-way race (`named`) already stands for the user's side: it
+ * counts as the source said it, there.
+ */
+export function positionTone(
+  position: Pick<RacePosition, "stance" | "standing" | "named">,
+): StanceTone {
+  return position.named === undefined
+    ? countedTone(position.stance, position.standing)
+    : stanceTone(position.stance);
+}
+
+/**
+ * Where a source you disagree with counts in a two-way race (a Yes/No measure,
+ * two names on the ballot). `choice`: against what it picked (it backs No, so
+ * No gets one against). `side`: for the other side (it backs No, so Yes gets
+ * one for). Races with more names always count against what it picked:
+ * ruling one name out doesn't say who to back.
+ */
+export type DisagreeMode = "choice" | "side";
+
 /** Followed to agree first, then to disagree, then the rest. */
 const STANDING_ORDER: Record<Standing, number> = { follow: 0, disagree: 1, off: 2 };
 
@@ -99,6 +121,11 @@ export interface RacePosition {
   standing: Standing;
   /** The source's own spelling, when it's shown under the ballot's. */
   written?: string;
+  /**
+   * Listed on the other side of a two-way race from the one the source named
+   * (a source you disagree with, `DisagreeMode` `side`): the choice it named.
+   */
+  named?: string;
 }
 
 export interface ChoiceGroup {
@@ -106,7 +133,7 @@ export interface ChoiceGroup {
   choice: string;
   /** Endorsement-type positions, followed sources first. Ballot listings aren't positions. */
   positions: RacePosition[];
-  /** Followed sources counting for / against this choice (`countedTone`). */
+  /** Followed sources counting for / against this choice (`positionTone`). */
   support: number;
   opposition: number;
   /** Listed by a ballot source: this choice is on the ballot even if nobody backs it. */
@@ -150,6 +177,49 @@ export interface CollateOptions {
    * so a race never hides part of its field.
    */
   includeUnfollowed?: boolean;
+  /**
+   * Where sources you disagree with count in two-way races. Default `choice`:
+   * every position stays under the choice its source named, as a race page
+   * shows them.
+   */
+  disagree?: DisagreeMode;
+}
+
+type Field = Pick<Race, "choices" | "onBallot" | "subject">;
+
+/**
+ * The options a voter chooses between: the official field when a ballot
+ * source lists the race, else every named choice, else the race itself.
+ */
+export function optionsOf(race: Field): string[] {
+  const named = race.choices.filter((c) => c.choice !== "" && (!race.onBallot || c.onBallot));
+  return named.length > 0 ? named.map((c) => c.choice) : [""];
+}
+
+/** A race with exactly two known options: a Yes/No measure, or a two-name ballot. */
+export function twoWayOptions(race: Field): [string, string] | undefined {
+  if (!race.onBallot && race.subject.kind !== "measure") return undefined;
+  const options = optionsOf(race);
+  return options.length === 2 ? [options[0] as string, options[1] as string] : undefined;
+}
+
+/**
+ * `DisagreeMode` `side`: in a two-way race, list what a source you disagree
+ * with says about one side under the other, marked with the side it named.
+ */
+function moveToOtherSide(race: Field): void {
+  const pair = twoWayOptions(race);
+  if (!pair) return;
+  const groups = pair.map((choice) => race.choices.find((c) => c.choice === choice));
+  const [first, second] = groups;
+  if (!first || !second) return;
+  const moving = groups.map((g) => g?.positions.filter((p) => p.standing === "disagree") ?? []);
+  first.positions = first.positions
+    .filter((p) => p.standing !== "disagree")
+    .concat((moving[1] ?? []).map((p) => ({ ...p, named: second.choice })));
+  second.positions = second.positions
+    .filter((p) => p.standing !== "disagree")
+    .concat((moving[0] ?? []).map((p) => ({ ...p, named: first.choice })));
 }
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -253,17 +323,25 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
         standing,
         ...(check?.written ? { written: check.written } : {}),
       });
-      if (followed) {
-        const tone = countedTone(position.stance, standing);
-        if (tone === "for") group.support++;
-        else if (tone === "against") group.opposition++;
-      }
     }
   }
 
   return [...races.values()]
     .filter((race) => race.onBallot || race.followedIds.size > 0 || options.includeUnfollowed)
-    .map(({ sourceIds, followedIds, ballotOrder, ...race }) => ({
+    .map(({ sourceIds, followedIds, ballotOrder, ...race }) => {
+      if (options.disagree === "side") moveToOtherSide(race);
+      // Tallied once every position is where it counts.
+      for (const group of race.choices) {
+        for (const position of group.positions) {
+          if (position.standing === "off") continue;
+          const tone = positionTone(position);
+          if (tone === "for") group.support++;
+          else if (tone === "against") group.opposition++;
+        }
+      }
+      return { race, followedIds, sourceIds, ballotOrder };
+    })
+    .map(({ race, followedIds, sourceIds, ballotOrder }) => ({
       ...race,
       followedSources: followedIds.size,
       totalSources: sourceIds.size,

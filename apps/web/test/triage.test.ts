@@ -226,6 +226,23 @@ describe("sourceFill", () => {
       "Prop 2:Yes=endorse",
     ]);
   });
+
+  test("reads what the source named, even when My ballot lists it on the other side", () => {
+    const moved = collateRaces(decodeSlates([ballot, gop]), {
+      follows: { [id]: "disagree" },
+      disagree: "side",
+    });
+    // The GOP's Ray and No are listed under Dee and Yes here.
+    expect(
+      moved.find((r) => r.subject.title === "Governor")?.choices.find((c) => c.choice === "Dee")
+        ?.positions[0]?.named,
+    ).toBe("Ray");
+    for (const mode of ["agree", "against"] as const) {
+      expect(brief(sourceFill(moved, {}, E, id, mode))).toEqual(
+        brief(sourceFill(races, {}, E, id, mode)),
+      );
+    }
+  });
 });
 
 describe("stepThrough", () => {

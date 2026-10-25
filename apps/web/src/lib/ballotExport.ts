@@ -30,6 +30,11 @@ interface ExportedSource {
   followed: boolean;
   /** Followed to disagree: counted the other way in `for` / `against`. */
   disagree?: true;
+  /**
+   * Listed under the other side of a two-way race (a source you disagree
+   * with, counted for the other side): the choice the source named.
+   */
+  named?: string;
   statement?: string;
 }
 
@@ -101,6 +106,7 @@ function racesOf(input: BallotExportInput, options: BallotExportOptions): Export
             stance: p.stance,
             followed: p.standing !== "off",
             ...(p.standing === "disagree" ? { disagree: true as const } : {}),
+            ...(p.named ? { named: p.named } : {}),
             ...(p.statement ? { statement: p.statement } : {}),
           })),
           ...(mine?.stance ? { myPick: mine.stance } : {}),
@@ -161,7 +167,7 @@ export function ballotToCsv(input: BallotExportInput, options: BallotExportOptio
         choice.sources
           .map(
             (s) =>
-              `${s.name}: ${s.stance}${s.disagree ? " (you disagree)" : s.followed ? "" : " (not followed)"}`,
+              `${s.name}: ${s.stance}${s.named ? ` ${s.named}` : ""}${s.disagree ? " (you disagree)" : s.followed ? "" : " (not followed)"}`,
           )
           .join("; "),
         choice.myPick ?? "",

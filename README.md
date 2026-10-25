@@ -50,7 +50,9 @@ The web app has two modes:
   endorsement: it's never counted as anyone backing anything. *Sources* is
   where you follow sources, follow them to *disagree* (their picks count the
   other way on My ballot: what they back counts against it, what they oppose
-  counts for it), or leave them imported just for comparison; browse the
+  counts for it; in a Yes/No measure or a two-name race you can have it count
+  for the other side instead, under Settings → *My ballot*), or leave them
+  imported just for comparison; browse the
   public catalog; and add slates from a link, file, QR code or paste. Each
   endorser shows its logo
   (from the catalog, else a monogram) and where it sits *left to right*: the
