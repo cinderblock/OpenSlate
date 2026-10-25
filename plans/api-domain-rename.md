@@ -25,8 +25,9 @@ Three phases:
 - The worker's custom domains are declared in the ops repo,
   `cloudflare/config/projects/openslate.yaml`, applied by ops CI on push to
   ops master. The worker's code deploys from this repo (Workers Builds).
-- The app reads the worker's address from `VITE_POLLS_BASE`,
-  `VITE_RESULTS_BASE` and `VITE_FORECASTS_BASE` in `apps/web/.env.production`.
+- The app reads the worker's address from `VITE_API_BASE` (formerly
+  `VITE_POLLS_BASE`), `VITE_RESULTS_BASE` and `VITE_FORECASTS_BASE` in
+  `apps/web/.env.production`.
 - The web app is a PWA with `registerType: "autoUpdate"`: an installed copy
   picks up a new build on its next visit. So `polls.` traffic should fall
   away as people open the app, apart from devices that never do.
@@ -61,26 +62,31 @@ Three phases:
 3. [x] The app points at `api.`; README and `wrangler.toml` say so; the
        usage script.
 4. [x] Pushed (`5fa22c1`); openslate.us now calls `api.` only.
-5. [ ] **Current step.** Watch `polls.` with the script. **Ready to remove when both hold:**
+5. [x] The cleanup that doesn't wait for `polls.` to go (user, 2026-10-24:
+       "why can't we start the cleanup now?"):
+   - `VITE_POLLS_BASE` is now `VITE_API_BASE`, read through `apiBase()` in
+     `apps/web/src/lib/routing.ts`, which falls back to the old name so
+     existing self-hosted builds keep working. The README says so.
+   - Test hostnames `polls.example` are now `api.example`.
+6. [ ] **Current step.** Watch `polls.` with the script. **Ready to remove when both hold:**
    - The 2026-11-03 election has passed and results have settled: not before
      2026-11-17. A broken install on election night is the one thing worth
      avoiding.
    - The worker's routes on `polls.` see next to nothing for 14 days in a
      row: a handful of requests a day at most (counts are sampled, and
      include our own checks).
-6. [ ] With the user's yes, ops: delete the `polls.openslate.us` entry, move
+7. [ ] With the user's yes, ops: delete the `polls.openslate.us` entry, move
        `provision: true` to the `api.` entry, and update the file's header and
        rate-limit comments. Dry run from a clean ops worktree first: expect one
        delete, `worker-domain:openslate-poll-cache:polls.openslate.us` (its
        AAAA record is Cloudflare's and goes with it).
-7. [ ] Clean up this repo:
+8. [ ] The rest of the cleanup, which only makes sense once `polls.` is gone:
    - Remove the README paragraph on `polls.` and the `wrangler.toml` note.
-   - Rename `VITE_POLLS_BASE` to `VITE_API_BASE`. Self-hosted builds set it,
-     so read the old name as a fallback for a while, and say so in the README.
-   - Test hostnames `polls.example` become `api.example`.
    - Delete `scripts/host-usage.ts` and its package script.
    - Grep for `polls.openslate` / `polls.` one last time. Leave historical
      plans as they are.
+   - The `VITE_POLLS_BASE` fallback in `apiBase()` and its README line can go
+     later still: self-hosters' builds don't depend on our domain.
 
 ## Findings / gotchas
 
@@ -99,11 +105,12 @@ Three phases:
 
 - [x] 2026-10-24: steps 1–3 (see above).
 - [x] Step 4: pushed `5fa22c1`; openslate.us serves a bundle naming only `api.` (an installed copy switched on its next load), and `api.` answers the openslate.us page with CORS.
-- [ ] Steps 5–7: from 2026-11-17 at the earliest.
+- [x] Step 5: the env var and test hostnames renamed.
+- [ ] Steps 6–8: from 2026-11-17 at the earliest.
 
 ## Open questions for the user
 
-None right now. Step 6 waits for the user's yes, once the numbers are in.
+None right now. Step 7 waits for the user's yes, once the numbers are in.
 
 ## Things not to do
 

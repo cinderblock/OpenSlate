@@ -552,6 +552,13 @@ footer button.link {
 footer button.link:hover {
   text-decoration: underline;
 }
+/* The general disclaimer: smaller, and kept to a readable line length. */
+.footer-legal {
+  max-width: 44rem;
+  margin: 0.75rem auto 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
 
 /* Feedback dialog (components/FeedbackDialog.tsx) */
 dialog.feedback-dialog::backdrop {

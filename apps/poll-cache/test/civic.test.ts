@@ -36,7 +36,7 @@ const voterInfo = {
 };
 
 function post(body: unknown) {
-  return new Request(`https://polls.example${CIVIC_VOTERINFO_PATH}`, {
+  return new Request(`https://api.example${CIVIC_VOTERINFO_PATH}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: typeof body === "string" ? body : JSON.stringify(body),
@@ -81,7 +81,7 @@ describe("handleCivicVoterInfo", () => {
     ]) {
       expect((await handleCivicVoterInfo(post(body), { key: "KEY" }, {})).status).toBe(400);
     }
-    const get = new Request(`https://polls.example${CIVIC_VOTERINFO_PATH}?address=x`);
+    const get = new Request(`https://api.example${CIVIC_VOTERINFO_PATH}?address=x`);
     expect((await handleCivicVoterInfo(get, { key: "KEY" }, {})).status).toBe(405);
     expect(seen).toHaveLength(0);
   });
@@ -106,7 +106,7 @@ test("a bad relay key is the relay's problem, not the address's", async () => {
 });
 
 describe("handleCivicElections", () => {
-  const get = () => new Request(`https://polls.example${CIVIC_ELECTIONS_PATH}`);
+  const get = () => new Request(`https://api.example${CIVIC_ELECTIONS_PATH}`);
 
   test("trims the list and keeps Google's cache header", async () => {
     stubGoogle(
@@ -155,7 +155,7 @@ describe("the worker", () => {
 
   test("answers the voterinfo preflight for an allowed origin", async () => {
     const res = await worker.fetch(
-      new Request(`https://polls.example${CIVIC_VOTERINFO_PATH}`, {
+      new Request(`https://api.example${CIVIC_VOTERINFO_PATH}`, {
         method: "OPTIONS",
         headers: { Origin: "https://openslate.us" },
       }),
@@ -168,7 +168,7 @@ describe("the worker", () => {
 
   test("health says whether it can ask Google", async () => {
     const health = async (e: typeof env | Record<string, never>) =>
-      (await (await worker.fetch(new Request("https://polls.example/api/health"), e)).json()) as {
+      (await (await worker.fetch(new Request("https://api.example/api/health"), e)).json()) as {
         civic: boolean;
       };
     expect((await health(env)).civic).toBe(true);

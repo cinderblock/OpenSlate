@@ -168,6 +168,12 @@ User, 2026-10-23:
    always shows it. Today statements appear only on the race page (inside "In
    their own words"), so nothing is hidden anywhere yet.
 
+User, 2026-10-24:
+
+7. **San Mateo: measures only, linking the filed documents (option b).** Don't
+   contact the county yet ("I don't want to start asking around yet"). No OCR,
+   and no guessing at pamphlet file names.
+
 ## Hosting today (checked 2026-10-22)
 
 - The web app (`openslate.us`) is Cloudflare Workers static assets
@@ -562,6 +568,153 @@ Findings (checked 2026-10-22):
   home address (item 3, required by the city). The guide republishes the
   official text as printed; the user agreed (decision 6).
 
+### Santa Clara and San Mateo (user, 2026-10-24: "keep going")
+
+Re-surveyed 2026-10-24, about 1:00 PM PDT (20:00Z). Both have usable public
+sources now, so neither needs files from the registrar.
+
+**Santa Clara:**
+
+- `vote.santaclaracounty.gov` answers plain requests now. The address lookup
+  `rovservices.sccgov.org` is still behind Cloudflare.
+- The lookup hands off to Democracy Live's **OmniBallot**:
+  `ca.omniballot.us/sites/06085/site/app/cvig/vg/info?pid=<ballot style>`.
+  Account `06085`, election id `1968`.
+- **Public, no session:**
+  `https://ca.omniballot.us/published/06085/1968/vg/lookups.json` (122 KB)
+  lists:
+  - `candidate_profiles`: 185 statements, keyed `"<contest box id>-<option
+    id>"`, each with a URL `/published/06085/1968/vg/<id>_cp.json`. The
+    statement is HTML (`written_statement[0].value`, with translations).
+    `photo` is empty: Santa Clara prints no photos.
+  - `measure_details`: 20 measures (RTM, A–S), each `<id>_md.json`. All of a
+    measure is one HTML document (`content[0].value`, "layout raw"): the
+    question in a bordered div, then `h2` sections for the impartial
+    analysis, complete text, and arguments and rebuttals, with signers as
+    `<p>/s/ Name<br>Title</p>`.
+- The HTML is the county's machine extraction from its printed guide
+  ("voter-guide-extraction 1.1; SCC_Measures.pdf p1-13"). It has small flaws,
+  for example RTM's argument has a paragraph starting "'s clear", missing its
+  "It". Mirror it as published and note the flaws, as with SF.
+- **Not used:** the per-style API (`/api/public/account/06085/styles`) needs a
+  session that's gated by reCAPTCHA. Contest names come from the qualified
+  list instead.
+- **Contest names and the ballot source:** "Final Qualified List of Local
+  Eligible Candidates":
+  `files.santaclaracounty.gov/exjcpb1296/2026-09/qualified-list-of-local-candidates-9-28-26.pdf`,
+  41 pages, real text.
+  - Per contest: number, name, "On Ballot: Yes/No" and "Vote For".
+  - Per candidate: name and ballot designation, plus contact details we don't
+    use.
+  - `files.santaclaracounty.gov` returns 403 without a browser user agent.
+- The catalog already names 81 Santa Clara-area subjects, from the county
+  parties, the South Bay Labor Council and others. The conventions:
+  - districts under `us/ca/santa-clara-county`, as "<District> Board, Trustee
+    Area N";
+  - cities under `us/ca/<city>`;
+  - measures as "<Body> — Measure X (<short title>)".
+
+**San Mateo:**
+
+- `smcacre.gov/elections/current-election` links about 150 per-measure PDFs:
+  resolutions, arguments, rebuttals and impartial analyses, contest codes
+  M101–M304.
+- It also has a "Roster of Candidates", which can serve as the ballot source.
+- Candidate statements are only in the per-voter guide, behind a lookup that
+  asks for a birthdate. So San Mateo's guide will be measures only.
+- To check: whether those PDFs have a text layer (in 2026-10-23's survey,
+  they were scans).
+
+Steps:
+
+- [x] SC1 Santa Clara ballot source (endorsements `8204866`, fix `09a52fe`;
+  `scripts/scc-rov-ballot.ts` → `orgs/santa-clara-registrar-of-voters/2026-11-03`):
+  - 73 races and 20 measures, 249 choice_ids; 74 of 93 subjects reuse catalog
+    titles.
+  - 183 existing endorsements got their choice_ids (`494d74d`).
+  - Courage California's Foothill-De Anza CCD Area 2 endorsement was removed
+    (`005181a`): the seat is uncontested and "On Ballot: No".
+- [x] SC2 Santa Clara guide (ballot repo `42a937a`, `a05944f`; `guides.json`
+  endorsements `3cf317e`):
+  - 101 items: 185 statements in 81 races, and 20 measures with 46 arguments
+    and rebuttals.
+  - `guide verify --files` over HTTPS: 101 of 101.
+  - Statements go to the race whose candidates they name. Two lone names fit
+    several races (Gabriel Gutierrez, Karen Martinez). The scraper tries the
+    statement's "Occupation:" against the ballot designation, then the race
+    whose title the statement's words share most, and lists each call. Both
+    calls were checked by hand.
+  - Where Santa Clara's guide shares a subject with Alameda's or SF's (CD-17,
+    SD-10, AD-24, RTM), both hold the same candidates. So the app's
+    first-guide-wins rule hides nothing today.
+- [x] SC3 Signer organizations from Santa Clara's arguments (endorsements
+  `505d226` script, `d51dbdb` bundles): 12 new sources, 17 positions, among
+  them Silicon Valley Taxpayers Association (No on RTM, B, J, M, N).
+  - Santa Clara prints "President: X", "President─X" and "Pres. Cup. Chamber",
+    so the role pattern now takes ":" and dashes after the role, plus "Pres.".
+  - A person signing twice with the title punctuated two ways is named once.
+  - The other counties' and the state guide's output is unchanged.
+  - Left out: school boards, a city advisory committee, and "Cal. Cricket"
+    (which organization it is isn't clear).
+- [x] SM1 San Mateo ballot source (endorsements `95d589a`; also `56dfaef`,
+  `6bce23b`; `scripts/smc-elections-ballot.ts` →
+  `orgs/san-mateo-county-elections/2026-11-03`):
+  - 62 races and 29 measures, 198 choice_ids; 66 of 91 subjects reuse
+    catalog titles (all 29 measures do).
+  - The Roster of Candidates is the same CFMR009 report as Santa Clara's,
+    read by the shared `scripts/lib/qualified-list.ts` (`e7d115a`).
+  - San Mateo publishes no measure list, so `MEASURES` is a reviewed table,
+    checked against each measure's impartial analysis.
+  - 200 existing endorsements got choice_ids.
+  - 5 San Mateo Democratic Party endorsements of uncontested seats were
+    removed, with a note in their NOTES.md.
+- [x] SM2 San Mateo guide, measures only (user, 2026-10-24: option b, "I don't
+  want to start asking around yet"). Ballot repo `3639c75` (script), `76d38cc`
+  (guide); endorsements `bc8098a` (`guides.json`, listed last). 29 measures,
+  132 documents (`scripts/scrape-smc.ts` → `county/san-mateo/`). `guide verify
+  --files` over HTTPS: 29/29. Checked live on openslate.us (Measure R, private
+  profile), 2026-10-24 about 10:48 PM PDT (05:48Z):
+  - Every measure has its resolution and impartial analysis; arguments and
+    rebuttals as filed (J, L and AA have none filed).
+  - Each measure lists its filed documents from the election page: resolution,
+    impartial analysis, arguments and rebuttals. Linked with SHA-256, not
+    mirrored: 132 PDFs, about 530 MB (one is 78 MB). Cached in `.cache/`.
+  - The filings are the submission forms plus the argument, so documents are
+    titled "…, as filed". "Rebuttal Argument in Favor" (RTM's title) is a
+    rebuttal *to* the argument in favor: its form ticks "Rebuttal to Argument
+    in Favor of Measure", signed by Mark Hinkle (No side).
+  - "San Mateo County Amendments" is the Board's resolution for all four
+    charter amendments (J, L, U, AA), with a real text layer.
+  - Contest codes in file names aren't unique (M207 is both East Palo Alto
+    measures), so filings titled by contest map through a reviewed `BY_NAME`
+    table, each checked against the file name's own kind ("Reso",
+    "ArgInFavor", "RebutArgAgainst").
+  Measure documents checked 2026-10-24: 6 of 8 sampled have no text layer
+  (scans, "_Redacted"); the two with text are OCR'd resolutions ("Ju1y24").
+- [ ] SM3 Signer organizations from San Mateo's arguments: needs text, which
+  option b doesn't give. Deferred until the user revisits options a or c.
+- [x] AL1 Alameda bond questions (ballot `5d75cc4`): the "BONDS YES/NO" box
+  labels no longer merge into Alameda L, Berkeley U and Sunol Glen K. The same
+  check found San Diego's two Permanent Road Division zones carrying "Tax –
+  YES/NO" (`5dd1c92`). All counties' questions scanned; no others.
+  Republished and verified (160/160, 158/158).
+- [x] CI fix (endorsements `3ffd028`): `verify-positions.ts` read bundles in
+  filesystem order. RTM is on four listings, so Linux CI took San Mateo's
+  choice_ids and failed. The design question is logged in ISSUES.md
+  (`3445154`).
+
+Findings (Santa Clara):
+
+- `files.santaclaracounty.gov` and `vote.santaclaracounty.gov` began answering
+  Bun's fetch with Cloudflare 403s after the first run, while Windows curl
+  still got 200. Don't work around it: `scc-rov-ballot.ts --fetch --pdf <file>`
+  takes a saved copy (it was the same file by SHA-256).
+- The qualified list sometimes sets a candidate's name as a separate bold run
+  beside "Qualified 2" (Jason Lin). Rows now group lines within 1 pt of each
+  other: a website line sat 1.4 pt above the next name.
+- OmniBallot's pages can't be deep-linked without a session (they bounce to
+  the guide's home). So passages link to the published JSON files.
+
 ### County survey (2026-10-23, real fetches)
 
 | County | Source | Statements | Photos | Measures | Effort |
@@ -702,8 +855,24 @@ LA findings:
 
 ## Open questions for the user
 
-None open. (Berkeley's printed home addresses: answered 2026-10-23, decision
-6.)
+1. **San Mateo's guide (SM2).** *Answered 2026-10-24: b, for now; a (ask the
+   county) later, perhaps.* Candidate statements and the typeset measure
+   pages exist only in the per-ballot-style pamphlets. The app at
+   `smcacre.gov/elections/my-election-info` serves them from
+   `vlu.smcacre.gov/sites/default/files/<election>/<election>_<style>_N-P…`,
+   but only after a lookup with a voter's house number, ZIP and birthdate.
+   Nothing links the files. Options:
+   a. Ask San Mateo Elections for the pamphlets, or the list of ballot styles.
+      **Recommended.** I'd draft the email for the user to send.
+   b. Now: a measures-only guide that links each measure's filed PDFs
+      (resolution, impartial analysis, arguments, rebuttals). These are
+      scans, so no text and no signers.
+   c. OCR the scans (Windows' built-in OCR) for text and signers, marked as
+      machine-read. Errors are likely.
+   d. Guess the pamphlet file names by ballot style. **Not recommended:** the
+      county keeps them behind a voter-identity lookup.
+
+(Berkeley's printed home addresses: answered 2026-10-23, decision 6.)
 
 ## Progress log
 

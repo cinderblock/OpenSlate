@@ -41,6 +41,22 @@ interface KalshiEventEnvelope {
 
 // ---- Helpers ---------------------------------------------------------------
 
+/** Kalshi (or the relay in front of it) answered an error rather than a forecast. */
+export class ForecastUnavailableError extends Error {
+  constructor(
+    readonly status: number,
+    readonly body: string,
+  ) {
+    super(`Kalshi event lookup failed: HTTP ${status}: ${body}`);
+    this.name = "ForecastUnavailableError";
+  }
+
+  /** Rate limited: asking again soon only prolongs it. */
+  get rateLimited(): boolean {
+    return this.status === 429;
+  }
+}
+
 function kalshiUrl(path: string, params?: Record<string, string>): string {
   const search = params ? `?${new URLSearchParams(params).toString()}` : "";
   return `${baseUrlFor("kalshi")}${path}${search}`;
@@ -116,8 +132,14 @@ export function createKalshiSource(): ForecastSource {
       if (res.status === 404) return null;
       if (!res.ok) {
         const body = await res.text().catch(() => "");
-        throw new Error(`Kalshi event lookup failed: HTTP ${res.status}: ${body.slice(0, 200)}`);
+        throw new ForecastUnavailableError(res.status, body.slice(0, 200));
       }
+      // The relay's last good copy, served while Kalshi refuses (see
+      // apps/poll-cache/src/forecasts.ts).
+      const staleAsOf =
+        res.headers.get("x-openslate-stale") === "true"
+          ? (res.headers.get("x-openslate-fetched-at") ?? undefined)
+          : undefined;
       const envelope = (await res.json()) as KalshiEventEnvelope;
       const event = envelope.event;
       const markets = envelope.markets ?? [];
@@ -138,6 +160,7 @@ export function createKalshiSource(): ForecastSource {
         candidates,
         totalVolume,
         url: `https://kalshi.com/markets/${event.event_ticker}`,
+        ...(staleAsOf && { staleAsOf }),
       };
     },
   };
@@ -158,5 +181,9 @@ export function forecastEventQueryOptions(eventId: string | undefined) {
     // Kalshi markets move on every trade. Short staleTime so live updates
     // surface; cache still avoids hammering the proxy on quick re-renders.
     staleTime: 1000 * 60,
+    // A race page asks for up to four tickers; retrying each one three times
+    // into a rate limit multiplies the requests that caused it.
+    retry: (failureCount: number, error: Error) =>
+      !(error instanceof ForecastUnavailableError && error.rateLimited) && failureCount < 1,
   };
 }
