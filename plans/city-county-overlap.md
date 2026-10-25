@@ -147,11 +147,22 @@ org bundles that reused the listings' subjects.
   for races that cross a county line: logged in the endorsements repo's
   ISSUES.md, not fixed.
 - [x] ISSUES.md: the San Diego entry removed (fixed).
+- [x] Step 5, done properly (2026-10-25, user: "keep going"): a school
+  district that crosses a county line is one race under its county of record
+  (`homeCounty`: the Census district's county, CDE's for Center JUSD and
+  Lowell Joint, where the area heuristic was wrong). Catalog `43e31d6`
+  (Fullerton JUHSD TA 1/5, Rowland USD TA 5, Paso Robles Measure G-26, EBRPD
+  ward 7 under Contra Costa with its ward district); app `ed5e0ef` (a
+  district segment that matched the user's area outranks the filing county,
+  so the LA side of Fullerton still gets the race as a maybe); guides
+  `e78dc51`. Cross-county entry removed from the catalog's ISSUES.md.
+  Unverified live yet: see the final progress line.
 
 ## Open questions for the user
 
-None. Left for later, in the endorsements repo's ISSUES.md: races that cross
-a county line, and LA's listing rebuild renaming four seats.
+None. Left for later, in the endorsements repo's ISSUES.md: LA's listing
+rebuild renaming four seats (it did so again during step 5; I reverted that
+part rather than ship renamed ids by accident).
 
 ## Things not to do
 
