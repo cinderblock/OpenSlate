@@ -62,6 +62,22 @@ describe("directoryFromCatalog", () => {
     );
     expect(odd.get("of:odd.example")?.logo).toBeUndefined();
   });
+
+  test("carries a white-only logo's dark background, only alongside the logo", () => {
+    const dark = directoryFromCatalog(
+      {
+        ...catalog,
+        entries: [
+          entry("White Mark", { logo: "orgs/white-mark/logo.png", logo_background: "dark" }),
+          entry("No Logo", { logo_background: "dark" }),
+        ],
+      },
+      CATALOG_URL,
+    );
+    expect(dark.get("of:white-mark.example")?.logoBackground).toBe("dark");
+    expect(dark.get("of:no-logo.example")).toEqual({});
+    expect(directory.get("of:green-group.example")?.logoBackground).toBeUndefined();
+  });
 });
 
 describe("leanScore", () => {

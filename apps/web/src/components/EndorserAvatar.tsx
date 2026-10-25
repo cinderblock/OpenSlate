@@ -11,6 +11,7 @@ export function EndorserAvatar({
   name,
   size = "sm",
   logo: given,
+  logoBackground: givenBackground,
   className,
 }: {
   sourceId: string;
@@ -18,15 +19,27 @@ export function EndorserAvatar({
   size?: "sm" | "md" | "lg";
   /** A logo URL to use instead of the directory's (a catalog row from another catalog). */
   logo?: string;
+  /** With `logo`: the catalog row's `logo_background`. */
+  logoBackground?: "dark";
   className?: string;
 }) {
-  const known = useEndorser(sourceId).logo;
-  const logo = given ?? known;
+  const known = useEndorser(sourceId);
+  const logo = given ?? known.logo;
+  const dark = (given ? givenBackground : known.logoBackground) === "dark";
   // Remember which logo failed, so a different one gets a fresh try.
   const [failed, setFailed] = useState<string>();
   if (logo && failed !== logo) {
     return (
-      <span className={cx("avatar", `avatar-${size}`, "avatar-logo", className)} aria-hidden="true">
+      <span
+        className={cx(
+          "avatar",
+          `avatar-${size}`,
+          "avatar-logo",
+          dark && "avatar-logo-dark",
+          className,
+        )}
+        aria-hidden="true"
+      >
         <img
           src={logo}
           alt=""
