@@ -56,17 +56,33 @@ lawyer-reviewed.
 - [x] deployed: another thread merged it into fix/sub-county-districts and
       pushed (`5fce7fe`); live on openslate.us 2026-10-25 12:54 AM PDT (07:54Z)
 
-## Open questions for the user
+## Follow-up: more protection, and fewer repeats
 
-1. More protection, proposed 2026-10-25 (recommend 1a-1c, folded into a tighter
-   footer paragraph so it doesn't get longer):
-   a. Names and logos identify endorsers; showing them isn't an affiliation.
-   b. OpenSlate endorses no one; being in the catalog isn't an endorsement.
-   c. A corrections line for endorsers on the secondhand-report banner.
-   d. A one-line "not an official ballot" note on printed picks (print
-      hides the footer).
-2. Whether closing the welcome wizard should also count as "Got it" for the
-   alpha banner (recommend no until after the 2026-11-03 election).
+Proposed and approved ("do it all") 2026-10-25:
+
+- **Footer, tightened:** the same length as before, now also saying OpenSlate
+  endorses no one and that a name or logo doesn't mean its owner endorses
+  OpenSlate. The README section matches, and adds that being in the public
+  catalog isn't an endorsement.
+- **Corrections:** the secondhand-report banner asks "Does this misstate
+  <org>'s positions? Tell us so it can be corrected" (opens Send feedback).
+- **Printed picks:** print hides the footer, so the picks sheet ends with
+  "Printed from OpenSlate on <date>. One voter's picks, not an official or
+  sample ballot..."
+- **Wizard counts as "Got it":** the banner state moved from per-component
+  React state to a small shared store in `lib/alpha.ts`, so the wizard's
+  alpha note can close (and remember closing) the page banner. A first-time
+  visitor now reads the warning once, in the wizard; the badge still
+  reopens the banner. I had suggested holding this until after the
+  2026-11-03 election; the user chose to do it now.
+
+- [x] all of the above, typecheck, lint, 496 tests
+- [x] checked in the browser with localhost temporarily counted as the public
+      site: wizard closes the banner, the badge reopens it, the corrections
+      line on 350 SF Action's secondhand report, the print note text
+- [x] committed
+- [ ] deployed (asked the user: local master also carries another thread's
+      unpushed `9254da1`)
 
 ## Findings / gotchas
 
