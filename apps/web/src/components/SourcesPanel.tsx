@@ -12,10 +12,17 @@ import { useMemo, useState } from "react";
 import { type DecodedSlate, electionOf } from "../lib/collate";
 import { slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
-import { followsStore, setStanding, useDecodedSlates, useFollows } from "../lib/myVote";
+import {
+  followsStore,
+  setStanding,
+  useDecodedSlates,
+  useDisagreeMode,
+  useFollows,
+} from "../lib/myVote";
 import { type Source, type Standing, isBallotSource, standingOf } from "../lib/sources";
 import { CatalogBrowser } from "./CatalogBrowser";
 import { ContactsCard } from "./ContactsCard";
+import { DisagreeModeSetting } from "./DisagreeModeSetting";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { ImportVerifyPanel } from "./ImportVerifyPanel";
 import { LeanMeter } from "./LeanMeter";
@@ -62,6 +69,7 @@ type AddTab = "catalog" | "paste";
 export function SourcesPanel() {
   const { slates, isReady } = useDecodedSlates();
   const [follows] = useFollows();
+  const [disagreeMode] = useDisagreeMode();
   const groups = useMemo(() => groupBySource(slates, follows), [slates, follows]);
   const ballots = groups.filter((g) => g.ballot);
   const following = groups.filter((g) => !g.ballot && g.standing === "follow");
@@ -128,6 +136,13 @@ export function SourcesPanel() {
                     <SourceRow key={group.source.id} group={group} />
                   ))}
                 </ul>
+                <details className="disagree-mode-details">
+                  <summary>
+                    In two-way races:{" "}
+                    {disagreeMode === "side" ? "for the other side" : "against what they picked"}
+                  </summary>
+                  <DisagreeModeSetting />
+                </details>
               </>
             )}
             {notFollowing.length > 0 && (

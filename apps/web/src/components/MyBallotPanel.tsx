@@ -29,10 +29,10 @@ import {
   type Race,
   areaOptionsOf,
   collateRaces,
-  countedTone,
   defaultElection,
   electionsOf,
   positionJurisdictions,
+  positionTone,
 } from "../lib/collate";
 import { formatElectionDate, formatLocalDate } from "../lib/dates";
 import { downloadText } from "../lib/download";
@@ -47,7 +47,14 @@ import {
   noRaceReason,
   parseJurisdiction,
 } from "../lib/jurisdictions";
-import { localToday, useArea, useDecodedSlates, useFollows, useMyElection } from "../lib/myVote";
+import {
+  localToday,
+  useArea,
+  useDecodedSlates,
+  useDisagreeMode,
+  useFollows,
+  useMyElection,
+} from "../lib/myVote";
 import { type MyPosition, useMyPositionsByRace } from "../lib/published";
 import { isBallotSource, isFollowed, standingOf } from "../lib/sources";
 import { subjectKey } from "../lib/subjects";
@@ -121,6 +128,7 @@ const STATUS_LABEL: Record<RaceStatus, string> = {
 export function MyBallotPanel() {
   const { slates, isReady } = useDecodedSlates();
   const [follows] = useFollows();
+  const [disagree] = useDisagreeMode();
   const [area, setArea] = useArea();
   const [chosenElection, setChosenElection] = useMyElection();
   const draft = useBallotDraft();
@@ -156,11 +164,12 @@ export function MyBallotPanel() {
     () =>
       collateRaces(slates, {
         follows,
+        disagree,
         ...(election ? { election } : {}),
         area,
         includeUnfollowed: showUnfollowed,
       }),
-    [slates, follows, election, area, showUnfollowed],
+    [slates, follows, disagree, election, area, showUnfollowed],
   );
   // Races only part of a jurisdiction votes on, where the area can't tell which
   // part the user is in (a water district, a trustee area): listed apart, so a
@@ -180,6 +189,7 @@ export function MyBallotPanel() {
     if (!isAreaSet(area)) return [];
     const everywhere = collateRaces(slates, {
       follows,
+      disagree,
       ...(election ? { election } : {}),
       includeUnfollowed: showUnfollowed,
     });
@@ -192,7 +202,7 @@ export function MyBallotPanel() {
       counts.set(part.family, (counts.get(part.family) ?? 0) + 1);
     }
     return [...counts.entries()];
-  }, [slates, follows, election, area, showUnfollowed]);
+  }, [slates, follows, disagree, election, area, showUnfollowed]);
 
   const statuses = useMemo(
     () => new Map(races.map((race) => [race.key, raceStatus(race, draft.rows, election ?? "")])),
@@ -1084,7 +1094,13 @@ function fieldHint(race: Race): { text: string; title: string } | null {
   if (race.subject.kind === "measure") return null;
   if (race.onBallot) {
     const field = race.choices.filter((c) => c.onBallot);
-    const covered = field.filter((c) => c.support > 0 || c.opposition > 0).length;
+    // Named by a followed source, wherever My ballot counts it (`named`).
+    const named = new Set(
+      race.choices.flatMap((c) =>
+        c.positions.filter((p) => p.standing !== "off").map((p) => p.named ?? c.choice),
+      ),
+    );
+    const covered = field.filter((c) => named.has(c.choice)).length;
     return {
       text: `${covered} of ${field.length} candidates covered`,
       title: "Candidates from the official ballot list; how many your sources have a position on",
@@ -1135,16 +1151,18 @@ function ChoiceRow({
         {(followed.length > 0 || others.length > 0) && (
           <div className="source-chips">
             {followed.map((position) => {
-              const what = `${position.source.name} ${STANCE_WORD[position.stance]} ${group.choice || race.subject.title}`;
+              // `named`: listed on the other side of a two-way race from the
+              // one the source named (Settings → My ballot).
+              const what = `${position.source.name} ${STANCE_WORD[position.stance]} ${position.named ?? (group.choice || race.subject.title)}`;
               // Coloured and marked by how it counts for you: a source you
               // disagree with counts the other way. ✗ = counts against.
-              const counted = countedTone(position.stance, position.standing);
+              const counted = positionTone(position);
               const leaning = position.stance === "lean_for" || position.stance === "lean_against";
               const disagree = position.standing === "disagree";
               const countsAs = `you disagree with ${position.source.name}, so this counts ${counted === "for" ? "for" : "against"} ${group.choice || race.subject.title}`;
               return (
                 <InfoPopover
-                  key={position.source.id}
+                  key={`${position.source.id}|${position.named ?? ""}`}
                   className={`source-chip tone-${counted}${disagree ? " disagreed" : ""}`}
                   bare={false}
                   label={disagree && counted !== "neutral" ? `${what}; ${countsAs}` : what}
@@ -1154,7 +1172,12 @@ function ChoiceRow({
                       {disagree && <ThumbsDown className="icon" aria-hidden="true" />}
                       {counted === "against" && "✗ "}
                       {counted === "for" && leaning && "~ "}
-                      {position.source.name}
+                      <span>
+                        {position.source.name}
+                        {position.named && (
+                          <span className="chip-named"> (said {position.named})</span>
+                        )}
+                      </span>
                       {!position.valid && " ⚠"}
                     </>
                   }

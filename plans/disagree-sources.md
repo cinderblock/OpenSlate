@@ -48,6 +48,15 @@ the other way and are shown as such.
   selection, none = off) with "Follow" and "Disagree", used on the Sources page,
   the catalog and the wizard, so the three places look and behave the same.
 - The left-to-right strip on Sources shows only sources you follow to agree.
+- **Two-way races are a user setting** (asked for 2026-10-24, after the first
+  version shipped as `7fad8f5`): a Yes/No measure, or exactly two names on the
+  ballot. "Against what they picked" (default, the original behaviour): the
+  GOP backs No, so No gets one against. "For the other side": Yes gets one
+  for, and on My ballot the GOP's chip sits on the Yes row marked "(said No)".
+  Races with more names always use "against what they picked": ruling one name
+  out doesn't say who to back. Race pages always show what was said, where.
+  Stored in `openslate.disagreeMode.v1`; set on the Settings page and beside
+  the "Disagree with" list on Sources (one shared component).
 
 ## Plan / steps
 
@@ -60,6 +69,13 @@ the other way and are shown as such.
        ballot export.
 6. [x] Wizard sources step (check `git status` for other edits first).
 7. [x] README, checks, browser check, commit.
+8. [x] Two-way setting: move `optionsOf`/`twoWayOptions` from triage into
+       collate; `CollateOptions.disagree`; positions moved to the other side
+       carry `named` (the choice the source named); tallies computed after
+       the move; triage `stancesOf` and the export read `named`.
+9. [x] Store + `DisagreeModeSetting` on Settings and Sources; My ballot passes
+       the mode; chips say "(said No)".
+10. [x] Tests, checks, browser check, README, commit.
 
 ## Findings / gotchas
 
@@ -75,6 +91,14 @@ the other way and are shown as such.
 - Another thread (alpha-notice) had uncommitted edits in `Wizard.tsx`,
   `styles.css` and `README.md` at the same time; only this thread's hunks were
   committed.
+- In "side" mode a two-name race's coverage line ("2 of 2 candidates
+  covered") read "1 of 2", because coverage counted choices with a tally and
+  the moved position left the named candidate with none. Coverage now counts
+  the choices followed sources named (`named ?? choice`).
+- A source moved to the other side shares a row with anything it said there
+  itself, so chips are keyed by source *and* `named`.
+- A big inline bash heredoc for an edit script was cut off silently (only the
+  plan edit ran); write such scripts with the Write tool.
 
 ## Progress log
 
@@ -88,6 +112,11 @@ the other way and are shown as such.
       ("your sources agree: Rob Bonta"), "3 of 3 sources followed (1 to
       disagree)"; race page tag; wizard rows, release-on-second-press, footer
       "Follow 1, disagree with 1 and see my ballot →". Test data restored.
+- [x] Two-way setting: Settings → My ballot and the Sources summary share it;
+      on "For the other side" the GOP's Gates endorsement showed under Rob
+      Bonta as "California Republican Party (said Michael E. Gates)", Bonta
+      "3 for", "2 of 2 candidates covered". 286 tests, typecheck, Biome,
+      build clean. Test data restored.
 
 ## Open questions for the user
 

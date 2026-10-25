@@ -1150,6 +1150,24 @@ button.source-chip {
   opacity: 0.55;
   border-style: dashed;
 }
+/* Counted on the other side of a two-way race: the side the source named. */
+.chip-named {
+  color: var(--muted);
+}
+.disagree-mode .ui-radio-group {
+  gap: 0.35rem;
+}
+.disagree-mode-details {
+  margin-top: 0.5rem;
+}
+.disagree-mode-details > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.disagree-mode-details[open] > summary {
+  margin-bottom: 0.5rem;
+}
 .pick-buttons {
   border: none;
   padding: 0;
@@ -2020,7 +2038,20 @@ p.wizard-wait {
 .wizard-skip button.link {
   color: var(--muted);
 }
-.wizard-skip-nudge > * {
+/* The nudge floats just above the footer (the sticky footer is its containing
+   block) instead of joining the row, so showing it never rewraps the footer
+   or resizes the dialog. Empty, it's still the live region, just no box. */
+.wizard-skip-nudge:not(:empty) {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 0.4rem);
+  width: max-content;
+  max-width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px var(--shadow);
   font-size: 0.9rem;
   animation: wizard-skip-in 0.2s ease-out;
 }
@@ -2028,13 +2059,18 @@ p.wizard-wait {
   color: var(--muted);
   font-style: italic;
 }
+.wizard-skip-nudge > button {
+  font-size: inherit;
+  animation: wizard-skip-in 0.2s ease-out;
+}
 @keyframes wizard-skip-in {
   from {
     opacity: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .wizard-skip-nudge > * {
+  .wizard-skip-nudge:not(:empty),
+  .wizard-skip-nudge > button {
     animation: none;
   }
 }
@@ -3257,6 +3293,11 @@ button.tag.active {
 .avatar-logo {
   background: #fff;
   box-shadow: inset 0 0 0 1px var(--border);
+}
+/* A white-only logo (the catalog's `logo_background: dark`), on the app's
+   ink colour in either theme; the inset border keeps it off a dark page. */
+.avatar-logo-dark {
+  background: #1b1f24;
 }
 .avatar-logo img {
   width: 82%;

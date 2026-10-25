@@ -1,7 +1,7 @@
 import { useLiveQuery } from "@tanstack/react-db";
 import { useMemo } from "react";
 import { translateSlates } from "./ballotCheck";
-import { type DecodedSlate, decodeSlates } from "./collate";
+import { type DecodedSlate, type DisagreeMode, decodeSlates } from "./collate";
 import { slatesCollection } from "./collections";
 import { useKnownIdentities } from "./identities";
 import type { Area } from "./jurisdictions";
@@ -54,6 +54,15 @@ export const useFollows = () => useLocalStore(followsStore);
 export function setStanding(sourceId: string, standing: Standing): void {
   followsStore.set((current) => ({ ...current, [sourceId]: standing }));
 }
+
+/** Where sources you disagree with count in two-way races (see `DisagreeMode`). */
+export const disagreeModeStore = createLocalStore<DisagreeMode>(
+  "openslate.disagreeMode.v1",
+  "choice",
+  (raw) => (raw === "choice" || raw === "side" ? raw : undefined),
+);
+
+export const useDisagreeMode = () => useLocalStore(disagreeModeStore);
 
 /** Record `off` for sources nobody decided about yet (bulk "import for comparison"). */
 export function defaultToUnfollowed(sourceIds: Iterable<string>): void {

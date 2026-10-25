@@ -54,6 +54,8 @@ export interface CatalogEntry {
   issued_at: string;
   /** The endorser's logo, relative to the catalog URL. */
   logo?: string;
+  /** `"dark"` when the logo is white-only and needs a dark tile (set by hand in the catalog). */
+  logo_background?: "dark";
   /**
    * Subjects where the endorser took the Democratic (`left`) or Republican
    * (`right`) side, counted by the catalog with core's `leanOf`.

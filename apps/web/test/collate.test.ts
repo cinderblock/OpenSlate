@@ -154,6 +154,47 @@ describe("collateRaces", () => {
     ]);
   });
 
+  describe("two-way races, a source you disagree with", () => {
+    const follows = { "of:growsf": "disagree" } as const;
+    const tally = (mode?: "choice" | "side") =>
+      collateRaces(slates, { follows, ...(mode ? { disagree: mode } : {}) })
+        .find((r) => r.subject.title === "Prop 1")
+        ?.choices.map((c) => [c.choice, c.support, c.opposition, c.positions.length]);
+
+    test("by default counts against what it picked, where it picked it", () => {
+      // GrowSF backs No: No gets one against.
+      expect(tally()).toEqual([
+        ["Yes", 1, 0, 1],
+        ["No", 0, 1, 1],
+      ]);
+      expect(tally("choice")).toEqual(tally());
+    });
+
+    test("on `side`, counts for the other side, listed there with the side it named", () => {
+      expect(tally("side")).toEqual([
+        ["Yes", 2, 0, 2],
+        ["No", 0, 0, 0],
+      ]);
+      const yes = collateRaces(slates, { follows, disagree: "side" })
+        .find((r) => r.subject.title === "Prop 1")
+        ?.choices.find((c) => c.choice === "Yes");
+      expect(yes?.positions.map((p) => [p.source.name, p.stance, p.named])).toEqual([
+        ["SPUR", "endorse", undefined],
+        ["GrowSF", "endorse", "No"],
+      ]);
+    });
+
+    test("races with more names stay against what it picked", () => {
+      const disagree = { "of:tenants union": "disagree" } as const;
+      const governor = (mode: "choice" | "side") =>
+        collateRaces(slates, { follows: disagree, disagree: mode }).find(
+          (r) => r.subject.title === "Governor",
+        );
+      // Governor here isn't on a ballot listing, so the field is unknown: not two-way.
+      expect(governor("side")?.choices).toEqual(governor("choice")?.choices);
+    });
+  });
+
   test("races only unfollowed sources cover are listed on request", () => {
     const follows = { "of:growsf": "off" } as const;
     const extra = decodeSlates([
