@@ -101,9 +101,15 @@ wizard open: it closes at once and a banner over every page shows the bar.
        `origin/master`).
 11. [x] Background import with a banner (the follow-up above); browser-checked.
 12. [ ] **Current step — waiting on the user:** push the background-import
-       commit (deploys). In openslate-public-endorsements: bump
-       `.openslate-version` and push with `25955d8` (republishes the catalog
-       with summaries and the bundle field).
+       commit (`6be78bb`, deploys). In openslate-public-endorsements, only
+       `25955d8` (the `bundle` field) is left: origin's pin is already
+       `5fce7fe`, which includes `7dbaf9c`, and the live `index.json` has
+       `scope` + `jurisdictions` on all 376 entries (checked 2026-10-25), just
+       no `bundle`, so Download all fetches slates one by one there. Local
+       `master` in that repo has diverged from origin (its two logo commits
+       are on origin under other hashes), so push `25955d8` by cherry-picking
+       it onto `origin/master` in a fresh worktree, not by pushing that
+       local master.
 
 ## Findings / gotchas
 
