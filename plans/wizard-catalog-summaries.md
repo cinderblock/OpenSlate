@@ -100,17 +100,14 @@ wizard open: it closes at once and a banner over every page shows the bar.
 10. [x] OpenSlate master was pushed (by 2026-10-25, `5bf7594` is on
        `origin/master`).
 11. [x] Background import with a banner (the follow-up above); browser-checked.
-12. [ ] **Current step — waiting on the user.** The background import
-       (`6be78bb`) reached `origin/master` with another thread's push. In
-       openslate-public-endorsements, only
-       `25955d8` (the `bundle` field) is left: origin's pin is already
-       `5fce7fe`, which includes `7dbaf9c`, and the live `index.json` has
-       `scope` + `jurisdictions` on all 376 entries (checked 2026-10-25), just
-       no `bundle`, so Download all fetches slates one by one there. Local
-       `master` in that repo has diverged from origin (its two logo commits
-       are on origin under other hashes), so push `25955d8` by cherry-picking
-       it onto `origin/master` in a fresh worktree, not by pushing that
-       local master.
+12. [x] The catalog's `bundle` field is on origin: `25955d8`, cherry-picked
+       onto `origin/master` in a temporary worktree as `92d41a1` (pushed
+       2026-10-25 12:35 PM PDT (19:35Z), after its tests passed and a build
+       wrote `bundle` into `index.json`). That repo's local `master` still
+       has the old `25955d8` and has diverged from origin; left alone (it's a
+       shared checkout). Live: the published `index.json` has
+       `bundle: {path: "bundle.json", bytes: 9075250}` on 376 entries, so
+       Download all is one request on openslate.us. OpenSlate's plan commits pushed with this one.
 
 ## Findings / gotchas
 
@@ -161,13 +158,11 @@ wizard open: it closes at once and a banner over every page shows the bar.
 - [x] OpenSlate master pushed (the wizard rework).
 - [x] Background import + banner (branch `feat/wizard-catalog-summaries`).
 - [x] Background import pushed (`6be78bb`, with another thread's push).
-- [ ] public-endorsements: push `25955d8` (ask first).
+- [x] public-endorsements: `bundle` field pushed (`92d41a1`, cherry-pick of `25955d8`).
 
 ## Open questions for the user
 
-1. Push `25955d8` (the catalog's `bundle` field) to openslate-public-endorsements,
-   cherry-picked onto `origin/master`? Its pin already has the CLI change.
-   Recommendation: yes; it makes Download all one request instead of ~346.
+None.
 
 ## Things not to do
 
