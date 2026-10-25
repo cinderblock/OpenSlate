@@ -19,6 +19,7 @@ import {
   guideManifestSchema,
   identityToIssuer,
   parseSlate,
+  racesByJurisdiction,
   resolveAdoptions,
   serializeIdentity,
   sha256,
@@ -246,6 +247,13 @@ interface IndexEntry {
   issuer: { key: string; name?: string; kind?: string };
   attribution?: SlatePayload["attribution"];
   positions: number;
+  /** The slate's `context.jurisdiction`: where it publishes for. */
+  scope?: string;
+  /**
+   * Races per position jurisdiction (core's `racesByJurisdiction`), so an app
+   * can match the slate to a voter's area without downloading it.
+   */
+  jurisdictions: Record<string, number>;
   /** Adoptions by reference (SPEC §3.10): which entities' positions this slate takes on. */
   adopts?: { issuer: string; of?: string; election?: string; uri?: string; subjects?: number }[];
   issued_at: string;
@@ -334,6 +342,8 @@ async function cmdSignBatch(
           },
           ...(payload.attribution ? { attribution: payload.attribution } : {}),
           positions: payload.positions.length,
+          ...(payload.context?.jurisdiction ? { scope: payload.context.jurisdiction } : {}),
+          jurisdictions: racesByJurisdiction(payload),
           ...(payload.adopts?.length
             ? {
                 adopts: payload.adopts.map((a) => ({

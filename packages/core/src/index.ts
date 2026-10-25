@@ -4,6 +4,7 @@ export * from "./crypto";
 export * from "./envelope";
 export * from "./slate";
 export * from "./adopts";
+export * from "./catalog";
 export * from "./identity";
 export * from "./results";
 export * from "./polls";
