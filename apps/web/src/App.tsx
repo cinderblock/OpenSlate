@@ -190,14 +190,12 @@ export function RootLayout() {
           </button>
           <UsageFooterToggle />
           <p className="footer-legal">
-            OpenSlate gathers public information, like official voter guides and published
-            endorsements, shows it in one consistent format, and filters it to where you vote. You
-            can collate it with endorsements shared with you privately and with your own picks.
-            Endorsements, public or private, are their authors' views, not OpenSlate's. OpenSlate is
-            provided as is, without warranty of any kind: its authors, and whoever runs this copy,
-            aren't liable for errors, omissions, or anything that comes of using it. It isn't legal
-            advice or an official election resource; your official voter guide and county elections
-            office have the final word.
+            OpenSlate gathers public voter information and endorsements, plus any shared with you
+            privately, into one format filtered to where you vote. Endorsements are their authors'
+            views: OpenSlate endorses no one, and showing a name or logo doesn't mean its owner
+            endorses OpenSlate. Provided as is, without warranty; its authors and whoever runs this
+            copy aren't liable for errors or how it's used. Not legal advice or an official election
+            resource; your official voter guide has the final word.
           </p>
         </footer>
       </div>

@@ -474,12 +474,12 @@ different package manager; `BUN_VERSION` should match the Bun that wrote
 
 [MIT](./LICENSE).
 
-OpenSlate gathers public information (official voter guides, published
-endorsements), shows it in one consistent format, and filters it to where you
-vote. You can collate it with endorsements shared with you privately and with
-your own picks. Endorsements, public or private, are their authors' views, not
-OpenSlate's. The app and its data are provided as is, without warranty of any kind:
-its authors, and whoever runs a copy, aren't liable for errors, omissions, or
-anything that comes of using it. It isn't legal advice or an official election
-resource; your official voter guide and county elections office have the final
-word. The web app says the same in its footer.
+OpenSlate gathers public voter information and endorsements, plus any shared
+with you privately, into one format filtered to where you vote. Endorsements are
+their authors' views: OpenSlate endorses no one, being in the public catalog
+isn't an endorsement, and showing a name or logo doesn't mean its owner endorses
+OpenSlate. The app and its data are provided as is, without warranty; its
+authors and whoever runs a copy aren't liable for errors or how it's used. It
+isn't legal advice or an official election resource; your official voter guide
+has the final word. The web app says the same in its footer, and printed picks
+say they aren't an official ballot.

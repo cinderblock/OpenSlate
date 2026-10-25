@@ -1368,6 +1368,10 @@ function PrintPicks({
           </li>
         ))}
       </ol>
+      <p className="print-disclaimer">
+        Printed from OpenSlate on {formatElectionDate(localToday())}. One voter's picks, not an
+        official or sample ballot; check your official voter guide before you vote.
+      </p>
     </div>
   );
 }

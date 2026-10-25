@@ -1214,6 +1214,10 @@ button.source-chip {
   font-style: italic;
   font-size: 0.9rem;
 }
+.print-disclaimer {
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+}
 
 /* Area picker */
 .area-picker fieldset {
