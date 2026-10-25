@@ -83,6 +83,21 @@ Three parts:
     - [x] `90eb602`: 289 of 335 orgs have a logo (was 177). Pushed; publish
       run 40037507047 succeeded, live catalog: 362 entries, 316 with a logo,
       at 4:05 PM PDT (23:05Z).
+12. [x] **Dark tile for white-only logos** (user, 2026-10-24: "I think B or
+    C are best", then "i trust your rec"). Option B, set by hand:
+    - [x] BizFed CV and SFCLT publish light-background logos; swapped in
+      (endorsements `b5961fd`).
+    - [x] `meta.yaml` `logo_background: dark` → catalog-extras →
+      `index.json` / `bundle.json` `logo_background: "dark"`; the catalog's
+      listing page draws those on a dark square. Set for Lincoln Club OC and
+      PSR-LA (white marks now committed) and HANC (endorsements `2e3da46`).
+    - [x] App: `EndorserInfo.logoBackground`, `EndorserAvatar`'s
+      `.avatar-logo-dark` (#1b1f24), catalog rows pass
+      `entry.logo_background` (OpenSlate `dbd9e49`).
+    - [x] Checked in the real app against a patched copy of the live catalog,
+      light and dark themes. Both pushed 2026-10-24 ~10:50 PM PDT (05:50Z);
+      catalog republished at 10:51 PM PDT (05:51Z) with 321 of 376 entries
+      with a logo, 3 dark; openslate.us serves the new CSS.
 
 ## Findings / gotchas
 
@@ -129,8 +144,20 @@ Three parts:
   coalitions, parked or dead domains); a few have only a white-on-transparent
   logo that vanishes on the avatar's white tile (Lincoln Club OC, BizFed
   Central Valley, PSR-LA), and Haight Ashbury NC and SF Community Land Trust
-  show faintly for the same reason. A per-logo dark tile would fix those;
-  not done.
+  show faintly for the same reason. Fixed in step 12.
+- Automatic white-logo detection doesn't work: share of near-white opaque
+  pixels was Lincoln 1.00, PSR 1.00, SFCLT 0.79, BizFed 0.53, HANC 0.38,
+  LBYD 0.23 (LBYD is fine on white). Hence a hand-set `logo_background`.
+- Shipping step 12, neither repo's local master could be pushed as-is: OpenSlate
+  master carried 10 other threads' unpushed commits (one "pushing waits on the
+  user"), and the endorsements repo had another thread's `25955d8` between
+  my two commits. My commits were cherry-picked onto each origin tip in a
+  throwaway worktree and pushed from there, so local `aaed59e` (OpenSlate) and
+  `e90825e` / `cde383b` (endorsements) are patch-identical duplicates of
+  origin's `dbd9e49` / `b5961fd` / `2e3da46`; a rebase onto origin drops them.
+- The order mattered: the catalog marking Lincoln and PSR dark before the app
+  drew dark tiles would have shown white logos on white tiles (worse than the
+  monograms they had), so the app went first.
 - `bun run lint` still fails on CRLF in a Windows checkout (ISSUES.md); lint
   was run with `--formatter-enabled=false` plus `biome format --write`.
 
@@ -150,12 +177,16 @@ Three parts:
 - [x] Logos for the orgs added after the first logo run, and better ones for
   small logos: step 11.
 
+- [x] Step 12, dark tile for white-only logos: live.
+
 ## Open questions for the user
 
-1. White-only logos: which tile? Mocked up side by side on 2026-10-24
+None open.
+
+Answered: white-only logos, which tile? Mocked up side by side on 2026-10-24
    (page in `$TEMP/openslate-edits/tiles/page.html`): A today (monogram /
    faint), B fixed dark #1b1f24, C dark tile in the logo's own hue, D the
-   monogram's hue, E recolour to black on white. User leans B or C, and
+   monogram's hue, E recolour to black on white. User leaned B or C, and
    asked whether the orgs publish a light-background version first:
    - BizFed CV and SFCLT do (found in their WordPress media libraries via
      `/wp-json/wp/v2/media?search=logo`); swapped in, endorsements `e90825e`
@@ -167,7 +198,8 @@ Three parts:
      confirm is theirs).
    - Those three logos have no colour, so B and C draw them identically.
      Recommended: B, as a hand-set `logo_background: dark` in meta.yaml
-     (automatic detection by near-white share misses HANC at 38%).
+     (automatic detection by near-white share misses HANC at 38%). User:
+     "i trust your rec. we'll fix issues as they arise." Built: step 12.
 
 ## Things not to do
 
