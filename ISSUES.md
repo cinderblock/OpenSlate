@@ -1,36 +1,17 @@
 # Issues
 
-## My ballot lists every school, water and supervisor race in the county (in progress — fix/sub-county-districts, plans/sub-county-districts.md)
+## San Diego's city and county share `us/ca/san-diego`
 
-Seen 2026-10-24 for a Huntington Beach voter who set their area with the map
-picker. Reproduced with the app's own `locate` + `areaFromHit` +
-`collateRaces` over the catalog's 346 Nov 3 slates, for a point in Huntington Beach
-(-117.998, 33.668): the area is CD 42, SD 36, AD 72, CoA 4,
-`us/ca/huntington-beach` and `us/ca/orange-county`, and My ballot gets **111
-races, 63 of them filed under `us/ca/orange-county`**. Those 63 include every
-school board trustee area, every water/sanitary/park district, and
-Supervisors districts 4 and 5 in the county (e.g. Anaheim, Capistrano and
-Irvine school boards, Irvine Ranch Water). A voter has only a handful of them.
-Without them the same area is 48 races.
-
-Cause: county registrar ballot sources and guides file sub-county contests
-under the county's path because there is no boundary data for them
-(`oc-registrar-of-voters` 164 positions on `us/ca/orange-county`,
-`la-county-registrar` 376 on `us/ca/los-angeles-county`, Santa Clara 136,
-Alameda 112; the OC guide in `openslate-ballot-ca-2026-11-03/county/oc` 63).
-`inArea` treats them as county-wide.
-
-Related, same root:
-
-- **San Diego's city and county share `us/ca/san-diego`** (677 positions
-  catalog-wide, none on `san-diego-county`), so `localityCandidates` falls back
-  to `us/ca/san-diego` for the county, and anyone in San Diego County gets San
-  Diego City Council races (and every county special district).
-- **All four Board of Equalization districts** are on every California
-  ballot: they're filed under `us/ca`, not a district family.
-
-Why it matters: in the counties we cover, My ballot is about twice as long as
-the real ballot, and full of races the voter can't vote in.
+The San Diego registrar's listing files both county and City of San Diego
+contests under `us/ca/san-diego` (677 positions catalog-wide, none on
+`san-diego-county`), and `localityCandidates` maps the county there too. So
+anyone in San Diego County gets the City of San Diego's citywide races
+(mayor, city attorney, city measures) on My ballot. Its council races are
+tagged `us/ca/san-diego/council-N` and only show as "might be" outside the
+city. Fixing it means a new path for one of the two, an identity change for
+every slate that names those races. Split out of the sub-county races issue,
+fixed 2026-10-25 (`5fce7fe`, endorsements `7623d18`;
+plans/sub-county-districts.md).
 
 ## Kalshi answers the forecasts relay 429, and the worker caches it (in progress — fix/kalshi-forecasts-429)
 

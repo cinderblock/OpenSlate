@@ -82,18 +82,19 @@ your ballot" section instead of on the ballot.
    title; `scripts/assign-districts.ts` applies it; `verify-positions` fails a
    listing whose districts don't match. 653 contests in 8 listings (incl. the
    SoS's 4 BOE seats); every school board matched a Census district.
-5. [ ] **Ship**, waiting on the user. Order:
-   a. OpenSlate: merge this branch to master (merged with local master
-      `bc6e808` as `8da4614`, all checks pass), reconcile with origin/master
-      (local master and origin had diverged 14 / 13 at 2026-10-24 11 PM PDT),
-      push: deploys openslate.us. Check it live (wizard → location → My
-      ballot shows the maybe section; school districts in the found summary).
-   b. Wait for service workers to update (autoUpdate; a day is plenty).
-   c. Endorsements: set `.openslate-version` to the pushed OpenSlate master
-      commit, rerun `verify-positions`, push `fix/sub-county-districts` to
-      master: CI signs and publishes the listings with `district`.
-6. [ ] **More boundaries** ← current (user, 2026-10-25: "keep going on
-   boundary issues"). Lookup-only layers beside the school districts:
+5. [x] **Shipped** 2026-10-25 (user: push including another thread's
+   `cf254d1`; data right after the app, not a day later):
+   a. OpenSlate master fast-forwarded and pushed `dfdc40c..5fce7fe`; live on
+      openslate.us at 12:53 AM PDT (07:53Z) (new boundary file served).
+   b. Endorsements: `.openslate-version` → `5fce7fe`, merged origin, pushed
+      `2e3da46..7623d18`; publish run 40174566944 succeeded, catalog
+      generated 12:54 AM PDT (07:54Z); the live OC listing has `district` on
+      300 of 398 positions.
+   c. Live check (fresh incognito, storage cleared, HB location): found
+      summary lists BOE 4, Coast CCD, OC supervisorial 1; My ballot 45 races
+      + "Might be on your ballot · 16".
+6. [x] **More boundaries** (user, 2026-10-25: "keep going on boundary
+   issues"). Lookup-only layers beside the school districts:
    - [x] BOE (state GIS), community college districts (CCC GIS
      Collaborative), supervisorial districts for LA, OC, SD, Santa Clara,
      Alameda, San Mateo, SF (+ SCAG's Riverside, San Bernardino, Ventura,
@@ -220,18 +221,18 @@ your ballot" section instead of on the ballot.
   has many old ones).
 - [x] Merged master into the branch (`8da4614`): 479 tests, typecheck, build
   pass.
-- [ ] Step 5 (ship): waiting on the user.
-- [ ] Step 6 (later phases).
+- [x] Step 6 (2026-10-25): BOE, college, supervisorial lookups (`e082893`),
+  college codes in the listings; 496 tests after merging master.
+- [x] Step 5 (2026-10-25): shipped and checked live (see step 5).
+- [x] ISSUES.md entry closed; San Diego's city/county collision split out as
+  its own entry.
 
 ## Open questions for the user
 
-1. Ship? Push OpenSlate master (deploys the app; other threads' commits ride
-   along: local master is 14 ahead of and 13 behind origin), then a day later
-   the endorsements branch with the pinned ref bumped. Recommendation: yes,
-   in that order; the election is Nov 3.
+1. ~~Ship?~~ Answered 2026-10-25: yes, data right after the app. Done.
 2. ~~Phase 6 next?~~ Answered 2026-10-25 ("keep going on boundary issues");
    BOE, college and supervisorial boundaries done.
-3. The remaining maybes are trustee areas (school and college) and water /
+3. Still open: the remaining maybes are trustee areas (school and college) and water /
    special districts. Trustee areas would need each county's or district's
    GIS; water districts have no electoral-boundary source we trust. Worth
    chasing for OC first, or stop here? Recommendation: stop here for Nov 3
