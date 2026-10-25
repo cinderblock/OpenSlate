@@ -78,14 +78,15 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
    self-test passes; storage survives restarts; installer and uninstaller
    work.
 5. ☑ Icons generated and committed.
-6. ☐ **(current)** CI workflow (`6579abe`). `workflow_dispatch` only works once
-   the file is on the default branch, so the first run is a draft PR's
-   `pull_request` run. Then fix whatever macOS/Linux show.
-7. ☐ Docs: apps/desktop/README ☑, RELEASE_NOTES ☑; root README (How to Run →
-   Desktop) ☐; check the macOS `.app` name in RELEASE_NOTES' `xattr` line
-   against the real dmg ☐.
-8. ☐ Publish: merge, tag `desktop-v0.1.0`, publish the drafted release —
-   needs the user's go-ahead (see questions).
+6. ☑ CI workflow (`6579abe`), first run on draft PR #1
+   (https://github.com/cinderblock/OpenSlate/pull/1, run 40167794253): all 8
+   jobs green; the self-test passed for both editions on windows-2025,
+   macos-14 and ubuntu-24.04 (Xvfb), storage across a restart included.
+   (`workflow_dispatch` only works once the file is on the default branch.)
+7. ☑ Docs: apps/desktop/README, RELEASE_NOTES, root README (`afa69d1`); the
+   macOS app is `OpenSlate Offline.app` (with a space), checked in the dmg.
+8. ☐ **(current)** Publish: merge PR #1, tag `desktop-v0.1.0`, publish the
+   drafted release — needs the user's go-ahead (see questions).
 
 ## Findings / gotchas
 
@@ -119,7 +120,8 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
   desktop shortcuts; uninstall offers *App* / *App and Data* (data = keys).
 - Window icon in the title bar stays generic (Electrobun issue #565); the
   taskbar and shortcuts use ours.
-- Sizes: Windows Setup zip 36 MB (standard). Snapshot 31 MB, 1,729 files
+- Sizes (CI, zipped artifacts): Windows 34 MB standard / 43 MB offline;
+  macOS dmg 21 / 30 MB; Linux 36 / 45 MB. Windows Setup zip 36 MB locally. Snapshot 31 MB, 1,729 files
   (376 slates, 291 logos, 7 guides), 17 s to take.
 
 ### Electrobun 2.0.4 (research 2026-10-24, from the v2.0.4 tag on GitHub; not yet run)
@@ -181,12 +183,11 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
 - [x] Explored: desktop stub, catalog/guide URL handling, worker origin rule.
 - [x] Snapshot script, built-in catalog support, desktop Vite mode.
 - [x] Electrobun app, icons, self-test; verified on Windows.
-- [x] CI workflow written (actionlint clean); not run yet.
-- [ ] CI green on all six builds.
-- [ ] Root README; macOS app name in RELEASE_NOTES.
+- [x] CI workflow written (actionlint clean).
+- [x] CI green on all six builds, self-tests included (run 40167794253).
+- [x] Root README; macOS app name in RELEASE_NOTES.
+- [x] Cleaned up local self-test data (`%LOCALAPPDATA%\us.openslate.desktop*`).
 - [ ] Merge, tag, publish (user's go-ahead).
-- [ ] Clean up test data: `%LOCALAPPDATA%\us.openslate.desktop\dev` and
-      `…desktop.offline\dev` (dev builds' self-test data).
 
 ## Open questions for the user
 

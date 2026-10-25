@@ -28,7 +28,8 @@ Releases are on GitHub: <https://github.com/cinderblock/openslate/releases>.
 - **macOS** (Apple Silicon): open the `.dmg` and drag the app to
   Applications; start it from there (it unpacks itself on first launch and
   can't from the disk image). Unsigned, so macOS may call it damaged: run
-  `xattr -cr "/Applications/OpenSlate.app"` once, then open it.
+  `xattr -cr "/Applications/OpenSlate.app"` (or `"/Applications/OpenSlate
+  Offline.app"`) once, then open it.
 - **Linux** (x64, Ubuntu 24.04 or newer, or equivalent): extract
   `…-linux-x64-Setup.tar.gz` and run the `installer` inside. Needs
   `libwebkit2gtk-4.1-0` and `libgtk-3-0`.

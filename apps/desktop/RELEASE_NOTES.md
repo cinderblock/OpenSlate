@@ -27,8 +27,8 @@ These builds aren't code-signed yet, so your system will warn you.
   it). When SmartScreen stops it: *More info → Run anyway*. It installs for you alone, no
   admin needed.
 - **Mac:** open the `.dmg` and drag OpenSlate to Applications, then start it from
-  Applications. If macOS says it's damaged, run `xattr -cr /Applications/OpenSlate.app` in
-  Terminal (use `OpenSlate-Offline.app` for that edition) and open it again.
+  Applications. If macOS says it's damaged, run `xattr -cr "/Applications/OpenSlate.app"`
+  in Terminal (`"/Applications/OpenSlate Offline.app"` for that edition) and open it again.
 - **Linux:** extract the archive and run `installer`. Needs `libwebkit2gtk-4.1-0`.
 
 **Before uninstalling:** *App and Data* deletes your signing keys too. Download a backup of any
