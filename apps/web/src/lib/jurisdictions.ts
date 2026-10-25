@@ -180,7 +180,12 @@ export function inArea(jurisdiction: string | undefined, area: Area): boolean {
   }
 }
 
-/** Whether a race is on the user's ballot: yes, no, or can't tell from their area. */
+/**
+ * Whether a race is on the user's ballot: yes, no, or can't tell from their
+ * area. A race's district outranks the jurisdiction it was filed under: a
+ * school district that crosses a county line is listed by one county, and a
+ * voter the area puts in that school district is on it from either side.
+ */
 export type Placement = "in" | "out" | "unknown";
 
 /** A `district` path segment naming a district of a family: `sup-4`, `unsd-17760`, `ta-b`. */
@@ -205,24 +210,29 @@ export function placeRace(
   district: string | undefined,
   area: Area,
 ): Placement {
-  if (!inArea(jurisdiction, area)) return "out";
-  if (!district?.trim() || !isAreaSet(area)) return "in";
+  if (!isAreaSet(area)) return "in";
+  const here = inArea(jurisdiction, area);
+  if (!district?.trim()) return here ? "in" : "out";
   const parts = district.trim().toLowerCase().split("/");
   let prefix = parts.slice(0, 2).join("/");
   if (!areaStates(area).has(prefix)) return "out";
   let placement: Placement = "in";
+  // Whether some district segment put the user inside it (their school
+  // district), which is more than the filing jurisdiction knows.
+  let inside = false;
   for (const segment of parts.slice(2)) {
     const family = DISTRICT_SEGMENT.exec(segment);
     if (family?.[1] && family[2]) {
       const mine = area.districts[`${prefix}/${family[1]}`];
       if (mine === undefined) placement = "unknown";
       else if (mine !== districtId(family[2])) return "out";
+      else inside = true;
     } else if (!area.localities.includes(`${prefix}/${segment}`)) {
       placement = "unknown";
     }
     prefix = `${prefix}/${segment}`;
   }
-  return placement;
+  return here || inside ? placement : "out";
 }
 
 const STATE_NAMES: Record<string, string> = {

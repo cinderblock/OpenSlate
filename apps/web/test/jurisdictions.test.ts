@@ -71,6 +71,20 @@ describe("placeRace", () => {
     expect(placeRace(oc, "us/ny/cd-3", hb)).toBe("out");
   });
 
+  test("a district the area puts the user in outranks the filing county", () => {
+    // Fullerton Joint Union High School District crosses into LA County; OC lists it.
+    const la = {
+      localities: ["us/ca/la-habra-heights", "us/ca/los-angeles-county"],
+      districts: { "us/ca/scsd": "14760" },
+    };
+    expect(placeRace(oc, "us/ca/scsd-14760/ta-1", la)).toBe("unknown");
+    expect(placeRace(oc, "us/ca/scsd-14760", la)).toBe("in");
+    // Another school district's: out, as before. Nothing matched: the county decides.
+    expect(placeRace(oc, "us/ca/scsd-17910/ta-1", la)).toBe("out");
+    expect(placeRace(oc, "us/ca/irvine-ranch-water-district/div-5", la)).toBe("out");
+    expect(placeRace(oc, `${oc}/sup-2`, la)).toBe("out");
+  });
+
   test("a place segment the area lists continues, and lettered ids count", () => {
     const cypress = {
       localities: ["us/ca/cypress-school-district", oc],
