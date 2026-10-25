@@ -9,7 +9,8 @@ import Electrobun, { type BrowserWindow, Utils } from "electrobun/main";
 
 /** Everything here runs in the page, so it's plain JavaScript in a string. */
 const PAGE_CHECKS = `(async () => {
-  const report = { href: location.href, title: document.title };
+  const marker = new Date().toISOString();
+  const report = { href: location.href, title: document.title, marker };
   const attempt = async (name, check) => {
     try {
       report[name] = await check();
@@ -17,7 +18,6 @@ const PAGE_CHECKS = `(async () => {
       report[name] = { error: String(error && error.message || error) };
     }
   };
-  const marker = new Date().toISOString();
 
   // The app booted: React rendered into #root.
   await attempt("rendered", async () => {

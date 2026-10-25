@@ -9,7 +9,8 @@
     "dev": "bun scripts/build.ts --dev",
     "build": "bun scripts/build.ts",
     "icons": "bun scripts/icons.ts",
-    "typecheck": "electrobun prepare && tsc --noEmit -p ."
+    "typecheck": "electrobun prepare && tsc --noEmit -p .",
+    "selftest": "bun scripts/selftest.ts"
   },
   "devDependencies": {
     "electrobun": "2.0.4"
