@@ -341,10 +341,11 @@ export function MyBallotPanel() {
     ],
     [races, maybeRaces, myRows, election],
   );
-  // Maybes a map lookup would place: school board races, when the area doesn't
-  // know the user's school districts (set by hand, or before lookups found them).
-  const schoolUnknown =
-    maybeRaces.some((race) => SCHOOL_DISTRICT.test(race.district ?? "")) &&
+  // Maybes a lookup would place (school boards, supervisors…), when the area
+  // has had no lookup that finds those districts (set by hand, or set before
+  // lookups found them: every such lookup sets the school district families).
+  const lookupWouldPlace =
+    maybeRaces.some((race) => LOOKUP_DISTRICT.test(race.district ?? "")) &&
     !Object.keys(area.districts).some((family) => SCHOOL_FAMILY.test(family));
 
   // Ballot sources (official candidate lists) aren't recommendations to follow.
@@ -670,13 +671,13 @@ export function MyBallotPanel() {
             Only some of the voters where each of these is listed vote on it, like one trustee area
             of a school board or one division of a water district, and OpenSlate can't tell from
             where you vote whether you're one of them. Your sample ballot lists the ones you have.
-            {schoolUnknown && (
+            {lookupWouldPlace && (
               <>
                 {" "}
                 <button type="button" className="link" onClick={() => setEditingArea(true)}>
-                  Find your school districts
+                  Find your districts
                 </button>{" "}
-                to place the school board races.
+                from your address or the map to place more of them.
               </>
             )}
           </p>
@@ -711,7 +712,8 @@ type Patch = ReturnType<typeof useBallotDraft>["patch"];
 
 /** School district families (Census TIGER's unified, elementary and secondary). */
 const SCHOOL_FAMILY = /\/(?:unsd|elsd|scsd)$/;
-const SCHOOL_DISTRICT = /\/(?:unsd|elsd|scsd)-/;
+/** A `district` a lookup can place: school, BOE, community college, supervisorial. */
+const LOOKUP_DISTRICT = /\/(?:unsd|elsd|scsd|boe|ccd|sup)-/;
 
 /** Races grouped by jurisdiction, in ballot order (the races come sorted). */
 function sectionsOf(races: Race[]): Array<{ label: string; races: Race[] }> {

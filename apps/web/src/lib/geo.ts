@@ -16,12 +16,21 @@ export type GeoLayer = "cd" | "sd" | "ad" | "county" | "place";
 export const DISTRICT_LAYERS = ["cd", "sd", "ad"] as const;
 export type DistrictLayer = (typeof DISTRICT_LAYERS)[number];
 /**
- * School districts (Census TIGER: unified, elementary, secondary), by 5-digit
- * LEA code. Looked up, not drawn: they place school board races
- * (`us/ca/elsd-18030/ta-4`; plans/sub-county-districts.md).
+ * Layers looked up, not drawn: they place the races only part of a county or
+ * the state votes on (`subject.district`; plans/sub-county-districts.md).
+ * School districts (Census TIGER: unified, elementary, secondary) by 5-digit
+ * LEA code, Board of Equalization districts, community college districts by
+ * Chancellor's Office code, and supervisorial districts as `<County>|<n>`.
  */
-export const SCHOOL_LAYERS = ["unsd", "elsd", "scsd"] as const;
-export type SchoolLayer = (typeof SCHOOL_LAYERS)[number];
+export const LOOKUP_LAYERS = ["unsd", "elsd", "scsd", "boe", "ccd", "sup"] as const;
+export type LookupLayer = (typeof LOOKUP_LAYERS)[number];
+/**
+ * Lookup layers that map every inch of the state, so a point in none of their
+ * districts is in none (`NO_DISTRICT`: most of California has no unified
+ * school district). In the others a point in none is a gap in the data, or a
+ * county we have no supervisorial map for, and stays unknown.
+ */
+const COMPLETE_LAYERS: readonly LookupLayer[] = ["unsd", "elsd", "scsd"];
 
 /** States with boundary data, and the file each loads. */
 export const GEO_FILES: Record<string, string> = {
@@ -48,8 +57,8 @@ export interface GeoShape {
 export interface StateGeo {
   state: string;
   layers: Record<GeoLayer, GeoShape[]>;
-  /** School districts; empty in boundary data built without them. */
-  schools: Record<SchoolLayer, GeoShape[]>;
+  /** Lookup layers; empty in boundary data built without them. */
+  lookups: Record<LookupLayer, GeoShape[]>;
   /** [minX, minY, maxX, maxY] of the whole state. */
   bbox: [number, number, number, number];
   /** Where the data came from, for the map's footnote. */
@@ -191,17 +200,17 @@ export function decodeStateGeo(state: string, topology: Topology): StateGeo {
       f.geometry ? [{ ...shapeOf(f), color: colors[i] ?? 0 }] : [],
     );
   }
-  const schools = {} as Record<SchoolLayer, GeoShape[]>;
-  for (const name of SCHOOL_LAYERS) {
+  const lookups = {} as Record<LookupLayer, GeoShape[]>;
+  for (const name of LOOKUP_LAYERS) {
     const object = topology.objects[name] as GeometryCollection | undefined;
     const collection = object
       ? (feature(topology, object) as unknown as { features: Feature<Polygon | MultiPolygon>[] })
       : { features: [] };
-    schools[name] = collection.features.flatMap((f) => (f.geometry ? [shapeOf(f)] : []));
+    lookups[name] = collection.features.flatMap((f) => (f.geometry ? [shapeOf(f)] : []));
   }
   const bbox = (topology.bbox ?? [0, 0, 0, 0]) as [number, number, number, number];
   const metadata = (topology as { metadata?: { vintage?: string } }).metadata;
-  return { state, layers, schools, bbox, vintage: metadata?.vintage ?? "Census TIGERweb" };
+  return { state, layers, lookups, bbox, vintage: metadata?.vintage ?? "Census TIGERweb" };
 }
 
 const geoCache = new Map<string, Promise<StateGeo>>();
@@ -295,14 +304,14 @@ export interface GeoHit {
    * Layers whose boundary is within `nearMeters` of the point: the lookup may
    * be wrong there (simplified boundaries, imprecise location).
    */
-  nearLine: GeoLayer[];
+  nearLine: (GeoLayer | LookupLayer)[];
   /**
-   * The point's school district per family (`NO_DISTRICT` id: in none), when
-   * the boundary data has them. A family is left out when the point is near
-   * one of its lines: better a school board race listed as "might be on your
-   * ballot" than hidden by a guess.
+   * The point's district per lookup layer (`NO_DISTRICT` id: in none), when
+   * the boundary data has them. A layer is left out when the point is near one
+   * of its lines, or (`COMPLETE_LAYERS` aside) in none of its districts: better
+   * a race listed as "might be on your ballot" than hidden by a guess.
    */
-  schools?: Partial<Record<SchoolLayer, { id: string; name?: string }>>;
+  lookups?: Partial<Record<LookupLayer, { id: string; name?: string }>>;
 }
 
 /** Default "near a line" distance: the shipped boundaries are simplified to within tens of metres. */
@@ -334,45 +343,56 @@ export function locate(
     const n = found[layer];
     if (n) districts[layer] = String(Number(n));
   }
-  const schools = schoolsAt(geo, lon, lat, nearMeters);
+  const extra = lookupsAt(geo, lon, lat, found.county, nearMeters);
   return {
     districts,
     county: found.county,
     place: found.place,
-    nearLine,
-    ...(schools ? { schools } : {}),
+    nearLine: [...nearLine, ...(extra?.nearLine ?? [])],
+    ...(extra ? { lookups: extra.lookups } : {}),
   };
 }
 
 /**
- * A point's school districts (`GeoHit.schools`), undefined when the boundary
- * data has none. Also for an address the Census geocoder placed: its relay
- * returns legislative districts, not school ones.
+ * A point's districts in the lookup layers (`GeoHit.lookups`), and the layers
+ * it's near a line of; undefined when the boundary data has none. `county`
+ * (as TIGER names it) picks the supervisorial districts to look in. Also for
+ * an address the Census geocoder placed: its relay returns legislative
+ * districts, not these.
  */
-export function schoolsAt(
+export function lookupsAt(
   geo: StateGeo,
   lon: number,
   lat: number,
+  county: string | undefined,
   nearMeters = NEAR_LINE_METERS,
-): GeoHit["schools"] {
-  if (SCHOOL_LAYERS.every((layer) => geo.schools[layer].length === 0)) return undefined;
+): { lookups: NonNullable<GeoHit["lookups"]>; nearLine: LookupLayer[] } | undefined {
+  if (LOOKUP_LAYERS.every((layer) => geo.lookups[layer].length === 0)) return undefined;
   // Shapes whose box comes within `nearMeters` of the point: the only ones
   // whose line could be that close.
   const dx = nearMeters / (METERS_PER_DEGREE_LON_AT_EQUATOR * Math.cos((lat * Math.PI) / 180));
   const dy = nearMeters / METERS_PER_DEGREE_LAT;
-  const out: NonNullable<GeoHit["schools"]> = {};
-  for (const layer of SCHOOL_LAYERS) {
-    const nearby = geo.schools[layer].filter(
+  const lookups: NonNullable<GeoHit["lookups"]> = {};
+  const nearLine: LookupLayer[] = [];
+  for (const layer of LOOKUP_LAYERS) {
+    const shapes =
+      layer === "sup"
+        ? geo.lookups.sup.filter((s) => county && s.id.startsWith(`${county}|`))
+        : geo.lookups[layer];
+    if (shapes.length === 0) continue;
+    const nearby = shapes.filter(
       ({ bbox: [x0, y0, x1, y1] }) =>
         lon >= x0 - dx && lon <= x1 + dx && lat >= y0 - dy && lat <= y1 + dy,
     );
-    if (nearby.some((shape) => distanceToEdge(shape, lon, lat) < nearMeters)) continue;
+    if (nearby.some((shape) => distanceToEdge(shape, lon, lat) < nearMeters)) {
+      nearLine.push(layer);
+      continue;
+    }
     const shape = nearby.find((s) => shapeContains(s, lon, lat));
-    out[layer] = shape
-      ? { id: shape.id, ...(shape.name ? { name: shape.name } : {}) }
-      : { id: NO_DISTRICT };
+    if (shape) lookups[layer] = { id: shape.id, ...(shape.name ? { name: shape.name } : {}) };
+    else if (COMPLETE_LAYERS.includes(layer)) lookups[layer] = { id: NO_DISTRICT };
   }
-  return out;
+  return { lookups, nearLine };
 }
 
 /**
@@ -427,21 +447,32 @@ export function areaFromHit(hit: GeoHit, state: string, known: AreaOptions): Are
   for (const [layer, n] of Object.entries(hit.districts)) districts[`${state}/${layer}`] = n;
   const coa = hit.county ? COURT_OF_APPEAL_BY_COUNTY[hit.county] : undefined;
   if (state === "us/ca" && coa) districts[`${state}/coa`] = coa;
-  const labels: Record<string, string> = {};
-  for (const [layer, school] of Object.entries(hit.schools ?? {})) {
-    const family = `${state}/${layer}`;
-    districts[family] = school.id === NO_DISTRICT ? NO_DISTRICT : districtId(school.id);
-    if (school.name) labels[family] = school.name;
-  }
 
   const localities: string[] = [];
   const add = (kind: "place" | "county", name: string | undefined) => {
-    if (!name) return;
+    if (!name) return undefined;
     const path = localityCandidates(state, kind, name).find((p) => known.localities.includes(p));
     if (path && !localities.includes(path)) localities.push(path);
+    return path;
   };
   add("place", hit.place);
-  add("county", hit.county);
+  const countyPath = add("county", hit.county);
+
+  const labels: Record<string, string> = {};
+  for (const [layer, { id, name }] of Object.entries(hit.lookups ?? {})) {
+    if (layer === "sup") {
+      // Filed under the county, as its races are: `us/ca/orange-county/sup`.
+      const n = id.split("|").pop() ?? "";
+      if (!countyPath || !n) continue;
+      districts[`${countyPath}/sup`] = districtId(n);
+      const county = hit.county === "San Francisco" ? "San Francisco" : `${hit.county} County`;
+      labels[`${countyPath}/sup`] = `${county} supervisorial district ${districtId(n)}`;
+      continue;
+    }
+    const family = `${state}/${layer}`;
+    districts[family] = id === NO_DISTRICT ? NO_DISTRICT : districtId(id);
+    if (name) labels[family] = name;
+  }
 
   const covered = new Set(Object.keys(districts));
   const notCovered = Object.keys(known.districts).filter(
@@ -459,17 +490,18 @@ export function areaFromHit(hit: GeoHit, state: string, known: AreaOptions): Are
   return { area, places, notCovered };
 }
 
-/** School district families of an area (`us/ca/elsd`…). */
-function isSchoolFamily(family: string): boolean {
-  return (SCHOOL_LAYERS as readonly string[]).includes(family.split("/").pop() ?? "");
+/** An area's families from the lookup layers (`us/ca/elsd`, `us/ca/orange-county/sup`…). */
+function isLookupFamily(family: string): boolean {
+  return (LOOKUP_LAYERS as readonly string[]).includes(family.split("/").pop() ?? "");
 }
 
 /**
  * Apply a lookup to the area someone already has. The lookup replaces what it
  * can know (its districts, and every locality that is a city or county); what
- * it can't (a BART district, EBMUD) is kept as it was. School districts are
- * always replaced: one the lookup couldn't tell (near a line, or a lookup
- * without them) is better unknown than left over from somewhere else.
+ * it can't (a BART district, EBMUD) is kept as it was. Lookup layers' districts
+ * (school, community college, supervisorial…) are always replaced: one the
+ * lookup couldn't tell (near a line, or a lookup without them) is better
+ * unknown than left over from somewhere else.
  */
 export function mergeFoundArea(previous: Area, found: Area, geo: StateGeo): Area {
   const cityOrCounty = new Set<string>();
@@ -483,7 +515,7 @@ export function mergeFoundArea(previous: Area, found: Area, geo: StateGeo): Area
     ...found.localities,
     ...previous.localities.filter((p) => !cityOrCounty.has(p) && !found.localities.includes(p)),
   ];
-  const kept = (family: string) => !isSchoolFamily(family);
+  const kept = (family: string) => !isLookupFamily(family);
   const districts = {
     ...Object.fromEntries(Object.entries(previous.districts).filter(([f]) => kept(f))),
     ...found.districts,

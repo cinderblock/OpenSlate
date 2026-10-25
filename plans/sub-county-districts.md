@@ -82,7 +82,7 @@ your ballot" section instead of on the ballot.
    title; `scripts/assign-districts.ts` applies it; `verify-positions` fails a
    listing whose districts don't match. 653 contests in 8 listings (incl. the
    SoS's 4 BOE seats); every school board matched a Census district.
-5. [ ] **Ship** ← current, waiting on the user. Order:
+5. [ ] **Ship**, waiting on the user. Order:
    a. OpenSlate: merge this branch to master (merged with local master
       `bc6e808` as `8da4614`, all checks pass), reconcile with origin/master
       (local master and origin had diverged 14 / 13 at 2026-10-24 11 PM PDT),
@@ -92,11 +92,63 @@ your ballot" section instead of on the ballot.
    c. Endorsements: set `.openslate-version` to the pushed OpenSlate master
       commit, rerun `verify-positions`, push `fix/sub-county-districts` to
       master: CI signs and publishes the listings with `district`.
-6. [ ] Later phases: supervisor and BOE boundaries; community college
-   districts; water service areas; San Diego's city/county path collision (an
-   identity change, its own task).
+6. [ ] **More boundaries** ← current (user, 2026-10-25: "keep going on
+   boundary issues"). Lookup-only layers beside the school districts:
+   - [x] BOE (state GIS), community college districts (CCC GIS
+     Collaborative), supervisorial districts for LA, OC, SD, Santa Clara,
+     Alameda, San Mateo, SF (+ SCAG's Riverside, San Bernardino, Ventura,
+     Imperial) in `build-geo.ts` `OTHER_SOURCES`; `geo.ts` `LOOKUP_LAYERS`,
+     `lookupsAt` (was `schoolsAt`), sup looked up within the found county and
+     filed under its locality path (`us/ca/orange-county/sup`).
+   - [x] Endorsements: college boards as `us/ca/ccd-<code>` (`f0ec7da`,
+     `2df11dd`).
+   - [x] Lookup-border simplification weight 3e-7 (0 wrong in the check,
+     3.74 MB / 954 KB brotli); 480 tests, typecheck, build pass; browser
+     check (fresh incognito tab, HB location): the found summary lists BOE 4,
+     Coast CCD, OC supervisorial district 1; My ballot 45 races + 16 maybes.
+     End to end on the ballot / might be: HB 45 / 16 (was 44 / 28), Irvine
+     44 / 18, LA City Hall 66 / 27, SF City Hall 53 / 5, downtown SD 47 / 38,
+     San Jose 32 / 13, San Mateo 46 / 11. HB's 16: 3 Coast CCD and 1 HB City
+     SD trustee areas, 12 water/special districts.
+   - Not doing: water districts (only statewide layer is the Water Board's
+     drinking-water service areas, not electoral boundaries; a wrong line
+     hides a race), city council districts (per city), trustee areas (per
+     district). San Diego's city/county collision stays its own task.
 
 ## Findings / gotchas
+
+- Boundary sources (phase 6, 2026-10-25), all ArcGIS layers with `f=geojson`:
+  - BOE: state GIS `services.gis.ca.gov/.../Government/CaliforniaDistricts/MapServer/3`
+    (the Citizens Redistricting Commission's 2021 maps), field `DISTRICT`.
+  - Community college districts: `CCC_Boundaries` FeatureServer (CCC GIS
+    Collaborative / Foundation for CCC, public domain, from the districts'
+    legal narratives; 72 districts; `DID` = Chancellor's Office code, e.g.
+    Coast 830). Its notes admit gaps and slivers at borders, so a point in
+    none, or near a line, stays unknown. No official statewide service found
+    (CCCCO, gis.data.ca.gov searched).
+  - Supervisors (no statewide source exists): SCAG regional layer (`COUNTY`,
+    `DISTRICT`; LA, Orange, Riverside, San Bernardino, Ventura, Imperial;
+    some districts in several features), San Diego County `COSD_Boundaries/1`
+    (`distno`), Santa Clara Planning Office `PlanningOfficeDataService2/5`
+    (`DISTRICT`; its `Supervisorial_Districts_2021` service didn't answer),
+    Alameda County `Supervisorial_Districts` (`DISTRICT`), San Mateo County
+    `Supervisor_Districts_Land_Boundaries` (`District`; its older
+    `SupervisorialDistricts_FromGISADMIN` predates the 2021 redistricting),
+    DataSF `Current_Supervisor_Districts` (`supervisor`).
+- Truth check (`%TEMP%\hb-ballot\truth.ts`: point queries against each
+  source, full resolution) for 10 places, all agreeing with the shipped
+  lookup: HB = BOE 4, Coast CCD 830, OC sup 1 (not 2, as guessed earlier);
+  SF City Hall and downtown Oakland are within 75 m of a supervisorial line,
+  so unknown.
+- Server-side generalization (`maxAllowableOffset` 0.0002) made the file
+  bigger (4.12 MB): each polygon is generalized alone, so neighbours' shared
+  borders stop matching and are stored twice. Instead: fetch at ~1 m and drop
+  more points only on arcs no drawn layer uses (`LOOKUP_MIN_WEIGHT`).
+- `--check` for lookup layers now counts what matters: confidently wrong
+  (would hide a race) vs unknown (near a line). 20,000 random city points:
+  1e-6 → 3.48 MB, brotli 888 KB, 1 wrong (sup), unknown 0.3–5% per layer;
+  3e-7 → 3.74 MB, brotli 954 KB, 0 wrong (chosen); 1e-7 → 4.05 MB, brotli
+  1,024 KB, 0 wrong. Unknown 0.2–5% per layer at each.
 
 - `subjectKey` = `subject.id ?? t:<title>|j:<jurisdiction>|e:<election>`
   (`apps/web/src/lib/subjects.ts`).
@@ -177,10 +229,13 @@ your ballot" section instead of on the ballot.
    along: local master is 14 ahead of and 13 behind origin), then a day later
    the endorsements branch with the pinned ref bumped. Recommendation: yes,
    in that order; the election is Nov 3.
-2. Phase 6 next? BOE boundaries (statewide, 4 districts), supervisorial
-   districts for the 7 covered counties, community college districts. They
-   would move most of HB's 28 maybes onto or off the ballot. Recommendation:
-   BOE and supervisors first (few, well-published), community colleges after.
+2. ~~Phase 6 next?~~ Answered 2026-10-25 ("keep going on boundary issues");
+   BOE, college and supervisorial boundaries done.
+3. The remaining maybes are trustee areas (school and college) and water /
+   special districts. Trustee areas would need each county's or district's
+   GIS; water districts have no electoral-boundary source we trust. Worth
+   chasing for OC first, or stop here? Recommendation: stop here for Nov 3
+   and ship; revisit per county after the election.
 
 ## Things not to do
 

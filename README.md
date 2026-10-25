@@ -121,9 +121,10 @@ districts over a street (or satellite) map from the US Geological Survey;
 loading map images shows USGS roughly where you're looking, so the map says
 so and can switch the background off. A district with no race
 this election (e.g. an odd-numbered State Senate seat in 2026) says so on My
-ballot. The lookups also find your school districts, so a county's school
-board races show only for the school districts you're in; races only part of a
-county votes on that the app can't place (a water district's division, a
+ballot. The lookups also find your school, community college, Board of
+Equalization and county supervisorial districts, so a county's school board,
+college board and supervisor races show only where you vote on them; races
+only part of a county votes on that the app can't place (a water district, a
 school board's trustee area) are listed apart, as *Might be on your ballot*.
 Or skip all that and choose your city and district numbers from lists
 yourself. The app is light or dark to match your device; Settings →
@@ -172,9 +173,12 @@ public Worker. To turn on Google through your server, copy `.env.example` →
 from the browser, with no server: Settings → *Your Google API key*.) Vite proxies `/api` → `localhost:8787` so the SPA finds the
 backend automatically.
 
-The district boundaries (`apps/web/public/geo/us-ca.topo.json`, ~1 MB
-gzipped with school districts, fetched only when someone opens the finder) are built from Census
-TIGERweb by `bun run --filter '@openslate/web' geo`; rerun it after
+The district boundaries (`apps/web/public/geo/us-ca.topo.json`, ~1.2 MB
+gzipped, fetched only when someone opens the finder) are built by
+`bun run --filter '@openslate/web' geo` from Census TIGERweb, and for what
+Census doesn't map (Board of Equalization, community college and supervisorial
+districts) from the state's, the community colleges' and each county's GIS
+(`OTHER_SOURCES` in `apps/web/scripts/build-geo.ts`); rerun it after
 redistricting.
 
 The same install gets you the CLI, for scripting or headless workflows:

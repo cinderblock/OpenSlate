@@ -7,14 +7,14 @@ import type { AreaOptions } from "../lib/collate";
 import {
   type GeoHit,
   type GeoLayer,
+  type LookupLayer,
   NEAR_LINE_METERS,
-  SCHOOL_LAYERS,
   type StateGeo,
   areaFromHit,
   loadStateGeo,
   locate,
+  lookupsAt,
   mergeFoundArea,
-  schoolsAt,
 } from "../lib/geo";
 import {
   type Area,
@@ -85,8 +85,18 @@ interface Found {
   area: Area;
   places: string[];
   notCovered: string[];
-  nearLine: GeoLayer[];
+  nearLine: (GeoLayer | LookupLayer)[];
 }
+
+/** What to call a lookup layer's district in "near a … line". */
+const UNSURE_NAMES: Partial<Record<GeoLayer | LookupLayer, string>> = {
+  unsd: "school district",
+  elsd: "school district",
+  scsd: "school district",
+  boe: "Board of Equalization district",
+  ccd: "community college district",
+  sup: "supervisorial district",
+};
 
 export function FindDistricts({
   options,
@@ -198,15 +208,16 @@ export function FindDistricts({
             }
             if (service === "census" && match.districts) {
               // The Census Bureau's own answer, from its full-resolution maps;
-              // school districts from ours, at the point it matched.
-              const schools = schoolsAt(geo, match.lon, match.lat);
+              // school, supervisorial and other districts from ours, at the
+              // point it matched.
+              const extra = lookupsAt(geo, match.lon, match.lat, match.county);
               applyHit(
                 {
                   districts: match.districts,
                   county: match.county,
                   place: match.place,
-                  nearLine: [],
-                  ...(schools ? { schools } : {}),
+                  nearLine: extra?.nearLine ?? [],
+                  ...(extra ? { lookups: extra.lookups } : {}),
                 },
                 "the US Census Bureau geocoder",
                 { point: [match.lon, match.lat], from: match.label },
@@ -562,9 +573,10 @@ function FoundSummary({
   const near = found.nearLine.filter((l): l is "cd" | "sd" | "ad" =>
     ["cd", "sd", "ad"].includes(l),
   );
-  // School district families the lookup couldn't tell (the spot is near a line).
-  const schools = found.hit?.schools;
-  const schoolsUnsure = schools !== undefined && SCHOOL_LAYERS.some((l) => !schools[l]);
+  // Lookup layers the spot is near a line of, so their districts weren't set.
+  const unsure = [
+    ...new Set(found.nearLine.flatMap((l) => (l in UNSURE_NAMES ? [UNSURE_NAMES[l]] : []))),
+  ];
   return (
     <div className="find-found" aria-live="polite">
       <p>
@@ -597,10 +609,10 @@ function FoundSummary({
           lines).
         </p>
       )}
-      {schoolsUnsure && (
+      {unsure.length > 0 && (
         <p className="hint">
-          This spot is near a school district line, so OpenSlate can't tell which school district
-          you're in. Your ballot lists its school board races as ones that might be on it.
+          This spot is near a {unsure.join(" and ")} line, so OpenSlate can't tell which one you're
+          in. Your ballot lists the races only those districts vote on as ones that might be on it.
         </p>
       )}
       {found.notCovered.length > 0 && (
