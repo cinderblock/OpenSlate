@@ -19,6 +19,11 @@ your ballot" section instead of on the ballot.
 - OpenSlate worktree `C:\Users\camer\.t3\worktrees\OpenSlate\fix-sub-county-districts`,
   branch `fix/sub-county-districts`, from local master `d05f906` (includes the
   ISSUES.md entry `d8f0914`).
+- Endorsements worktree for this task:
+  `C:\Users\camer\.t3\worktrees\openslate-public-endorsements\fix-sub-county-districts`,
+  branch `fix/sub-county-districts` from `origin/master` `3445154`. Its
+  `.openslate/` (gitignored) is a clone of this OpenSlate branch, since CI's
+  pinned ref (`.openslate-version`) doesn't have `district` yet.
 - Data repos (shared checkouts, other threads work in them):
   - `C:\Users\camer\git\Personal Projects\openslate-public-endorsements`:
     registrar ballot listings `orgs/<registrar>/2026-11-03/positions.json`,
@@ -72,12 +77,21 @@ your ballot" section instead of on the ballot.
    unsd/elsd/scsd layers (in their own file if size warrants); `locate` and
    `areaFromHit` set the families; the found summary names the districts.
    `76b917c`
-4. [ ] **Registrar listings:** ← current tag each sub-county contest with `district`
-   (school district by LEA id, trustee area as `/ta-N`, supervisors as
-   `<county>/sup-N`, water/special districts by slug). OC first, then LA,
-   Santa Clara, Alameda, San Diego, SF. BOE districts on the Secretary of
-   State's listing (`us/ca/boe-N`).
-5. [ ] Ship order: app first (deployed, verified), then the re-signed slates.
+4. [x] **Registrar listings** (endorsements `2bc1270`, `c5c22c2`):
+   `scripts/lib/districts.ts` derives each listing contest's district from its
+   title; `scripts/assign-districts.ts` applies it; `verify-positions` fails a
+   listing whose districts don't match. 653 contests in 8 listings (incl. the
+   SoS's 4 BOE seats); every school board matched a Census district.
+5. [ ] **Ship** ← current, waiting on the user. Order:
+   a. OpenSlate: merge this branch to master (merged with local master
+      `bc6e808` as `8da4614`, all checks pass), reconcile with origin/master
+      (local master and origin had diverged 14 / 13 at 2026-10-24 11 PM PDT),
+      push: deploys openslate.us. Check it live (wizard → location → My
+      ballot shows the maybe section; school districts in the found summary).
+   b. Wait for service workers to update (autoUpdate; a day is plenty).
+   c. Endorsements: set `.openslate-version` to the pushed OpenSlate master
+      commit, rerun `verify-positions`, push `fix/sub-county-districts` to
+      master: CI signs and publishes the listings with `district`.
 6. [ ] Later phases: supervisor and BOE boundaries; community college
    districts; water service areas; San Diego's city/county path collision (an
    identity change, its own task).
@@ -100,8 +114,33 @@ your ballot" section instead of on the ballot.
   "All" filter, collapsed; ones you've marked still print and export.
 - TIGERweb layers: unsd 14, scsd 16, elsd 18; 346 / 112 / 517 CA features;
   GEOID = `06` + 5-digit LEA code. Names repeat across counties (two "Ocean
-  View Elementary School District": 28170 OC, 28140 Ventura), so map
-  contests to ids by county, never by name alone.
+  View Elementary School District": 28140 Orange, 28170 Ventura; also
+  Mountain View, South Bay Union), so contests map to ids by county, never
+  by name alone.
+- Counties per school district: intersecting with generalized county
+  outlines (TIGERweb spatial query) over-reports badly (517 of 975 districts
+  "multi-county", Oxnard's Ocean View in LA). The Census interior point
+  (INTPTLON/LAT) tested against the outlines gives one county each and
+  separates every duplicate name.
+- Listing wording vs Census: drop "elementary", "city", "joint", "high",
+  "unified", "school", "district" when comparing, and use "High" → scsd,
+  "Unified" → unsd as a family filter. That matched all 160 school bodies
+  ("Antelope Valley Joint Union High" = Census "Antelope Valley Union Joint
+  High"; "Los Gatos-Saratoga Union High" = "Los Gatos-Saratoga Joint Union").
+- Some LEA codes are short: Dublin Unified is `00019`, so `unsd-19`; the app
+  and the data both normalize ids as numbers.
+- End to end (`%TEMP%\hb-ballot\e2e.ts`: locate → areaFromHit → collateRaces
+  over the tagged listings and every slate), on the ballot / might be:
+  Huntington Beach 44 / 28 (was 111, all on it), Irvine 43 / 32, LA City Hall
+  65 / 50, SF City Hall 52 / 9, downtown San Diego 46 / 50. HB's maybes: 4
+  BOE, 10 community college trustee areas, 2 supervisors, 12 water/special.
+- Browser check (T3 preview; dev server on 5208 against the data worktree
+  signed with a throwaway key and served on 5299; geolocation faked to the HB
+  point): the found summary names both HB school districts; My ballot shows
+  44 races and "Might be on your ballot · 28" (California 4, Orange County
+  24). The wizard ignores an area pre-set in localStorage (it keeps its own).
+- `sed -i`, and Python heredocs with escapes or Windows paths, both bit this
+  task; write edit scripts to files, or use the Edit tool.
 - Boundary file 1.76 → 2.90 MB (gzip 594 → 988 KB, brotli 480 → 763 KB);
   decode 105 → 129 ms in Bun. `--check`: 6/13/3 of 20,000 random city points
   differ from full resolution for unsd/elsd/scsd (cd 5, ad 7).
@@ -124,11 +163,24 @@ your ballot" section instead of on the ballot.
 - [x] Diagnosed and logged in ISSUES.md (`d8f0914`).
 - [x] Steps 1–3 (2026-10-24 PDT): typecheck, 473 tests, Biome (CRLF copy;
   only the 3 pre-existing errors), build all pass.
-- [ ] Step 4 (registrar listings), 5 (ship), 6 (later phases).
+- [x] Step 4 (2026-10-24 PDT): endorsements tests 30 pass, verify-positions
+  376 OK / 0 failed, Biome clean on the new files, no new tsc errors (the repo
+  has many old ones).
+- [x] Merged master into the branch (`8da4614`): 479 tests, typecheck, build
+  pass.
+- [ ] Step 5 (ship): waiting on the user.
+- [ ] Step 6 (later phases).
 
 ## Open questions for the user
 
-None yet.
+1. Ship? Push OpenSlate master (deploys the app; other threads' commits ride
+   along: local master is 14 ahead of and 13 behind origin), then a day later
+   the endorsements branch with the pinned ref bumped. Recommendation: yes,
+   in that order; the election is Nov 3.
+2. Phase 6 next? BOE boundaries (statewide, 4 districts), supervisorial
+   districts for the 7 covered counties, community college districts. They
+   would move most of HB's 28 maybes onto or off the ballot. Recommendation:
+   BOE and supervisors first (few, well-published), community colleges after.
 
 ## Things not to do
 

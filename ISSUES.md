@@ -1,6 +1,6 @@
 # Issues
 
-## My ballot lists every school, water and supervisor race in the county
+## My ballot lists every school, water and supervisor race in the county (in progress — fix/sub-county-districts, plans/sub-county-districts.md)
 
 Seen 2026-10-24 for a Huntington Beach voter who set their area with the map
 picker. Reproduced with the app's own `locate` + `areaFromHit` +
