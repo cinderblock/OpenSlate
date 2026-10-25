@@ -2,10 +2,12 @@ import { verifySlate } from "@openslate/core";
 import type { QueryClient } from "@tanstack/react-query";
 import { slatesCollection, upsertKnownIdentity } from "./collections";
 import { readTextWithProgress } from "./fetchProgress";
+import { createImportQueue } from "./importQueue";
 import {
   type Catalog,
   type CatalogBundleEntry,
   type CatalogEntry,
+  queryClient,
   slateFromUrlOptions,
 } from "./query";
 import { track } from "./usage";
@@ -68,7 +70,7 @@ export interface VerifiedSlate {
 /** Check a downloaded slate's signature; `verified` ones are ready for `storeSlates`. */
 export function verifyCatalogSlate(
   token: string,
-  knownTokens: ReadonlySet<string>,
+  knownTokens: { has(token: string): boolean },
 ): { kind: "verified"; slate: VerifiedSlate } | Exclude<ImportOutcome, { kind: "imported" }> {
   try {
     const result = verifySlate(token);
@@ -138,3 +140,16 @@ export async function fetchCatalogBundle(
   }
   return tokens;
 }
+
+/**
+ * Imports that carry on after the getting-started wizard closes. ImportBanner
+ * shows how far along they are.
+ */
+export const backgroundImports = createImportQueue({
+  fetchBundle: (catalog, catalogUrl, onProgress) =>
+    fetchCatalogBundle(catalog, catalogUrl, onProgress),
+  fetchSlate: (entry, catalogUrl) => fetchCatalogSlate(entry, catalogUrl, queryClient),
+  verify: verifyCatalogSlate,
+  store: storeSlates,
+  isStored: (token) => slatesCollection.has(token),
+});

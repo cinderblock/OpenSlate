@@ -2038,7 +2038,7 @@ p.wizard-wait {
 .wizard-download-all .ui-checkbox-box {
   margin-top: 0.15em;
 }
-/* A two-step way out: "Skip setup" or "Stop" → nudge → confirm (Wizard.tsx ConfirmLink). */
+/* A two-step way out: "Skip setup" → nudge → confirm (Wizard.tsx ConfirmLink). */
 .wizard-skip,
 .wizard-skip-nudge {
   display: inline-flex;
@@ -2224,6 +2224,68 @@ p.wizard-wait {
 }
 .db-status-banner p {
   margin: 0;
+}
+
+/* The wizard's import carrying on in the background (ImportBanner.tsx).
+   Sticks to the top while it runs, so the bar stays in sight on a long ballot. */
+.import-banner {
+  position: sticky;
+  top: 0.5rem;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid color-mix(in oklab, var(--border), var(--accent) 40%);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--surface), var(--accent) 6%);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+.import-banner.done {
+  border-color: color-mix(in oklab, var(--border), var(--ok) 40%);
+  border-left-color: var(--ok);
+  background: color-mix(in oklab, var(--surface), var(--ok) 6%);
+}
+.import-banner.failed {
+  border-color: color-mix(in oklab, var(--border), var(--warn) 40%);
+  border-left-color: var(--warn);
+  background: color-mix(in oklab, var(--surface), var(--warn) 6%);
+}
+.import-banner-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: 0.1rem;
+  color: var(--accent);
+}
+.import-banner.done .import-banner-icon {
+  color: var(--ok);
+}
+.import-banner.failed .import-banner-icon {
+  color: var(--warn);
+}
+.import-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.import-banner-text output,
+.import-banner-text ul {
+  margin: 0;
+}
+.import-banner-close {
+  justify-self: end;
+}
+@media (max-width: 40rem) {
+  .import-banner {
+    grid-template-columns: auto 1fr;
+  }
+  .import-banner-close {
+    grid-column: 2;
+  }
 }
 
 /* civicAPI per-region breakdown */

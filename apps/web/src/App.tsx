@@ -18,6 +18,7 @@ import {
 import { useRef } from "react";
 import { AlphaBadge, AlphaBanner } from "./components/AlphaNotice";
 import { FeedbackHost } from "./components/FeedbackHost";
+import { ImportBanner } from "./components/ImportBanner";
 import { WizardHost } from "./components/WizardHost";
 import { Switch } from "./components/ui/Switch";
 import { useAlphaBannerOpen } from "./lib/alpha";
@@ -170,6 +171,7 @@ export function RootLayout() {
         )}
 
         <DbStatusBanner />
+        <ImportBanner />
 
         <main>
           <Outlet />

@@ -15,6 +15,11 @@ privacy (the server can't tell whose recommendations you use). Where there is
 still a wait, show a loading bar instead of "x of y", with a clear message
 strongly suggesting waiting rather than skipping.
 
+Follow-up (2026-10-25): "why can't we continue in the background? just leave a
+message/banner that says 'still loading' so that people know it's not
+complete? ideally with a progress bar." So the import no longer holds the
+wizard open: it closes at once and a banner over every page shows the bar.
+
 ## Environment / context
 
 - Repo `C:\Users\camer\git\Personal Projects\OpenSlate`. Core + CLI landed on
@@ -63,6 +68,13 @@ strongly suggesting waiting rather than skipping.
   advertised, else per-entry fetches.
 - The catalog advertises its bundle with `bundle: { path, bytes }`; `bytes` is
   the uncompressed size, so progress works even when the transfer is gzipped.
+- The import runs in the background (`lib/importQueue.ts`, wired up as
+  `backgroundImports` in `catalogImport.ts`); `ImportBanner` (mounted in the
+  layout, sticky) shows the bar, then "Your sources are in" (gone after 6 s) or
+  the list of what didn't import. No Stop: leaving costs nothing now. Closing
+  the tab mid-import asks first (`beforeunload`). A second import waits its
+  turn. Replaces the wizard's import step, its "keep this open" message and its
+  Stop link.
 
 ## Plan / steps
 
@@ -85,11 +97,13 @@ strongly suggesting waiting rather than skipping.
 9. [x] Rebased onto master (disagree-sources `7fad8f5`: the wizard keeps its
        Follow / Disagree `StandingToggle`; picks import with their standing) and
        fast-forwarded master to `5bf7594`. Browser-checked after the merge.
-10. [ ] **Current step — waiting on the user:** push OpenSlate master (11
-       commits ahead of origin, several from other threads; it deploys), then
-       in openslate-public-endorsements bump `.openslate-version` to that
-       commit and push with `25955d8` (republishes the catalog with summaries
-       and the bundle field).
+10. [x] OpenSlate master was pushed (by 2026-10-25, `5bf7594` is on
+       `origin/master`).
+11. [x] Background import with a banner (the follow-up above); browser-checked.
+12. [ ] **Current step — waiting on the user:** push the background-import
+       commit (deploys). In openslate-public-endorsements: bump
+       `.openslate-version` and push with `25955d8` (republishes the catalog
+       with summaries and the bundle field).
 
 ## Findings / gotchas
 
@@ -110,6 +124,21 @@ strongly suggesting waiting rather than skipping.
   336 recorded unfollowed; Escape ignored mid-import; Stop → Stop anyway kept
   the 227 checked so far. Old-format catalog: fetching starts on "Plan my
   vote", wait bar + message on the area step, worst main-thread stall 126 ms.
+- Background import, first try: storing every 1.5 s made "download all" take
+  ~9 s with five 0.6–2.4 s main-thread stalls, because each store re-collates
+  the whole ballot, now on screen. Timing `store()` to space them out doesn't
+  work: the re-collation runs after the call returns. Fix: a store waits for
+  at least as many new slates as are stored already (total work stays within
+  about twice the last store). Also `MyBallotPanel` subscribed to the whole
+  status and re-rendered the ballot on every tick; it uses `useImportRunning`
+  (a boolean) now. After: bundle ~1 s, checking ~3 s, one 1.8 s stall (the
+  first draw of ~300 slates' ballot, the same cost as opening a full ballot).
+- Browser check (2026-10-25): picks → wizard closes, banner with bar, empty
+  ballot says "Your sources are on their way", then "Your sources are in.
+  Added 11"; Follow and Disagree kept. Download all: 346 stored, only the pick
+  followed. A pick whose fetch 404s: listed in the banner, the other 10 in,
+  the failed one not followed. `beforeunload` not exercised (it would open a
+  browser dialog).
 - GitHub Pages gzips `bundle.json`; a browser's `Content-Length` is then the
   compressed size while the stream yields decompressed bytes, so progress needs
   the uncompressed size from the catalog.
@@ -122,15 +151,17 @@ strongly suggesting waiting rather than skipping.
       `feat/wizard-catalog-summaries`).
 - [x] public-endorsements build-site `bundle` field (local commit there).
 - [x] Rebased onto master and merged (`5bf7594`).
-- [ ] Push both repos (ask first), bump `.openslate-version`.
+- [x] OpenSlate master pushed (the wizard rework).
+- [x] Background import + banner (branch `feat/wizard-catalog-summaries`).
+- [ ] Push the background import (ask first); public-endorsements push and
+      `.openslate-version` bump (ask first).
 
 ## Open questions for the user
 
-1. Push? OpenSlate master deploys the app; the public catalog repo needs the
-   OpenSlate commit on GitHub before bumping `.openslate-version`. Order:
-   OpenSlate first, then the catalog. Either order is safe for users: the app
-   falls back when the catalog has no summaries, and old apps ignore the new
-   fields. Recommendation: push both.
+1. Push? OpenSlate master deploys the app; `7dbaf9c` is on GitHub already, so
+   the catalog repo can bump `.openslate-version` now. Either order is safe
+   for users: the app falls back when the catalog has no summaries, and old
+   apps ignore the new fields. Recommendation: push both.
 
 ## Things not to do
 

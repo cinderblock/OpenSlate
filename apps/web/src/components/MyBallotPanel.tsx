@@ -24,6 +24,7 @@ import { ProgressBar } from "react-aria-components";
 import { ballotProblems } from "../lib/ballotCheck";
 import { type DraftRow, NOTE_CHOICE, rowIdFor, useBallotDraft } from "../lib/ballotDraft";
 import { ballotFileName, ballotToCsv, ballotToJson } from "../lib/ballotExport";
+import { backgroundImports } from "../lib/catalogImport";
 import {
   type ChoiceGroup,
   type Race,
@@ -36,6 +37,7 @@ import {
 } from "../lib/collate";
 import { formatElectionDate, formatLocalDate } from "../lib/dates";
 import { downloadText } from "../lib/download";
+import { useImportRunning } from "../lib/importQueue";
 import {
   DISTRICT_COUNTS,
   EMPTY_AREA,
@@ -127,6 +129,7 @@ const STATUS_LABEL: Record<RaceStatus, string> = {
 
 export function MyBallotPanel() {
   const { slates, isReady } = useDecodedSlates();
+  const importing = useImportRunning(backgroundImports);
   const [follows] = useFollows();
   const [disagree] = useDisagreeMode();
   const [area, setArea] = useArea();
@@ -379,6 +382,17 @@ export function MyBallotPanel() {
     return (
       <section className="panel">
         <p className="hint">Loading your ballot…</p>
+      </section>
+    );
+  }
+
+  // The wizard's import is still bringing in the first slates (ImportBanner
+  // shows how far along); "Get started" here would say the opposite.
+  if (slates.length === 0 && importing) {
+    return (
+      <section className="panel">
+        <h2>My ballot</h2>
+        <p className="hint">Your sources are on their way. Races show up here as they arrive.</p>
       </section>
     );
   }

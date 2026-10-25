@@ -1,18 +1,11 @@
 import { type SlatePayload, createIdentity, parseSlate, serializeIdentity } from "@openslate/core";
 import { useLiveQuery } from "@tanstack/react-db";
-import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Code, FlaskConical, Lock, PenLine, Server, Vote } from "lucide-react";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { isPublicSite } from "../lib/alpha";
-import {
-  type VerifiedSlate,
-  catalogEntryUrl,
-  fetchCatalogBundle,
-  fetchCatalogSlate,
-  storeSlates,
-  verifyCatalogSlate,
-} from "../lib/catalogImport";
+import { backgroundImports, catalogEntryUrl } from "../lib/catalogImport";
 import {
   type EntrySummary,
   isSummarized,
@@ -24,7 +17,6 @@ import { areaOptionsOf } from "../lib/collate";
 import { addIdentity, slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
 import { REPO_URL } from "../lib/feedback";
-import { forEachConcurrently } from "../lib/fetchProgress";
 import { useActiveIdentity } from "../lib/identities";
 import { downloadIdentityBackup } from "../lib/identityBackup";
 import {
@@ -63,7 +55,7 @@ import { ProgressBar } from "./ui/ProgressBar";
 import { Radio, RadioGroup } from "./ui/Radio";
 import { TextField } from "./ui/TextField";
 
-type Step = "welcome" | "election" | "area" | "sources" | "importing" | "identity";
+type Step = "welcome" | "election" | "area" | "sources" | "identity";
 
 const VOTE_STEPS: Step[] = ["election", "area", "sources"];
 
@@ -72,31 +64,14 @@ const CATALOG_URL = DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG;
 /** Catalog entry path → how the user picked it. Not in the map = not picked. */
 type Picks = ReadonlyMap<string, Exclude<Standing, "off">>;
 
-/** Slates downloaded at once while importing. */
-const IMPORT_CONCURRENCY = 6;
-
-/** What the import step's bar shows. No `maxValue`: the total isn't known yet. */
-interface ImportProgress {
-  label: string;
-  value: number;
-  maxValue?: number;
-}
-
 /** The getting-started wizard. Loaded and mounted by WizardHost while open. */
 export function Wizard() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>("welcome");
   const [election, setElection] = useState("");
   const [area, setArea] = useState<Area>(() => areaStore.get());
   const [selected, setSelected] = useState<Picks>(new Map());
   const [downloadAll, setDownloadAll] = useState(false);
-  const [importing, setImporting] = useState<ImportProgress | null>(null);
-  const [importErrors, setImportErrors] = useState<string[]>([]);
-  const stopped = useRef(false);
-  /** Slates checked during the import, stored together at the end (or on Stop). */
-  const pending = useRef<VerifiedSlate[]>([]);
-  const bundleAbort = useRef<AbortController | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const escapeTarget = useRef<(() => void) | null>(null);
@@ -132,7 +107,7 @@ export function Wizard() {
   }, [step]);
 
   // A modal <dialog> traps focus, makes the page behind it inert and handles
-  // Escape (as `cancel`, which opens the step's Skip or Stop nudge).
+  // Escape (as `cancel`, which opens the step's Skip nudge).
   useEffect(() => {
     const dialog = dialogRef.current;
     if (dialog && !dialog.open) dialog.showModal();
@@ -152,20 +127,11 @@ export function Wizard() {
     void navigate({ to: path === "vote" ? "/" : "/publish" });
   }
 
-  /** Store what the import has checked so far. */
-  function storePending() {
-    storeSlates(pending.current.splice(0));
-  }
-
-  /** Leave the import part-way: what's in so far stays, the rest is dropped. */
-  function stopImport() {
-    stopped.current = true;
-    bundleAbort.current?.abort();
-    storePending();
-    finish("vote");
-  }
-
-  async function followSelected() {
+  /**
+   * Start downloading the picks and close: the import carries on in the
+   * background, with a banner over the ballot until it's done.
+   */
+  function followSelected() {
     areaStore.set(area);
     myElectionStore.set(election);
     const entries = summaries.entries.map((s) => s.entry);
@@ -174,15 +140,6 @@ export function Wizard() {
     const chosen = downloadAll
       ? entries
       : entries.filter((e) => selected.has(e.path) || isBallotEntry(e));
-    if (chosen.length === 0) {
-      finish("vote");
-      return;
-    }
-    setStep("importing");
-    setImportErrors([]);
-    stopped.current = false;
-    pending.current = [];
-    const known = new Set(imported.map((s) => s.token));
 
     if (downloadAll) {
       // The ones you didn't pick come along for comparison, not to trust:
@@ -196,68 +153,20 @@ export function Wizard() {
       );
     }
 
-    // Everything at once from the catalog's bundle when it has one, so even
-    // the order of requests says nothing about your picks.
-    let bundled: Map<string, string> | undefined;
-    const bundle = catalog.data?.bundle;
-    if (downloadAll && catalog.data && bundle) {
-      const label = "Downloading every organization's endorsements";
-      setImporting({ label, value: 0, ...(bundle.bytes ? { maxValue: bundle.bytes } : {}) });
-      const controller = new AbortController();
-      bundleAbort.current = controller;
-      try {
-        bundled = await fetchCatalogBundle(
-          catalog.data,
-          CATALOG_URL,
-          (value, maxValue) => setImporting({ label, value, ...(maxValue ? { maxValue } : {}) }),
-          controller.signal,
-        );
-      } catch {
-        // Fetch them one by one instead.
-      }
-      bundleAbort.current = null;
-      if (stopped.current) return;
+    if (catalog.data && chosen.length > 0) {
+      void backgroundImports.start({
+        catalog: catalog.data,
+        catalogUrl: CATALOG_URL,
+        entries: chosen,
+        label: downloadAll ? `Adding all ${chosen.length} lists` : importLabel(chosen, picked),
+        bundle: downloadAll,
+        // Only once its slate is in, so a source that failed isn't left followed.
+        onImported: (entry) => {
+          if (picked(entry)) setStanding(sourceIdOf(entry), selected.get(entry.path) ?? "follow");
+        },
+      });
     }
-
-    const label = downloadAll ? `Adding all ${chosen.length} lists` : importLabel(chosen, picked);
-    setImporting({ label, value: 0, maxValue: chosen.length });
-    const errors: string[] = [];
-    let done = 0;
-    await forEachConcurrently(
-      chosen,
-      IMPORT_CONCURRENCY,
-      async (entry) => {
-        let token = bundled?.get(entry.path);
-        try {
-          token ??= await fetchCatalogSlate(entry, CATALOG_URL, queryClient);
-        } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          errors.push(`${entry.attribution?.of.name ?? entry.slug}: ${message}`);
-        }
-        if (token) {
-          const result = verifyCatalogSlate(token, known);
-          if (result.kind === "error") {
-            errors.push(`${entry.attribution?.of.name ?? entry.slug}: ${result.error}`);
-          } else {
-            if (result.kind === "verified") pending.current.push(result.slate);
-            if (picked(entry)) {
-              setStanding(sourceIdOf(entry), selected.get(entry.path) ?? "follow");
-            }
-          }
-          // Checking hundreds of signatures in a row would freeze the page.
-          await new Promise((resolve) => setTimeout(resolve));
-        }
-        done++;
-        setImporting({ label, value: done, maxValue: chosen.length });
-      },
-      () => stopped.current,
-    );
-    // After a Stop this stores the ones that were still in flight.
-    storePending();
-    if (stopped.current) return;
-    setImporting(null);
-    if (errors.length === 0) finish("vote");
-    else setImportErrors(errors);
+    finish("vote");
   }
 
   const voteIndex = VOTE_STEPS.indexOf(step);
@@ -270,10 +179,9 @@ export function Wizard() {
       onCancel={(e) => {
         e.preventDefault();
         // Escape is a way out too, so it gets the same nudge as the step's
-        // Skip or Stop link rather than leaving outright. Steps without one
-        // (the import's error list) still close.
+        // Skip link rather than leaving outright.
         if (escapeTarget.current) escapeTarget.current();
-        else if (!importing) skip();
+        else skip();
       }}
     >
       <EscapeContext.Provider value={escapeTarget}>
@@ -365,50 +273,6 @@ export function Wizard() {
           />
         )}
 
-        {step === "importing" && (
-          <>
-            <h2 id="wizard-heading" ref={headingRef} tabIndex={-1}>
-              {importErrors.length > 0 ? "Some sources didn't import" : "Setting up your ballot…"}
-            </h2>
-            {importing && (
-              <>
-                <ProgressBar
-                  label={importing.label}
-                  value={importing.value}
-                  maxValue={importing.maxValue}
-                />
-                <p className="wizard-wait">
-                  <strong>Please keep this open until it finishes.</strong> It usually takes a few
-                  seconds. If you stop now, the sources still downloading won't be on your ballot.
-                </p>
-                <div className="wizard-footer">
-                  <ConfirmLink
-                    label="Stop"
-                    nudge="We recommend waiting until it finishes."
-                    confirm="Stop anyway"
-                    onConfirm={stopImport}
-                  />
-                </div>
-              </>
-            )}
-            {importErrors.length > 0 && (
-              <>
-                <ul className="error">
-                  {importErrors.map((e) => (
-                    <li key={e}>{e}</li>
-                  ))}
-                </ul>
-                <div className="wizard-footer">
-                  <span className="grow" />
-                  <button type="button" className="primary" onClick={() => finish("vote")}>
-                    Continue to my ballot
-                  </button>
-                </div>
-              </>
-            )}
-          </>
-        )}
-
         {step === "identity" && (
           <IdentityStep
             headingRef={headingRef}
@@ -481,7 +345,7 @@ function SkipSetup({ onSkip }: { onSkip: () => void }) {
 }
 
 /**
- * A way out that takes two steps (skip setup, stop an import), so a newcomer
+ * A way out that takes two steps (skip setup), so a newcomer
  * eager to "get to the real thing" reads why staying is worth it first.
  * Hovering (mouse) or pressing the link (touch, keyboard) shows the nudge;
  * after a short pause a separate confirm button appears beside it, out from
