@@ -67,10 +67,12 @@ export function defaultToUnfollowed(sourceIds: Iterable<string>): void {
 /** Where the user votes. */
 export const areaStore = createLocalStore<Area>("openslate.area.v1", EMPTY_AREA, (raw) => {
   if (typeof raw !== "object" || raw === null) return undefined;
-  const { localities, districts } = raw as Partial<Area>;
+  const { localities, districts, labels } = raw as Partial<Area>;
   if (!Array.isArray(localities) || !localities.every(isString)) return undefined;
   if (!isRecordOf(districts, isString)) return undefined;
-  return { localities, districts };
+  return isRecordOf(labels, isString)
+    ? { localities, districts, labels }
+    : { localities, districts };
 });
 
 export const useArea = () => useLocalStore(areaStore);

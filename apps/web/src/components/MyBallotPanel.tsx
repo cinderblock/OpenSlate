@@ -37,7 +37,9 @@ import {
 import { formatElectionDate, formatLocalDate } from "../lib/dates";
 import { downloadText } from "../lib/download";
 import {
+  DISTRICT_COUNTS,
   EMPTY_AREA,
+  NO_DISTRICT,
   districtFamilyLabel,
   isAreaSet,
   jurisdictionLabel,
@@ -150,7 +152,7 @@ export function MyBallotPanel() {
     [slates, election],
   );
 
-  const races = useMemo(
+  const collated = useMemo(
     () =>
       collateRaces(slates, {
         follows,
@@ -160,6 +162,11 @@ export function MyBallotPanel() {
       }),
     [slates, follows, election, area, showUnfollowed],
   );
+  // Races only part of a jurisdiction votes on, where the area can't tell which
+  // part the user is in (a water district, a trustee area): listed apart, so a
+  // county's every school board doesn't pad the ballot.
+  const races = useMemo(() => collated.filter((race) => !race.maybe), [collated]);
+  const maybeRaces = useMemo(() => collated.filter((race) => race.maybe), [collated]);
 
   // What the shown races' endorsements name that the ballot listing doesn't have.
   const offBallot = useMemo(() => {
@@ -291,6 +298,10 @@ export function MyBallotPanel() {
     // (e.g. an odd-numbered Senate district in 2026), in ballot order, rather
     // than silently going missing. Not under a status filter: nothing to do there.
     for (const [family, n] of filter === "all" ? Object.entries(area.districts) : []) {
+      // Only families races are filed under (not school districts, which only
+      // narrow a race's `district`).
+      if (n === NO_DISTRICT || !(family in DISTRICT_COUNTS || family in areaOptions.districts))
+        continue;
       const present = areaOptions.districts[family] ?? [];
       if (present.includes(n)) continue;
       const path = `${family}-${n}`;
@@ -309,6 +320,23 @@ export function MyBallotPanel() {
     [draft.rows, election],
   );
 
+  const maybeSections = useMemo(() => sectionsOf(maybeRaces), [maybeRaces]);
+  // What's yours to print and export: the ballot, and any maybe you've marked.
+  const yours = useMemo(
+    () => [
+      ...races,
+      ...maybeRaces.filter((race) =>
+        myRows.some((row) => row.id.startsWith(`${election}|${race.key}|`)),
+      ),
+    ],
+    [races, maybeRaces, myRows, election],
+  );
+  // Maybes a map lookup would place: school board races, when the area doesn't
+  // know the user's school districts (set by hand, or before lookups found them).
+  const schoolUnknown =
+    maybeRaces.some((race) => SCHOOL_DISTRICT.test(race.district ?? "")) &&
+    !Object.keys(area.districts).some((family) => SCHOOL_FAMILY.test(family));
+
   // Ballot sources (official candidate lists) aren't recommendations to follow.
   const sourceIds = new Set(
     slates.filter((s) => !isBallotSource(s.source)).map((s) => s.source.id),
@@ -323,7 +351,7 @@ export function MyBallotPanel() {
     const input = {
       election,
       area: isAreaSet(area) ? describeArea(area) : "",
-      races,
+      races: yours,
       rows: draft.rows,
       exportedAt: new Date().toISOString(),
     };
@@ -623,9 +651,46 @@ export function MyBallotPanel() {
         </div>
       )}
 
+      {!focusing && filter === "all" && maybeSections.length > 0 && (
+        <div className="ballot-maybe">
+          <h3>
+            Might be on your ballot <span className="hint">· {maybeRaces.length}</span>
+          </h3>
+          <p className="hint">
+            Only part of {maybeSections.length === 1 ? maybeSections[0]?.label : "a county or city"}{" "}
+            votes on each of these, like one trustee area of a school board or one division of a
+            water district, and OpenSlate can't tell from where you vote whether that part includes
+            you. Your sample ballot lists the ones you have.
+            {schoolUnknown && (
+              <>
+                {" "}
+                <button type="button" className="link" onClick={() => setEditingArea(true)}>
+                  Find your school districts
+                </button>{" "}
+                to place the school board races.
+              </>
+            )}
+          </p>
+          {maybeSections.map((section) => (
+            <BallotSection
+              key={section.label}
+              label={section.label}
+              races={section.races}
+              defaultOpen={false}
+              election={election ?? ""}
+              rows={draft.rows}
+              patch={patch}
+              mine={mine}
+              statuses={undefined}
+              filter={filter}
+            />
+          ))}
+        </div>
+      )}
+
       <PrintPicks
         election={election}
-        races={races}
+        races={yours}
         rows={myRows}
         area={isAreaSet(area) ? describeArea(area) : ""}
       />
@@ -634,6 +699,22 @@ export function MyBallotPanel() {
 }
 
 type Patch = ReturnType<typeof useBallotDraft>["patch"];
+
+/** School district families (Census TIGER's unified, elementary and secondary). */
+const SCHOOL_FAMILY = /\/(?:unsd|elsd|scsd)$/;
+const SCHOOL_DISTRICT = /\/(?:unsd|elsd|scsd)-/;
+
+/** Races grouped by jurisdiction, in ballot order (the races come sorted). */
+function sectionsOf(races: Race[]): Array<{ label: string; races: Race[] }> {
+  const out: Array<{ label: string; races: Race[] }> = [];
+  for (const race of races) {
+    const label = jurisdictionLabel(race.jurisdiction);
+    const last = out.at(-1);
+    if (last?.label === label) last.races.push(race);
+    else out.push({ label, races: [race] });
+  }
+  return out;
+}
 
 function BallotSection({
   label,

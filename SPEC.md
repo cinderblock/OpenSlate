@@ -104,9 +104,11 @@ Two positions refer to the same real-world item when their `id` matches. Absent 
 `jurisdiction`: a county lists a school board's trustee area under the county,
 but only that trustee area's voters have it on their ballot. It is a path in
 the form of `jurisdiction`: segments after the first two name ever smaller
-areas, each inside the one before it. A segment of the form `<family>-<id>`
-is district `<id>` of a family of districts drawn within the path before it;
-any other segment names a place (a city, a special district). For example:
+areas, each inside the one before it. A segment `<family>-<id>`, where
+`<family>` is lowercase letters and `<id>` is digits or a single letter, is
+district `<id>` of a family of districts drawn within the path before it
+(ids compare as numbers when they are digits: `ta-04` is `ta-4`). Any other
+segment names a place (a city, a special district). For example:
 
 | `district` | Meaning |
 | --- | --- |

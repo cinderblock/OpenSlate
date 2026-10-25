@@ -1548,6 +1548,20 @@ button.source-chip {
   margin: 0.25rem 0 0.5rem;
 }
 
+/* My ballot: races the area can't place, after the ballot and set apart from it. */
+.ballot-maybe {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.ballot-maybe > h3 {
+  margin: 0 0 0.25rem;
+}
+.ballot-maybe > .hint {
+  margin: 0 0 0.5rem;
+  max-width: 60rem;
+}
+
 /* Race page: on a wide screen polls, forecast and results sit beside the
    endorsements. The last row is the only flexible one, so a tall sidebar
    stretches it rather than pushing My positions and the choices apart. */

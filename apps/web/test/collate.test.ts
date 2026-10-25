@@ -17,6 +17,7 @@ interface P {
   choice?: string;
   stance?: Stance;
   jurisdiction?: string;
+  district?: string;
   election?: string;
   kind?: string;
 }
@@ -40,6 +41,7 @@ function slate(input: {
       subject: {
         title: p.title,
         ...(p.jurisdiction ? { jurisdiction: p.jurisdiction } : {}),
+        ...(p.district ? { district: p.district } : {}),
         ...(p.election ? { election: p.election } : {}),
         ...(p.kind ? { kind: p.kind } : {}),
       },
@@ -224,6 +226,41 @@ describe("collateRaces", () => {
       area: { localities: ["us/ca/sf"], districts: { "us/ca/cd": "11" } },
     });
     expect(races.map((r) => r.jurisdiction)).toEqual(["us/ca/cd-11", "us/ca/sf"]);
+  });
+
+  test("places a race by its district, taking the ballot source's", () => {
+    const oc = "us/ca/orange-county";
+    const board = (title: string) => ({ title, jurisdiction: oc, choice: "X" });
+    const slates = decodeSlates([
+      slate({
+        of: "OC Registrar",
+        ofKind: "election-authority",
+        positions: [
+          { ...board("HB City SD, Trustee Area 4"), district: "us/ca/elsd-17880/ta-4" },
+          { ...board("Anaheim Elementary SD, Trustee Area 2"), district: "us/ca/elsd-2610/ta-2" },
+          { ...board("Irvine Ranch Water District, Division 5"), district: `${oc}/irwd/div-5` },
+          board("Orange County Assessor"),
+        ],
+      }),
+      // An endorser's district loses to the ballot source's.
+      slate({
+        name: "Endorser",
+        positions: [{ ...board("HB City SD, Trustee Area 4"), district: "us/ca/elsd-2610" }],
+      }),
+    ]);
+    const area = {
+      localities: ["us/ca/huntington-beach", oc],
+      districts: { "us/ca/elsd": "17880", "us/ca/unsd": "none" },
+    };
+    const races = collateRaces(slates, { follows: {}, area });
+    expect(races.map((r) => [r.subject.title, r.maybe ?? false])).toEqual([
+      ["HB City SD, Trustee Area 4", true],
+      ["Irvine Ranch Water District, Division 5", true],
+      ["Orange County Assessor", false],
+    ]);
+    expect(races[0]?.district).toBe("us/ca/elsd-17880/ta-4");
+    // With no area, nothing is a maybe.
+    expect(collateRaces(slates, { follows: {} }).some((r) => r.maybe)).toBe(false);
   });
 
   test("a source's newer slate replaces its older one on the same race", () => {

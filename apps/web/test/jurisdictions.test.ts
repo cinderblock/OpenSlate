@@ -7,6 +7,7 @@ import {
   jurisdictionRank,
   noRaceReason,
   parseJurisdiction,
+  placeRace,
 } from "../src/lib/jurisdictions";
 
 describe("parseJurisdiction", () => {
@@ -26,6 +27,55 @@ describe("parseJurisdiction", () => {
       slug: "los-angeles-county",
     });
     expect(parseJurisdiction(undefined)).toEqual({ kind: "none" });
+  });
+});
+
+describe("placeRace", () => {
+  const hb = {
+    localities: ["us/ca/huntington-beach", "us/ca/orange-county"],
+    districts: {
+      "us/ca/cd": "42",
+      "us/ca/unsd": "none",
+      "us/ca/elsd": "17880",
+      "us/ca/scsd": "17910",
+      "us/ca/orange-county/sup": "2",
+    },
+  };
+  const oc = "us/ca/orange-county";
+
+  test("without a district, a race is placed by its jurisdiction alone", () => {
+    expect(placeRace(oc, undefined, hb)).toBe("in");
+    expect(placeRace("us/ca/los-angeles-county", undefined, hb)).toBe("out");
+    expect(placeRace(oc, "us/ca/elsd-2610", EMPTY_AREA)).toBe("in");
+  });
+
+  test("a family segment compares with the area's district of that family", () => {
+    expect(placeRace(oc, "us/ca/elsd-17880", hb)).toBe("in");
+    expect(placeRace(oc, "us/ca/elsd-02610", hb)).toBe("out");
+    expect(placeRace(oc, `${oc}/sup-2`, hb)).toBe("in");
+    expect(placeRace(oc, `${oc}/sup-4`, hb)).toBe("out");
+    // In no unified school district: every unified district's races are out.
+    expect(placeRace(oc, "us/ca/unsd-17760/ta-4", hb)).toBe("out");
+  });
+
+  test("what the area doesn't know is unknown, unless something else rules it out", () => {
+    // Trustee areas: the school district is known, the area isn't.
+    expect(placeRace(oc, "us/ca/elsd-17880/ta-4", hb)).toBe("unknown");
+    expect(placeRace(oc, "us/ca/elsd-2610/ta-4", hb)).toBe("out");
+    // A water district the area can't find.
+    expect(placeRace(oc, "us/ca/irvine-ranch-water-district/div-5", hb)).toBe("unknown");
+    expect(placeRace(oc, "us/ca/boe-2", hb)).toBe("unknown");
+    // A different state's district.
+    expect(placeRace(oc, "us/ny/cd-3", hb)).toBe("out");
+  });
+
+  test("a place segment the area lists continues, and lettered ids count", () => {
+    const cypress = {
+      localities: ["us/ca/cypress-school-district", oc],
+      districts: { "us/ca/cypress-school-district/ta": "b" },
+    };
+    expect(placeRace(oc, "us/ca/cypress-school-district/ta-B", cypress)).toBe("in");
+    expect(placeRace(oc, "us/ca/cypress-school-district/ta-c", cypress)).toBe("out");
   });
 });
 

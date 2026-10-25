@@ -8,6 +8,10 @@
  * - A race is on the user's ballot when its jurisdiction is the state, one of
  *   their localities, or one of their districts. With no area set, every race
  *   counts.
+ * - A race's `district` (SPEC §3.3) narrows that to the part of its
+ *   jurisdiction that votes on it, e.g. a trustee area of a school district
+ *   in the county (`placeRace`). Where the area can't tell, the race is
+ *   *unknown*: it may be on the user's ballot.
  *
  * Pure helpers, unit-tested in test/jurisdictions.test.ts.
  */
@@ -40,9 +44,18 @@ export function parseJurisdiction(path: string | undefined): JurisdictionPart {
 export interface Area {
   /** Locality paths, e.g. `us/ca/sf`. */
   localities: string[];
-  /** District number per `<state>/<family>`, e.g. `{ "us/ca/cd": "11" }`. */
+  /**
+   * District id per family, keyed by the path the family is drawn within plus
+   * the family: `{ "us/ca/cd": "11", "us/ca/orange-county/sup": "2" }`.
+   * `NO_DISTRICT` means the user is in none of that family's districts.
+   */
   districts: Record<string, string>;
+  /** What to call the user's district of a family, when its id says nothing (`"us/ca/elsd"` → a school district's name). */
+  labels?: Record<string, string>;
 }
+
+/** A family's id for "in none of its districts" (most of the state has no unified school district). */
+export const NO_DISTRICT = "none";
 
 export const EMPTY_AREA: Area = { localities: [], districts: {} };
 
@@ -88,6 +101,51 @@ export function inArea(jurisdiction: string | undefined, area: Area): boolean {
   }
 }
 
+/** Whether a race is on the user's ballot: yes, no, or can't tell from their area. */
+export type Placement = "in" | "out" | "unknown";
+
+/** A `district` path segment naming a district of a family: `sup-4`, `unsd-17760`, `ta-b`. */
+const DISTRICT_SEGMENT = /^([a-z]+)-(\d+|[a-z])$/;
+
+/** A district id as areas store it: numbers without leading zeros. */
+export function districtId(id: string): string {
+  return /^\d+$/.test(id) ? String(Number(id)) : id.toLowerCase();
+}
+
+/**
+ * Whether a race filed under `jurisdiction`, decided by the voters of
+ * `district` (SPEC §3.3), is on the ballot of someone in `area`. Out when its
+ * jurisdiction isn't the user's (`inArea`); then each segment of `district`
+ * narrows it: a family segment (`sup-4`) against the user's district of that
+ * family, a place segment against their localities. A family the area doesn't
+ * know, or a place it doesn't list (a water district: no boundaries to find it
+ * by), makes it unknown, unless a later segment already rules it out.
+ */
+export function placeRace(
+  jurisdiction: string | undefined,
+  district: string | undefined,
+  area: Area,
+): Placement {
+  if (!inArea(jurisdiction, area)) return "out";
+  if (!district?.trim() || !isAreaSet(area)) return "in";
+  const parts = district.trim().toLowerCase().split("/");
+  let prefix = parts.slice(0, 2).join("/");
+  if (!areaStates(area).has(prefix)) return "out";
+  let placement: Placement = "in";
+  for (const segment of parts.slice(2)) {
+    const family = DISTRICT_SEGMENT.exec(segment);
+    if (family?.[1] && family[2]) {
+      const mine = area.districts[`${prefix}/${family[1]}`];
+      if (mine === undefined) placement = "unknown";
+      else if (mine !== districtId(family[2])) return "out";
+    } else if (!area.localities.includes(`${prefix}/${segment}`)) {
+      placement = "unknown";
+    }
+    prefix = `${prefix}/${segment}`;
+  }
+  return placement;
+}
+
 const STATE_NAMES: Record<string, string> = {
   "us/ca": "California",
 };
@@ -98,6 +156,12 @@ const DISTRICT_FAMILIES: Record<string, string> = {
   ad: "Assembly district",
   coa: "Court of Appeal district",
   bart: "BART district",
+  boe: "Board of Equalization district",
+  unsd: "Unified school district",
+  elsd: "Elementary school district",
+  scsd: "High school district",
+  sup: "Supervisorial district",
+  ta: "Trustee area",
 };
 
 const LOCALITY_NAMES: Record<string, string> = {

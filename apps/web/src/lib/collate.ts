@@ -2,10 +2,10 @@ import { type SlatePayload, type Stance, type Subject, verifySlate } from "@open
 import type { ChoiceCheck } from "./ballotCheck";
 import {
   type Area,
-  inArea,
   jurisdictionLabel,
   jurisdictionRank,
   parseJurisdiction,
+  placeRace,
 } from "./jurisdictions";
 import {
   type Source,
@@ -127,6 +127,13 @@ export interface Race {
   subject: Subject;
   election?: string;
   jurisdiction?: string;
+  /** Who votes on it, when narrower than `jurisdiction` (SPEC §3.3): a ballot source's, else any slate's. */
+  district?: string;
+  /**
+   * The area can't tell whether the race is on the user's ballot (`placeRace`
+   * "unknown"): a district it has no boundaries for. Absent: it is.
+   */
+  maybe?: true;
   /** Ballot order when a ballot source lists the race, else most-backed first. */
   choices: ChoiceGroup[];
   /** A ballot source lists this race, so `choices` is the whole field. */
@@ -179,6 +186,7 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
     /** Choice → position on the ballot, for ballot order. */
     ballotOrder: Map<string, number>;
   }
+  const districts = districtsOf(slates);
   const races = new Map<string, Building>();
   for (const slate of slates) {
     const ballot = isBallotSource(slate.source);
@@ -191,7 +199,9 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
       const election = electionOf(position.subject, slate.payload);
       if (options.election && election !== options.election) continue;
       const jurisdiction = position.subject.jurisdiction ?? slate.payload.context?.jurisdiction;
-      if (options.area && !inArea(jurisdiction, options.area)) continue;
+      const district = districts.get(key);
+      const placement = options.area ? placeRace(jurisdiction, district, options.area) : "in";
+      if (placement === "out") continue;
 
       let race = races.get(key);
       if (!race) {
@@ -200,6 +210,8 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
           subject: position.subject,
           ...(election ? { election } : {}),
           ...(jurisdiction ? { jurisdiction } : {}),
+          ...(district ? { district } : {}),
+          ...(placement === "unknown" ? { maybe: true as const } : {}),
           choices: [],
           onBallot: false,
           unlisted: false,
@@ -286,6 +298,26 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
         ),
     }))
     .sort(compareRaces);
+}
+
+/**
+ * Each race's `district`, by subject key: a ballot source's (it says what's on
+ * whose ballot, SPEC §8.2), else the first slate's that gives one.
+ */
+function districtsOf(slates: DecodedSlate[]): Map<string, string> {
+  const out = new Map<string, string>();
+  const fromBallot = new Set<string>();
+  for (const slate of slates) {
+    const ballot = isBallotSource(slate.source);
+    for (const { subject } of slate.payload.positions) {
+      if (!subject.district) continue;
+      const key = subjectKey(subject);
+      if (fromBallot.has(key) || (!ballot && out.has(key))) continue;
+      out.set(key, subject.district);
+      if (ballot) fromBallot.add(key);
+    }
+  }
+  return out;
 }
 
 /** Ballot order: by jurisdiction (statewide, districts, local), offices before measures, then title. */
