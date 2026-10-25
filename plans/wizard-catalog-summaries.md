@@ -82,9 +82,14 @@ strongly suggesting waiting rather than skipping.
        **Next:** after OpenSlate master (with `7dbaf9c`) is on GitHub, bump
        `.openslate-version` there and push, so CI re-signs with the new CLI.
 8. [x] Checks, browser check in a fresh profile, README, commit.
-9. [ ] Rebase `feat/wizard-catalog-summaries` onto master (disagree-sources
-       landed as `7fad8f5`: `setStanding`, `StandingToggle` in the wizard) and
-       merge. Then ask the user before pushing either repo.
+9. [x] Rebased onto master (disagree-sources `7fad8f5`: the wizard keeps its
+       Follow / Disagree `StandingToggle`; picks import with their standing) and
+       fast-forwarded master to `5bf7594`. Browser-checked after the merge.
+10. [ ] **Current step — waiting on the user:** push OpenSlate master (11
+       commits ahead of origin, several from other threads; it deploys), then
+       in openslate-public-endorsements bump `.openslate-version` to that
+       commit and push with `25955d8` (republishes the catalog with summaries
+       and the bundle field).
 
 ## Findings / gotchas
 
@@ -116,13 +121,16 @@ strongly suggesting waiting rather than skipping.
 - [x] Web wizard, batched import, progress bar, download all (branch
       `feat/wizard-catalog-summaries`).
 - [x] public-endorsements build-site `bundle` field (local commit there).
-- [ ] Rebase onto master, merge, push (ask first), bump `.openslate-version`.
+- [x] Rebased onto master and merged (`5bf7594`).
+- [ ] Push both repos (ask first), bump `.openslate-version`.
 
 ## Open questions for the user
 
-1. Pushing: OpenSlate master deploys the app; the public catalog repo needs the
-   OpenSlate commit on GitHub before bumping `.openslate-version`. Ask before
-   pushing either.
+1. Push? OpenSlate master deploys the app; the public catalog repo needs the
+   OpenSlate commit on GitHub before bumping `.openslate-version`. Order:
+   OpenSlate first, then the catalog. Either order is safe for users: the app
+   falls back when the catalog has no summaries, and old apps ignore the new
+   fields. Recommendation: push both.
 
 ## Things not to do
 
