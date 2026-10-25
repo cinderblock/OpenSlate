@@ -1,6 +1,8 @@
 # Desktop binaries: build and publish, standard and offline
 
-**Branch:** `feat/desktop-binaries` (own worktree). **Started:** 2026-10-24.
+**Branch:** `feat/desktop-binaries` (own worktree,
+`~/.t3/worktrees/OpenSlate/feat-desktop-binaries`), built on `origin/master` with
+only this task's commits. **Started:** 2026-10-24.
 
 ## Goal
 
@@ -68,17 +70,57 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
 
 1. ☑ Electrobun 2.0.4 research (config, artifacts, CI, `views://` storage,
    signing): see Findings.
-2. ☐ **(current)** Move this thread into a worktree on `feat/desktop-binaries`.
-3. ☐ Snapshot script + web changes; test a snapshot build in a browser.
-4. ☐ Electrobun app builds and runs locally on Windows (both flavors);
-   data persists across restarts.
-5. ☐ Icons (png/ico/icns) generated and committed.
-6. ☐ CI workflow; dry run via `workflow_dispatch` on the branch.
-7. ☐ Docs: README (How to Run → Desktop), apps/desktop/README, welcome screen
-   link.
-8. ☐ Publish: merge, tag, release — needs the user's go-ahead (see questions).
+2. ☑ Moved into the worktree on `feat/desktop-binaries`.
+3. ☑ Snapshot script + web changes (`1d656f6`, `40bdbc2`, `118baf6`); an
+   offline web build checked in a browser: catalog, logos, a voter guide all
+   from the copy, no request left localhost.
+4. ☑ Electrobun app (`8259e34`) builds and runs on Windows, both editions;
+   self-test passes; storage survives restarts; installer and uninstaller
+   work.
+5. ☑ Icons generated and committed.
+6. ☐ **(current)** CI workflow (`6579abe`). `workflow_dispatch` only works once
+   the file is on the default branch, so the first run is a draft PR's
+   `pull_request` run. Then fix whatever macOS/Linux show.
+7. ☐ Docs: apps/desktop/README ☑, RELEASE_NOTES ☑; root README (How to Run →
+   Desktop) ☐; check the macOS `.app` name in RELEASE_NOTES' `xattr` line
+   against the real dmg ☐.
+8. ☐ Publish: merge, tag `desktop-v0.1.0`, publish the drafted release —
+   needs the user's go-ahead (see questions).
 
 ## Findings / gotchas
+
+### From building it (2026-10-24, Windows 11)
+
+- **`navigationRules` as a `BrowserWindow` option didn't block anything**
+  (`JSON.stringify([...])`; the native side may want a comma-separated
+  string). `mainWindow.webview.setNavigationRules(["^*", "views://*"])` after
+  creating the window works: the self-test's `location.href = "https://…"`
+  stays on `views://mainview/index.html`.
+- Electrobun's config loader doesn't run in the project folder:
+  `readFileSync("package.json")` → `ENOENT … ConfigLoadFailed`. Resolve with
+  `new URL("./package.json", import.meta.url)`.
+- First `electrobun` run from Git Bash failed: Hutch's `install.ps1` picked up
+  Git's `/usr/bin/tar` (`Cannot connect to C: resolve failed`). From
+  PowerShell it installs (to `~/.hutch`, and adds `~/.hutch/bin` to the user
+  PATH). Later runs from bash are fine.
+- `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port` is ignored
+  (Electrobun sets its own arguments); `win.chromiumFlags` is CEF-only. Hence
+  the in-app self-test (`OPENSLATE_SELFTEST`) to inspect the real window.
+- A missing `views://` file is a network error ("Failed to fetch"), not 404.
+- Service workers: `getRegistrations()` throws "The document is in an invalid
+  state" on `views://`, as expected; the desktop build has none.
+- The updater file is `stable-win-x64-update.json`, without the app name, so
+  the two editions **can't share a release's update files**. Dropped
+  `release.baseUrl` and publish installers only; the updater needs separate
+  locations per edition first.
+- The `build/stable-*/…/launcher.exe` isn't runnable in place ("installer
+  package is incomplete"); test via the zip's `Setup.exe`. Installs to
+  `%LOCALAPPDATA%\us.openslate.desktop\stable\app`, with Start menu and
+  desktop shortcuts; uninstall offers *App* / *App and Data* (data = keys).
+- Window icon in the title bar stays generic (Electrobun issue #565); the
+  taskbar and shortcuts use ours.
+- Sizes: Windows Setup zip 36 MB (standard). Snapshot 31 MB, 1,729 files
+  (376 slates, 291 logos, 7 guides), 17 s to take.
 
 ### Electrobun 2.0.4 (research 2026-10-24, from the v2.0.4 tag on GitHub; not yet run)
 
@@ -137,7 +179,14 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
 ## Progress log
 
 - [x] Explored: desktop stub, catalog/guide URL handling, worker origin rule.
-- [ ] Everything in Plan / steps from 1 on.
+- [x] Snapshot script, built-in catalog support, desktop Vite mode.
+- [x] Electrobun app, icons, self-test; verified on Windows.
+- [x] CI workflow written (actionlint clean); not run yet.
+- [ ] CI green on all six builds.
+- [ ] Root README; macOS app name in RELEASE_NOTES.
+- [ ] Merge, tag, publish (user's go-ahead).
+- [ ] Clean up test data: `%LOCALAPPDATA%\us.openslate.desktop\dev` and
+      `…desktop.offline\dev` (dev builds' self-test data).
 
 ## Open questions for the user
 
@@ -153,6 +202,10 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
    ruleset (a GitHub settings change, so it needs your yes).
 
 ## Things not to do
+
+- Don't push a branch based on local master: other threads' unpushed commits
+  ride along (some wait on the user). The branch was rebuilt on
+  `origin/master`; the old head is `backup/desktop-binaries-on-local-master`.
 
 - Don't write a Windows dark-titlebar workaround; pin an Electrobun with the
   upstream fix (see `plans/electrobun-dark-mode.md`).
