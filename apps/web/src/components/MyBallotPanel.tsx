@@ -657,10 +657,9 @@ export function MyBallotPanel() {
             Might be on your ballot <span className="hint">· {maybeRaces.length}</span>
           </h3>
           <p className="hint">
-            Only part of {maybeSections.length === 1 ? maybeSections[0]?.label : "a county or city"}{" "}
-            votes on each of these, like one trustee area of a school board or one division of a
-            water district, and OpenSlate can't tell from where you vote whether that part includes
-            you. Your sample ballot lists the ones you have.
+            Only some of the voters where each of these is listed vote on it, like one trustee area
+            of a school board or one division of a water district, and OpenSlate can't tell from
+            where you vote whether you're one of them. Your sample ballot lists the ones you have.
             {schoolUnknown && (
               <>
                 {" "}
