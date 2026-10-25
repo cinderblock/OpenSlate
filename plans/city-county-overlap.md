@@ -156,7 +156,11 @@ org bundles that reused the listings' subjects.
   district segment that matched the user's area outranks the filing county,
   so the LA side of Fullerton still gets the race as a maybe); guides
   `e78dc51`. Cross-county entry removed from the catalog's ISSUES.md.
-  Unverified live yet: see the final progress line.
+  Shipped 1:28–1:30 PM PDT (20:28–20:30Z), all three publishes green.
+  Checked live: a La Habra Heights (LA County) lookup lands in Fullerton
+  JUHSD and Lowell Joint, and My ballot's maybes now carry an "Orange
+  County · 6" group: Fullerton TA 1 and 5 with both candidates each, Lowell
+  Joint TA 4 and the North Orange County CCD seats.
 
 ## Open questions for the user
 
