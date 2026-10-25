@@ -59,7 +59,13 @@ export function catalogEntryLogoUrl(entry: CatalogEntry, catalogUrl: string): st
   if (!entry.logo) return undefined;
   try {
     const url = new URL(entry.logo, catalogUrl);
-    return url.protocol === "https:" || url.protocol === "http:" ? url.href : undefined;
+    // http(s), or the catalog's own scheme: a copy built into the desktop app
+    // lives at views://.
+    const ok =
+      url.protocol === "https:" ||
+      url.protocol === "http:" ||
+      url.protocol === new URL(catalogUrl).protocol;
+    return ok ? url.href : undefined;
   } catch {
     return undefined;
   }
@@ -71,10 +77,32 @@ export interface Catalog {
   entries: CatalogEntry[];
 }
 
-/** Default URL for the curated public-endorsements catalog. Override per build via Vite env. */
-export const DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG =
-  (import.meta.env.VITE_PUBLIC_ENDORSEMENTS_CATALOG as string | undefined) ??
+/** The curated public-endorsements catalog, live. */
+export const PUBLIC_ENDORSEMENTS_CATALOG =
   "https://cinderblock.github.io/openslate-public-endorsements/index.json";
+
+const configuredCatalog = import.meta.env.VITE_PUBLIC_ENDORSEMENTS_CATALOG as string | undefined;
+
+/**
+ * Whether a build's catalog is a copy shipped with the app (a URL relative to
+ * the page, from scripts/snapshot-catalog.ts) rather than one on the web: the
+ * desktop app's offline flavor, or a self-hosted copy that works offline.
+ */
+export function isBuiltInCatalog(configured: string | undefined): boolean {
+  return configured !== undefined && !/^[a-z][a-z0-9+.-]*:/i.test(configured);
+}
+
+export const CATALOG_BUILT_IN = isBuiltInCatalog(configuredCatalog);
+
+/**
+ * The catalog this build reads by default: the live one, unless the build
+ * names another (VITE_PUBLIC_ENDORSEMENTS_CATALOG). A relative one resolves
+ * against the page, since everything in a catalog is fetched relative to it.
+ */
+export const DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG =
+  typeof location === "undefined" || !configuredCatalog
+    ? (configuredCatalog ?? PUBLIC_ENDORSEMENTS_CATALOG)
+    : new URL(configuredCatalog, location.href).href;
 
 /** Fetch a catalog (index.json) listing publicly-attributed slates available for import. */
 export function catalogQueryOptions(catalogUrl: string) {

@@ -78,6 +78,21 @@ describe("directoryFromCatalog", () => {
     expect(dark.get("of:no-logo.example")).toEqual({});
     expect(directory.get("of:green-group.example")?.logoBackground).toBeUndefined();
   });
+
+  test("a catalog built into the desktop app serves its logos from its own scheme", () => {
+    const builtIn = directoryFromCatalog(
+      { ...catalog, entries: [entry("Green Group", { logo: "orgs/green-group/logo.png" })] },
+      "views://mainview/catalog/index.json",
+    );
+    expect(builtIn.get("of:green-group.example")?.logo).toBe(
+      "views://mainview/catalog/orgs/green-group/logo.png",
+    );
+    const odd = directoryFromCatalog(
+      { ...catalog, entries: [entry("Odd", { logo: "javascript:alert(1)" })] },
+      "views://mainview/catalog/index.json",
+    );
+    expect(odd.get("of:odd.example")?.logo).toBeUndefined();
+  });
 });
 
 describe("leanScore", () => {

@@ -47,21 +47,38 @@ export function guideListUrl(catalogUrl: string): string {
   return new URL("guides.json", catalogUrl).href;
 }
 
+/**
+ * The usable entries of a guide list, each `url` made absolute. A list may
+ * name its guides relative to itself: a catalog snapshot carries its guides
+ * along (scripts/snapshot-catalog.ts).
+ */
+export function parseGuideList(list: Partial<GuideList>, listUrl: string): GuideEntry[] {
+  return (list.guides ?? [])
+    .filter(
+      (g): g is GuideEntry =>
+        typeof g?.url === "string" && typeof g.key === "string" && typeof g.election === "string",
+    )
+    .flatMap((g) => {
+      try {
+        return [{ ...g, url: new URL(g.url, listUrl).href }];
+      } catch {
+        return [];
+      }
+    });
+}
+
 const HOUR = 1000 * 60 * 60;
 
 export function guideListQueryOptions(catalogUrl: string) {
   return {
     queryKey: ["guide-list", catalogUrl] as const,
     queryFn: async (): Promise<GuideEntry[]> => {
-      const response = await fetch(guideListUrl(catalogUrl));
+      const listUrl = guideListUrl(catalogUrl);
+      const response = await fetch(listUrl);
       // A catalog without guides is fine: nothing to show.
       if (response.status === 404) return [];
       if (!response.ok) throw new Error(`Voter guide list: HTTP ${response.status}`);
-      const list = (await response.json()) as Partial<GuideList>;
-      return (list.guides ?? []).filter(
-        (g): g is GuideEntry =>
-          typeof g?.url === "string" && typeof g.key === "string" && typeof g.election === "string",
-      );
+      return parseGuideList((await response.json()) as Partial<GuideList>, listUrl);
     },
     staleTime: HOUR,
   };
