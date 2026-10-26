@@ -209,6 +209,96 @@ export const POSITIVES: PositiveDef[] = [
     },
   },
   {
+    name: "ballot-listing",
+    description:
+      "A ballot listing (SPEC §8.2) with how the ballot prints each contest and choice (§3.14): heading, number, label, measure type, vote_for, ranks; party, designation, incumbent.",
+    signer: "bob",
+    payload: {
+      v: 1,
+      issuer: { name: "Springfield Ballot Bot", kind: "researcher" },
+      issued_at: "2026-09-01T00:00:00Z",
+      context: { election: "2026-11-03", jurisdiction: "us/ca/springfield" },
+      attribution: {
+        of: { name: "Springfield Elections Office", kind: "election-authority" },
+        mode: "transcribed",
+        retrieved_at: "2026-08-31T12:00:00Z",
+      },
+      positions: [
+        {
+          subject: {
+            title: "City Council",
+            kind: "race",
+            ballot: { heading: "Member, City Council", vote_for: 3 },
+          },
+          stance: "neutral",
+          choice: "A. Candidate",
+          choice_id: "springfield:2026-11-03/council/a-candidate",
+          ballot: { party: "Democratic", designation: "Teacher", incumbent: true },
+        },
+        {
+          subject: {
+            title: "Mayor of Springfield",
+            kind: "race",
+            ballot: { heading: "Mayor", ranks: 10 },
+          },
+          stance: "neutral",
+          choice: "B. Other",
+          ballot: { designation: "Small Business Owner" },
+        },
+        {
+          subject: {
+            title: "Springfield Measure A",
+            kind: "measure",
+            ballot: {
+              heading: "Measure A",
+              number: "A",
+              label: "Shall the city fix the monorail?",
+              measure_type: "Bond Measure",
+            },
+          },
+          stance: "neutral",
+          choice: "Yes",
+        },
+      ],
+    },
+  },
+  {
+    name: "articles",
+    description:
+      "Articles attached to ballot items (SPEC §3.15): to a contest, to one choice, every field populated. A slate may carry only articles.",
+    signer: "alice",
+    payload: {
+      v: 1,
+      issuer: {
+        name: "Springfield Shopper",
+        kind: "organization",
+        uri: "https://shopper.example/",
+      },
+      issued_at: "2026-10-01T00:00:00Z",
+      positions: [],
+      articles: [
+        {
+          subject: { title: "Springfield Measure A", kind: "measure", election: "2026-11-03" },
+          uri: "https://shopper.example/2026/09/measure-a-explained",
+          title: "Measure A, explained",
+          publisher: "Springfield Shopper",
+          published_at: "2026-09-30",
+          kind: "explainer",
+          summary: "What the monorail bond would pay for, and what it costs.",
+        },
+        {
+          subject: { title: "Mayor of Springfield", kind: "race", election: "2026-11-03" },
+          choice: "A. Candidate",
+          choice_id: "springfield:2026-11-03/mayor/a-candidate",
+          uri: "https://shopper.example/2026/10/a-candidate-profile",
+          title: "Who is A. Candidate?",
+          published_at: "2026-10-01T08:30:00-07:00",
+          kind: "news",
+        },
+      ],
+    },
+  },
+  {
     name: "adopts-reference",
     description:
       "Slate adopting two positions of another (secondhand) slate by reference instead of " +
@@ -396,6 +486,77 @@ export const NEGATIVES: NegativeDef[] = [
       );
     },
     expect: { error_contains: ["issuer.uri", "http"] },
+  },
+  {
+    name: "incumbent-false",
+    description:
+      "Validly signed token with `ballot.incumbent: false`. Only `true` is allowed; MUST be rejected (SPEC §3.14).",
+    build: (h) => {
+      const key = h.pubkey("alice");
+      return h.sign(
+        { alg: "EdDSA", typ: "openslate+jws", kid: key },
+        {
+          v: 1,
+          issuer: { key },
+          issued_at: "2026-01-01T00:00:00Z",
+          positions: [
+            {
+              subject: { title: "Mayor" },
+              stance: "neutral",
+              choice: "A",
+              ballot: { incumbent: false },
+            },
+          ],
+        },
+        h.seed("alice"),
+      );
+    },
+    expect: { error_contains: ["incumbent"] },
+  },
+  {
+    name: "vote-for-and-ranks",
+    description:
+      "Validly signed token whose subject's `ballot` has both `vote_for` and `ranks`. MUST be rejected (SPEC §3.14).",
+    build: (h) => {
+      const key = h.pubkey("alice");
+      return h.sign(
+        { alg: "EdDSA", typ: "openslate+jws", kid: key },
+        {
+          v: 1,
+          issuer: { key },
+          issued_at: "2026-01-01T00:00:00Z",
+          positions: [
+            {
+              subject: { title: "Mayor", ballot: { vote_for: 1, ranks: 10 } },
+              stance: "endorse",
+              choice: "A",
+            },
+          ],
+        },
+        h.seed("alice"),
+      );
+    },
+    expect: { error_contains: ["vote_for", "ranks"] },
+  },
+  {
+    name: "article-without-title",
+    description:
+      "Validly signed token with an article that has no `title`. MUST be rejected (SPEC §3.15).",
+    build: (h) => {
+      const key = h.pubkey("alice");
+      return h.sign(
+        { alg: "EdDSA", typ: "openslate+jws", kid: key },
+        {
+          v: 1,
+          issuer: { key },
+          issued_at: "2026-01-01T00:00:00Z",
+          positions: [],
+          articles: [{ subject: { title: "Prop 12" }, uri: "https://news.example/prop-12" }],
+        },
+        h.seed("alice"),
+      );
+    },
+    expect: { error_contains: ["articles.0.title"] },
   },
   {
     name: "write-in-false",

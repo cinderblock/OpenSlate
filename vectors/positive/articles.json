@@ -1,0 +1,54 @@
+{
+  "name": "articles",
+  "description": "Articles attached to ballot items (SPEC §3.15): to a contest, to one choice, every field populated. A slate may carry only articles.",
+  "signer": "alice",
+  "payload": {
+    "v": 1,
+    "issuer": {
+      "key": "ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+      "name": "Springfield Shopper",
+      "kind": "organization",
+      "uri": "https://shopper.example/"
+    },
+    "issued_at": "2026-10-01T00:00:00Z",
+    "positions": [],
+    "articles": [
+      {
+        "subject": {
+          "title": "Springfield Measure A",
+          "kind": "measure",
+          "election": "2026-11-03"
+        },
+        "uri": "https://shopper.example/2026/09/measure-a-explained",
+        "title": "Measure A, explained",
+        "publisher": "Springfield Shopper",
+        "published_at": "2026-09-30",
+        "kind": "explainer",
+        "summary": "What the monorail bond would pay for, and what it costs."
+      },
+      {
+        "subject": {
+          "title": "Mayor of Springfield",
+          "kind": "race",
+          "election": "2026-11-03"
+        },
+        "choice": "A. Candidate",
+        "choice_id": "springfield:2026-11-03/mayor/a-candidate",
+        "uri": "https://shopper.example/2026/10/a-candidate-profile",
+        "title": "Who is A. Candidate?",
+        "published_at": "2026-10-01T08:30:00-07:00",
+        "kind": "news"
+      }
+    ]
+  },
+  "header": {
+    "alg": "EdDSA",
+    "typ": "openslate+jws",
+    "kid": "ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9"
+  },
+  "canonical_header": "{\"alg\":\"EdDSA\",\"kid\":\"ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9\",\"typ\":\"openslate+jws\"}",
+  "canonical_payload": "{\"articles\":[{\"kind\":\"explainer\",\"published_at\":\"2026-09-30\",\"publisher\":\"Springfield Shopper\",\"subject\":{\"election\":\"2026-11-03\",\"kind\":\"measure\",\"title\":\"Springfield Measure A\"},\"summary\":\"What the monorail bond would pay for, and what it costs.\",\"title\":\"Measure A, explained\",\"uri\":\"https://shopper.example/2026/09/measure-a-explained\"},{\"choice\":\"A. Candidate\",\"choice_id\":\"springfield:2026-11-03/mayor/a-candidate\",\"kind\":\"news\",\"published_at\":\"2026-10-01T08:30:00-07:00\",\"subject\":{\"election\":\"2026-11-03\",\"kind\":\"race\",\"title\":\"Mayor of Springfield\"},\"title\":\"Who is A. Candidate?\",\"uri\":\"https://shopper.example/2026/10/a-candidate-profile\"}],\"issued_at\":\"2026-10-01T00:00:00Z\",\"issuer\":{\"key\":\"ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9\",\"kind\":\"organization\",\"name\":\"Springfield Shopper\",\"uri\":\"https://shopper.example/\"},\"positions\":[],\"v\":1}",
+  "signing_input": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJhcnRpY2xlcyI6W3sia2luZCI6ImV4cGxhaW5lciIsInB1Ymxpc2hlZF9hdCI6IjIwMjYtMDktMzAiLCJwdWJsaXNoZXIiOiJTcHJpbmdmaWVsZCBTaG9wcGVyIiwic3ViamVjdCI6eyJlbGVjdGlvbiI6IjIwMjYtMTEtMDMiLCJraW5kIjoibWVhc3VyZSIsInRpdGxlIjoiU3ByaW5nZmllbGQgTWVhc3VyZSBBIn0sInN1bW1hcnkiOiJXaGF0IHRoZSBtb25vcmFpbCBib25kIHdvdWxkIHBheSBmb3IsIGFuZCB3aGF0IGl0IGNvc3RzLiIsInRpdGxlIjoiTWVhc3VyZSBBLCBleHBsYWluZWQiLCJ1cmkiOiJodHRwczovL3Nob3BwZXIuZXhhbXBsZS8yMDI2LzA5L21lYXN1cmUtYS1leHBsYWluZWQifSx7ImNob2ljZSI6IkEuIENhbmRpZGF0ZSIsImNob2ljZV9pZCI6InNwcmluZ2ZpZWxkOjIwMjYtMTEtMDMvbWF5b3IvYS1jYW5kaWRhdGUiLCJraW5kIjoibmV3cyIsInB1Ymxpc2hlZF9hdCI6IjIwMjYtMTAtMDFUMDg6MzA6MDAtMDc6MDAiLCJzdWJqZWN0Ijp7ImVsZWN0aW9uIjoiMjAyNi0xMS0wMyIsImtpbmQiOiJyYWNlIiwidGl0bGUiOiJNYXlvciBvZiBTcHJpbmdmaWVsZCJ9LCJ0aXRsZSI6IldobyBpcyBBLiBDYW5kaWRhdGU_IiwidXJpIjoiaHR0cHM6Ly9zaG9wcGVyLmV4YW1wbGUvMjAyNi8xMC9hLWNhbmRpZGF0ZS1wcm9maWxlIn1dLCJpc3N1ZWRfYXQiOiIyMDI2LTEwLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5Iiwia2luZCI6Im9yZ2FuaXphdGlvbiIsIm5hbWUiOiJTcHJpbmdmaWVsZCBTaG9wcGVyIiwidXJpIjoiaHR0cHM6Ly9zaG9wcGVyLmV4YW1wbGUvIn0sInBvc2l0aW9ucyI6W10sInYiOjF9",
+  "signature": "8VROfpHeZkQltED5gnCrrBID2y3OYqG-DrGBCnjQsIv8mUP908aChBbdYE9AtS_uARkzzO7HiT7MzhJ0H-KKBw",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJhcnRpY2xlcyI6W3sia2luZCI6ImV4cGxhaW5lciIsInB1Ymxpc2hlZF9hdCI6IjIwMjYtMDktMzAiLCJwdWJsaXNoZXIiOiJTcHJpbmdmaWVsZCBTaG9wcGVyIiwic3ViamVjdCI6eyJlbGVjdGlvbiI6IjIwMjYtMTEtMDMiLCJraW5kIjoibWVhc3VyZSIsInRpdGxlIjoiU3ByaW5nZmllbGQgTWVhc3VyZSBBIn0sInN1bW1hcnkiOiJXaGF0IHRoZSBtb25vcmFpbCBib25kIHdvdWxkIHBheSBmb3IsIGFuZCB3aGF0IGl0IGNvc3RzLiIsInRpdGxlIjoiTWVhc3VyZSBBLCBleHBsYWluZWQiLCJ1cmkiOiJodHRwczovL3Nob3BwZXIuZXhhbXBsZS8yMDI2LzA5L21lYXN1cmUtYS1leHBsYWluZWQifSx7ImNob2ljZSI6IkEuIENhbmRpZGF0ZSIsImNob2ljZV9pZCI6InNwcmluZ2ZpZWxkOjIwMjYtMTEtMDMvbWF5b3IvYS1jYW5kaWRhdGUiLCJraW5kIjoibmV3cyIsInB1Ymxpc2hlZF9hdCI6IjIwMjYtMTAtMDFUMDg6MzA6MDAtMDc6MDAiLCJzdWJqZWN0Ijp7ImVsZWN0aW9uIjoiMjAyNi0xMS0wMyIsImtpbmQiOiJyYWNlIiwidGl0bGUiOiJNYXlvciBvZiBTcHJpbmdmaWVsZCJ9LCJ0aXRsZSI6IldobyBpcyBBLiBDYW5kaWRhdGU_IiwidXJpIjoiaHR0cHM6Ly9zaG9wcGVyLmV4YW1wbGUvMjAyNi8xMC9hLWNhbmRpZGF0ZS1wcm9maWxlIn1dLCJpc3N1ZWRfYXQiOiIyMDI2LTEwLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5Iiwia2luZCI6Im9yZ2FuaXphdGlvbiIsIm5hbWUiOiJTcHJpbmdmaWVsZCBTaG9wcGVyIiwidXJpIjoiaHR0cHM6Ly9zaG9wcGVyLmV4YW1wbGUvIn0sInBvc2l0aW9ucyI6W10sInYiOjF9.8VROfpHeZkQltED5gnCrrBID2y3OYqG-DrGBCnjQsIv8mUP908aChBbdYE9AtS_uARkzzO7HiT7MzhJ0H-KKBw"
+}

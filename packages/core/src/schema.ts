@@ -28,6 +28,49 @@ export const httpUrl = z
     message: "must be an http: or https: URL",
   });
 
+/** At least one field: an empty object says nothing. */
+const notEmpty = (value: object) => Object.keys(value).length > 0;
+
+/**
+ * How the ballot prints a contest (SPEC §3.14), as data: nothing has to be
+ * read out of `title`. Not part of identity; a ballot listing's wins.
+ */
+export const ballotContestSchema = z
+  .object({
+    /** The heading as printed: "Proposition 43", "Measure A", "Attorney General". */
+    heading: z.string().min(1).optional(),
+    /** A measure's number or letter as printed: "43", "A". */
+    number: z.string().min(1).optional(),
+    /** Printed under the heading: a measure's ballot label, a retention question. */
+    label: z.string().min(1).optional(),
+    /** A measure's type as printed: "Initiative Statute", "Bond Measure". */
+    measure_type: z.string().min(1).optional(),
+    /** The most choices a voter may mark: "Vote for no more than N". */
+    vote_for: z.number().int().min(1).optional(),
+    /** Ranked choice: a voter ranks up to this many choices. */
+    ranks: z.number().int().min(2).optional(),
+  })
+  .strict()
+  .refine(notEmpty, { message: "ballot needs at least one field" })
+  .refine((b) => b.vote_for === undefined || b.ranks === undefined, {
+    message: "ballot: vote_for and ranks can't both be given",
+  });
+export type BallotContest = z.infer<typeof ballotContestSchema>;
+
+/** How the ballot prints a choice (SPEC §3.14): party, designation, incumbency. */
+export const ballotChoiceSchema = z
+  .object({
+    /** Party or party preference as printed: "Democratic", "No Party Preference". */
+    party: z.string().min(1).optional(),
+    /** The ballot designation as printed: the candidate's occupation or title. */
+    designation: z.string().min(1).optional(),
+    /** The listing marks the candidate as the incumbent. Never `false`: omit it. */
+    incumbent: z.literal(true).optional(),
+  })
+  .strict()
+  .refine(notEmpty, { message: "ballot needs at least one field" });
+export type BallotChoice = z.infer<typeof ballotChoiceSchema>;
+
 export const subjectSchema = z
   .object({
     title: z.string().min(1),
@@ -38,6 +81,8 @@ export const subjectSchema = z
     district: z.string().min(1).optional(),
     election: z.string().min(1).optional(),
     uri: httpUrl.optional(),
+    /** How the ballot prints the contest (SPEC §3.14). Not identity. */
+    ballot: ballotContestSchema.optional(),
   })
   .strict();
 export type Subject = z.infer<typeof subjectSchema>;
@@ -51,14 +96,19 @@ export const positionSchema = z
     choice_id: z.string().min(1).optional(),
     /** The choice isn't printed on the ballot (SPEC §3.12). Never `false`: omit it. */
     write_in: z.literal(true).optional(),
+    /** How the ballot prints the choice (SPEC §3.14). */
+    ballot: ballotChoiceSchema.optional(),
     weight: z.number().min(0).max(1).optional(),
     statement: z.string().optional(),
     source: httpUrl.optional(),
   })
   .strict()
-  .refine((p) => p.choice !== undefined || (p.choice_id === undefined && !p.write_in), {
-    message: "choice_id and write_in need a choice",
-  });
+  .refine(
+    (p) =>
+      p.choice !== undefined ||
+      (p.choice_id === undefined && !p.write_in && p.ballot === undefined),
+    { message: "choice_id, write_in and ballot need a choice" },
+  );
 export type Position = z.infer<typeof positionSchema>;
 
 export const issuerSchema = z
@@ -142,6 +192,32 @@ export const adoptionSchema = z
   });
 export type Adoption = z.infer<typeof adoptionSchema>;
 
+/**
+ * A link (news, analysis, an explainer) attached to a ballot item (SPEC
+ * §3.15). Not a position: it never counts for or against anything.
+ */
+export const articleSchema = z
+  .object({
+    subject: subjectSchema,
+    /** The choice within the subject it's about (a candidate profile). */
+    choice: z.string().min(1).optional(),
+    choice_id: z.string().min(1).optional(),
+    uri: httpUrl,
+    /** The headline. */
+    title: z.string().min(1),
+    publisher: z.string().min(1).optional(),
+    /** RFC 3339 full-date (`2026-10-01`) or date-time. */
+    published_at: z.union([z.string().date(), rfc3339]).optional(),
+    /** `news` | `analysis` | `opinion` | `explainer` | `guide` | other. */
+    kind: z.string().min(1).optional(),
+    summary: z.string().min(1).optional(),
+  })
+  .strict()
+  .refine((a) => a.choice !== undefined || a.choice_id === undefined, {
+    message: "choice_id needs a choice",
+  });
+export type Article = z.infer<typeof articleSchema>;
+
 export const slatePayloadSchema = z
   .object({
     v: z.literal(1),
@@ -153,6 +229,7 @@ export const slatePayloadSchema = z
     endorsed_by: z.array(referenceSchema).optional(),
     attribution: attributionSchema.optional(),
     adopts: z.array(adoptionSchema).optional(),
+    articles: z.array(articleSchema).optional(),
     nonce: z.string().optional(),
   })
   .strict();

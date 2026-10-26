@@ -1,0 +1,10 @@
+{
+  "name": "incumbent-false",
+  "description": "Validly signed token with `ballot.incumbent: false`. Only `true` is allowed; MUST be rejected (SPEC §3.14).",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5In0sInBvc2l0aW9ucyI6W3siYmFsbG90Ijp7ImluY3VtYmVudCI6ZmFsc2V9LCJjaG9pY2UiOiJBIiwic3RhbmNlIjoibmV1dHJhbCIsInN1YmplY3QiOnsidGl0bGUiOiJNYXlvciJ9fV0sInYiOjF9.qEK3nZyXYjl0dIsevF7Vw9qqkb2UiTOoySCyd9SfHzgpCGyoVarSaBGUAt5Da5OE_tRS1YWWnlwBSzR1PR_9Dg",
+  "expect": {
+    "error_contains": [
+      "incumbent"
+    ]
+  }
+}

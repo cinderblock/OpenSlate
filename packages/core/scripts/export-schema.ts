@@ -34,12 +34,36 @@ const headerGen = zodToJsonSchema(jwsHeaderSchema, {
 
 // zod refinements don't reach JSON Schema; restate the Position one (SPEC §3.4).
 const slateDef = extractDefinition(slateGen, "SlatePayload") as {
-  properties: { positions: { items: Record<string, unknown> } };
+  properties: {
+    positions: { items: Record<string, unknown> };
+    articles: { items: Record<string, unknown> };
+  };
 };
 slateDef.properties.positions.items.dependencies = {
   choice_id: ["choice"],
   write_in: ["choice"],
+  ballot: ["choice"],
 };
+slateDef.properties.articles.items.dependencies = { choice_id: ["choice"] };
+
+// The `ballot` objects (SPEC §3.14): never empty, and not both `vote_for` and `ranks`.
+function ballotRules(node: unknown): void {
+  if (Array.isArray(node)) {
+    for (const item of node) ballotRules(item);
+    return;
+  }
+  if (!node || typeof node !== "object") return;
+  const object = node as Record<string, unknown>;
+  const properties = object.properties as Record<string, unknown> | undefined;
+  if (properties && "vote_for" in properties && "ranks" in properties) {
+    object.minProperties = 1;
+    object.not = { required: ["vote_for", "ranks"] };
+  } else if (properties && "incumbent" in properties && "designation" in properties) {
+    object.minProperties = 1;
+  }
+  for (const value of Object.values(object)) ballotRules(value);
+}
+ballotRules(slateDef);
 
 // `httpUrl` (SPEC §3.13) is a refinement too: every URL is http: or https:.
 function httpOnly(node: unknown): void {

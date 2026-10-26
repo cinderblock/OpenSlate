@@ -99,6 +99,43 @@
                     "type": "string",
                     "format": "uri",
                     "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"
+                  },
+                  "ballot": {
+                    "type": "object",
+                    "properties": {
+                      "heading": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "number": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "measure_type": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "vote_for": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "ranks": {
+                        "type": "integer",
+                        "minimum": 2
+                      }
+                    },
+                    "additionalProperties": false,
+                    "minProperties": 1,
+                    "not": {
+                      "required": [
+                        "vote_for",
+                        "ranks"
+                      ]
+                    }
                   }
                 },
                 "required": [
@@ -129,6 +166,25 @@
                 "type": "boolean",
                 "const": true
               },
+              "ballot": {
+                "type": "object",
+                "properties": {
+                  "party": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "designation": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "incumbent": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "additionalProperties": false,
+                "minProperties": 1
+              },
               "weight": {
                 "type": "number",
                 "minimum": 0,
@@ -153,6 +209,9 @@
                 "choice"
               ],
               "write_in": [
+                "choice"
+              ],
+              "ballot": [
                 "choice"
               ]
             }
@@ -300,6 +359,43 @@
                       "type": "string",
                       "format": "uri",
                       "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"
+                    },
+                    "ballot": {
+                      "type": "object",
+                      "properties": {
+                        "heading": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "number": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "measure_type": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "vote_for": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "ranks": {
+                          "type": "integer",
+                          "minimum": 2
+                        }
+                      },
+                      "additionalProperties": false,
+                      "minProperties": 1,
+                      "not": {
+                        "required": [
+                          "vote_for",
+                          "ranks"
+                        ]
+                      }
                     }
                   },
                   "required": [
@@ -321,6 +417,141 @@
               "issuer"
             ],
             "additionalProperties": false
+          }
+        },
+        "articles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "subject": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "kind": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "jurisdiction": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "district": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "election": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "uri": {
+                    "type": "string",
+                    "format": "uri",
+                    "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"
+                  },
+                  "ballot": {
+                    "type": "object",
+                    "properties": {
+                      "heading": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "number": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "measure_type": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "vote_for": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "ranks": {
+                        "type": "integer",
+                        "minimum": 2
+                      }
+                    },
+                    "additionalProperties": false,
+                    "minProperties": 1,
+                    "not": {
+                      "required": [
+                        "vote_for",
+                        "ranks"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "title"
+                ],
+                "additionalProperties": false
+              },
+              "choice": {
+                "type": "string",
+                "minLength": 1
+              },
+              "choice_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uri": {
+                "type": "string",
+                "format": "uri",
+                "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "publisher": {
+                "type": "string",
+                "minLength": 1
+              },
+              "published_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "minLength": 1
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "subject",
+              "uri",
+              "title"
+            ],
+            "additionalProperties": false,
+            "dependencies": {
+              "choice_id": [
+                "choice"
+              ]
+            }
           }
         },
         "nonce": {

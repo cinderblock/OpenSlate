@@ -1,0 +1,10 @@
+{
+  "name": "article-without-title",
+  "description": "Validly signed token with an article that has no `title`. MUST be rejected (SPEC §3.15).",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJhcnRpY2xlcyI6W3sic3ViamVjdCI6eyJ0aXRsZSI6IlByb3AgMTIifSwidXJpIjoiaHR0cHM6Ly9uZXdzLmV4YW1wbGUvcHJvcC0xMiJ9XSwiaXNzdWVkX2F0IjoiMjAyNi0wMS0wMVQwMDowMDowMFoiLCJpc3N1ZXIiOnsia2V5IjoiZWQyNTUxOTpBS25MNE5OZjNER1daSlM2Y1BrbkJ1RUduVnNWNEE0bTV0Z2ViTEhhUlNaOSJ9LCJwb3NpdGlvbnMiOltdLCJ2IjoxfQ.jBCIiYxdN_puZn6qoUMExWntYD5dFTy9dadpL5-eHkBKFd1xL_iCVid45FHoeji2_LW4rmHkUSpg37AQIdquAg",
+  "expect": {
+    "error_contains": [
+      "articles.0.title"
+    ]
+  }
+}

@@ -70,10 +70,11 @@ Secret keys, when serialized (e.g. for backup), use the same scheme over the
 | `issued_at` | string | yes | [RFC 3339](https://www.rfc-editor.org/rfc/rfc3339) date-time, with offset (UTC `Z` recommended). |
 | `expires_at` | string | no | RFC 3339. After this, verifiers SHOULD warn. |
 | `context` | `Context` | no | Scopes the whole slate (one election/jurisdiction). |
-| `positions` | `Position[]` | yes | MAY be empty (e.g. an issuer publishing only `endorsed_by`). |
+| `positions` | `Position[]` | yes | MAY be empty (e.g. an issuer publishing only `endorsed_by` or `articles`). |
 | `endorsed_by` | `Reference[]` | no | Who endorsed *this* issuer (for candidates/orgs). |
 | `attribution` | `Attribution` | no | Marks this slate as a **secondhand report** by `issuer` about another entity. See §3.9. |
 | `adopts` | `Adoption[]` | no | Positions this slate takes on from other slates by reference, instead of copying them. See §3.10. |
+| `articles` | `Article[]` | no | Links attached to ballot items: news, analysis, explainers. Never positions. See §3.15. |
 | `nonce` | string | no | Disambiguates otherwise-identical slates. |
 
 ### 3.2 `Issuer`
@@ -96,6 +97,7 @@ Secret keys, when serialized (e.g. for backup), use the same scheme over the
 | `district` | string | no | Whose voters decide it, when narrower than `jurisdiction`: a path like `jurisdiction`'s (below). Not part of identity. |
 | `election` | string | no | Election identifier or date. |
 | `uri` | string | no | Link for more info. |
+| `ballot` | `BallotContest` | no | How the ballot prints the contest: heading, measure number and label, how many to vote for (§3.14). Not part of identity. |
 
 Two positions refer to the same real-world item when their `id` matches. Absent an
 `id`, consumers fall back to `(title, jurisdiction, election)` matching.
@@ -132,6 +134,7 @@ one to prefer.
 | `choice` | string | no | The specific option/candidate chosen within a race, spelled as the ballot prints it. |
 | `choice_id` | string | no | Catalog id of the choice (§3.11). Requires `choice`. |
 | `write_in` | boolean | no | `true`: the choice is a write-in, not printed on the ballot (§3.12). Requires `choice`. MUST NOT be `false`; omit it instead. |
+| `ballot` | `BallotChoice` | no | How the ballot prints the choice: party, ballot designation, incumbency (§3.14). Requires `choice`. |
 | `weight` | number | no | Strength/confidence in `[0, 1]`. |
 | `statement` | string | no | Free-text endorsement / rationale. |
 | `source` | string | no | URL backing the position. |
@@ -335,6 +338,77 @@ payload with any other scheme. Consumers show these as links, and a
 `javascript:` or `data:` URL in a link runs whatever its author wrote as soon
 as someone follows it.
 
+### 3.14 How the ballot prints it — `BallotContest`, `BallotChoice`
+
+What a ballot prints about a contest and its choices, as data, so that a
+consumer can lay out (or print) a faithful copy of the ballot without reading
+anything out of free text. A ballot listing (§8.2) supplies these; any other
+slate MAY copy them from one. None of it is part of identity: slates that
+leave it out, or disagree, still name the same subject and choice, and
+consumers SHOULD prefer a listing's values.
+
+`Subject.ballot` is a `BallotContest`:
+
+| Field | Type | Req | Notes |
+| --- | --- | --- | --- |
+| `heading` | string | no | The contest's heading as printed: `"Proposition 43"`, `"Measure A"`, `"Attorney General"`. |
+| `number` | string | no | A measure's number or letter as printed: `"43"`, `"A"`. |
+| `label` | string | no | What's printed under the heading: a measure's ballot label or question, a retention question. |
+| `measure_type` | string | no | A measure's type as printed: `"Initiative Statute"`, `"Legislative Constitutional Amendment"`, `"Bond Measure"`. |
+| `vote_for` | integer | no | The most choices a voter may mark (≥ 1): the ballot's "Vote for no more than N". |
+| `ranks` | integer | no | A ranked-choice contest: a voter ranks up to this many choices (≥ 2). |
+
+`Position.ballot` is a `BallotChoice`:
+
+| Field | Type | Req | Notes |
+| --- | --- | --- | --- |
+| `party` | string | no | The party, or party preference, as printed: `"Democratic"`, `"No Party Preference"`. |
+| `designation` | string | no | The ballot designation as printed: the candidate's occupation or title. |
+| `incumbent` | boolean | no | `true`: the listing marks the candidate as the incumbent. MUST NOT be `false`; omit it instead. |
+
+Either object MUST have at least one field. `vote_for` and `ranks` MUST NOT
+both be present. A measure is a single Yes or No, so neither applies to one.
+
+These fields are the only structured source of what they carry. `statement`
+and `title` are free text: consumers MUST NOT parse a party, a designation, a
+seat count or a measure number out of them. A publisher that wants one read
+puts it here.
+
+### 3.15 `Article` — links attached to a ballot item
+
+An `Article` attaches a link (news coverage, analysis, an explainer) to the
+thing being voted on. It is not a position: it says nothing about how to
+vote. Anyone may sign articles: a newsroom about its own coverage, a
+researcher reporting a publisher's (§3.9), a voter. A slate MAY carry
+articles and no positions.
+
+| Field | Type | Req | Notes |
+| --- | --- | --- | --- |
+| `subject` | `Subject` | yes | What the article is about. |
+| `choice` | string | no | The choice within the subject it's about, e.g. a candidate profile. |
+| `choice_id` | string | no | §3.11. Requires `choice`. |
+| `uri` | string | yes | The article (§3.13). |
+| `title` | string | yes | Its headline. |
+| `publisher` | string | no | Who published it: `"CalMatters"`. |
+| `published_at` | string | no | RFC 3339 full-date (`2026-10-01`) or date-time. |
+| `kind` | string | no | `news` \| `analysis` \| `opinion` \| `explainer` \| `guide` \| other. |
+| `summary` | string | no | A sentence or two on what it covers. |
+
+Consumers:
+
+- MUST NOT count an article as support for, or opposition to, anything.
+- SHOULD show each article with the subject (and choice) it names, matched
+  as positions are (subject identity, §3.10; choice identity, §3.11). No
+  other step is needed to collate them.
+- SHOULD show who attached it (the slate's entity, §3.9) as well as the
+  publisher: the attachment is the signer's claim.
+- SHOULD show one link per `uri` when several slates attach the same
+  article, with everyone who attached it.
+- MAY show articles from any imported slate, followed or not: they carry no
+  recommendation.
+
+Adoptions (§3.10) take on positions only, not articles.
+
 ---
 
 ## 4. Canonical JSON
@@ -514,7 +588,10 @@ firsthand slate whose `issuer.kind` is `election-authority`. It lists:
 
 - one `neutral` position per choice in each contest it covers, in ballot
   order, with the ballot's spelling in `choice` and an id in `choice_id`;
-- the ballot designation (party, occupation, measure type) in `statement`;
+- how the ballot prints each contest and choice (§3.14): the heading,
+  measure number, label and type and how many to vote for in the subject's
+  `ballot`; party, ballot designation and incumbency in the position's
+  `ballot`, not in `statement`;
 - certified write-in candidates, when known, the same way with
   `write_in: true`;
 - for a contest only part of its jurisdiction votes on, that part in the
@@ -550,6 +627,13 @@ version by adding OPTIONAL fields (verifiers must already reject unknown fields,
 such additions ship with a coordinated spec revision). Incompatible changes bump `v`.
 
 ### 10.1 Changelog (within v1)
+
+- **2026-10-25** — Added optional `ballot` to `Subject` and `Position`
+  (§3.14): how the ballot prints a contest and a choice, as fields, where
+  listings had put them in `statement`. Added optional `articles` to
+  `SlatePayload` (§3.15): links attached to ballot items. Amended in place;
+  verifiers built before this revision reject slates that use them (closed
+  schema, §3.8), so consumers should upgrade before publishers use them.
 
 - **2026-10-25** — Links (§3.13) MUST be `http:` or `https:` URLs; a
   `javascript:` or `data:` URL in a link is an attack on whoever follows it.
@@ -617,10 +701,16 @@ newline-delimited list of tokens; implementations SHOULD NOT preempt that.
   "context": { "election": "2026-11-03", "jurisdiction": "us/ca/sf" },
   "positions": [
     {
-      "subject": { "title": "Mayor of Springfield", "id": "vip:contest-123", "kind": "race" },
+      "subject": {
+        "title": "Mayor of Springfield",
+        "id": "vip:contest-123",
+        "kind": "race",
+        "ballot": { "heading": "Mayor", "vote_for": 1 }
+      },
       "stance": "endorse",
       "choice": "A. Candidate",
       "choice_id": "vip:candidate-456",
+      "ballot": { "party": "Independent", "designation": "City Councilmember" },
       "weight": 1,
       "statement": "Strong record on transit."
     },
@@ -638,6 +728,16 @@ newline-delimited list of tokens; implementations SHOULD NOT preempt that.
       "stance": "endorse",
       "choice": "C. Writein",
       "write_in": true
+    }
+  ],
+  "articles": [
+    {
+      "subject": { "title": "Prop 12", "id": "vip:measure-77", "kind": "measure" },
+      "uri": "https://news.example/2026/10/prop-12-explained",
+      "title": "Prop 12, explained",
+      "publisher": "Example News",
+      "published_at": "2026-10-01",
+      "kind": "explainer"
     }
   ]
 }
