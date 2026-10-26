@@ -3328,6 +3328,11 @@ button.tag.active {
 .ui-searchfield[data-empty] .ui-search-clear {
   visibility: hidden;
 }
+/* The browser's own clear button for type="search": ours replaces it. */
+.ui-searchfield .ui-input::-webkit-search-cancel-button,
+.ui-searchfield .ui-input::-webkit-search-decoration {
+  appearance: none;
+}
 .ui-field[data-invalid] .ui-input-group,
 .ui-field[data-invalid] .ui-textarea {
   border-color: var(--bad);
