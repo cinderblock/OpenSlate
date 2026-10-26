@@ -1,5 +1,6 @@
 import { FlaskConical } from "lucide-react";
-import { forwardRef } from "react";
+import { forwardRef, useEffect } from "react";
+import { setAlphaBannerOpen } from "../lib/alpha";
 import { REPO_URL, openFeedback } from "../lib/feedback";
 
 const BANNER_ID = "alpha-banner";
@@ -53,8 +54,13 @@ export const AlphaBadge = forwardRef<HTMLButtonElement, { open: boolean; onToggl
   },
 );
 
-/** The welcome step's version, for the public site: the first thing a new visitor reads. */
+/**
+ * The welcome step's version, for the public site: the first thing a new
+ * visitor reads. Having read it counts as "Got it" for the page banner, so
+ * closing the wizard doesn't show the same warning again.
+ */
 export function AlphaWizardNote() {
+  useEffect(() => setAlphaBannerOpen(false), []);
   return (
     <p className="alpha-wizard-note">
       <FlaskConical className="icon" />

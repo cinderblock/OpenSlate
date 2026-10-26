@@ -15,6 +15,11 @@ privacy (the server can't tell whose recommendations you use). Where there is
 still a wait, show a loading bar instead of "x of y", with a clear message
 strongly suggesting waiting rather than skipping.
 
+Follow-up (2026-10-25): "why can't we continue in the background? just leave a
+message/banner that says 'still loading' so that people know it's not
+complete? ideally with a progress bar." So the import no longer holds the
+wizard open: it closes at once and a banner over every page shows the bar.
+
 ## Environment / context
 
 - Repo `C:\Users\camer\git\Personal Projects\OpenSlate`. Core + CLI landed on
@@ -63,6 +68,13 @@ strongly suggesting waiting rather than skipping.
   advertised, else per-entry fetches.
 - The catalog advertises its bundle with `bundle: { path, bytes }`; `bytes` is
   the uncompressed size, so progress works even when the transfer is gzipped.
+- The import runs in the background (`lib/importQueue.ts`, wired up as
+  `backgroundImports` in `catalogImport.ts`); `ImportBanner` (mounted in the
+  layout, sticky) shows the bar, then "Your sources are in" (gone after 6 s) or
+  the list of what didn't import. No Stop: leaving costs nothing now. Closing
+  the tab mid-import asks first (`beforeunload`). A second import waits its
+  turn. Replaces the wizard's import step, its "keep this open" message and its
+  Stop link.
 
 ## Plan / steps
 
@@ -72,13 +84,30 @@ strongly suggesting waiting rather than skipping.
    (`7dbaf9c`). Measured on the live bundle: +154 KB pretty-printed over 376
    entries (index is 358 KB; gzip shrinks both); ballot slates have up to 212
    jurisdictions.
-4. [ ] web: catalog types; prefetch the catalog when the wizard opens.
-5. [ ] web: wizard reads summaries; fallback fetch starts early with a bar.
-6. [ ] web: import step with a progress bar, concurrency, strong "wait"
-       message, guarded stop; "download all" via bundle.
-7. [ ] public-endorsements: `bundle` field in `index.json`; types for the new
-       entry fields; bump `.openslate-version` once OpenSlate is pushed.
-8. [ ] Checks, browser check in a fresh profile, README, commit.
+4. [x] web: catalog types; prefetch the catalog when the wizard opens.
+5. [x] web: wizard reads summaries; fallback fetch starts early with a bar.
+6. [x] web: import step with a progress bar, concurrency 6, strong "wait"
+       message, guarded Stop (ConfirmLink, which SkipSetup now uses), Escape
+       ignored while running; "download all" via the bundle.
+7. [~] public-endorsements: `bundle: {path, bytes}` in `index.json`, types and
+       README for the new fields — committed locally there, not pushed.
+       **Next:** after OpenSlate master (with `7dbaf9c`) is on GitHub, bump
+       `.openslate-version` there and push, so CI re-signs with the new CLI.
+8. [x] Checks, browser check in a fresh profile, README, commit.
+9. [x] Rebased onto master (disagree-sources `7fad8f5`: the wizard keeps its
+       Follow / Disagree `StandingToggle`; picks import with their standing) and
+       fast-forwarded master to `5bf7594`. Browser-checked after the merge.
+10. [x] OpenSlate master was pushed (by 2026-10-25, `5bf7594` is on
+       `origin/master`).
+11. [x] Background import with a banner (the follow-up above); browser-checked.
+12. [x] The catalog's `bundle` field is on origin: `25955d8`, cherry-picked
+       onto `origin/master` in a temporary worktree as `92d41a1` (pushed
+       2026-10-25 12:35 PM PDT (19:35Z), after its tests passed and a build
+       wrote `bundle` into `index.json`). That repo's local `master` still
+       has the old `25955d8` and has diverged from origin; left alone (it's a
+       shared checkout). Live: the published `index.json` has
+       `bundle: {path: "bundle.json", bytes: 9075250}` on 376 entries, so
+       Download all is one request on openslate.us. OpenSlate's plan commits pushed with this one.
 
 ## Findings / gotchas
 
@@ -87,6 +116,33 @@ strongly suggesting waiting rather than skipping.
 - `apps/web/src/lib/download.ts` already exists (`downloadText`). A Write to
   that path clobbered it once this session; restored from HEAD (it matched HEAD
   at session start). The download helpers live in `lib/fetchProgress.ts`.
+- Importing slates one `slatesCollection.insert` at a time made "download
+  all" take 40+ s for 346 slates: every insert re-collated the ballot behind
+  the dialog. Batched (verify each, then one insert) it takes ~3.6 s locally.
+  The collection's `onInsert` only persisted `mutations[0]`; it now persists
+  and confirms every row of a batch.
+- Browser check (2026-10-24, T3 incognito, a local catalog built from the live
+  bundle with summaries, served gzipped and slowed): area and sources steps
+  appear with no slate requests; picks import with the bar; download-all makes
+  one `bundle.json` request, the byte bar tracks it, 346 stored, 1 followed,
+  336 recorded unfollowed; Escape ignored mid-import; Stop → Stop anyway kept
+  the 227 checked so far. Old-format catalog: fetching starts on "Plan my
+  vote", wait bar + message on the area step, worst main-thread stall 126 ms.
+- Background import, first try: storing every 1.5 s made "download all" take
+  ~9 s with five 0.6–2.4 s main-thread stalls, because each store re-collates
+  the whole ballot, now on screen. Timing `store()` to space them out doesn't
+  work: the re-collation runs after the call returns. Fix: a store waits for
+  at least as many new slates as are stored already (total work stays within
+  about twice the last store). Also `MyBallotPanel` subscribed to the whole
+  status and re-rendered the ballot on every tick; it uses `useImportRunning`
+  (a boolean) now. After: bundle ~1 s, checking ~3 s, one 1.8 s stall (the
+  first draw of ~300 slates' ballot, the same cost as opening a full ballot).
+- Browser check (2026-10-25): picks → wizard closes, banner with bar, empty
+  ballot says "Your sources are on their way", then "Your sources are in.
+  Added 11"; Follow and Disagree kept. Download all: 346 stored, only the pick
+  followed. A pick whose fetch 404s: listed in the banner, the other 10 in,
+  the failed one not followed. `beforeunload` not exercised (it would open a
+  browser dialog).
 - GitHub Pages gzips `bundle.json`; a browser's `Content-Length` is then the
   compressed size while the stream yields decompressed bytes, so progress needs
   the uncompressed size from the catalog.
@@ -94,12 +150,19 @@ strongly suggesting waiting rather than skipping.
 ## Progress log
 
 - [x] Explored wizard, catalog producer and public catalog repo.
+- [x] Core + CLI summaries (`7dbaf9c` on master).
+- [x] Web wizard, batched import, progress bar, download all (branch
+      `feat/wizard-catalog-summaries`).
+- [x] public-endorsements build-site `bundle` field (local commit there).
+- [x] Rebased onto master and merged (`5bf7594`).
+- [x] OpenSlate master pushed (the wizard rework).
+- [x] Background import + banner (branch `feat/wizard-catalog-summaries`).
+- [x] Background import pushed (`6be78bb`, with another thread's push).
+- [x] public-endorsements: `bundle` field pushed (`92d41a1`, cherry-pick of `25955d8`).
 
 ## Open questions for the user
 
-1. Pushing: OpenSlate master deploys the app; the public catalog repo needs the
-   OpenSlate commit on GitHub before bumping `.openslate-version`. Ask before
-   pushing either.
+None.
 
 ## Things not to do
 

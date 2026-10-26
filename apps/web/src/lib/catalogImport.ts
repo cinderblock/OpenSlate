@@ -1,7 +1,15 @@
 import { verifySlate } from "@openslate/core";
 import type { QueryClient } from "@tanstack/react-query";
 import { slatesCollection, upsertKnownIdentity } from "./collections";
-import { type CatalogEntry, slateFromUrlOptions } from "./query";
+import { readTextWithProgress } from "./fetchProgress";
+import { createImportQueue } from "./importQueue";
+import {
+  type Catalog,
+  type CatalogBundleEntry,
+  type CatalogEntry,
+  queryClient,
+  slateFromUrlOptions,
+} from "./query";
 import { track } from "./usage";
 
 /**
@@ -26,29 +34,122 @@ export async function importCatalogEntry(
   queryClient: QueryClient,
 ): Promise<ImportOutcome> {
   try {
-    const token = await queryClient.fetchQuery({
-      ...slateFromUrlOptions(catalogEntryUrl(entry, catalogUrl)),
-      // The wizard fetches entries to preview them; importing right after
-      // shouldn't download them again.
-      staleTime: 1000 * 60 * 5,
-    });
-    const result = verifySlate(token);
-    if (!result.valid) {
-      throw new Error(result.errors[0] ?? "slate did not verify");
-    }
-    if (knownTokens.has(token)) {
-      return { kind: "already-imported", token };
-    }
-    slatesCollection.insert({ token, importedAt: new Date().toISOString() });
-    track({ name: "slate.import", dims: { source: "catalog" } });
-    if (result.issuerKey) {
-      upsertKnownIdentity(result.issuerKey, {
-        displayName: result.payload?.issuer.name,
-        source: "from-slate",
-      });
-    }
-    return { kind: "imported", token };
+    const outcome = verifyCatalogSlate(
+      await fetchCatalogSlate(entry, catalogUrl, queryClient),
+      knownTokens,
+    );
+    if (outcome.kind !== "verified") return outcome;
+    storeSlates([outcome.slate]);
+    return { kind: "imported", token: outcome.slate.token };
   } catch (err) {
-    return { kind: "error", error: err instanceof Error ? err.message : String(err) };
+    return { kind: "error", error: errorMessage(err) };
   }
 }
+
+/** Download one entry's slate (cached by URL). */
+export function fetchCatalogSlate(
+  entry: CatalogEntry,
+  catalogUrl: string,
+  queryClient: QueryClient,
+): Promise<string> {
+  return queryClient.fetchQuery({
+    ...slateFromUrlOptions(catalogEntryUrl(entry, catalogUrl)),
+    // The catalog's slates don't change under a running import; one fetched a
+    // moment ago needn't be downloaded again.
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/** A downloaded slate that checked out and isn't stored yet. */
+export interface VerifiedSlate {
+  token: string;
+  issuerKey?: string;
+  issuerName?: string;
+}
+
+/** Check a downloaded slate's signature; `verified` ones are ready for `storeSlates`. */
+export function verifyCatalogSlate(
+  token: string,
+  knownTokens: { has(token: string): boolean },
+): { kind: "verified"; slate: VerifiedSlate } | Exclude<ImportOutcome, { kind: "imported" }> {
+  try {
+    const result = verifySlate(token);
+    if (!result.valid) {
+      return { kind: "error", error: result.errors[0] ?? "slate did not verify" };
+    }
+    if (knownTokens.has(token)) return { kind: "already-imported", token };
+    const issuerName = result.payload?.issuer.name;
+    return {
+      kind: "verified",
+      slate: {
+        token,
+        ...(result.issuerKey ? { issuerKey: result.issuerKey } : {}),
+        ...(issuerName ? { issuerName } : {}),
+      },
+    };
+  } catch (err) {
+    return { kind: "error", error: errorMessage(err) };
+  }
+}
+
+/**
+ * Store verified slates in one transaction, so a bulk import makes the ballot
+ * re-collate once instead of once per slate.
+ */
+export function storeSlates(slates: VerifiedSlate[]): void {
+  if (slates.length === 0) return;
+  const importedAt = new Date().toISOString();
+  slatesCollection.insert(slates.map(({ token }) => ({ token, importedAt })));
+  // A catalog's slates mostly share one signer (its researcher): record each once.
+  const issuers = new Map<string, string | undefined>();
+  for (const slate of slates) {
+    track({ name: "slate.import", dims: { source: "catalog" } });
+    if (slate.issuerKey) issuers.set(slate.issuerKey, slate.issuerName);
+  }
+  for (const [issuerKey, displayName] of issuers) {
+    upsertKnownIdentity(issuerKey, { displayName, source: "from-slate" });
+  }
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+/**
+ * Download a catalog's bundle (every entry's slate in one file) and return the
+ * tokens by entry path. Reports bytes received against the bundle's
+ * uncompressed size; `total` is undefined when the catalog doesn't say.
+ */
+export async function fetchCatalogBundle(
+  catalog: Catalog,
+  catalogUrl: string,
+  onProgress: (received: number, total: number | undefined) => void,
+  signal?: AbortSignal,
+): Promise<Map<string, string>> {
+  if (!catalog.bundle) throw new Error("this catalog has no bundle");
+  const total = catalog.bundle.bytes;
+  const response = await fetch(new URL(catalog.bundle.path, catalogUrl), { signal });
+  if (!response.ok) throw new Error(`fetch failed: ${response.status}`);
+  const text = await readTextWithProgress(response, (received) => onProgress(received, total));
+  const bundle = JSON.parse(text) as { entries?: CatalogBundleEntry[] };
+  const tokens = new Map<string, string>();
+  for (const entry of bundle.entries ?? []) {
+    if (typeof entry.path === "string" && typeof entry.token === "string") {
+      tokens.set(entry.path, entry.token.trim());
+    }
+  }
+  return tokens;
+}
+
+/**
+ * Imports that carry on after the getting-started wizard closes. ImportBanner
+ * shows how far along they are.
+ */
+export const backgroundImports = createImportQueue({
+  fetchBundle: (catalog, catalogUrl, onProgress) =>
+    fetchCatalogBundle(catalog, catalogUrl, onProgress),
+  fetchSlate: (entry, catalogUrl) => fetchCatalogSlate(entry, catalogUrl, queryClient),
+  verify: verifyCatalogSlate,
+  store: storeSlates,
+  isStored: (token) => slatesCollection.has(token),
+});

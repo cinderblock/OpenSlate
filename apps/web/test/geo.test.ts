@@ -6,10 +6,12 @@ import type { GeometryCollection, Topology } from "topojson-specification";
 import {
   COURT_OF_APPEAL_BY_COUNTY,
   areaFromHit,
+  cityPaths,
   decodeStateGeo,
   fourColor,
   localityCandidates,
   locate,
+  lookupsAt,
   mergeFoundArea,
   touching,
 } from "../src/lib/geo";
@@ -78,6 +80,54 @@ describe("locate (shipped California boundaries)", () => {
     expect(geo.layers.sd).toHaveLength(40);
     expect(geo.layers.ad).toHaveLength(80);
     expect(geo.layers.county).toHaveLength(58);
+  });
+
+  test("finds school, BOE, college and supervisorial districts, as their sources do", () => {
+    // Checked 2026-10-24/25 against the Census geocoder (schools) and point
+    // queries of each source service (the rest): plans/sub-county-districts.md.
+    // Huntington Beach: an elementary and a high school district, no unified one.
+    expect(locate(geo, -117.998, 33.668)?.lookups).toEqual({
+      unsd: { id: "none" },
+      elsd: { id: "18030", name: "Huntington Beach City Elementary School District" },
+      scsd: { id: "18060", name: "Huntington Beach Union High School District" },
+      boe: { id: "4" },
+      ccd: { id: "830", name: "Coast Community College District" },
+      sup: { id: "Orange|1" },
+    });
+    const at = (lon: number, lat: number) => {
+      const found = locate(geo, lon, lat)?.lookups ?? {};
+      return Object.fromEntries(Object.entries(found).map(([layer, { id }]) => [layer, id]));
+    };
+    expect(at(-122.41831, 37.778536)).toMatchObject({ unsd: "34410", boe: "2", ccd: "360" });
+    expect(at(-118.245594, 34.051623)).toMatchObject({
+      unsd: "22710",
+      ccd: "740",
+      sup: "Los Angeles|1",
+    });
+    expect(at(-117.3795, 33.1959)).toMatchObject({ ccd: "50", sup: "San Diego|5" }); // Oceanside
+    expect(at(-122.3255, 37.563)).toMatchObject({ ccd: "370", sup: "San Mateo|2" }); // San Mateo
+    expect(at(-121.8863, 37.3382)).toMatchObject({ ccd: "470", sup: "Santa Clara|2" }); // San Jose
+    expect(geo.lookups.unsd).toHaveLength(346);
+    expect(geo.lookups.elsd).toHaveLength(517);
+    expect(geo.lookups.scsd).toHaveLength(112);
+    expect(geo.lookups.boe).toHaveLength(4);
+    expect(geo.lookups.ccd).toHaveLength(72);
+  });
+
+  test("near a lookup layer's line, that layer is left unknown", () => {
+    const line = geo.lookups.elsd.find((s) => s.id === "18030")?.polygons[0]?.[0]?.[0];
+    if (!line) throw new Error("no HB City SD vertex");
+    const [lon = 0, lat = 0] = line;
+    const found = lookupsAt(geo, lon, lat, "Orange");
+    expect(found?.lookups.elsd).toBeUndefined();
+    expect(found?.nearLine).toContain("elsd");
+    // SF City Hall is within 75 m of a supervisorial district line.
+    expect(locate(geo, -122.41831, 37.778536)?.lookups?.sup).toBeUndefined();
+  });
+
+  test("supervisorial districts only for the county the point is in", () => {
+    // A Huntington Beach point said to be in a county we have no map for.
+    expect(lookupsAt(geo, -117.998, 33.668, "Inyo")?.lookups.sup).toBeUndefined();
   });
 
   test("outside the state is null", () => {
@@ -212,6 +262,7 @@ describe("areaFromHit", () => {
     expect(sf.area).toEqual({
       localities: ["us/ca/sf"],
       districts: { "us/ca/cd": "11", "us/ca/sd": "11", "us/ca/ad": "17", "us/ca/coa": "1" },
+      found: ["us/ca/sf", "us/ca/city-of-sf"],
     });
     expect(sf.notCovered).toEqual(["us/ca/bart"]);
     expect(sf.places).toEqual(["San Francisco"]);
@@ -226,22 +277,129 @@ describe("areaFromHit", () => {
     expect(la.places).toEqual(["Los Angeles", "Los Angeles County"]);
   });
 
+  test("sets lookup districts, with their names, and none where there is none", () => {
+    const oc = { ...known, localities: [...known.localities, "us/ca/orange-county"] };
+    const hb = areaFromHit(
+      {
+        districts: { cd: "42" },
+        county: "Orange",
+        nearLine: [],
+        lookups: {
+          unsd: { id: "none" },
+          elsd: { id: "18030", name: "Huntington Beach City Elementary School District" },
+          ccd: { id: "830", name: "Coast Community College District" },
+          sup: { id: "Orange|1" },
+        },
+      },
+      "us/ca",
+      oc,
+    );
+    // Supervisorial districts under the county's path, as its races are filed.
+    expect(hb.area.districts).toEqual({
+      "us/ca/cd": "42",
+      "us/ca/coa": "4",
+      "us/ca/unsd": "none",
+      "us/ca/elsd": "18030",
+      "us/ca/ccd": "830",
+      "us/ca/orange-county/sup": "1",
+    });
+    expect(hb.area.labels).toEqual({
+      "us/ca/elsd": "Huntington Beach City Elementary School District",
+      "us/ca/ccd": "Coast Community College District",
+      "us/ca/orange-county/sup": "Orange County supervisorial district 1",
+    });
+    // Nothing imported is filed under the county yet: its supervisorial
+    // district is still set, where its races would be.
+    const bare = areaFromHit(
+      { districts: {}, county: "Orange", nearLine: [], lookups: { sup: { id: "Orange|1" } } },
+      "us/ca",
+      known,
+    );
+    expect(bare.area.localities).toEqual([]);
+    expect(bare.area.districts["us/ca/orange-county/sup"]).toBe("1");
+    expect(bare.area.found).toEqual(["us/ca/orange-county", "us/ca/orange"]);
+  });
+
   test("a county filed under its bare name still matches", () => {
     const hit = { districts: {}, county: "Marin", nearLine: [] };
     expect(areaFromHit(hit, "us/ca", known).area.localities).toEqual(["us/ca/marin"]);
   });
+
+  test("a county never takes the path of a city with its name", () => {
+    const cities = cityPaths(geo);
+    const options = {
+      localities: ["us/ca/orange", "us/ca/san-diego", "us/ca/san-diego-county"],
+      districts: {},
+    };
+    // Huntington Beach, in Orange County: the City of Orange's races aren't its.
+    const hb = { districts: {}, county: "Orange", place: "Huntington Beach", nearLine: [] };
+    expect(areaFromHit(hb, "us/ca", options, cities).area.localities).toEqual([]);
+    // Chula Vista, in San Diego County: the county's races, not the City of San Diego's.
+    const cv = { districts: {}, county: "San Diego", place: "Chula Vista", nearLine: [] };
+    expect(areaFromHit(cv, "us/ca", options, cities).area.localities).toEqual([
+      "us/ca/san-diego-county",
+    ]);
+    // In the City of San Diego: both.
+    const sd = { districts: {}, county: "San Diego", place: "San Diego", nearLine: [] };
+    expect(areaFromHit(sd, "us/ca", options, cities).area.localities).toEqual([
+      "us/ca/san-diego",
+      "us/ca/san-diego-county",
+    ]);
+  });
+
+  test("every path a city's races use, not just the first", () => {
+    const options = {
+      localities: [
+        "us/ca/alameda",
+        "us/ca/city-of-alameda",
+        "us/ca/alameda-county",
+        "us/ca/ventura",
+      ],
+      districts: {},
+    };
+    const alameda = { districts: {}, county: "Alameda", place: "Alameda", nearLine: [] };
+    expect(areaFromHit(alameda, "us/ca", options, cityPaths(geo)).area.localities).toEqual([
+      "us/ca/alameda",
+      "us/ca/city-of-alameda",
+      "us/ca/alameda-county",
+    ]);
+    // The Census's "San Buenaventura (Ventura)" is filed as Ventura.
+    const ventura = {
+      districts: {},
+      county: "Ventura",
+      place: "San Buenaventura (Ventura)",
+      nearLine: [],
+    };
+    expect(areaFromHit(ventura, "us/ca", options, cityPaths(geo)).area.localities).toEqual([
+      "us/ca/ventura",
+    ]);
+  });
 });
 
 test("localityCandidates", () => {
-  expect(localityCandidates("us/ca", "county", "San Mateo")).toEqual([
+  const cities = cityPaths(geo);
+  // A city has San Mateo's name; no city has Marin's.
+  expect(localityCandidates("us/ca", "county", "San Mateo", cities)).toEqual([
     "us/ca/san-mateo-county",
-    "us/ca/san-mateo",
+  ]);
+  expect(localityCandidates("us/ca", "county", "Marin", cities)).toEqual([
+    "us/ca/marin-county",
+    "us/ca/marin",
+  ]);
+  expect(localityCandidates("us/ca", "county", "Ventura", cities)).toEqual([
+    "us/ca/ventura-county",
   ]);
   expect(localityCandidates("us/ca", "place", "Alameda")).toEqual([
     "us/ca/alameda",
     "us/ca/city-of-alameda",
   ]);
-  expect(localityCandidates("us/ca", "county", "San Francisco")).toEqual(["us/ca/sf"]);
+  expect(localityCandidates("us/ca", "place", "El Paso de Robles (Paso Robles)")).toEqual([
+    "us/ca/el-paso-de-robles",
+    "us/ca/city-of-el-paso-de-robles",
+    "us/ca/paso-robles",
+    "us/ca/city-of-paso-robles",
+  ]);
+  expect(localityCandidates("us/ca", "county", "San Francisco", cities)).toEqual(["us/ca/sf"]);
 });
 
 test("every California county has exactly one Court of Appeal district", () => {
@@ -258,5 +416,33 @@ test("mergeFoundArea replaces cities, counties and found districts, keeps the re
   expect(mergeFoundArea(previous, found, geo)).toEqual({
     localities: ["us/ca/sf", "us/ca/ebmud"],
     districts: { "us/ca/cd": "11", "us/ca/bart": "4" },
+  });
+});
+
+test("mergeFoundArea keeps what the lookup found, and answers a recheck", () => {
+  const previous = {
+    localities: ["us/ca/san-diego", "us/ca/san-diego-county"],
+    districts: {},
+    recheck: ["us/ca/san-diego"],
+  };
+  const found = {
+    localities: ["us/ca/san-diego-county"],
+    districts: {},
+    found: ["us/ca/chula-vista", "us/ca/city-of-chula-vista", "us/ca/san-diego-county"],
+  };
+  expect(mergeFoundArea(previous, found, geo)).toEqual(found);
+});
+
+test("mergeFoundArea always replaces school districts", () => {
+  const previous = {
+    localities: ["us/ca/oakland"],
+    districts: { "us/ca/cd": "12", "us/ca/unsd": "29150" },
+    labels: { "us/ca/unsd": "Oakland Unified School District" },
+  };
+  // A lookup near a school district line: no unified district to set.
+  const found = { localities: ["us/ca/sf"], districts: { "us/ca/cd": "11" } };
+  expect(mergeFoundArea(previous, found, geo)).toEqual({
+    localities: ["us/ca/sf"],
+    districts: { "us/ca/cd": "11" },
   });
 });

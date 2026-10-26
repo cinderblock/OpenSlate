@@ -1,5 +1,10 @@
 # Kalshi answers the forecasts relay 429
 
+> **Done (2026-10-25, `3e283c9`, live since 1:42 PM PDT):** Kalshi is out of the public app. The public worker
+> no longer relays it, and the web app shows forecasts only when its backend
+> is a self-hosted apps/server started with `KALSHI_FORECASTS=true`. The
+> ISSUES.md entry is closed with that change.
+
 > Plan path: `plans/kalshi-forecasts-429.md`. Read this first when resuming.
 > Branch / worktree: `fix/kalshi-forecasts-429` in
 > `C:\Users\camer\.t3\worktrees\OpenSlate\fix-kalshi-forecasts-429`.
@@ -49,6 +54,18 @@ cost the reader as little as possible.
 - 404 from Kalshi is a real answer (no such event) and stays cacheable
   (15 min), since most guessed tickers don't exist. Every other non-2xx is
   `no-store`, at the edge (`cacheTtlByStatus` -1) and in browsers.
+- (User, 2026-10-24) Merge the mitigations on their own: done, deployed
+  10:20 PM PDT (05:20Z).
+- **(User, 2026-10-25) No Kalshi in the public app at all; at most an opt-in
+  for self-hosting.** Reason: Kalshi likely wouldn't allow a public relay or
+  mirror of its prices if it saw one. This supersedes the CI-snapshot plan
+  (the user had first picked a sibling repo `openslate-forecasts`, read
+  directly or through the worker; that was never created).
+- The opt-in is one switch on the server, `KALSHI_FORECASTS=true`, which it
+  reports as `forecasts: true` in `/api/health`; the web app asks the
+  backend, the same way it decides whether to offer Google. No web build
+  flag, so the hosted build needs no setting. `VITE_FORECASTS_BASE` is gone:
+  forecasts come from `VITE_API_BASE`'s backend.
 
 ## Findings / gotchas
 
@@ -85,6 +102,12 @@ cost the reader as little as possible.
   returns 2,324 series in one request (`GOVPARTYFL`, `KXSENATEVAD`,
   `HOUSECA47`, …), and `/events?status=open&with_nested_markets=true&limit=200`
   pages through open events with a cursor (200 per page, mixed categories).
+- Kalshi's terms couldn't be checked: kalshi.com answers 429 to this machine
+  too, and docs.kalshi.com lists no data-licensing page. That uncertainty is
+  why the user took Kalshi out of the public app (2026-10-25).
+- A CI snapshot was built and tested before that decision (3,671 Elections
+  events, 13.4 MB, 32 s per run from this machine; settled events can't be
+  included, `/events` has no category filter). Kept only locally.
 - The relay probably never worked in production. Earlier forecast checks
   (plans/race-polls-scope.md) went through the local dev server.
 - 2026-10-24 4:15 PM PDT (23:15Z): relay → 429 with `CF-Cache-Status:
@@ -101,18 +124,28 @@ cost the reader as little as possible.
 
 ## Plan / steps
 
-1. [x] Claim the ISSUES.md entry (`966c35e`)
+1. [x] Claim the ISSUES.md entry (`966c35e`, rebased as `30be9ae`)
 2. [x] Find the cause (above)
-3. [x] Worker: never cache non-2xx (except 404), keep a last good copy, serve
-       it marked stale; same in the Hono mirror (`54d97c0`)
-4. [x] Web: quiet one-liner when unavailable, "prices from <time>" when stale,
-       no retries into a 429 (`0d0a003`)
-5. [x] README: the forecasts column and a paragraph on why
-6. [ ] **Current: the user's decision on a source Kalshi will answer** (open
-       question 1). Until then the hosted app says "Kalshi isn't answering
-       right now", because the worker never gets a good copy to keep.
-7. [ ] Merge to master (deploys the worker and the web app): needs the
-       user's yes
+3. [x] Relays never cache errors, keep a last good copy (`d6b56da`)
+4. [x] Web degrades quietly (`057546c`)
+5. [x] README
+6. [x] Test the alternatives: GitHub runners get answers; browsers can't
+7. [x] Merge the mitigations (`d9118e3`, deployed 10:20 PM PDT, 05:20Z)
+8. [x] ~~Snapshot repo + reading it~~: dropped by the user's 2026-10-25
+       decision. The local repo `~/git/Personal Projects/openslate-forecasts`
+       (`92e66de`) was never pushed; the reading commit `ea5f990` is kept
+       only on the local branch `backup/kalshi-snapshot-reading`.
+9. [x] Kalshi opt-in for self-hosting only: worker relay removed, server
+       behind `KALSHI_FORECASTS=true`, web asks `/api/health`; ISSUES.md
+       entry closed
+10. [x] Merge step 9 to master: the user said yes; pushed as `3e283c9`
+        (`6682181..3e283c9`), 2026-10-25 1:31 PM PDT (20:31Z)
+11. [x] Deploy verified 2026-10-25 1:42 PM PDT (20:42Z): the live relay
+        answers `/api/forecasts/v2/events/KXGOVCA-26` with a plain 404, its
+        health lists no forecasts upstream, `RacePanel-kT-hUlPZ.js` carries the
+        health gate, and the live Governor page (fresh incognito) shows only
+        Recent polls and Results, asks only `/api/polls` and `/api/health`, and
+        doesn't mention Kalshi
 
 ## Progress log
 
@@ -127,29 +160,21 @@ cost the reader as little as possible.
       again later.", and the 429'd ticker was requested once (no retries)
 - [x] `bun test` 462 pass; `bun run typecheck` clean; Biome (CRLF config)
       clean on touched files
-- [ ] Root-cause source (waiting on the user)
-- [ ] Merge / deploy (waiting on the user)
+- [x] Mitigations merged and deployed (2026-10-24 10:20 PM PDT, 05:20Z): the
+      live relay answered 429 with `Cache-Control: no-store`
+- [x] Opt-in only (2026-10-25): `bun test` 462 pass, typecheck clean, Biome
+      clean on touched files; browser check against a local apps/server: with
+      `KALSHI_FORECASTS=true` the Governor page shows live Kalshi prices;
+      without it, health says `forecasts: false`, `/api/forecasts/*` is 404,
+      the race page shows only Polls and Results, no forecast requests are
+      made, and Settings doesn't mention Kalshi
+- [x] Merged (`3e283c9`, 1:31 PM PDT / 20:31Z)
+- [x] Deploy verified (1:42 PM PDT, 20:42Z)
 
 ## Open questions for the user
 
-1. **Where should forecasts come from, given that Kalshi refuses Workers?**
-   - **(a) Recommended: a CI snapshot.** A scheduled GitHub Actions job
-     (every 10–15 min, best effort) fetches the tickers OpenSlate can ask for
-     and publishes them as static JSON on GitHub Pages, like the endorsements
-     repo. The worker falls back to it when Kalshi refuses. It fits "no
-     central server" and needs no Cloudflare change. Runners do get answers
-     (Findings). Still open: which repo hosts it, and whether the browser
-     reads the snapshot straight from Pages or through the worker.
-   - The user's direction (2026-10-24): test runners and browsers; if
-     neither works, strip forecasts from the public version and keep them as
-     a self-hosted option. Runners work, so that fallback isn't needed yet.
-   - (b) Ask Kalshi to stop refusing Workers, or whether an API key gets
-     past their edge limiter. Cheap to ask, but slow and out of our hands.
-   - (c) Relay through a server of the user's (e.g. steamboat).
-     Infrastructure work, and closer to a central server.
-   - (d) Accept it: the hosted app shows no forecasts, quietly.
-2. OK to merge to master once the above is settled (or now, since the
-   changes stand on their own)? Merging deploys both workers.
+None. (2026-10-25: the user said to keep the local `openslate-forecasts`
+repo and the `backup/kalshi-snapshot-reading` branch.)
 
 ## Things not to do
 
@@ -158,5 +183,10 @@ cost the reader as little as possible.
 - Don't add a Kalshi API-key secret hoping it lifts the 429: the probe shows
   the limiter fires before auth. Test with a real key first if ever tried.
 - Don't add a Cron Trigger prefetch in the worker: same blocked egress.
+- Don't bring Kalshi back into the public app (worker, snapshot, mirror,
+  or a default-on setting): the user's decision, 2026-10-25.
+- Don't use ports 8788–8987 for local test servers on this machine: Windows
+  reserves them (`netsh interface ipv4 show excludedportrange protocol=tcp`),
+  and Bun reports EADDRINUSE. 8787 is often taken by another thread's server.
 - Don't add a User-Agent hoping it changes the result. One is sent now as
   good manners, but it made no difference in the probe.

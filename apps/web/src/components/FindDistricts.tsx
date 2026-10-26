@@ -7,15 +7,20 @@ import type { AreaOptions } from "../lib/collate";
 import {
   type GeoHit,
   type GeoLayer,
+  type LookupLayer,
   NEAR_LINE_METERS,
   type StateGeo,
   areaFromHit,
+  cityPaths,
   loadStateGeo,
   locate,
+  lookupsAt,
   mergeFoundArea,
 } from "../lib/geo";
 import {
   type Area,
+  DISTRICT_COUNTS,
+  NO_DISTRICT,
   districtFamilyLabel,
   jurisdictionLabel,
   noRaceReason,
@@ -81,8 +86,18 @@ interface Found {
   area: Area;
   places: string[];
   notCovered: string[];
-  nearLine: GeoLayer[];
+  nearLine: (GeoLayer | LookupLayer)[];
 }
+
+/** What to call a lookup layer's district in "near a … line". */
+const UNSURE_NAMES: Partial<Record<GeoLayer | LookupLayer, string>> = {
+  unsd: "school district",
+  elsd: "school district",
+  scsd: "school district",
+  boe: "Board of Equalization district",
+  ccd: "community college district",
+  sup: "supervisorial district",
+};
 
 export function FindDistricts({
   options,
@@ -119,7 +134,7 @@ export function FindDistricts({
     extra: { point?: [number, number]; from?: string } = {},
   ) {
     if (!geo) return;
-    const result = areaFromHit(hit, STATE, options);
+    const result = areaFromHit(hit, STATE, options, cityPaths(geo));
     onChange(mergeFoundArea(area, result.area, geo));
     setFound({ via, ...extra, hit, ...result, nearLine: hit.nearLine });
     setError(null);
@@ -193,13 +208,17 @@ export function FindDistricts({
               return;
             }
             if (service === "census" && match.districts) {
-              // The Census Bureau's own answer, from its full-resolution maps.
+              // The Census Bureau's own answer, from its full-resolution maps;
+              // school, supervisorial and other districts from ours, at the
+              // point it matched.
+              const extra = lookupsAt(geo, match.lon, match.lat, match.county);
               applyHit(
                 {
                   districts: match.districts,
                   county: match.county,
                   place: match.place,
-                  nearLine: [],
+                  nearLine: extra?.nearLine ?? [],
+                  ...(extra ? { lookups: extra.lookups } : {}),
                 },
                 "the US Census Bureau geocoder",
                 { point: [match.lon, match.lat], from: match.label },
@@ -551,10 +570,14 @@ function FoundSummary({
   onShowMap?: () => void;
   onAdjust: () => void;
 }) {
-  const districts = Object.entries(found.area.districts);
+  const districts = Object.entries(found.area.districts).filter(([, n]) => n !== NO_DISTRICT);
   const near = found.nearLine.filter((l): l is "cd" | "sd" | "ad" =>
     ["cd", "sd", "ad"].includes(l),
   );
+  // Lookup layers the spot is near a line of, so their districts weren't set.
+  const unsure = [
+    ...new Set(found.nearLine.flatMap((l) => (l in UNSURE_NAMES ? [UNSURE_NAMES[l]] : []))),
+  ];
   return (
     <div className="find-found" aria-live="polite">
       <p>
@@ -563,8 +586,12 @@ function FoundSummary({
       </p>
       <ul className="find-found-list">
         {districts.map(([family, n]) => {
+          const label = found.area.labels?.[family];
+          // A school district only narrows races filed under the county: no
+          // race of its own to be missing.
+          if (label) return <li key={family}>{label}</li>;
           const present = options.districts[family] ?? [];
-          const hasRace = present.includes(n);
+          const hasRace = present.includes(n) || !(family in DISTRICT_COUNTS);
           return (
             <li key={family}>
               {jurisdictionLabel(`${family}-${n}`)}
@@ -581,6 +608,12 @@ function FoundSummary({
           {near.map((l) => LAYER_NAMES[l].toLowerCase()).join(" and ")} line, where the maps stored
           with the app may be off. Check it with an address lookup (the Census Bureau uses the exact
           lines).
+        </p>
+      )}
+      {unsure.length > 0 && (
+        <p className="hint">
+          This spot is near a {unsure.join(" and ")} line, so OpenSlate can't tell which one you're
+          in. Your ballot lists the races only those districts vote on as ones that might be on it.
         </p>
       )}
       {found.notCovered.length > 0 && (

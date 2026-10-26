@@ -1,12 +1,13 @@
 import { useLiveQuery } from "@tanstack/react-db";
 import { useMemo } from "react";
 import { translateSlates } from "./ballotCheck";
-import { type DecodedSlate, decodeSlates } from "./collate";
+import { type DecodedSlate, type DisagreeMode, decodeSlates } from "./collate";
 import { slatesCollection } from "./collections";
 import { useKnownIdentities } from "./identities";
 import type { Area } from "./jurisdictions";
-import { EMPTY_AREA } from "./jurisdictions";
+import { EMPTY_AREA, upgradeArea } from "./jurisdictions";
 import { createLocalStore, useLocalStore } from "./localStore";
+import { type Standing, isStanding } from "./sources";
 
 /**
  * Client-side state for the "My vote" mode. All of it stays in this browser.
@@ -24,24 +25,50 @@ function isRecordOf<T>(raw: unknown, check: (v: unknown) => v is T): raw is Reco
 const isBoolean = (v: unknown): v is boolean => typeof v === "boolean";
 const isString = (v: unknown): v is string => typeof v === "string";
 
-/** Source id → followed. Missing means followed (see `isFollowed`). */
-export const followsStore = createLocalStore<Record<string, boolean>>(
-  "openslate.follows.v1",
-  {},
-  (raw) => (isRecordOf(raw, isBoolean) ? raw : undefined),
+/**
+ * Follow choices from before you could disagree with a source: id → followed.
+ * Read once, to seed the current store; left in place so an older build in the
+ * same browser still finds them.
+ */
+function followsFromV1(): Record<string, Standing> {
+  try {
+    const raw: unknown = JSON.parse(localStorage.getItem("openslate.follows.v1") ?? "null");
+    if (!isRecordOf(raw, isBoolean)) return {};
+    return Object.fromEntries(
+      Object.entries(raw).map(([id, followed]) => [id, followed ? "follow" : "off"]),
+    );
+  } catch {
+    return {};
+  }
+}
+
+/** Source id → standing. Missing means followed (see `standingOf`). */
+export const followsStore = createLocalStore<Record<string, Standing>>(
+  "openslate.follows.v2",
+  followsFromV1(),
+  (raw) => (isRecordOf(raw, isStanding) ? raw : undefined),
 );
 
 export const useFollows = () => useLocalStore(followsStore);
 
-export function setFollowed(sourceId: string, followed: boolean): void {
-  followsStore.set((current) => ({ ...current, [sourceId]: followed }));
+export function setStanding(sourceId: string, standing: Standing): void {
+  followsStore.set((current) => ({ ...current, [sourceId]: standing }));
 }
 
-/** Record `false` for sources nobody decided about yet (bulk "import for comparison"). */
+/** Where sources you disagree with count in two-way races (see `DisagreeMode`). */
+export const disagreeModeStore = createLocalStore<DisagreeMode>(
+  "openslate.disagreeMode.v1",
+  "choice",
+  (raw) => (raw === "choice" || raw === "side" ? raw : undefined),
+);
+
+export const useDisagreeMode = () => useLocalStore(disagreeModeStore);
+
+/** Record `off` for sources nobody decided about yet (bulk "import for comparison"). */
 export function defaultToUnfollowed(sourceIds: Iterable<string>): void {
   followsStore.set((current) => {
     const next = { ...current };
-    for (const id of sourceIds) if (!(id in next)) next[id] = false;
+    for (const id of sourceIds) if (!(id in next)) next[id] = "off";
     return next;
   });
 }
@@ -49,10 +76,14 @@ export function defaultToUnfollowed(sourceIds: Iterable<string>): void {
 /** Where the user votes. */
 export const areaStore = createLocalStore<Area>("openslate.area.v1", EMPTY_AREA, (raw) => {
   if (typeof raw !== "object" || raw === null) return undefined;
-  const { localities, districts } = raw as Partial<Area>;
+  const { localities, districts, labels, found, recheck } = raw as Partial<Area>;
   if (!Array.isArray(localities) || !localities.every(isString)) return undefined;
   if (!isRecordOf(districts, isString)) return undefined;
-  return { localities, districts };
+  const area: Area = { localities, districts };
+  if (isRecordOf(labels, isString)) area.labels = labels;
+  if (Array.isArray(found) && found.every(isString)) area.found = found;
+  if (Array.isArray(recheck) && recheck.every(isString)) area.recheck = recheck;
+  return upgradeArea(area);
 });
 
 export const useArea = () => useLocalStore(areaStore);

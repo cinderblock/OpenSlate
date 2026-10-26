@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { type DraftRow, rowIdFor, type useBallotDraft } from "../lib/ballotDraft";
 import type { Race } from "../lib/collate";
+import type { Standing } from "../lib/sources";
 import {
   type FillEdit,
   partiesOn,
@@ -30,6 +31,12 @@ const DID: Array<[Stance, string]> = [
   ["lean_for", "marked Maybe"],
   ["oppose", "marked Against"],
 ];
+
+const STANDING_NOTE: Record<Standing, string> = {
+  follow: "",
+  disagree: " · you disagree",
+  off: " · not followed",
+};
 
 function describeFill(edits: FillEdit[]): string {
   const parts = DID.map(([stance, verb]) => {
@@ -198,7 +205,7 @@ export function QuickFill({
                   options={sources.map((s) => ({
                     id: s.id,
                     label: s.name,
-                    description: `${s.races} race${s.races === 1 ? "" : "s"}${s.followed ? "" : " · not followed"}`,
+                    description: `${s.races} race${s.races === 1 ? "" : "s"}${STANDING_NOTE[s.standing]}`,
                   }))}
                 />
                 <button

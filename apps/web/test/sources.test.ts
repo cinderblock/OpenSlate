@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { isFollowed, normaliseEntityUri, sourceIdOf, sourceOf } from "../src/lib/sources";
+import {
+  isFollowed,
+  normaliseEntityUri,
+  sourceIdOf,
+  sourceOf,
+  standingOf,
+} from "../src/lib/sources";
 
 const researcher = { key: "ed25519:RESEARCHER", name: "OpenSlate Public Endorsements" };
 
@@ -67,10 +73,15 @@ describe("normaliseEntityUri", () => {
   });
 });
 
-describe("isFollowed", () => {
+describe("standingOf / isFollowed", () => {
   test("undecided sources are followed; explicit choices win", () => {
+    expect(standingOf({}, "of:spur.org")).toBe("follow");
     expect(isFollowed({}, "of:spur.org")).toBe(true);
-    expect(isFollowed({ "of:spur.org": false }, "of:spur.org")).toBe(false);
-    expect(isFollowed({ "of:spur.org": true }, "of:spur.org")).toBe(true);
+    expect(isFollowed({ "of:spur.org": "off" }, "of:spur.org")).toBe(false);
+    expect(isFollowed({ "of:spur.org": "follow" }, "of:spur.org")).toBe(true);
+  });
+  test("a source you disagree with is still followed", () => {
+    expect(standingOf({ "of:spur.org": "disagree" }, "of:spur.org")).toBe("disagree");
+    expect(isFollowed({ "of:spur.org": "disagree" }, "of:spur.org")).toBe(true);
   });
 });

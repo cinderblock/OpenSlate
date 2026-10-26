@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import {
   ForecastUnavailableError,
   forecastEventQueryOptions,
+  forecastsHealthOptions,
   forecastsSource,
 } from "../src/lib/forecasts";
 
@@ -57,5 +58,25 @@ describe("Kalshi forecasts through the relay", () => {
     expect(retry(0, new ForecastUnavailableError(503, ""))).toBe(true);
     expect(retry(1, new ForecastUnavailableError(503, ""))).toBe(false);
     expect(retry(0, new TypeError("Failed to fetch"))).toBe(true);
+  });
+});
+
+describe("Kalshi forecasts are opt-in", () => {
+  const relays = async (res: Response | Error) => {
+    globalThis.fetch = (async () => {
+      if (res instanceof Error) throw res;
+      return res;
+    }) as unknown as typeof fetch;
+    return forecastsHealthOptions().queryFn();
+  };
+
+  test("only a backend that says forecasts: true gets asked", async () => {
+    expect(await relays(Response.json({ status: "ok", forecasts: true }))).toBe(true);
+    // The public worker: no forecasts field at all.
+    expect(await relays(Response.json({ status: "ok", civic: true }))).toBe(false);
+    expect(await relays(Response.json({ status: "ok", forecasts: false }))).toBe(false);
+    // A static host, or the dev proxy with no server running.
+    expect(await relays(new Response("Not Found", { status: 404 }))).toBe(false);
+    expect(await relays(new TypeError("Failed to fetch"))).toBe(false);
   });
 });

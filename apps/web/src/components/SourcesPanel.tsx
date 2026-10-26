@@ -1,30 +1,46 @@
-import { Landmark, Library, Link2, Scale, Trash2, UserCheck, UserPlus } from "lucide-react";
+import {
+  Landmark,
+  Library,
+  Link2,
+  Scale,
+  ThumbsDown,
+  Trash2,
+  UserCheck,
+  UserPlus,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { type DecodedSlate, electionOf } from "../lib/collate";
 import { slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
-import { followsStore, setFollowed, useDecodedSlates, useFollows } from "../lib/myVote";
-import { type Source, isBallotSource, isFollowed } from "../lib/sources";
+import {
+  followsStore,
+  setStanding,
+  useDecodedSlates,
+  useDisagreeMode,
+  useFollows,
+} from "../lib/myVote";
+import { type Source, type Standing, isBallotSource, standingOf } from "../lib/sources";
 import { CatalogBrowser } from "./CatalogBrowser";
 import { ContactsCard } from "./ContactsCard";
+import { DisagreeModeSetting } from "./DisagreeModeSetting";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { ImportVerifyPanel } from "./ImportVerifyPanel";
 import { LeanMeter } from "./LeanMeter";
 import { SlatesList } from "./SlatesList";
 import { SpectrumStrip } from "./SpectrumStrip";
-import { Switch } from "./ui/Switch";
+import { StandingToggle } from "./StandingToggle";
 
 interface SourceGroup {
   source: Source;
   slates: DecodedSlate[];
   elections: string[];
   positions: number;
-  followed: boolean;
+  standing: Standing;
   /** An official candidate list, not a recommendation. */
   ballot: boolean;
 }
 
-function groupBySource(slates: DecodedSlate[], follows: Record<string, boolean>): SourceGroup[] {
+function groupBySource(slates: DecodedSlate[], follows: Record<string, Standing>): SourceGroup[] {
   const groups = new Map<string, SourceGroup>();
   for (const slate of slates) {
     const group = groups.get(slate.source.id) ?? {
@@ -32,7 +48,7 @@ function groupBySource(slates: DecodedSlate[], follows: Record<string, boolean>)
       slates: [],
       elections: [],
       positions: 0,
-      followed: isFollowed(follows, slate.source.id),
+      standing: standingOf(follows, slate.source.id),
       ballot: isBallotSource(slate.source),
     };
     group.slates.push(slate);
@@ -53,10 +69,12 @@ type AddTab = "catalog" | "paste";
 export function SourcesPanel() {
   const { slates, isReady } = useDecodedSlates();
   const [follows] = useFollows();
+  const [disagreeMode] = useDisagreeMode();
   const groups = useMemo(() => groupBySource(slates, follows), [slates, follows]);
   const ballots = groups.filter((g) => g.ballot);
-  const following = groups.filter((g) => !g.ballot && g.followed);
-  const notFollowing = groups.filter((g) => !g.ballot && !g.followed);
+  const following = groups.filter((g) => !g.ballot && g.standing === "follow");
+  const disagreeing = groups.filter((g) => !g.ballot && g.standing === "disagree");
+  const notFollowing = groups.filter((g) => !g.ballot && g.standing === "off");
   const [addTab, setAddTab] = useState<AddTab>("catalog");
 
   return (
@@ -64,7 +82,9 @@ export function SourcesPanel() {
       <h2>Sources</h2>
       <p className="hint">
         The organizations and people whose endorsements you've imported. Sources you follow show on
-        My ballot; the rest stay imported so you can compare on race pages.
+        My ballot. So do sources you disagree with, counted the other way: what they back counts
+        against it, and what they oppose counts for it. The rest stay imported so you can compare on
+        race pages.
       </p>
 
       {/* Two columns on a wide screen once there's something imported: what you
@@ -94,13 +114,36 @@ export function SourcesPanel() {
               <UserCheck className="icon" /> Following ({following.length})
             </h3>
             {following.length === 0 ? (
-              <p className="hint">You aren't following anyone yet. Follow some from Add sources.</p>
+              <p className="hint">
+                {disagreeing.length === 0
+                  ? "You aren't following anyone yet. Follow some from Add sources."
+                  : "You aren't following anyone to agree with yet."}
+              </p>
             ) : (
               <ul className="source-list">
                 {following.map((group) => (
                   <SourceRow key={group.source.id} group={group} />
                 ))}
               </ul>
+            )}
+            {disagreeing.length > 0 && (
+              <>
+                <h4 className="sources-subheading">
+                  <ThumbsDown className="icon" /> Disagree with ({disagreeing.length})
+                </h4>
+                <ul className="source-list">
+                  {disagreeing.map((group) => (
+                    <SourceRow key={group.source.id} group={group} />
+                  ))}
+                </ul>
+                <details className="disagree-mode-details">
+                  <summary>
+                    In two-way races:{" "}
+                    {disagreeMode === "side" ? "for the other side" : "against what they picked"}
+                  </summary>
+                  <DisagreeModeSetting />
+                </details>
+              </>
             )}
             {notFollowing.length > 0 && (
               <details>
@@ -115,6 +158,8 @@ export function SourcesPanel() {
           </div>
         )}
 
+        {/* Only the sources you agree with: a source you disagree with on the
+            strip would read as "where you sit". */}
         {isReady && following.length > 0 && (
           <div className="card sources-spectrum">
             <h3>
@@ -192,13 +237,6 @@ function SourceRow({ group }: { group: SourceGroup }) {
 
   return (
     <li className="source-row">
-      {!group.ballot && (
-        <Switch
-          isSelected={group.followed}
-          onChange={(on) => setFollowed(source.id, on)}
-          aria-label={`Follow ${source.name}`}
-        />
-      )}
       <EndorserAvatar sourceId={source.id} name={source.name} size="md" />
       <div className="grow">
         {source.uri ? (
@@ -220,6 +258,13 @@ function SourceRow({ group }: { group: SourceGroup }) {
         </div>
         {!group.ballot && <LeanMeter sourceId={source.id} name={source.name} withWord />}
       </div>
+      {!group.ballot && (
+        <StandingToggle
+          name={source.name}
+          value={group.standing}
+          onChange={(next) => setStanding(source.id, next)}
+        />
+      )}
       {confirming ? (
         <span className="row">
           <button type="button" className="danger" onClick={remove}>

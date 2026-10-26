@@ -94,6 +94,40 @@ export function effectiveOrder(saved: string[] | undefined, current: string[]): 
   return ordered;
 }
 
+/**
+ * Marks and notes on races the catalog has since re-filed, moved to the race as
+ * it's filed now. A race's jurisdiction is part of its identity, so when San
+ * Diego County's races moved from `us/ca/san-diego` to `us/ca/san-diego-county`
+ * every mark on them was left on a race that no longer exists. A row moves when
+ * its race is none of `subjects` (every imported race) and exactly one of them
+ * has its election, title and kind; a mark already on that race wins.
+ * Undefined when no row moves.
+ */
+export function refiledRows(rows: DraftMap, subjects: readonly Subject[]): DraftMap | undefined {
+  const keys = new Set(subjects.map(subjectKey));
+  const byTitle = new Map<string, Map<string, Subject>>();
+  for (const subject of subjects) {
+    const at = `${subject.election ?? ""}|${subject.title}`;
+    const same = byTitle.get(at) ?? new Map<string, Subject>();
+    same.set(subjectKey(subject), subject);
+    byTitle.set(at, same);
+  }
+  let next: DraftMap | undefined;
+  for (const row of Object.values(rows)) {
+    if (keys.has(subjectKey(row.subject))) continue;
+    const same = [
+      ...(byTitle.get(`${row.subject.election ?? ""}|${row.subject.title}`)?.values() ?? []),
+    ].filter((s) => !row.subject.kind || !s.kind || s.kind === row.subject.kind);
+    const subject = same.length === 1 ? same[0] : undefined;
+    if (!subject) continue;
+    const id = rowIdFor(row.electionId, subject, row.choice);
+    next ??= { ...rows };
+    delete next[row.id];
+    next[id] ??= { ...row, id, subject };
+  }
+  return next;
+}
+
 function isEmpty(row: DraftRow): boolean {
   return !row.stance && !row.statement?.trim() && !row.privateNote?.trim();
 }
@@ -158,6 +192,8 @@ export function useBallotDraft(): {
   clearRow: (id: string) => void;
   clearElection: (electionId: string) => void;
   clearAll: () => void;
+  /** Move marks on re-filed races to the races as they're filed now (`refiledRows`). */
+  refile: (subjects: readonly Subject[]) => void;
 } {
   const [rows, setRows] = useState<DraftMap>(load);
 
@@ -214,7 +250,11 @@ export function useBallotDraft(): {
 
   const clearAll = useCallback(() => setRows({}), []);
 
-  return { rows, patch, patchMany, restore, clearRow, clearElection, clearAll };
+  const refile = useCallback((subjects: readonly Subject[]) => {
+    setRows((current) => refiledRows(current, subjects) ?? current);
+  }, []);
+
+  return { rows, patch, patchMany, restore, clearRow, clearElection, clearAll, refile };
 }
 
 /** Per-contest ranking: ordered list of candidate names (most preferred first). */

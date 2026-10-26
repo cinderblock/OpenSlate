@@ -3,6 +3,7 @@ import { flushSync } from "react-dom";
 import type { AreaOptions } from "../lib/collate";
 import {
   type Area,
+  NO_DISTRICT,
   allDistricts,
   districtFamilyLabel,
   isAreaSet,
@@ -69,10 +70,13 @@ export function AreaPicker({
 
   function toggleLocality(path: string) {
     const has = area.localities.includes(path);
-    onChange({
+    const next: Area = {
       ...area,
       localities: has ? area.localities.filter((p) => p !== path) : [...area.localities, path],
-    });
+    };
+    // One taken off by hand stays off, though the lookup found it.
+    if (has && area.found) next.found = area.found.filter((p) => p !== path);
+    onChange(next);
   }
 
   function setDistrict(family: string, number: string) {
@@ -214,7 +218,9 @@ export function AreaPicker({
 export function describeArea(area: Area): string {
   const parts = [
     ...area.localities.map(jurisdictionLabel),
-    ...Object.entries(area.districts).map(([family, n]) => jurisdictionLabel(`${family}-${n}`)),
+    ...Object.entries(area.districts)
+      .filter(([, n]) => n !== NO_DISTRICT)
+      .map(([family, n]) => area.labels?.[family] ?? jurisdictionLabel(`${family}-${n}`)),
   ];
   return parts.join(" · ");
 }

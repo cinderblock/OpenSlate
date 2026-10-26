@@ -15,6 +15,7 @@ import {
   PenLine,
   Pencil,
   Printer,
+  ThumbsDown,
   WandSparkles,
   X,
 } from "lucide-react";
@@ -23,6 +24,7 @@ import { ProgressBar } from "react-aria-components";
 import { ballotProblems } from "../lib/ballotCheck";
 import { type DraftRow, NOTE_CHOICE, rowIdFor, useBallotDraft } from "../lib/ballotDraft";
 import { ballotFileName, ballotToCsv, ballotToJson } from "../lib/ballotExport";
+import { backgroundImports } from "../lib/catalogImport";
 import {
   type ChoiceGroup,
   type Race,
@@ -31,22 +33,34 @@ import {
   defaultElection,
   electionsOf,
   positionJurisdictions,
-  stanceTone,
+  positionTone,
 } from "../lib/collate";
 import { formatElectionDate, formatLocalDate } from "../lib/dates";
 import { downloadText } from "../lib/download";
+import { useImportRunning } from "../lib/importQueue";
 import {
+  type Area,
+  DISTRICT_COUNTS,
   EMPTY_AREA,
+  NO_DISTRICT,
   districtFamilyLabel,
   isAreaSet,
   jurisdictionLabel,
   jurisdictionRank,
   noRaceReason,
   parseJurisdiction,
+  withFoundLocalities,
 } from "../lib/jurisdictions";
-import { localToday, useArea, useDecodedSlates, useFollows, useMyElection } from "../lib/myVote";
+import {
+  localToday,
+  useArea,
+  useDecodedSlates,
+  useDisagreeMode,
+  useFollows,
+  useMyElection,
+} from "../lib/myVote";
 import { type MyPosition, useMyPositionsByRace } from "../lib/published";
-import { isBallotSource, isFollowed } from "../lib/sources";
+import { isBallotSource, isFollowed, standingOf } from "../lib/sources";
 import { subjectKey } from "../lib/subjects";
 import { type RaceStatus, isDecided, marksOn, raceStatus, stepThrough } from "../lib/triage";
 import { track } from "../lib/usage";
@@ -117,7 +131,9 @@ const STATUS_LABEL: Record<RaceStatus, string> = {
 
 export function MyBallotPanel() {
   const { slates, isReady } = useDecodedSlates();
+  const importing = useImportRunning(backgroundImports);
   const [follows] = useFollows();
+  const [disagree] = useDisagreeMode();
   const [area, setArea] = useArea();
   const [chosenElection, setChosenElection] = useMyElection();
   const draft = useBallotDraft();
@@ -136,7 +152,7 @@ export function MyBallotPanel() {
   // screen; it stays put as the list around it changes.
   const [focusing, setFocusing] = useState(false);
   const [focusKey, setFocusKey] = useState<string | null>(null);
-  const { patch: draftPatch } = draft;
+  const { patch: draftPatch, refile } = draft;
 
   const today = localToday();
   const elections = useMemo(() => electionsOf(slates, follows), [slates, follows]);
@@ -149,16 +165,63 @@ export function MyBallotPanel() {
     [slates, election],
   );
 
-  const races = useMemo(
+  // A city or county the area's lookup found that races have started using
+  // since joins the area (`withFoundLocalities`).
+  useEffect(() => {
+    const next = withFoundLocalities(area, areaOptions.localities);
+    if (next !== area) setArea(next);
+  }, [area, areaOptions.localities, setArea]);
+
+  // Marks on races the catalog has re-filed follow them (`refiledRows`).
+  const subjects = useMemo(
+    () => slates.flatMap((slate) => slate.payload.positions.map((p) => p.subject)),
+    [slates],
+  );
+  useEffect(() => {
+    if (isReady) refile(subjects);
+  }, [isReady, subjects, refile]);
+
+  // Localities an old area can't tell are the user's (`upgradeArea`), asked
+  // about once the county's own path is in use: answering "no" before then
+  // would drop the county's races.
+  const recheck = (area.recheck ?? []).filter((p) =>
+    areaOptions.localities.includes(`${p}-county`),
+  );
+
+  /** Answer "Do you live in the City of …?" for a locality the app couldn't place (`upgradeArea`). */
+  function answerRecheck(path: string, inCity: boolean) {
+    const { recheck: asked = [], ...rest } = area;
+    const under = (key: string) => key.startsWith(`${path}/`);
+    const next: Area = inCity
+      ? rest
+      : {
+          ...rest,
+          localities: rest.localities.filter((p) => p !== path),
+          districts: Object.fromEntries(Object.entries(rest.districts).filter(([f]) => !under(f))),
+        };
+    if (!inCity && rest.labels) {
+      next.labels = Object.fromEntries(Object.entries(rest.labels).filter(([f]) => !under(f)));
+    }
+    const left = asked.filter((p) => p !== path);
+    setArea(left.length > 0 ? { ...next, recheck: left } : next);
+  }
+
+  const collated = useMemo(
     () =>
       collateRaces(slates, {
         follows,
+        disagree,
         ...(election ? { election } : {}),
         area,
         includeUnfollowed: showUnfollowed,
       }),
-    [slates, follows, election, area, showUnfollowed],
+    [slates, follows, disagree, election, area, showUnfollowed],
   );
+  // Races only part of a jurisdiction votes on, where the area can't tell which
+  // part the user is in (a water district, a trustee area): listed apart, so a
+  // county's every school board doesn't pad the ballot.
+  const races = useMemo(() => collated.filter((race) => !race.maybe), [collated]);
+  const maybeRaces = useMemo(() => collated.filter((race) => race.maybe), [collated]);
 
   // What the shown races' endorsements name that the ballot listing doesn't have.
   const offBallot = useMemo(() => {
@@ -172,6 +235,7 @@ export function MyBallotPanel() {
     if (!isAreaSet(area)) return [];
     const everywhere = collateRaces(slates, {
       follows,
+      disagree,
       ...(election ? { election } : {}),
       includeUnfollowed: showUnfollowed,
     });
@@ -184,7 +248,7 @@ export function MyBallotPanel() {
       counts.set(part.family, (counts.get(part.family) ?? 0) + 1);
     }
     return [...counts.entries()];
-  }, [slates, follows, election, area, showUnfollowed]);
+  }, [slates, follows, disagree, election, area, showUnfollowed]);
 
   const statuses = useMemo(
     () => new Map(races.map((race) => [race.key, raceStatus(race, draft.rows, election ?? "")])),
@@ -290,6 +354,10 @@ export function MyBallotPanel() {
     // (e.g. an odd-numbered Senate district in 2026), in ballot order, rather
     // than silently going missing. Not under a status filter: nothing to do there.
     for (const [family, n] of filter === "all" ? Object.entries(area.districts) : []) {
+      // Only families races are filed under (not school districts, which only
+      // narrow a race's `district`).
+      if (n === NO_DISTRICT || !(family in DISTRICT_COUNTS || family in areaOptions.districts))
+        continue;
       const present = areaOptions.districts[family] ?? [];
       if (present.includes(n)) continue;
       const path = `${family}-${n}`;
@@ -308,18 +376,39 @@ export function MyBallotPanel() {
     [draft.rows, election],
   );
 
+  const maybeSections = useMemo(() => sectionsOf(maybeRaces), [maybeRaces]);
+  // What's yours to print and export: the ballot, and any maybe you've marked.
+  const yours = useMemo(
+    () => [
+      ...races,
+      ...maybeRaces.filter((race) =>
+        myRows.some((row) => row.id.startsWith(`${election}|${race.key}|`)),
+      ),
+    ],
+    [races, maybeRaces, myRows, election],
+  );
+  // Maybes a lookup would place (school boards, supervisors…), when the area
+  // has had no lookup that finds those districts (set by hand, or set before
+  // lookups found them: every such lookup sets the school district families).
+  const lookupWouldPlace =
+    maybeRaces.some((race) => LOOKUP_DISTRICT.test(race.district ?? "")) &&
+    !Object.keys(area.districts).some((family) => SCHOOL_FAMILY.test(family));
+
   // Ballot sources (official candidate lists) aren't recommendations to follow.
   const sourceIds = new Set(
     slates.filter((s) => !isBallotSource(s.source)).map((s) => s.source.id),
   );
   const followedCount = [...sourceIds].filter((id) => isFollowed(follows, id)).length;
+  const disagreeCount = [...sourceIds].filter(
+    (id) => standingOf(follows, id) === "disagree",
+  ).length;
   const summary = elections.find((e) => e.date === election);
 
   function exportBallot(format: "json" | "csv") {
     const input = {
       election,
       area: isAreaSet(area) ? describeArea(area) : "",
-      races,
+      races: yours,
       rows: draft.rows,
       exportedAt: new Date().toISOString(),
     };
@@ -336,6 +425,17 @@ export function MyBallotPanel() {
     return (
       <section className="panel">
         <p className="hint">Loading your ballot…</p>
+      </section>
+    );
+  }
+
+  // The wizard's import is still bringing in the first slates (ImportBanner
+  // shows how far along); "Get started" here would say the opposite.
+  if (slates.length === 0 && importing) {
+    return (
+      <section className="panel">
+        <h2>My ballot</h2>
+        <p className="hint">Your sources are on their way. Races show up here as they arrive.</p>
       </section>
     );
   }
@@ -425,6 +525,27 @@ export function MyBallotPanel() {
         </div>
       )}
 
+      {recheck.map((path) => (
+        <div key={path} className="card no-print">
+          <p>
+            <strong>Do you live in the City of {jurisdictionLabel(path)}?</strong>{" "}
+            {jurisdictionLabel(`${path}-county`)}'s races used to be filed under the city's name, so
+            the area you set before can't tell.
+          </p>
+          <div className="row">
+            <button type="button" onClick={() => answerRecheck(path, true)}>
+              Yes
+            </button>
+            <button type="button" onClick={() => answerRecheck(path, false)}>
+              No
+            </button>
+            <button type="button" className="link" onClick={() => setEditingArea(true)}>
+              Find my districts again
+            </button>
+          </div>
+        </div>
+      ))}
+
       {exporting && (
         <div className="card no-print">
           <p className="hint">
@@ -480,6 +601,7 @@ export function MyBallotPanel() {
         <span>
           <Link to="/sources">
             <strong>{followedCount}</strong> of {sourceIds.size} sources followed
+            {disagreeCount > 0 && ` (${disagreeCount} to disagree)`}
           </Link>
         </span>
         <Switch isSelected={showUnfollowed} onChange={setShowUnfollowed}>
@@ -618,9 +740,45 @@ export function MyBallotPanel() {
         </div>
       )}
 
+      {!focusing && filter === "all" && maybeSections.length > 0 && (
+        <div className="ballot-maybe">
+          <h3>
+            Might be on your ballot <span className="hint">· {maybeRaces.length}</span>
+          </h3>
+          <p className="hint">
+            Only some of the voters where each of these is listed vote on it, like one trustee area
+            of a school board or one division of a water district, and OpenSlate can't tell from
+            where you vote whether you're one of them. Your sample ballot lists the ones you have.
+            {lookupWouldPlace && (
+              <>
+                {" "}
+                <button type="button" className="link" onClick={() => setEditingArea(true)}>
+                  Find your districts
+                </button>{" "}
+                from your address or the map to place more of them.
+              </>
+            )}
+          </p>
+          {maybeSections.map((section) => (
+            <BallotSection
+              key={section.label}
+              label={section.label}
+              races={section.races}
+              defaultOpen={false}
+              election={election ?? ""}
+              rows={draft.rows}
+              patch={patch}
+              mine={mine}
+              statuses={undefined}
+              filter={filter}
+            />
+          ))}
+        </div>
+      )}
+
       <PrintPicks
         election={election}
-        races={races}
+        races={yours}
         rows={myRows}
         area={isAreaSet(area) ? describeArea(area) : ""}
       />
@@ -629,6 +787,23 @@ export function MyBallotPanel() {
 }
 
 type Patch = ReturnType<typeof useBallotDraft>["patch"];
+
+/** School district families (Census TIGER's unified, elementary and secondary). */
+const SCHOOL_FAMILY = /\/(?:unsd|elsd|scsd)$/;
+/** A `district` a lookup can place: school, BOE, community college, supervisorial. */
+const LOOKUP_DISTRICT = /\/(?:unsd|elsd|scsd|boe|ccd|sup)-/;
+
+/** Races grouped by jurisdiction, in ballot order (the races come sorted). */
+function sectionsOf(races: Race[]): Array<{ label: string; races: Race[] }> {
+  const out: Array<{ label: string; races: Race[] }> = [];
+  for (const race of races) {
+    const label = jurisdictionLabel(race.jurisdiction);
+    const last = out.at(-1);
+    if (last?.label === label) last.races.push(race);
+    else out.push({ label, races: [race] });
+  }
+  return out;
+}
 
 function BallotSection({
   label,
@@ -999,7 +1174,13 @@ function fieldHint(race: Race): { text: string; title: string } | null {
   if (race.subject.kind === "measure") return null;
   if (race.onBallot) {
     const field = race.choices.filter((c) => c.onBallot);
-    const covered = field.filter((c) => c.support > 0 || c.opposition > 0).length;
+    // Named by a followed source, wherever My ballot counts it (`named`).
+    const named = new Set(
+      race.choices.flatMap((c) =>
+        c.positions.filter((p) => p.standing !== "off").map((p) => p.named ?? c.choice),
+      ),
+    );
+    const covered = field.filter((c) => named.has(c.choice)).length;
     return {
       text: `${covered} of ${field.length} candidates covered`,
       title: "Candidates from the official ballot list; how many your sources have a position on",
@@ -1029,8 +1210,8 @@ function ChoiceRow({
   patch: Patch;
 }) {
   const choice = group.choice || undefined;
-  const followed = group.positions.filter((p) => p.followed);
-  const others = group.positions.filter((p) => !p.followed);
+  const followed = group.positions.filter((p) => p.standing !== "off");
+  const others = group.positions.filter((p) => p.standing === "off");
   return (
     <li
       className={`choice-row${row?.stance === "endorse" ? " picked" : ""}${row?.stance === "oppose" ? " ruled-out" : ""}`}
@@ -1050,19 +1231,33 @@ function ChoiceRow({
         {(followed.length > 0 || others.length > 0) && (
           <div className="source-chips">
             {followed.map((position) => {
-              const what = `${position.source.name} ${STANCE_WORD[position.stance]} ${group.choice || race.subject.title}`;
+              // `named`: listed on the other side of a two-way race from the
+              // one the source named (Settings → My ballot).
+              const what = `${position.source.name} ${STANCE_WORD[position.stance]} ${position.named ?? (group.choice || race.subject.title)}`;
+              // Coloured and marked by how it counts for you: a source you
+              // disagree with counts the other way. ✗ = counts against.
+              const counted = positionTone(position);
+              const leaning = position.stance === "lean_for" || position.stance === "lean_against";
+              const disagree = position.standing === "disagree";
+              const countsAs = `you disagree with ${position.source.name}, so this counts ${counted === "for" ? "for" : "against"} ${group.choice || race.subject.title}`;
               return (
                 <InfoPopover
-                  key={position.source.id}
-                  className={`source-chip tone-${stanceTone(position.stance)}`}
+                  key={`${position.source.id}|${position.named ?? ""}`}
+                  className={`source-chip tone-${counted}${disagree ? " disagreed" : ""}`}
                   bare={false}
-                  label={what}
+                  label={disagree && counted !== "neutral" ? `${what}; ${countsAs}` : what}
                   trigger={
                     <>
                       <EndorserAvatar sourceId={position.source.id} name={position.source.name} />
-                      {stanceTone(position.stance) === "against" && "✗ "}
-                      {position.stance === "lean_for" && "~ "}
-                      {position.source.name}
+                      {disagree && <ThumbsDown className="icon" aria-hidden="true" />}
+                      {counted === "against" && "✗ "}
+                      {counted === "for" && leaning && "~ "}
+                      <span>
+                        {position.source.name}
+                        {position.named && (
+                          <span className="chip-named"> (said {position.named})</span>
+                        )}
+                      </span>
                       {!position.valid && " ⚠"}
                     </>
                   }
@@ -1075,6 +1270,12 @@ function ChoiceRow({
                     />
                     <strong>{what}</strong>
                   </div>
+                  {disagree && counted !== "neutral" && (
+                    <p className="hint">
+                      <ThumbsDown className="icon" aria-hidden="true" />{" "}
+                      {countsAs.charAt(0).toUpperCase() + countsAs.slice(1)}.
+                    </p>
+                  )}
                   {position.statement && <p>“{position.statement}”</p>}
                   {position.written && (
                     <p className="hint">
@@ -1245,6 +1446,10 @@ function PrintPicks({
           </li>
         ))}
       </ol>
+      <p className="print-disclaimer">
+        Printed from OpenSlate on {formatElectionDate(localToday())}. One voter's picks, not an
+        official or sample ballot; check your official voter guide before you vote.
+      </p>
     </div>
   );
 }

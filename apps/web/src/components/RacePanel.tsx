@@ -261,8 +261,13 @@ function ChoiceCard({
                 ) : (
                   <strong>{position.source.name}</strong>
                 )}
-                {!position.followed && (
+                {position.standing === "off" && (
                   <span className="tag tag-inline">not followed, not on My ballot</span>
+                )}
+                {position.standing === "disagree" && (
+                  <span className="tag tag-inline tag-disagree">
+                    you disagree: counts the other way on My ballot
+                  </span>
                 )}
                 {position.source.secondhand && (
                   <span className="hint">

@@ -5,7 +5,7 @@ import {
   type Subject,
   inferKalshiEventTickers,
 } from "@openslate/core";
-import { baseUrlFor } from "./routing";
+import { apiBase } from "./routing";
 
 export type { Forecast, ForecastCandidate } from "@openslate/core";
 
@@ -57,9 +57,35 @@ export class ForecastUnavailableError extends Error {
   }
 }
 
+/**
+ * Kalshi forecasts are an opt-in for self-hosted servers: Kalshi only accepts
+ * browser requests from kalshi.com, refuses Cloudflare Workers, and its terms
+ * may not allow a public relay or mirror. So the public app has none. A
+ * self-hosted apps/server started with KALSHI_FORECASTS=true relays them and
+ * says so in /api/health. See plans/kalshi-forecasts-429.md.
+ */
+const FORECASTS_PATH = "/api/forecasts/v2";
+
 function kalshiUrl(path: string, params?: Record<string, string>): string {
   const search = params ? `?${new URLSearchParams(params).toString()}` : "";
-  return `${baseUrlFor("kalshi")}${path}${search}`;
+  return `${apiBase()}${FORECASTS_PATH}${path}${search}`;
+}
+
+/** Whether this app's backend relays Kalshi (it reports `forecasts: true`). */
+export function forecastsHealthOptions() {
+  const base = apiBase();
+  return {
+    queryKey: ["forecasts-relay", base] as const,
+    queryFn: async (): Promise<boolean> => {
+      // A static host 404s and the dev proxy 500s when no server runs.
+      const response = await fetch(`${base}/api/health`).catch(() => null);
+      if (!response?.ok) return false;
+      const body = (await response.json().catch(() => null)) as { forecasts?: unknown } | null;
+      return body?.forecasts === true;
+    },
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: false,
+  };
 }
 
 /**

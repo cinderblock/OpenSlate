@@ -2,12 +2,19 @@ import { type SlatePayload, type Stance, type Subject, verifySlate } from "@open
 import type { ChoiceCheck } from "./ballotCheck";
 import {
   type Area,
-  inArea,
   jurisdictionLabel,
   jurisdictionRank,
   parseJurisdiction,
+  placeRace,
 } from "./jurisdictions";
-import { type Source, isBallotSource, isFollowed, sourceOf } from "./sources";
+import {
+  type Source,
+  type Standing,
+  isBallotSource,
+  isFollowed,
+  sourceOf,
+  standingOf,
+} from "./sources";
 import { subjectKey } from "./subjects";
 
 /**
@@ -70,14 +77,55 @@ export function stanceTone(stance: Stance): StanceTone {
   return "neutral";
 }
 
+/**
+ * How a position counts on your ballot. A source you disagree with counts the
+ * other way: what it backs counts against, what it opposes counts for.
+ */
+export function countedTone(stance: Stance, standing: Standing): StanceTone {
+  const tone = stanceTone(stance);
+  if (standing !== "disagree" || tone === "neutral") return tone;
+  return tone === "for" ? "against" : "for";
+}
+
+/**
+ * How a position counts on the choice it's listed under. One moved to the other
+ * side of a two-way race (`named`) already stands for the user's side: it
+ * counts as the source said it, there.
+ */
+export function positionTone(
+  position: Pick<RacePosition, "stance" | "standing" | "named">,
+): StanceTone {
+  return position.named === undefined
+    ? countedTone(position.stance, position.standing)
+    : stanceTone(position.stance);
+}
+
+/**
+ * Where a source you disagree with counts in a two-way race (a Yes/No measure,
+ * two names on the ballot). `choice`: against what it picked (it backs No, so
+ * No gets one against). `side`: for the other side (it backs No, so Yes gets
+ * one for). Races with more names always count against what it picked:
+ * ruling one name out doesn't say who to back.
+ */
+export type DisagreeMode = "choice" | "side";
+
+/** Followed to agree first, then to disagree, then the rest. */
+const STANDING_ORDER: Record<Standing, number> = { follow: 0, disagree: 1, off: 2 };
+
 export interface RacePosition {
   source: Source;
   stance: Stance;
   statement?: string;
   valid: boolean;
-  followed: boolean;
+  /** How the user takes the source; `off` positions don't count on My ballot. */
+  standing: Standing;
   /** The source's own spelling, when it's shown under the ballot's. */
   written?: string;
+  /**
+   * Listed on the other side of a two-way race from the one the source named
+   * (a source you disagree with, `DisagreeMode` `side`): the choice it named.
+   */
+  named?: string;
 }
 
 export interface ChoiceGroup {
@@ -85,7 +133,7 @@ export interface ChoiceGroup {
   choice: string;
   /** Endorsement-type positions, followed sources first. Ballot listings aren't positions. */
   positions: RacePosition[];
-  /** Followed sources for / against this choice. */
+  /** Followed sources counting for / against this choice (`positionTone`). */
   support: number;
   opposition: number;
   /** Listed by a ballot source: this choice is on the ballot even if nobody backs it. */
@@ -106,19 +154,26 @@ export interface Race {
   subject: Subject;
   election?: string;
   jurisdiction?: string;
+  /** Who votes on it, when narrower than `jurisdiction` (SPEC §3.3): a ballot source's, else any slate's. */
+  district?: string;
+  /**
+   * The area can't tell whether the race is on the user's ballot (`placeRace`
+   * "unknown"): a district it has no boundaries for. Absent: it is.
+   */
+  maybe?: true;
   /** Ballot order when a ballot source lists the race, else most-backed first. */
   choices: ChoiceGroup[];
   /** A ballot source lists this race, so `choices` is the whole field. */
   onBallot: boolean;
   /** A ballot source covers this race's jurisdiction but doesn't list it. */
   unlisted: boolean;
-  /** Distinct followed sources with a position here (ballot sources excluded). */
+  /** Distinct followed sources (to agree or disagree) with a position here; ballot sources excluded. */
   followedSources: number;
   totalSources: number;
 }
 
 export interface CollateOptions {
-  follows: Record<string, boolean>;
+  follows: Record<string, Standing>;
   /** Only races in this election (date string as slates use it). */
   election?: string;
   /** Only races on the ballot for this area. */
@@ -129,6 +184,49 @@ export interface CollateOptions {
    * so a race never hides part of its field.
    */
   includeUnfollowed?: boolean;
+  /**
+   * Where sources you disagree with count in two-way races. Default `choice`:
+   * every position stays under the choice its source named, as a race page
+   * shows them.
+   */
+  disagree?: DisagreeMode;
+}
+
+type Field = Pick<Race, "choices" | "onBallot" | "subject">;
+
+/**
+ * The options a voter chooses between: the official field when a ballot
+ * source lists the race, else every named choice, else the race itself.
+ */
+export function optionsOf(race: Field): string[] {
+  const named = race.choices.filter((c) => c.choice !== "" && (!race.onBallot || c.onBallot));
+  return named.length > 0 ? named.map((c) => c.choice) : [""];
+}
+
+/** A race with exactly two known options: a Yes/No measure, or a two-name ballot. */
+export function twoWayOptions(race: Field): [string, string] | undefined {
+  if (!race.onBallot && race.subject.kind !== "measure") return undefined;
+  const options = optionsOf(race);
+  return options.length === 2 ? [options[0] as string, options[1] as string] : undefined;
+}
+
+/**
+ * `DisagreeMode` `side`: in a two-way race, list what a source you disagree
+ * with says about one side under the other, marked with the side it named.
+ */
+function moveToOtherSide(race: Field): void {
+  const pair = twoWayOptions(race);
+  if (!pair) return;
+  const groups = pair.map((choice) => race.choices.find((c) => c.choice === choice));
+  const [first, second] = groups;
+  if (!first || !second) return;
+  const moving = groups.map((g) => g?.positions.filter((p) => p.standing === "disagree") ?? []);
+  first.positions = first.positions
+    .filter((p) => p.standing !== "disagree")
+    .concat((moving[1] ?? []).map((p) => ({ ...p, named: second.choice })));
+  second.positions = second.positions
+    .filter((p) => p.standing !== "disagree")
+    .concat((moving[0] ?? []).map((p) => ({ ...p, named: first.choice })));
 }
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -158,10 +256,12 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
     /** Choice → position on the ballot, for ballot order. */
     ballotOrder: Map<string, number>;
   }
+  const districts = districtsOf(slates);
   const races = new Map<string, Building>();
   for (const slate of slates) {
     const ballot = isBallotSource(slate.source);
-    const followed = ballot || isFollowed(options.follows, slate.source.id);
+    const standing = standingOf(options.follows, slate.source.id);
+    const followed = ballot || standing !== "off";
     for (const [index, position] of slate.payload.positions.entries()) {
       const check = slate.checks?.[index];
       const key = subjectKey(position.subject);
@@ -169,7 +269,9 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
       const election = electionOf(position.subject, slate.payload);
       if (options.election && election !== options.election) continue;
       const jurisdiction = position.subject.jurisdiction ?? slate.payload.context?.jurisdiction;
-      if (options.area && !inArea(jurisdiction, options.area)) continue;
+      const district = districts.get(key);
+      const placement = options.area ? placeRace(jurisdiction, district, options.area) : "in";
+      if (placement === "out") continue;
 
       let race = races.get(key);
       if (!race) {
@@ -178,6 +280,8 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
           subject: position.subject,
           ...(election ? { election } : {}),
           ...(jurisdiction ? { jurisdiction } : {}),
+          ...(district ? { district } : {}),
+          ...(placement === "unknown" ? { maybe: true as const } : {}),
           choices: [],
           onBallot: false,
           unlisted: false,
@@ -228,20 +332,28 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
         stance: position.stance,
         ...(position.statement ? { statement: position.statement } : {}),
         valid: slate.valid,
-        followed,
+        standing,
         ...(check?.written ? { written: check.written } : {}),
       });
-      if (followed) {
-        const tone = stanceTone(position.stance);
-        if (tone === "for") group.support++;
-        else if (tone === "against") group.opposition++;
-      }
     }
   }
 
   return [...races.values()]
     .filter((race) => race.onBallot || race.followedIds.size > 0 || options.includeUnfollowed)
-    .map(({ sourceIds, followedIds, ballotOrder, ...race }) => ({
+    .map(({ sourceIds, followedIds, ballotOrder, ...race }) => {
+      if (options.disagree === "side") moveToOtherSide(race);
+      // Tallied once every position is where it counts.
+      for (const group of race.choices) {
+        for (const position of group.positions) {
+          if (position.standing === "off") continue;
+          const tone = positionTone(position);
+          if (tone === "for") group.support++;
+          else if (tone === "against") group.opposition++;
+        }
+      }
+      return { race, followedIds, sourceIds, ballotOrder };
+    })
+    .map(({ race, followedIds, sourceIds, ballotOrder }) => ({
       ...race,
       followedSources: followedIds.size,
       totalSources: sourceIds.size,
@@ -250,7 +362,7 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
           ...group,
           positions: [...group.positions].sort(
             (a, b) =>
-              Number(b.followed) - Number(a.followed) ||
+              STANDING_ORDER[a.standing] - STANDING_ORDER[b.standing] ||
               collator.compare(a.source.name, b.source.name),
           ),
         }))
@@ -264,6 +376,26 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
         ),
     }))
     .sort(compareRaces);
+}
+
+/**
+ * Each race's `district`, by subject key: a ballot source's (it says what's on
+ * whose ballot, SPEC §8.2), else the first slate's that gives one.
+ */
+function districtsOf(slates: DecodedSlate[]): Map<string, string> {
+  const out = new Map<string, string>();
+  const fromBallot = new Set<string>();
+  for (const slate of slates) {
+    const ballot = isBallotSource(slate.source);
+    for (const { subject } of slate.payload.positions) {
+      if (!subject.district) continue;
+      const key = subjectKey(subject);
+      if (fromBallot.has(key) || (!ballot && out.has(key))) continue;
+      out.set(key, subject.district);
+      if (ballot) fromBallot.add(key);
+    }
+  }
+  return out;
 }
 
 /** Ballot order: by jurisdiction (statewide, districts, local), offices before measures, then title. */
@@ -286,7 +418,7 @@ export interface ElectionSummary {
 /** Every election the imported slates cover, oldest first. Ballot sources count as races, not sources. */
 export function electionsOf(
   slates: DecodedSlate[],
-  follows: Record<string, boolean>,
+  follows: Record<string, Standing>,
 ): ElectionSummary[] {
   const by = new Map<string, { races: Set<string>; sources: Set<string>; followed: Set<string> }>();
   for (const slate of slates) {
@@ -331,13 +463,21 @@ export interface AreaOptions {
   districts: Record<string, string[]>;
 }
 
-/** The localities and districts that races in these slates (optionally one election) cover. */
-export function areaOptionsOf(positions: Iterable<{ jurisdiction?: string }>): AreaOptions {
+/**
+ * The localities and districts that races in these slates (optionally one
+ * election) cover. Each item counts once, or `count` times when it stands for
+ * several races (a catalog's per-jurisdiction summary).
+ */
+export function areaOptionsOf(
+  positions: Iterable<{ jurisdiction?: string; count?: number }>,
+): AreaOptions {
   const localities = new Map<string, number>();
   const districts = new Map<string, Set<string>>();
-  for (const { jurisdiction } of positions) {
+  for (const { jurisdiction, count = 1 } of positions) {
     const part = parseJurisdiction(jurisdiction);
-    if (part.kind === "local") localities.set(part.path, (localities.get(part.path) ?? 0) + 1);
+    if (part.kind === "local") {
+      localities.set(part.path, (localities.get(part.path) ?? 0) + count);
+    }
     if (part.kind === "district") {
       const family = `${part.state}/${part.family}`;
       const set = districts.get(family) ?? new Set();

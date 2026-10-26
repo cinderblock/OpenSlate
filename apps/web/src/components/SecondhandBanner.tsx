@@ -1,5 +1,6 @@
 import type { Attribution } from "@openslate/core";
 import { formatLocalDate } from "../lib/dates";
+import { openFeedback } from "../lib/feedback";
 
 interface SecondhandBannerProps {
   attribution: Attribution;
@@ -52,6 +53,13 @@ export function SecondhandBanner({ attribution, signerDisplay }: SecondhandBanne
           ))}
         </p>
       )}
+      <p className="hint">
+        Does this misstate {reportedName}'s positions?{" "}
+        <button type="button" className="link" onClick={openFeedback}>
+          Tell us
+        </button>{" "}
+        so it can be corrected.
+      </p>
     </div>
   );
 }

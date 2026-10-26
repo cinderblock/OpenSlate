@@ -72,7 +72,7 @@ const rows = data.viewer.zones[0]?.httpRequestsAdaptiveGroups ?? [];
 // like included, is scanners and crawlers.
 const ROUTES = [
   /^\/api\/(polls|pollsters|subjects|poll-types)(\/|$)/,
-  /^\/api\/(results|forecasts)\/v2(\/|$)/,
+  /^\/api\/results\/v2(\/|$)/,
   /^\/api\/(civic\/elections|civic\/voterinfo|geocode\/census|health)$/,
 ];
 const app = rows.filter((row) => ROUTES.some((r) => r.test(row.dimensions.clientRequestPath)));

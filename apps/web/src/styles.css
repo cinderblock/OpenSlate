@@ -498,6 +498,11 @@ button.ui-info-bare {
   margin-left: 0.4rem;
   font-size: 0.7rem;
 }
+/* A source the user follows to disagree with. */
+.tag-disagree {
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 60%, var(--border));
+}
 .grow {
   flex: 1;
 }
@@ -580,6 +585,13 @@ footer button.link {
 }
 footer button.link:hover {
   text-decoration: underline;
+}
+/* The general disclaimer: smaller, and kept to a readable line length. */
+.footer-legal {
+  max-width: 44rem;
+  margin: 0.75rem auto 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
 }
 
 /* Feedback dialog (components/FeedbackDialog.tsx) */
@@ -1179,6 +1191,24 @@ button.source-chip {
   opacity: 0.55;
   border-style: dashed;
 }
+/* Counted on the other side of a two-way race: the side the source named. */
+.chip-named {
+  color: var(--muted);
+}
+.disagree-mode .ui-radio-group {
+  gap: 0.35rem;
+}
+.disagree-mode-details {
+  margin-top: 0.5rem;
+}
+.disagree-mode-details > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.disagree-mode-details[open] > summary {
+  margin-bottom: 0.5rem;
+}
 .pick-buttons {
   border: none;
   padding: 0;
@@ -1217,6 +1247,10 @@ button.source-chip {
 .print-note {
   font-style: italic;
   font-size: 0.9rem;
+}
+.print-disclaimer {
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
 }
 
 /* Area picker */
@@ -1577,6 +1611,20 @@ button.source-chip {
   margin: 0.25rem 0 0.5rem;
 }
 
+/* My ballot: races the area can't place, after the ballot and set apart from it. */
+.ballot-maybe {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.ballot-maybe > h3 {
+  margin: 0 0 0.25rem;
+}
+.ballot-maybe > .hint {
+  margin: 0 0 0.5rem;
+  max-width: 60rem;
+}
+
 /* Race page: on a wide screen polls, forecast and results sit beside the
    endorsements. The last row is the only flexible one, so a tall sidebar
    stretches it rather than pushing My positions and the choices apart. */
@@ -1767,8 +1815,26 @@ button.source-chip {
   padding: 0.5rem 0;
   border-top: 1px solid var(--border);
 }
+/* On a phone the follow controls drop below the name rather than squeeze it. */
+.source-row,
+.catalog-list li {
+  flex-wrap: wrap;
+}
+.source-row > .grow,
+.catalog-list li > .grow {
+  min-width: min(100%, 13rem);
+}
 .catalog-list li.following {
   background: color-mix(in srgb, var(--ok) 6%, transparent);
+}
+.catalog-list li.disagreeing {
+  background: color-mix(in srgb, var(--bad) 6%, transparent);
+}
+.sources-subheading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 1rem 0 0;
 }
 .segmented {
   display: inline-flex;
@@ -1906,6 +1972,32 @@ dialog.wizard::backdrop {
 .wizard-about-links {
   font-weight: 600;
 }
+/* One organization on the sources step: a card that lights up by how it's picked. */
+.wizard-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 0.95rem;
+  transition: background 0.12s, border-color 0.12s;
+}
+.wizard-source > .grow {
+  min-width: min(100%, 10rem);
+}
+.wizard-source.standing-follow {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.wizard-source.standing-disagree {
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 10%, var(--surface-2));
+  box-shadow: inset 3px 0 0 var(--bad);
+}
 .wizard-source-meta {
   display: flex;
   flex-direction: column;
@@ -1965,7 +2057,22 @@ dialog.wizard::backdrop {
   background: var(--surface);
   z-index: 1;
 }
-/* "Skip setup" → nudge → "Skip anyway" (Wizard.tsx SkipSetup). */
+/* While something loads: the bar, then why it's worth waiting. */
+.wizard-wait {
+  margin: 0.75rem 0;
+}
+.wizard-wait p,
+p.wizard-wait {
+  margin: 0.5rem 0 0;
+}
+.ui-checkbox.wizard-download-all {
+  align-items: flex-start;
+  margin-top: 0.75rem;
+}
+.wizard-download-all .ui-checkbox-box {
+  margin-top: 0.15em;
+}
+/* A two-step way out: "Skip setup" → nudge → confirm (Wizard.tsx ConfirmLink). */
 .wizard-skip,
 .wizard-skip-nudge {
   display: inline-flex;
@@ -1976,7 +2083,20 @@ dialog.wizard::backdrop {
 .wizard-skip button.link {
   color: var(--muted);
 }
-.wizard-skip-nudge > * {
+/* The nudge floats just above the footer (the sticky footer is its containing
+   block) instead of joining the row, so showing it never rewraps the footer
+   or resizes the dialog. Empty, it's still the live region, just no box. */
+.wizard-skip-nudge:not(:empty) {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 0.4rem);
+  width: max-content;
+  max-width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px var(--shadow);
   font-size: 0.9rem;
   animation: wizard-skip-in 0.2s ease-out;
 }
@@ -1984,13 +2104,18 @@ dialog.wizard::backdrop {
   color: var(--muted);
   font-style: italic;
 }
+.wizard-skip-nudge > button {
+  font-size: inherit;
+  animation: wizard-skip-in 0.2s ease-out;
+}
 @keyframes wizard-skip-in {
   from {
     opacity: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .wizard-skip-nudge > * {
+  .wizard-skip-nudge:not(:empty),
+  .wizard-skip-nudge > button {
     animation: none;
   }
 }
@@ -2133,6 +2258,68 @@ dialog.wizard::backdrop {
 }
 .db-status-banner p {
   margin: 0;
+}
+
+/* The wizard's import carrying on in the background (ImportBanner.tsx).
+   Sticks to the top while it runs, so the bar stays in sight on a long ballot. */
+.import-banner {
+  position: sticky;
+  top: 0.5rem;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid color-mix(in oklab, var(--border), var(--accent) 40%);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--surface), var(--accent) 6%);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+.import-banner.done {
+  border-color: color-mix(in oklab, var(--border), var(--ok) 40%);
+  border-left-color: var(--ok);
+  background: color-mix(in oklab, var(--surface), var(--ok) 6%);
+}
+.import-banner.failed {
+  border-color: color-mix(in oklab, var(--border), var(--warn) 40%);
+  border-left-color: var(--warn);
+  background: color-mix(in oklab, var(--surface), var(--warn) 6%);
+}
+.import-banner-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: 0.1rem;
+  color: var(--accent);
+}
+.import-banner.done .import-banner-icon {
+  color: var(--ok);
+}
+.import-banner.failed .import-banner-icon {
+  color: var(--warn);
+}
+.import-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.import-banner-text output,
+.import-banner-text ul {
+  margin: 0;
+}
+.import-banner-close {
+  justify-self: end;
+}
+@media (max-width: 40rem) {
+  .import-banner {
+    grid-template-columns: auto 1fr;
+  }
+  .import-banner-close {
+    grid-column: 2;
+  }
 }
 
 /* civicAPI per-region breakdown */
@@ -2701,6 +2888,57 @@ button.tag.active {
   box-shadow: inset 0 0 0 2px #fff;
 }
 
+/* ToggleGroup: joined toggle buttons, at most one pressed. */
+.ui-toggle-group {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ui-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.65rem;
+  border: none;
+  border-radius: 0;
+  background: var(--surface-2);
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+  outline: none;
+}
+.ui-toggle + .ui-toggle {
+  border-left: 1px solid var(--border);
+}
+.ui-toggle[data-hovered] {
+  color: var(--text);
+}
+.ui-toggle[data-selected] {
+  background: var(--accent);
+  color: #fff;
+}
+.ui-toggle[data-focus-visible] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.ui-toggle[data-selected][data-focus-visible] {
+  box-shadow: inset 0 0 0 2px #fff;
+}
+.ui-toggle[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* Disagree reads as the "against" side, not as a second kind of yes. */
+.ui-toggle.standing-disagree[data-selected] {
+  background: color-mix(in srgb, var(--bad) 22%, var(--surface-2));
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--bad);
+}
+.ui-toggle.standing-disagree[data-selected][data-focus-visible] {
+  box-shadow: inset 0 0 0 2px var(--bad);
+}
+
 /* Stance colour on Select options and the closed control. */
 .ui-option.stance-opt-endorse .ui-option-label,
 .ui-select-value-label.stance-opt-endorse {
@@ -3043,6 +3281,62 @@ button.tag.active {
 }
 .ui-slider-thumb[data-focus-visible] {
   box-shadow: var(--focus-ring);
+}
+
+/* Progress bar: a label and percentage over a track that fills. */
+.ui-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.75rem 0;
+}
+.ui-progress-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.ui-progress-value {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.ui-progress-track {
+  position: relative;
+  display: block;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.ui-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+/* Indeterminate: RAC leaves out aria-valuenow. */
+.ui-progress:not([aria-valuenow]) .ui-progress-fill {
+  width: 35%;
+  animation: ui-progress-slide 1.2s ease-in-out infinite;
+}
+@keyframes ui-progress-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-progress-fill {
+    transition: none;
+  }
+  .ui-progress:not([aria-valuenow]) .ui-progress-fill {
+    width: 100%;
+    animation: none;
+    opacity: 0.4;
+  }
 }
 
 .subject-picker {

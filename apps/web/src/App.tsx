@@ -19,6 +19,7 @@ import { useRef } from "react";
 import { AlphaBadge, AlphaBanner } from "./components/AlphaNotice";
 import { DesktopUpdateBanner } from "./components/DesktopUpdate";
 import { FeedbackHost } from "./components/FeedbackHost";
+import { ImportBanner } from "./components/ImportBanner";
 import { WizardHost } from "./components/WizardHost";
 import { Switch } from "./components/ui/Switch";
 import { useAlphaBannerOpen } from "./lib/alpha";
@@ -172,6 +173,7 @@ export function RootLayout() {
         )}
 
         <DbStatusBanner />
+        <ImportBanner />
 
         <main>
           <Outlet />
@@ -191,6 +193,14 @@ export function RootLayout() {
             <MessageSquare className="icon" /> Send feedback
           </button>
           <UsageFooterToggle />
+          <p className="footer-legal">
+            OpenSlate gathers public voter information and endorsements, plus any shared with you
+            privately, into one format filtered to where you vote. Endorsements are their authors'
+            views: OpenSlate endorses no one, and showing a name or logo doesn't mean its owner
+            endorses OpenSlate. Provided as is, without warranty; its authors and whoever runs this
+            copy aren't liable for errors or how it's used. Not legal advice or an official election
+            resource; your official voter guide has the final word.
+          </p>
         </footer>
       </div>
     </EndorsersContext.Provider>

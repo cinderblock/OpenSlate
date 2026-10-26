@@ -88,10 +88,29 @@ export function isBallotSource(source: Pick<Source, "kind">): boolean {
 }
 
 /**
- * Whether a source is followed. A source nobody has decided about is followed:
- * importing a slate is usually a sign you want it. Bulk imports that shouldn't
- * land on the ballot record an explicit `false`.
+ * How a voter takes a source. `follow`: its picks count for what it backs.
+ * `disagree`: followed too, but its picks count the other way (what it backs
+ * counts against, what it opposes counts for). `off`: imported for comparison
+ * only, so it shows on race pages but not on My ballot.
  */
-export function isFollowed(follows: Record<string, boolean>, sourceId: string): boolean {
-  return follows[sourceId] ?? true;
+export type Standing = "follow" | "disagree" | "off";
+
+export const STANDINGS: readonly Standing[] = ["follow", "disagree", "off"];
+
+export function isStanding(value: unknown): value is Standing {
+  return STANDINGS.includes(value as Standing);
+}
+
+/**
+ * A source's standing. A source nobody has decided about is followed:
+ * importing a slate is usually a sign you want it. Bulk imports that shouldn't
+ * land on the ballot record an explicit `off`.
+ */
+export function standingOf(follows: Record<string, Standing>, sourceId: string): Standing {
+  return follows[sourceId] ?? "follow";
+}
+
+/** Whether a source is on My ballot: followed, to agree or to disagree. */
+export function isFollowed(follows: Record<string, Standing>, sourceId: string): boolean {
+  return standingOf(follows, sourceId) !== "off";
 }

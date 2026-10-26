@@ -43,6 +43,14 @@ export interface CatalogEntry {
     sources?: string[];
   };
   positions: number;
+  /** The slate's `context.jurisdiction`: where it publishes for. */
+  scope?: string;
+  /**
+   * Races per position jurisdiction (core's `racesByJurisdiction`; `""` for
+   * none). With it the wizard matches the entry to an area without fetching
+   * the slate. Older catalogs leave it out.
+   */
+  jurisdictions?: Record<string, number>;
   issued_at: string;
   /** The endorser's logo, relative to the catalog URL. */
   logo?: string;
@@ -75,6 +83,17 @@ export interface Catalog {
   version: number;
   generated_at: string;
   entries: CatalogEntry[];
+  /**
+   * Every entry with its slate inline, in one file: the catalog's entries plus
+   * a `token` each. `bytes` is its uncompressed size, for a progress bar when
+   * the transfer is compressed.
+   */
+  bundle?: { path: string; bytes?: number };
+}
+
+/** One entry of a catalog bundle: the entry plus its signed slate. */
+export interface CatalogBundleEntry extends CatalogEntry {
+  token: string;
 }
 
 /** The curated public-endorsements catalog, live. */

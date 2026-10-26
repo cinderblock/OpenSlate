@@ -7,6 +7,9 @@ import {
   jurisdictionRank,
   noRaceReason,
   parseJurisdiction,
+  placeRace,
+  upgradeArea,
+  withFoundLocalities,
 } from "../src/lib/jurisdictions";
 
 describe("parseJurisdiction", () => {
@@ -26,6 +29,69 @@ describe("parseJurisdiction", () => {
       slug: "los-angeles-county",
     });
     expect(parseJurisdiction(undefined)).toEqual({ kind: "none" });
+  });
+});
+
+describe("placeRace", () => {
+  const hb = {
+    localities: ["us/ca/huntington-beach", "us/ca/orange-county"],
+    districts: {
+      "us/ca/cd": "42",
+      "us/ca/unsd": "none",
+      "us/ca/elsd": "17880",
+      "us/ca/scsd": "17910",
+      "us/ca/orange-county/sup": "2",
+    },
+  };
+  const oc = "us/ca/orange-county";
+
+  test("without a district, a race is placed by its jurisdiction alone", () => {
+    expect(placeRace(oc, undefined, hb)).toBe("in");
+    expect(placeRace("us/ca/los-angeles-county", undefined, hb)).toBe("out");
+    expect(placeRace(oc, "us/ca/elsd-2610", EMPTY_AREA)).toBe("in");
+  });
+
+  test("a family segment compares with the area's district of that family", () => {
+    expect(placeRace(oc, "us/ca/elsd-17880", hb)).toBe("in");
+    expect(placeRace(oc, "us/ca/elsd-02610", hb)).toBe("out");
+    expect(placeRace(oc, `${oc}/sup-2`, hb)).toBe("in");
+    expect(placeRace(oc, `${oc}/sup-4`, hb)).toBe("out");
+    // In no unified school district: every unified district's races are out.
+    expect(placeRace(oc, "us/ca/unsd-17760/ta-4", hb)).toBe("out");
+  });
+
+  test("what the area doesn't know is unknown, unless something else rules it out", () => {
+    // Trustee areas: the school district is known, the area isn't.
+    expect(placeRace(oc, "us/ca/elsd-17880/ta-4", hb)).toBe("unknown");
+    expect(placeRace(oc, "us/ca/elsd-2610/ta-4", hb)).toBe("out");
+    // A water district the area can't find.
+    expect(placeRace(oc, "us/ca/irvine-ranch-water-district/div-5", hb)).toBe("unknown");
+    expect(placeRace(oc, "us/ca/boe-2", hb)).toBe("unknown");
+    // A different state's district.
+    expect(placeRace(oc, "us/ny/cd-3", hb)).toBe("out");
+  });
+
+  test("a district the area puts the user in outranks the filing county", () => {
+    // Fullerton Joint Union High School District crosses into LA County; OC lists it.
+    const la = {
+      localities: ["us/ca/la-habra-heights", "us/ca/los-angeles-county"],
+      districts: { "us/ca/scsd": "14760" },
+    };
+    expect(placeRace(oc, "us/ca/scsd-14760/ta-1", la)).toBe("unknown");
+    expect(placeRace(oc, "us/ca/scsd-14760", la)).toBe("in");
+    // Another school district's: out, as before. Nothing matched: the county decides.
+    expect(placeRace(oc, "us/ca/scsd-17910/ta-1", la)).toBe("out");
+    expect(placeRace(oc, "us/ca/irvine-ranch-water-district/div-5", la)).toBe("out");
+    expect(placeRace(oc, `${oc}/sup-2`, la)).toBe("out");
+  });
+
+  test("a place segment the area lists continues, and lettered ids count", () => {
+    const cypress = {
+      localities: ["us/ca/cypress-school-district", oc],
+      districts: { "us/ca/cypress-school-district/ta": "b" },
+    };
+    expect(placeRace(oc, "us/ca/cypress-school-district/ta-B", cypress)).toBe("in");
+    expect(placeRace(oc, "us/ca/cypress-school-district/ta-c", cypress)).toBe("out");
   });
 });
 
@@ -102,4 +168,50 @@ describe("districts with no race", () => {
       "Nothing you've imported has a State Senate race in district 12 this election.",
     );
   });
+});
+
+describe("upgradeArea", () => {
+  test("a re-filed county's old path gains the county's own, and asks about the city", () => {
+    const old = {
+      localities: ["us/ca/san-diego"],
+      districts: { "us/ca/cd": "50", "us/ca/san-diego/sup": "4" },
+      labels: { "us/ca/san-diego/sup": "San Diego County supervisorial district 4" },
+    };
+    expect(upgradeArea(old)).toEqual({
+      localities: ["us/ca/san-diego", "us/ca/san-diego-county"],
+      districts: { "us/ca/cd": "50", "us/ca/san-diego-county/sup": "4" },
+      labels: { "us/ca/san-diego-county/sup": "San Diego County supervisorial district 4" },
+      recheck: ["us/ca/san-diego"],
+    });
+  });
+
+  test("the City of Alameda gets its own path", () => {
+    const old = { localities: ["us/ca/alameda", "us/ca/alameda-county"], districts: {} };
+    expect(upgradeArea(old).localities).toEqual([
+      "us/ca/alameda",
+      "us/ca/alameda-county",
+      "us/ca/city-of-alameda",
+    ]);
+  });
+
+  test("leaves up-to-date areas alone", () => {
+    const answered = { localities: ["us/ca/san-diego", "us/ca/san-diego-county"], districts: {} };
+    expect(upgradeArea(answered)).toBe(answered);
+    const looked = { localities: ["us/ca/san-diego"], districts: {}, found: ["us/ca/san-diego"] };
+    expect(upgradeArea(looked)).toBe(looked);
+    const elsewhere = { localities: ["us/ca/oakland", "us/ca/alameda-county"], districts: {} };
+    expect(upgradeArea(elsewhere)).toBe(elsewhere);
+  });
+});
+
+test("withFoundLocalities adds what the lookup found that races now use", () => {
+  const area = {
+    localities: ["us/ca/chula-vista"],
+    districts: {},
+    found: ["us/ca/chula-vista", "us/ca/city-of-chula-vista", "us/ca/san-diego-county"],
+  };
+  expect(
+    withFoundLocalities(area, ["us/ca/chula-vista", "us/ca/san-diego-county"]).localities,
+  ).toEqual(["us/ca/chula-vista", "us/ca/san-diego-county"]);
+  expect(withFoundLocalities(area, ["us/ca/chula-vista"])).toBe(area);
 });

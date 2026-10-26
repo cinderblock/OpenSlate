@@ -34,15 +34,15 @@ const governor: Race = {
       support: 2,
       opposition: 0,
       positions: [
-        { source: source("Sierra Club"), stance: "endorse", valid: true, followed: true },
+        { source: source("Sierra Club"), stance: "endorse", valid: true, standing: "follow" },
         {
           source: source("Chronicle"),
           stance: "endorse",
           statement: "Steady hand",
           valid: true,
-          followed: true,
+          standing: "follow",
         },
-        { source: source("Someone"), stance: "oppose", valid: true, followed: false },
+        { source: source("Someone"), stance: "oppose", valid: true, standing: "off" },
       ],
     },
     { choice: "Bob", onBallot: true, writeIn: false, support: 0, opposition: 0, positions: [] },
@@ -153,4 +153,73 @@ test("a name the user wrote in is exported as a write-in choice", () => {
   expect(csv.at(-1)).toBe(
     `"${E}","us/ca","Governor","race","Cy Writein","","yes","","0","0","","endorse",""`,
   );
+});
+
+test("a source you disagree with keeps its own stance, marked", () => {
+  const [ada, ...rest] = governor.choices;
+  const disagreed = {
+    ...input,
+    races: [
+      {
+        ...governor,
+        choices: [
+          {
+            ...(ada as Race["choices"][number]),
+            positions: [
+              {
+                source: source("County GOP"),
+                stance: "oppose" as const,
+                valid: true,
+                standing: "disagree" as const,
+              },
+            ],
+            support: 1,
+            opposition: 0,
+          },
+          ...rest,
+        ],
+      },
+    ],
+  };
+  const out = JSON.parse(ballotToJson(disagreed, { privateNotes: false }));
+  expect(out.races[0].choices[0].for).toBe(1);
+  expect(out.races[0].choices[0].sources).toEqual([
+    { name: "County GOP", stance: "oppose", followed: true, disagree: true },
+  ]);
+  const csv = ballotToCsv(disagreed, { privateNotes: false }).split("\n");
+  expect(csv[1]).toContain('"County GOP: oppose (you disagree)"');
+});
+
+test("a position counted on the other side keeps the side its source named", () => {
+  const [ada, bob] = governor.choices;
+  const moved = {
+    ...input,
+    races: [
+      {
+        ...governor,
+        choices: [
+          ada as Race["choices"][number],
+          {
+            ...(bob as Race["choices"][number]),
+            positions: [
+              {
+                source: source("County GOP"),
+                stance: "endorse" as const,
+                valid: true,
+                standing: "disagree" as const,
+                named: "Ada",
+              },
+            ],
+            support: 1,
+          },
+        ],
+      },
+    ],
+  };
+  const out = JSON.parse(ballotToJson(moved, { privateNotes: false }));
+  expect(out.races[0].choices[1].sources).toEqual([
+    { name: "County GOP", stance: "endorse", followed: true, disagree: true, named: "Ada" },
+  ]);
+  const csv = ballotToCsv(moved, { privateNotes: false }).split("\n");
+  expect(csv[2]).toContain('"County GOP: endorse Ada (you disagree)"');
 });
