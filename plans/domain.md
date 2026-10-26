@@ -139,6 +139,8 @@ thread's uncommitted edits (telemetry SECRET_KEK, restic CNAME,
       mapping, not the deploy (logged in ISSUES.md, `264f819`).
 - [x] ops `web_analytics: { auto_install: false }` pushed as `e5515bd`, CI
       applied it (1 create; verify run 0/0/0).
+- [x] Web Analytics site removed: ops `web_analytics: false` (`3db3300`), which
+      only took after ops `1ea1ef5`, 2026-10-25 (plans/usage-analytics.md, q. 6).
 
 ## Findings / gotchas (ops)
 

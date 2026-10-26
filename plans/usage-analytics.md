@@ -131,7 +131,8 @@ of event names and low-cardinality, non-political dims is fine.
   live script 2026-10-15.
 - ops: `web_analytics: { auto_install: false }` (zone-level, no injection
   anywhere in the zone) rather than `manual` (which is auto-install plus a
-  per-host exclusion rule).
+  per-host exclusion rule). **Superseded 2026-10-22:** `web_analytics:
+  false`, so no site exists at all (open question 6).
 - The page-view route is compile-checked: `const route: RouteTemplate =
   routeId` fails to typecheck if a new route isn't added to the union.
 
@@ -152,7 +153,7 @@ of event names and low-cardinality, non-political dims is fine.
       longer reloads (Compose keeps unsaved work in memory); a note offers
       "Reload now" if the beacon already ran on this page. Plus the `.row`
       label fix it exposed (`1aa12f5`).
-- [ ] Decide how OpenSlate gets the SDK. The user asked why npm at all.
+- [x] **Done: npm, 0.1.0 published from CI with provenance.** Decide how OpenSlate gets the SDK. The user asked why npm at all.
       Options: vendor the browser client into OpenSlate, a git dependency on a
       built branch, or an npm release. **An npm release is CI-only, from a
       protected version tag; no local publish, not even a 0.0.0 name claim.**
@@ -202,7 +203,7 @@ of event names and low-cardinality, non-political dims is fine.
       domain `/login` 200, workers.dev 404, `/usage` still 13 `page.view`.
       The ops plan's "Still outstanding: CF_* secrets" line is now stale;
       fix it in the next ops commit.
-- [ ] **telemetry-collector has never been deployed.** Findings 2026-10-17:
+- [x] **Resolved: deployed, serving only on telemetry.tomsawyerlabs.com.** ~~telemetry-collector has never been deployed.~~ Findings 2026-10-17:
       its only Workers Build (deploy@7a2d14e, 2026-09-25) failed with
       "UnknownLockfileVersion" because the trigger has no `BUN_VERSION` (image
       Bun 1.2.15 can't read the lockfile; OpenSlate's triggers set
@@ -401,14 +402,15 @@ anywhere.
    deletion whose live settings already matched (auto-install off) was
    "unchanged", so `false` never deleted it. Dry run after the fix: exactly
    one delete, the openslate.us site.
-   **Applied, but the site is still there.** CI run 39740364949: the first
-   attempt hit a 429 while fetching (nothing applied). The rerun logged
-   "✓ Deleted web-analytics: openslate.us (manual)", yet 10+ minutes later
-   `GET rum/site_info/2b3f91845a854656ab9fac599dcdbeb5` still returns it.
-   So the verify job (STRICT) now fails on every ops push ("1 to delete").
-   The provider deleted by `site_tag` via `rum.siteInfo.delete` and got no
-   error. Cause unknown. Asked the user: remove it in the dashboard, or
-   revert the config.
+   The first apply (CI run 39740364949) logged "✓ Deleted web-analytics:
+   openslate.us (manual)" but the site stayed, and sync-verify failed on
+   every ops push from then on. **Done 2026-10-25 4:24 PM PDT (23:24Z)**,
+   fixed by another thread in ops `1ea1ef5`: sync's delete order handed the
+   provider the config placeholder (no Cloudflare ID), so no delete request
+   was ever sent, and the provider's "has no Cloudflare ID" error was never
+   read. Sync now fails on any reported error, and the delete checks the
+   site has gone from the list. Verified: openslate.us is no longer in
+   `rum/site_info/list`, and ops CI on `1ea1ef5` passed.
 
 ## Things not to do
 
