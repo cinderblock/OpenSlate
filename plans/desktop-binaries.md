@@ -101,9 +101,29 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
 8. ☑ Signed self-updates (see "Updates" below): built, unit-tested, and
    tested end to end on Windows against a local feed.
 9. ☑ `desktop-release` / `desktop-recovery` environments and key secrets.
-10. ☐ **(current)** Merge PR #1, tag `desktop-v0.1.0`, check the draft, publish
-   it (approved 2026-10-25); publishing makes the feeds live. Then check the
-   live feeds verify with the app's keys, and delete the local key files.
+10. ☑ Released. PR #1 merged (`b4d21e7`); tag `desktop-v0.1.0` → run
+   40250421358 (all builds, self-tests, signing, draft green); staged feeds
+   verified with the app's keys; published 2026-10-25 5:45 PM PDT (00:45Z
+   Oct 26); `desktop-publish.yml` run 40250854812 made both feeds live; the
+   live feeds, fetched from their public URLs, verify. Local key files
+   deleted. https://github.com/cinderblock/OpenSlate/releases/tag/desktop-v0.1.0
+
+## Releasing the next version
+
+Bump `apps/desktop/package.json`'s version, merge to master, tag the merge
+`desktop-v<version>` (admins only, ruleset), check the draft, publish it.
+The build makes delta patches from the live version automatically.
+
+## Known gaps (not asked for; for later)
+
+- The update itself is tested end to end only on Windows; macOS and Linux
+  installs haven't updated themselves yet. The *Restart to update* click
+  wasn't exercised by hand (synthetic input didn't reach WebView2).
+- Unsigned builds (SmartScreen, Gatekeeper `xattr`), no Intel Mac build.
+- The Google Civic relay rejects the desktop's `views://` origin
+  (`CIVIC_ALLOWED_ORIGINS`, infra: needs per-change approval).
+- About 30 other "this browser" strings in the web app; window title-bar
+  icon is generic (Electrobun #565).
 
 ## Updates (design, 2026-10-25)
 
@@ -290,7 +310,7 @@ Electrobun's updater checks nothing cryptographically: its `hash` is a
       feed server and files cleaned up.
 - [x] `desktop-release` and `desktop-recovery` environments (deployment
       tags `desktop-v*`), each with its key as a secret (2026-10-25).
-- [ ] Merge, tag (approved); publish (separate yes).
+- [x] Merged, tagged, published `desktop-v0.1.0`; feeds live and verified.
 
 ## Open questions for the user
 
