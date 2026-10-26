@@ -2225,12 +2225,21 @@ dialog.wizard::backdrop {
 .wizard-about-links {
   font-weight: 600;
 }
-/* One organization on the sources step: a card that lights up by how it's picked. */
+/* One organization on the sources step: a card that lights up by how it's picked.
+   A fixed grid, not a wrapping row, so Follow / Disagree sit in the same place on
+   every card whether or not it has a lean meter. */
+.wizard-scroll {
+  container-type: inline-size;
+}
 .wizard-source {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "avatar name toggle"
+    "avatar meta toggle";
   align-items: center;
-  gap: 0.6rem;
+  column-gap: 0.6rem;
+  row-gap: 0.2rem;
   padding: 0.55rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -2238,8 +2247,32 @@ dialog.wizard::backdrop {
   font-size: 0.95rem;
   transition: background 0.12s, border-color 0.12s;
 }
+.wizard-source > .avatar {
+  grid-area: avatar;
+}
 .wizard-source > .grow {
-  min-width: min(100%, 10rem);
+  grid-area: name;
+  align-self: end;
+}
+.wizard-source > .standing-toggle {
+  grid-area: toggle;
+}
+/* Too narrow for the toggle beside the name: it gets its own row, still the same on every card. */
+@container (max-width: 30rem) {
+  .wizard-source {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "avatar name"
+      "avatar meta"
+      ". toggle";
+  }
+  .wizard-source > .avatar {
+    align-self: start;
+  }
+  .wizard-source > .standing-toggle {
+    justify-self: start;
+    margin-top: 0.3rem;
+  }
 }
 .wizard-source.standing-follow {
   border-color: var(--accent);
@@ -2252,10 +2285,13 @@ dialog.wizard::backdrop {
   box-shadow: inset 3px 0 0 var(--bad);
 }
 .wizard-source-meta {
+  grid-area: meta;
+  align-self: start;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.2rem;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.9rem;
+  row-gap: 0.2rem;
 }
 .wizard-options {
   display: flex;
