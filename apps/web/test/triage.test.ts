@@ -97,17 +97,24 @@ const brief = (edits: FillEdit[]) =>
 
 describe("partyOf", () => {
   test("reads the party off the front of a ballot note", () => {
-    expect(partyOf("Democratic · Voting Rights Attorney")).toBe("Democratic");
-    expect(partyOf("Republican")).toBe("Republican");
-    expect(partyOf("No Party Preference")).toBe("No Party Preference");
-    expect(partyOf("democrat")).toBe("Democratic");
+    expect(partyOf({ ballotNote: "Democratic · Voting Rights Attorney" })).toBe("Democratic");
+    expect(partyOf({ ballotNote: "Republican" })).toBe("Republican");
+    expect(partyOf({ ballotNote: "No Party Preference" })).toBe("No Party Preference");
+    expect(partyOf({ ballotNote: "democrat" })).toBe("Democratic");
   });
 
   test("offices, measure types and missing notes aren't parties", () => {
-    expect(partyOf("Associate Justice, Court of Appeal, Third District")).toBeUndefined();
-    expect(partyOf("Initiative Statute")).toBeUndefined();
-    expect(partyOf("Non-Partisan")).toBeUndefined();
-    expect(partyOf(undefined)).toBeUndefined();
+    expect(
+      partyOf({ ballotNote: "Associate Justice, Court of Appeal, Third District" }),
+    ).toBeUndefined();
+    expect(partyOf({ ballotNote: "Initiative Statute" })).toBeUndefined();
+    expect(partyOf({ ballotNote: "Non-Partisan" })).toBeUndefined();
+    expect(partyOf({})).toBeUndefined();
+    // The ballot's own field wins, and any party name counts, known or not.
+    expect(partyOf({ ballot: { party: "Democratic Party" }, ballotNote: "Republican" })).toBe(
+      "Democratic",
+    );
+    expect(partyOf({ ballot: { party: "Common Sense" } })).toBe("Common Sense");
   });
 
   test("partyPlural", () => {

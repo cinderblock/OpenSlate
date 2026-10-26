@@ -104,12 +104,14 @@ describe("ballotToCsv", () => {
   test("one quoted line per choice, notes column only when asked", () => {
     const lines = ballotToCsv(input, { privateNotes: false }).split("\n");
     expect(lines[0]).toBe(
-      '"Election","Jurisdiction","Race","Kind","Choice","OnBallot","WriteIn","BallotNote","For","Against","Sources","MyPick","MyStatement"',
+      '"Election","Jurisdiction","Race","Kind","Choice","OnBallot","WriteIn","BallotNote","Party","Designation","Incumbent","For","Against","Sources","MyPick","MyStatement"',
     );
     expect(lines[1]).toBe(
-      `"${E}","us/ca","Governor","race","Ada","yes","","Democratic · Engineer","2","0","Sierra Club: endorse; Chronicle: endorse; Someone: oppose (not followed)","endorse","My reasons"`,
+      `"${E}","us/ca","Governor","race","Ada","yes","","Democratic · Engineer","","","","2","0","Sierra Club: endorse; Chronicle: endorse; Someone: oppose (not followed)","endorse","My reasons"`,
     );
-    expect(lines[2]).toBe(`"${E}","us/ca","Governor","race","Bob","yes","","","0","0","","",""`);
+    expect(lines[2]).toBe(
+      `"${E}","us/ca","Governor","race","Bob","yes","","","","","","0","0","","",""`,
+    );
 
     const noted = ballotToCsv(input, { privateNotes: true }).split("\n");
     expect(noted[0]?.endsWith(',"MyNote"')).toBe(true);
@@ -151,7 +153,7 @@ test("a name the user wrote in is exported as a write-in choice", () => {
   });
   const csv = ballotToCsv(withWriteIn, { privateNotes: false }).split("\n");
   expect(csv.at(-1)).toBe(
-    `"${E}","us/ca","Governor","race","Cy Writein","","yes","","0","0","","endorse",""`,
+    `"${E}","us/ca","Governor","race","Cy Writein","","yes","","","","","0","0","","endorse",""`,
   );
 });
 

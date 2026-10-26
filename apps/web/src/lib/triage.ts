@@ -1,7 +1,7 @@
 import type { Stance, Subject } from "@openslate/core";
 import { type DraftRow, rowIdFor } from "./ballotDraft";
 import { ballotChoices } from "./ballotView";
-import { type Race, optionsOf, stanceTone, twoWayOptions } from "./collate";
+import { type ChoiceGroup, type Race, optionsOf, stanceTone, twoWayOptions } from "./collate";
 import type { Standing } from "./sources";
 
 /**
@@ -99,12 +99,18 @@ const PLURAL: Record<string, string> = {
 };
 
 /**
- * The party in a ballot source's note on a candidate: its first ` · ` part,
- * when that's a known party (`"Democratic · Attorney"` → `"Democratic"`).
- * Judges' offices, measure types and job titles aren't parties.
+ * A candidate's party: the ballot's own `party` field (SPEC §3.14), with the
+ * usual spellings made one ("Democratic Party" → "Democratic").
+ *
+ * Until every ballot listing carries the field (plan C5), a listing's older
+ * note still gives it: its first ` · ` part, when that's a known party
+ * (`"Democratic · Attorney"` → `"Democratic"`). Judges' offices, measure
+ * types and job titles aren't parties.
  */
-export function partyOf(ballotNote: string | undefined): string | undefined {
-  const head = ballotNote?.split(" · ")[0]?.trim().toLowerCase();
+export function partyOf(choice: Pick<ChoiceGroup, "ballot" | "ballotNote">): string | undefined {
+  const party = choice.ballot?.party?.trim();
+  if (party) return PARTIES[party.toLowerCase()] ?? party;
+  const head = choice.ballotNote?.split(" · ")[0]?.trim().toLowerCase();
   return head ? PARTIES[head] : undefined;
 }
 
@@ -119,7 +125,7 @@ export function partiesOn(races: Race[]): Array<{ party: string; candidates: num
   for (const race of races) {
     if (race.subject.kind === "measure") continue;
     for (const group of race.choices) {
-      const party = group.choice ? partyOf(group.ballotNote) : undefined;
+      const party = group.choice ? partyOf(group) : undefined;
       if (party) counts.set(party, (counts.get(party) ?? 0) + 1);
     }
   }
@@ -164,7 +170,7 @@ export function partyFill(
   for (const race of races) {
     if (race.subject.kind === "measure") continue;
     const theirs = race.choices
-      .filter((c) => c.choice && partyOf(c.ballotNote) === party)
+      .filter((c) => c.choice && partyOf(c) === party)
       .map((c) => ({ choice: c.choice, stance: stanceOn(rows, election, race, c.choice) }));
     const open = theirs.filter((c) => !c.stance);
     if (open.length === 0) continue;

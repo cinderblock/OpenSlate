@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { type KeyPair, type Stance, createSlate, generateKeyPair } from "@openslate/core";
+import {
+  type BallotChoice,
+  type BallotContest,
+  type KeyPair,
+  type Stance,
+  createSlate,
+  generateKeyPair,
+} from "@openslate/core";
 import {
   areaOptionsOf,
   collateRaces,
@@ -30,7 +37,7 @@ function slate(input: {
   keyPair?: KeyPair;
   election?: string;
   issuedAt?: string;
-  positions: Array<P & { statement?: string }>;
+  positions: Array<P & { statement?: string; contest?: BallotContest; ballot?: BallotChoice }>;
 }): { token: string; importedAt: string } {
   const token = createSlate({
     keyPair: input.keyPair ?? (input.of ? researcher : generateKeyPair()),
@@ -44,10 +51,12 @@ function slate(input: {
         ...(p.district ? { district: p.district } : {}),
         ...(p.election ? { election: p.election } : {}),
         ...(p.kind ? { kind: p.kind } : {}),
+        ...(p.contest ? { ballot: p.contest } : {}),
       },
       stance: p.stance ?? "endorse",
       ...(p.choice ? { choice: p.choice } : {}),
       ...(p.statement ? { statement: p.statement } : {}),
+      ...(p.ballot ? { ballot: p.ballot } : {}),
     })),
     ...(input.of
       ? {
@@ -211,6 +220,45 @@ describe("collateRaces", () => {
     expect(
       collateRaces(withGrowSF, { follows, includeUnfollowed: true }).map((r) => r.subject.title),
     ).toEqual(["Governor", "Sheriff", "Prop 1"]);
+  });
+
+  test("how the ballot prints it: a ballot source's, over an endorser's copy", () => {
+    const where = { election: E, jurisdiction: "us/ca" };
+    const listing = slate({
+      of: "Secretary of State",
+      ofKind: "election-authority",
+      positions: [
+        {
+          ...where,
+          title: "Board",
+          choice: "A",
+          stance: "neutral",
+          contest: { heading: "Board Member", vote_for: 3 },
+          ballot: { party: "Green", incumbent: true },
+        },
+      ],
+    });
+    const endorser = slate({
+      of: "SPUR",
+      positions: [
+        {
+          ...where,
+          title: "Board",
+          choice: "A",
+          contest: { vote_for: 1 },
+          ballot: { party: "Typo" },
+        },
+      ],
+    });
+    // Whichever comes first, the listing's wins.
+    for (const order of [
+      [endorser, listing],
+      [listing, endorser],
+    ]) {
+      const [board] = collateRaces(decodeSlates(order), { follows: { "of:spur": "follow" } });
+      expect(board?.ballot).toEqual({ heading: "Board Member", vote_for: 3 });
+      expect(board?.choices[0]?.ballot).toEqual({ party: "Green", incumbent: true });
+    }
   });
 
   test("a ballot source supplies the field in ballot order, without being a source", () => {

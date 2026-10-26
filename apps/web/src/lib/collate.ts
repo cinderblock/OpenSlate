@@ -1,4 +1,11 @@
-import { type SlatePayload, type Stance, type Subject, verifySlate } from "@openslate/core";
+import {
+  type BallotChoice,
+  type BallotContest,
+  type SlatePayload,
+  type Stance,
+  type Subject,
+  verifySlate,
+} from "@openslate/core";
 import type { ChoiceCheck } from "./ballotCheck";
 import {
   type Area,
@@ -149,6 +156,8 @@ export interface ChoiceGroup {
   suggestion?: string;
   /** Position on the official ballot (0 first), when a ballot source lists the choice. */
   ballotIndex?: number;
+  /** How the ballot prints the choice (SPEC §3.14): a ballot source's, else any slate's. */
+  ballot?: BallotChoice;
 }
 
 export interface Race {
@@ -158,6 +167,8 @@ export interface Race {
   jurisdiction?: string;
   /** Who votes on it, when narrower than `jurisdiction` (SPEC §3.3): a ballot source's, else any slate's. */
   district?: string;
+  /** How the ballot prints the contest (SPEC §3.14): a ballot source's, else any slate's. */
+  ballot?: BallotContest;
   /**
    * The area can't tell whether the race is on the user's ballot (`placeRace`
    * "unknown"): a district it has no boundaries for. Absent: it is.
@@ -310,6 +321,10 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
         race.choices.push(group);
       }
       if (position.write_in) group.writeIn = true;
+      // How the ballot prints it: a ballot source's wins over whatever came first.
+      if (position.subject.ballot && (ballot || !race.ballot))
+        race.ballot = position.subject.ballot;
+      if (position.ballot && (ballot || !group.ballot)) group.ballot = position.ballot;
       if (check?.resolution.status === "race-unlisted") race.unlisted = true;
       if (
         !group.suggestion &&

@@ -1,4 +1,4 @@
-import type { Stance } from "@openslate/core";
+import type { BallotChoice, BallotContest, Stance } from "@openslate/core";
 import { type DraftRow, NOTE_CHOICE, rowIdFor } from "./ballotDraft";
 import type { ChoiceGroup, Race } from "./collate";
 
@@ -44,6 +44,8 @@ interface ExportedChoice {
   /** Not printed on the ballot: written in (SPEC §3.12). */
   writeIn?: true;
   ballotNote?: string;
+  /** How the ballot prints it: party, designation, incumbency (SPEC §3.14). */
+  ballot?: BallotChoice;
   /** Followed sources counting for / against, a disagreed source the other way. */
   for: number;
   against: number;
@@ -57,6 +59,8 @@ interface ExportedRace {
   kind?: string;
   jurisdiction?: string;
   onBallot: boolean;
+  /** How the ballot prints it: heading, label, how many to vote for (SPEC §3.14). */
+  ballot?: BallotContest;
   myNote?: string;
   choices: ExportedChoice[];
 }
@@ -90,6 +94,7 @@ function racesOf(input: BallotExportInput, options: BallotExportOptions): Export
       ...(race.subject.kind ? { kind: race.subject.kind } : {}),
       ...(race.jurisdiction ? { jurisdiction: race.jurisdiction } : {}),
       onBallot: race.onBallot,
+      ...(race.ballot ? { ballot: race.ballot } : {}),
       ...(note ? { myNote: note } : {}),
       choices: [...race.choices, ...writtenIn(input.rows, race, election)].map((group) => {
         const mine = input.rows[rowIdFor(election, race.subject, group.choice || undefined)];
@@ -99,6 +104,7 @@ function racesOf(input: BallotExportInput, options: BallotExportOptions): Export
           onBallot: group.onBallot,
           ...(group.writeIn ? { writeIn: true as const } : {}),
           ...(group.ballotNote ? { ballotNote: group.ballotNote } : {}),
+          ...(group.ballot ? { ballot: group.ballot } : {}),
           for: group.support,
           against: group.opposition,
           sources: group.positions.map((p) => ({
@@ -143,6 +149,9 @@ export function ballotToCsv(input: BallotExportInput, options: BallotExportOptio
     "OnBallot",
     "WriteIn",
     "BallotNote",
+    "Party",
+    "Designation",
+    "Incumbent",
     "For",
     "Against",
     "Sources",
@@ -162,6 +171,9 @@ export function ballotToCsv(input: BallotExportInput, options: BallotExportOptio
         choice.onBallot ? "yes" : "",
         choice.writeIn ? "yes" : "",
         choice.ballotNote ?? "",
+        choice.ballot?.party ?? "",
+        choice.ballot?.designation ?? "",
+        choice.ballot?.incumbent ? "yes" : "",
         String(choice.for),
         String(choice.against),
         choice.sources

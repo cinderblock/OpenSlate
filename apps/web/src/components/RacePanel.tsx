@@ -124,7 +124,17 @@ export function RacePanel() {
         {/* Beside the endorsements on a wide screen; between My positions and them on a phone. */}
         <aside className="race-context" aria-label="Read up, polls, forecast and results">
           {subject && (
-            <ReadUp links={raceLinks({ subject, jurisdiction, election }, localToday())} />
+            <ReadUp
+              links={raceLinks(
+                {
+                  subject,
+                  jurisdiction,
+                  election,
+                  ...(race?.ballot ? { ballot: race.ballot } : {}),
+                },
+                localToday(),
+              )}
+            />
           )}
 
           <PollsPanel subject={pollSubject} />

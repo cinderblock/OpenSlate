@@ -4,10 +4,12 @@ import { type DraftRow, rowIdFor } from "../src/lib/ballotDraft";
 import {
   ballotChoices,
   designation,
+  instructionLine,
   isMarked,
   isYesNo,
-  measureNote,
   picksIn,
+  raceHeading,
+  ranksFor,
   splitMeasureTitle,
   voteFor,
   voteForLine,
@@ -117,7 +119,7 @@ describe("ballotChoices", () => {
     expect(choices.map((c) => c.choice)).toEqual(["Yes", "No", "Option C"]);
     // Said of Yes and No alike, so it moves under the title.
     expect(choices[0]?.ballotNote).toBeUndefined();
-    expect(measureNote(r)).toBe("Approve");
+    expect(raceHeading(r).measureType).toBe("Approve");
     expect(choices[0]?.onBallot).toBe(true);
   });
 });
@@ -202,6 +204,59 @@ describe("voteFor", () => {
     expect(voteForLine(1)).toBe("Vote for one");
     expect(voteForLine(3)).toBe("Vote for no more than three");
     expect(voteForLine(12)).toBe("Vote for no more than 12");
+  });
+});
+
+describe("the ballot's own fields (SPEC §3.14)", () => {
+  test("vote_for, over any older note", () => {
+    const board = race("race", [group("A", [], { onBallot: true, ballotNote: "3 seats" })], true);
+    expect(voteFor({ ...board, ballot: { vote_for: 2 } })).toBe(2);
+    expect(instructionLine({ ...board, ballot: { vote_for: 2 } })).toBe(
+      "Vote for no more than two",
+    );
+  });
+
+  test("ranked choice: a rank line, no vote-for line", () => {
+    const mayor = { ...race("race", [group("A", [])], true), ballot: { ranks: 10 } };
+    expect(voteFor(mayor)).toBeUndefined();
+    expect(ranksFor(mayor)).toBe(10);
+    expect(instructionLine(mayor)).toBe("Rank up to ten choices");
+  });
+
+  test("heading, label, type and number, not read out of the title", () => {
+    const prop = {
+      ...race("measure", []),
+      subject: { title: "Some catalog title", kind: "measure" },
+      ballot: {
+        heading: "Proposition 50",
+        number: "50",
+        label: "Election Rigging Response Act",
+        measure_type: "Legislative Constitutional Amendment",
+      },
+    };
+    expect(raceHeading(prop)).toEqual({
+      heading: "Proposition 50",
+      number: "50",
+      label: "Election Rigging Response Act",
+      measureType: "Legislative Constitutional Amendment",
+    });
+  });
+
+  test("an office's heading; the title when the listing has none", () => {
+    const ag = race("race", [], true);
+    expect(raceHeading({ ...ag, ballot: { heading: "Attorney General", vote_for: 1 } })).toEqual({
+      heading: "Attorney General",
+    });
+    expect(raceHeading({ ...ag, ballot: { vote_for: 1 } }).heading).toBe("T");
+  });
+
+  test("a candidate's party, designation and incumbency", () => {
+    const a = group("A", [], {
+      ballot: { party: "Democratic", designation: "Attorney General", incumbent: true },
+      ballotNote: "ignored once the fields are there",
+    });
+    expect(designation(a)).toBe("Democratic · Attorney General · incumbent");
+    expect(designation(group("B", [], { ballot: { designation: "Teacher" } }))).toBe("Teacher");
   });
 });
 

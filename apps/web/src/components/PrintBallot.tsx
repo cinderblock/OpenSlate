@@ -4,11 +4,10 @@ import { type DraftRow, NOTE_CHOICE, rowIdFor } from "../lib/ballotDraft";
 import {
   ballotChoices,
   designation,
-  measureNote,
+  instructionLine,
   picksIn,
-  splitMeasureTitle,
+  raceHeading,
   voteFor,
-  voteForLine,
 } from "../lib/ballotView";
 import type { Race } from "../lib/collate";
 import { formatElectionDate, formatLocalDate } from "../lib/dates";
@@ -84,22 +83,22 @@ function PrintRace({
   rows: Record<string, DraftRow>;
   notes: boolean;
 }) {
-  const measure = race.subject.kind === "measure";
-  const title = measure ? splitMeasureTitle(race.subject.title) : { heading: race.subject.title };
+  const title = raceHeading(race);
+  const instruction = instructionLine(race);
   const note = notes ? rows[rowIdFor(election, race.subject, NOTE_CHOICE)]?.privateNote : undefined;
   const seats = voteFor(race);
   const overvoted = seats !== undefined && picksIn(race, election, rows) > seats;
   return (
     <div className="pb-race">
       <div className="pb-race-title">{title.heading}</div>
-      {seats !== undefined && (
+      {instruction && (
         <div className="pb-vote-for">
-          {voteForLine(seats)}
+          {instruction}
           {overvoted && <strong> · ⚠ too many picks</strong>}
         </div>
       )}
-      {title.detail && <div className="pb-race-detail">{title.detail}</div>}
-      {measureNote(race) && <div className="pb-race-detail pb-kind">{measureNote(race)}</div>}
+      {title.label && <div className="pb-race-detail">{title.label}</div>}
+      {title.measureType && <div className="pb-race-detail pb-kind">{title.measureType}</div>}
       <ul>
         {ballotChoices(race).map((group) => {
           const stance = rows[rowIdFor(election, race.subject, group.choice || undefined)]?.stance;

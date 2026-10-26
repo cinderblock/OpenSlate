@@ -1,4 +1,4 @@
-import type { Subject } from "@openslate/core";
+import type { BallotContest, Subject } from "@openslate/core";
 import { splitMeasureTitle } from "./ballotView";
 import { httpHref } from "./httpHref";
 
@@ -22,6 +22,8 @@ interface RaceLike {
   subject: Subject;
   jurisdiction?: string;
   election?: string;
+  /** How the ballot prints it (a listing's, from collate), when known. */
+  ballot?: BallotContest;
 }
 
 /** The League of Women Voters' guide. Address-based, so one link for the whole ballot. */
@@ -83,7 +85,12 @@ export function raceLinks(race: RaceLike, today: string): ResearchLink[] {
   }
   // The Secretary of State's site only hosts the current election's guide.
   if (jurisdiction === "us/ca" && election >= today) {
-    const number = measure ? splitMeasureTitle(race.subject.title).number : undefined;
+    const number = measure
+      ? (race.ballot?.number ??
+        race.subject.ballot?.number ??
+        // An older listing: from the title, until plan C5.
+        splitMeasureTitle(race.subject.title).number)
+      : undefined;
     if (number) {
       links.push({
         label: "Official guide",

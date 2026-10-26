@@ -113,11 +113,11 @@ function measureChoices(race: Race): ChoiceGroup[] {
 }
 
 /**
- * What the ballot source says about a measure ("Initiative Statute"). It
- * lists it on Yes and on No alike, so the ballot view shows it once, under
- * the title, rather than on each bubble.
+ * An older ballot listing's note on a measure ("Initiative Statute"), which it
+ * repeats on Yes and on No. Only until every listing has `measure_type`
+ * (plan C5).
  */
-export function measureNote(race: Race): string | undefined {
+function legacyMeasureNote(race: Race): string | undefined {
   if (!isYesNo(race)) return undefined;
   return race.choices.find((c) => c.ballotNote && isYesNoChoice(c.choice))?.ballotNote;
 }
@@ -137,6 +137,40 @@ export function ballotChoices(race: Race): ChoiceGroup[] {
   );
 }
 
+/** How the ballot heads a race. */
+export interface RaceHeading {
+  /** "Proposition 43", "Attorney General". */
+  heading: string;
+  /** Printed under it: a measure's label, a retention question. */
+  label?: string;
+  /** "Initiative Statute". */
+  measureType?: string;
+  /** A measure's number or letter: "43", "A". */
+  number?: string;
+}
+
+/**
+ * How the ballot heads a race: the listing's `ballot` (SPEC §3.14). Until
+ * every listing carries it (plan C5), what an older listing put in the title
+ * and its notes.
+ */
+export function raceHeading(race: Pick<Race, "subject" | "ballot" | "choices">): RaceHeading {
+  const ballot = race.ballot;
+  const old =
+    race.subject.kind === "measure"
+      ? splitMeasureTitle(race.subject.title)
+      : { heading: race.subject.title };
+  const label = ballot?.heading ? ballot.label : (ballot?.label ?? old.detail);
+  const measureType = ballot?.measure_type ?? legacyMeasureNote(race as Race);
+  const number = ballot?.number ?? old.number;
+  return {
+    heading: ballot?.heading ?? old.heading,
+    ...(label ? { label } : {}),
+    ...(measureType ? { measureType } : {}),
+    ...(number ? { number } : {}),
+  };
+}
+
 export interface MeasureTitle {
   /** "Proposition 43", or the whole title when it isn't in that shape. */
   heading: string;
@@ -148,7 +182,8 @@ export interface MeasureTitle {
 
 /**
  * Split "California – Proposition 43 (Limits Voters' Ability …)" into the
- * part a ballot prints large and the part it prints small.
+ * part a ballot prints large and the part it prints small. Only for listings
+ * without `ballot` (plan C5).
  */
 export function splitMeasureTitle(title: string): MeasureTitle {
   // Case-sensitive on purpose: "Measure on …" isn't Measure ON.
@@ -176,23 +211,31 @@ export function isMarked(race: Race, election: string, rows: Record<string, Draf
   );
 }
 
-/** "3 seats" in what a ballot source says about a candidate ("Democratic · 3 seats"). */
+/** An older listing's "3 seats" note on each candidate. Only until plan C5. */
 const SEATS = /(?:^|\s*·\s*)(\d+) seats?\b/i;
 
 /**
  * How many choices a voter may mark in this race: the ballot's "Vote for
- * One" line. From the ballot source: its "N seats" note, else one for an
- * office it lists. Unknown (undefined) when no ballot source lists the race,
- * since a board race can fill several seats; and none for a yes/no question,
- * whose two bubbles say it.
+ * One" line, from `ballot.vote_for` (SPEC §3.14). None for a yes/no
+ * question, whose two bubbles say it, or a ranked-choice race (`ranksFor`).
+ *
+ * Until every listing carries `vote_for` (plan C5): an older listing's "N
+ * seats" note, else one for an office it lists. Unknown when no ballot
+ * source lists the race, since a board race can fill several seats.
  */
 export function voteFor(race: Race): number | undefined {
-  if (isYesNo(race)) return undefined;
+  if (isYesNo(race) || race.ballot?.ranks) return undefined;
+  if (race.ballot?.vote_for) return race.ballot.vote_for;
   for (const choice of race.choices) {
     const seats = choice.ballotNote && SEATS.exec(choice.ballotNote)?.[1];
     if (seats) return Number(seats);
   }
   return race.onBallot ? 1 : undefined;
+}
+
+/** A ranked-choice race: how many choices a voter may rank (`ballot.ranks`). */
+export function ranksFor(race: Race): number | undefined {
+  return isYesNo(race) ? undefined : race.ballot?.ranks;
 }
 
 const NUMBER_WORDS = [
@@ -215,11 +258,31 @@ export function voteForLine(count: number): string {
   return count === 1 ? "Vote for one" : `Vote for no more than ${word}`;
 }
 
+/** The line for a ranked-choice race: "Rank up to ten choices". */
+export function ranksLine(count: number): string {
+  return `Rank up to ${NUMBER_WORDS[count] ?? String(count)} choices`;
+}
+
+/** The race's instruction line, if the ballot prints one. */
+export function instructionLine(race: Race): string | undefined {
+  const ranks = ranksFor(race);
+  if (ranks) return ranksLine(ranks);
+  const seats = voteFor(race);
+  return seats === undefined ? undefined : voteForLine(seats);
+}
+
 /**
- * What the ballot source says about a candidate, minus the seat count (that
+ * What the ballot prints with a candidate's name: party, designation, and
+ * whether they're the incumbent (`ballot`, SPEC §3.14). Until every listing
+ * carries it (plan C5), an older listing's note, minus the seat count (that
  * goes in the race's "Vote for" line rather than under every name).
  */
 export function designation(choice: ChoiceGroup): string | undefined {
+  const ballot = choice.ballot;
+  if (ballot) {
+    const parts = [ballot.party, ballot.designation, ballot.incumbent ? "incumbent" : undefined];
+    return parts.filter(Boolean).join(" · ") || undefined;
+  }
   return choice.ballotNote?.replace(SEATS, "").trim() || undefined;
 }
 

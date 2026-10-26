@@ -29,11 +29,11 @@ import {
   type PrintScope,
   ballotChoices,
   designation,
+  instructionLine,
   isMarked,
   isYesNo,
-  measureNote,
   picksIn,
-  splitMeasureTitle,
+  raceHeading,
   voteFor,
   voteForLine,
 } from "../lib/ballotView";
@@ -1239,8 +1239,8 @@ function RaceCardInner({
 }) {
   const noteRow = rows[rowIdFor(election, race.subject, NOTE_CHOICE)];
   const [note, setNote] = useState(noteRow?.privateNote ?? "");
-  const measure = race.subject.kind === "measure";
-  const title = measure ? splitMeasureTitle(race.subject.title) : { heading: race.subject.title };
+  const title = raceHeading(race);
+  const instruction = instructionLine(race);
   const choices = useMemo(() => ballotChoices(race), [race]);
   const links = useMemo(() => raceLinks(race, localToday()), [race]);
   const seats = voteFor(race);
@@ -1261,11 +1261,11 @@ function RaceCardInner({
         <Link to="/race/$key" params={{ key: race.key }} className="race-link">
           {title.heading}
         </Link>
-        {seats !== undefined && <div className="vote-for">{voteForLine(seats)}</div>}
-        {title.detail && <div className="ballot-box-detail">{title.detail}</div>}
-        {measureNote(race) && (
+        {instruction && <div className="vote-for">{instruction}</div>}
+        {title.label && <div className="ballot-box-detail">{title.label}</div>}
+        {title.measureType && (
           <div className="ballot-box-detail">
-            <em>{measureNote(race)}</em>
+            <em>{title.measureType}</em>
           </div>
         )}
       </div>
