@@ -32,6 +32,12 @@ behind a deliberately less obvious entry point.
 3. Publish has equal billing with My vote in the header on every page.
 4. The voter flow is a modal over an empty page, not the page itself.
 
+## Status
+
+Done and deployed 2026-10-26: `158d85e` pushed to master and live on
+https://openslate.us about 40 seconds later (checked in a fresh profile:
+"Plan your vote" on `/`, no dialog, header shows only Publish and Settings).
+
 ## Plan (design settled 2026-10-26)
 
 1. **`GetStarted.tsx`** (from `Wizard.tsx`, via `git mv`): an inline page, not a
@@ -96,6 +102,7 @@ None right now.
 - [x] Checked in the browser, fresh profile: setup → follow → ballot; Publish
   → create identity → backup → signing; phone width; `/?setup=true` re-entry
 - [x] README updated
+- [x] Deployed (`158d85e`), checked live
 
 ## Things not to do
 
