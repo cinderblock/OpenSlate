@@ -3,6 +3,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import {
   type Adoption,
+  type Article,
   type Attribution,
   type GuideManifest,
   type Position,
@@ -50,7 +51,7 @@ Usage:
 
 A <positions.json> is either a JSON array of Position objects, or an object
 { "positions": [...], "endorsed_by": [...], "attribution": {...}, "adopts": [...],
-  "context": {...} }.
+  "articles": [...], "context": {...} }.
 Use "-" for stdin.
 
 adopt takes on another slate's positions, three ways (SPEC §3.10):
@@ -152,6 +153,7 @@ interface SignInput {
   endorsed_by?: Reference[];
   attribution?: Attribution;
   adopts?: Adoption[];
+  articles?: Article[];
   context?: SlatePayload["context"];
 }
 
@@ -201,6 +203,7 @@ async function cmdSign(rest: string[]): Promise<void> {
   let endorsedBy: Reference[] | undefined;
   let attribution: Attribution | undefined;
   let adopts: Adoption[] | undefined;
+  let articles: Article[] | undefined;
   let context: SlatePayload["context"];
   if (Array.isArray(raw)) {
     positions = raw as Position[];
@@ -210,6 +213,7 @@ async function cmdSign(rest: string[]): Promise<void> {
     endorsedBy = obj.endorsed_by;
     attribution = obj.attribution;
     adopts = obj.adopts;
+    articles = obj.articles;
     context = obj.context;
   }
 
@@ -225,7 +229,15 @@ async function cmdSign(rest: string[]): Promise<void> {
 
   let token: string;
   try {
-    const payload = buildSlate({ issuer, positions, endorsedBy, attribution, adopts, context });
+    const payload = buildSlate({
+      issuer,
+      positions,
+      endorsedBy,
+      attribution,
+      adopts,
+      articles,
+      context,
+    });
     token = signSlate(payload, identity.keyPair.secretKey);
   } catch (err) {
     fail(`could not build slate: ${err instanceof Error ? err.message : String(err)}`);
@@ -247,6 +259,8 @@ interface IndexEntry {
   issuer: { key: string; name?: string; kind?: string };
   attribution?: SlatePayload["attribution"];
   positions: number;
+  /** Links attached to ballot items (SPEC §3.15), when there are any. */
+  articles?: number;
   /** The slate's `context.jurisdiction`: where it publishes for. */
   scope?: string;
   /**
@@ -342,6 +356,7 @@ async function cmdSignBatch(
           },
           ...(payload.attribution ? { attribution: payload.attribution } : {}),
           positions: payload.positions.length,
+          ...(payload.articles?.length ? { articles: payload.articles.length } : {}),
           ...(payload.context?.jurisdiction ? { scope: payload.context.jurisdiction } : {}),
           jurisdictions: racesByJurisdiction(payload),
           ...(payload.adopts?.length
@@ -394,6 +409,7 @@ async function cmdValidate(rest: string[]): Promise<void> {
   if (result.success) {
     console.log("VALID");
     console.log(`positions: ${result.data.positions.length}`);
+    if (result.data.articles?.length) console.log(`articles: ${result.data.articles.length}`);
     if (result.data.endorsed_by?.length) {
       console.log(`endorsed_by: ${result.data.endorsed_by.length}`);
     }
@@ -468,6 +484,9 @@ async function cmdVerify(rest: string[]): Promise<void> {
       console.log(`  retrieved_at:    ${attr.retrieved_at}`);
     }
     console.log(`positions: ${result.payload?.positions.length ?? 0}`);
+    if (result.payload?.articles?.length) {
+      console.log(`articles:  ${result.payload.articles.length}`);
+    }
     if (result.payload) await printAdoptions(result.payload, flags.resolve === true);
     for (const warning of result.warnings) console.log(`warning:   ${warning}`);
   } else {
