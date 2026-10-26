@@ -211,7 +211,9 @@ the system's own webview), in two editions:
   results and address lookups still need a connection.
 
 The builds aren't code-signed yet; the release notes say how to get past
-SmartScreen and Gatekeeper. Build it yourself from
+SmartScreen and Gatekeeper. The app updates itself, and installs an update
+only once it has checked it's signed by OpenSlate's release key
+([how](./apps/desktop/README.md#updates)). Build it yourself from
 [`apps/desktop`](./apps/desktop) (each platform builds on its own; CI builds
 all three, [`.github/workflows/desktop.yml`](./.github/workflows/desktop.yml)):
 
@@ -272,7 +274,7 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 | [`apps/web`](./apps/web) | React + Vite SPA. Two modes. *My vote*: a getting-started guide, My ballot (your followed sources' endorsements by race, for your election and area, with private picks), and Sources (follow/unfollow, the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/), import from link/file/QR/paste). *Publish*: identities, sign your picks (or any race) as a slate and share it, verify and inspect slates; view live polls, market forecasts, and election results; pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
 | [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + relays for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic, with your `GOOGLE_API_KEY`), opinion polls ([VoteHub](https://votehub.com)), election results ([civicAPI](https://civicapi.org)), and market forecasts ([Kalshi](https://kalshi.com)). |
 | [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls, [civicAPI](https://civicapi.org) results, and [Kalshi](https://kalshi.com) forecasts behind permissive CORS, relays opt-in address lookups to the [Census geocoder](https://geocoding.geo.census.gov/) (`POST /api/geocode/census`; nothing cached, logged or stored), and answers Google Civic Information lookups with the project's key (`GET /api/civic/elections`, `POST /api/civic/voterinfo`; only for openslate.us pages, addresses never cached, logged or stored). Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, `/api/forecasts/v2/*`, `/api/geocode/census` and `/api/civic/*` shapes so the web client treats either backend identically. Runs at `https://api.openslate.us`. |
-| [`apps/desktop`](./apps/desktop) | [Electrobun](https://blackboard.sh/electrobun) desktop app around the web build, for Windows, macOS and Linux; standard and offline (catalog built in) editions, built and self-tested in CI. |
+| [`apps/desktop`](./apps/desktop) | [Electrobun](https://blackboard.sh/electrobun) desktop app around the web build, for Windows, macOS and Linux; standard and offline (catalog built in) editions, built and self-tested in CI, with signed self-updates. |
 
 ## Hosting topologies
 

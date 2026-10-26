@@ -47,6 +47,16 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
 
 - Build and publish desktop binaries, with and without embedded endorsements
   (user, 2026-10-24).
+- Ship **unsigned** (no Apple/Windows code signing) for now, **but self-updates
+  must be signed**: the app installs only updates signed by our own key
+  (user, 2026-10-25).
+- Tag scheme `desktop-v<version>`, protected by a tag ruleset (user,
+  2026-10-25; ruleset created, see Findings).
+- No Mac available to test by hand: macOS ships tested only by CI's
+  self-test (user, 2026-10-25).
+- Approved: mark PR #1 ready, merge, push the tag (user, 2026-10-25).
+  Publishing the drafted release is a separate yes. Held until the signed
+  updater is in, so 0.1.0 installs can update themselves.
 
 ## Design (current)
 
@@ -85,10 +95,91 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
    (`workflow_dispatch` only works once the file is on the default branch.)
 7. ☑ Docs: apps/desktop/README, RELEASE_NOTES, root README (`afa69d1`); the
    macOS app is `OpenSlate Offline.app` (with a space), checked in the dmg.
-8. ☐ **(current)** Publish: merge PR #1, tag `desktop-v0.1.0`, publish the
-   drafted release — needs the user's go-ahead (see questions).
+8. ☑ Signed self-updates (see "Updates" below): built, unit-tested, and
+   tested end to end on Windows against a local feed.
+9. ☐ **(current)** The user's yes to create the `desktop-release` environment
+   and its `OPENSLATE_UPDATE_SIGNING_KEY` secret (a GitHub settings change),
+   and to take the two private keys into their password manager.
+10. ☐ Merge PR #1, tag `desktop-v0.1.0` (approved), then publish the drafted
+   release (needs a separate yes); publishing makes the feeds live.
+
+## Updates (design, 2026-10-25)
+
+Electrobun's updater checks nothing cryptographically: its `hash` is a
+13-character build ID (`/^[a-z0-9]{1,13}$/`), and the bundle, patches and
+`update.json` are trusted as served. So the app adds its own check:
+
+- **Signed statement** per edition and platform,
+  `<channel>-<os>-<arch>-signature.json`: `{ statement, signatures: [{ key,
+  signature }] }`, where `statement` is a JSON string `{ type:
+  "openslate-desktop-update", identifier, channel, platform, arch, version,
+  hash, tarSha256, tarBytes }` and each signature is Ed25519 over the
+  statement's UTF-8 bytes (core's `ed25519:` base58 keys, base64url
+  signatures).
+- **In the app** (`src/bun/update.ts`): check, fetch and verify the statement
+  (a trusted key; identifier, channel, platform, arch, version and hash match
+  Electrobun's `update.json`; version newer than the running one, so an old
+  signed release can't be replayed), let Electrobun download, then hash the
+  prepared `self-extraction/<hash>.tar` and compare with `tarSha256` before
+  anything is applied. A mismatch deletes the prepared update and the local
+  patch base, and retries once with the full bundle. The page shows "ready,
+  restart to update"; the restart re-checks the hash and calls `applyUpdate`.
+- **Two trusted keys** baked in: *release* (a GitHub Actions secret in the
+  `desktop-release` environment, tags `desktop-v*` only) and *recovery* (kept
+  offline by the user; signs a release that changes keys if the release key
+  is lost or leaked).
+- **Feeds**: one prerelease per edition (`desktop-updates-standard`,
+  `desktop-updates-offline`), `release.baseUrl` =
+  `https://github.com/cinderblock/OpenSlate/releases/download/<that tag>`
+  (`scripts/feed.ts`). The tag job uploads `v0.1.0-`-prefixed copies of
+  `update.json`, the signature and the bundle, plus the patches (named for
+  the build they start from, so inert until `update.json` changes). Nothing
+  is live until the versioned release is published: `desktop-publish.yml`
+  (`release: published`) copies the staged files to the live names, bundle
+  then signature then `update.json`, and prunes anything older than the
+  previous version. The live bundle keeps Electrobun's name (see Findings).
+- **Keys** generated 2026-10-25 with core's `generateKeyPair`: release
+  `ed25519:BzKVTftwYGSDUf6CzqGmbBykFMrSN4tCcfFaTmrT6eEX`, recovery
+  `ed25519:Hmpghduf2yLhjUsmsYgcBokTQKG9jLZ5SBmVUmyZZHyz`. Private halves in
+  `%LOCALAPPDATA%\OpenSlate-release\desktop-update-{release,recovery}-key.txt`
+  (not in any repo) until the user moves them to their password manager.
 
 ## Findings / gotchas
+
+### Updates (2026-10-25, Windows 11)
+
+- Tag ruleset "Desktop release tags" (id 25842427) created: `refs/tags/desktop-v*`,
+  rules creation/update/deletion/non_fast_forward, repo admins bypass.
+- **Electrobun makes a delta patch only if the previous bundle in the feed has
+  its own name** (`stable-win-x64-OpenSlate.tar.zst`): with a versioned name
+  in `artifact.file` the build says "previous update metadata does not match
+  this release; skipping delta patch". With the original name: "Patch: 3.80 KB
+  (0.0% of new size)" instead of a 35 MB download. Hence the stage/publish
+  copy.
+- The build fetches `${baseUrl}/stable-win-x64-update.json` (and the bundle)
+  to make the patch; "no previous release found; skipping delta patch" when
+  the feed has none, which is fine for the first release.
+- `Bun.zstdDecompressSync` gives the same tar as Electrobun's `zig-zstd`: the
+  CI-side SHA-256 matched what the app hashed after both a full download and
+  a patch.
+- End to end against a local feed (test key, `OPENSLATE_UPDATE_BASE_URL`):
+  0.1.0 installed by `Setup.exe` → found 0.1.1, verified, patched (3.8 KB),
+  hash matched, banner showed "OpenSlate 0.1.1 is ready" → installed and
+  relaunched as 0.1.1 (`version.json`). Untrusted key on 0.1.2: "the update
+  isn't signed by a key this app trusts", nothing downloaded. Correctly
+  signed 0.1.2 with one byte of the bundle flipped: rejected after the
+  download, retried in full, rejected, discarded, stayed on 0.1.1; once the
+  genuine bundle was back, it updated to 0.1.2. 0.1.2 → 0.1.3 likewise.
+- Not exercised: the *Restart to update* click itself. Synthetic mouse input
+  (`mouse_event`) didn't reach the WebView2 window. The click calls
+  `__electrobunSendToHost({ openslateUpdate: "apply" })`, the same channel the
+  self-test uses, and the install it triggers is the auto-apply path tested
+  above. macOS and Linux updates are untested (no Mac; Linux would need a
+  desktop session).
+- Setup.exe ends on an "Installation complete" dialog; the install writes
+  `HKCU\…\Uninstall\us.openslate.desktop.stable`, Desktop and Start menu
+  shortcuts. Applying an update leaves
+  `.electrobun-update-<id>.result.json` in the channel folder.
 
 ### From building it (2026-10-24, Windows 11)
 
@@ -187,20 +278,25 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
 - [x] CI green on all six builds, self-tests included (run 40167794253).
 - [x] Root README; macOS app name in RELEASE_NOTES.
 - [x] Cleaned up local self-test data (`%LOCALAPPDATA%\us.openslate.desktop*`).
-- [ ] Merge, tag, publish (user's go-ahead).
+- [x] Tag ruleset (id 25842427).
+- [x] Signed updates: `update-signature.ts`, `update.ts`, keys, banner,
+      `sign-update.ts`, `verify-update.ts`, `feed.ts`, CI (PRs sign with a
+      throwaway key; tags sign for real and stage), `desktop-publish.yml`,
+      docs. Tests: 10 unit, end to end on Windows (above). Test install,
+      feed server and files cleaned up.
+- [ ] `desktop-release` environment + secret (user's yes), keys to the
+      user's password manager.
+- [ ] Merge, tag (approved); publish (separate yes).
 
 ## Open questions for the user
 
-0. Is there a Mac (Apple Silicon) available to smoke-test the macOS build?
-   Without one, the macOS artifact ships untested at runtime.
-
-1. Code signing: unsigned builds trigger SmartScreen (Windows) and Gatekeeper
-   (macOS: users must right-click → Open, or `xattr -d`). Signing needs an
-   Apple Developer account ($99/yr) and a Windows certificate (or SignPath
-   Foundation, free for OSS). Recommendation: ship unsigned first, document
-   the workaround, add signing later.
-2. Release tag scheme: recommendation `desktop-v0.1.0`, protected by a tag
-   ruleset (a GitHub settings change, so it needs your yes).
+1. May I create the `desktop-release` environment (deployment tags
+   `desktop-v*` only) and set its `OPENSLATE_UPDATE_SIGNING_KEY` secret to the
+   release key? The tag's release job can't sign without it.
+2. Move both private keys from `%LOCALAPPDATA%\OpenSlate-release\` into your
+   password manager, then delete the files. The recovery key is the only way
+   to replace the release key in installed apps.
+3. (Later) Publishing `desktop-v0.1.0`'s draft: a separate yes.
 
 ## Things not to do
 

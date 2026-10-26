@@ -4,7 +4,9 @@ The OpenSlate web app in a native window, for Windows, macOS and Linux, built
 with [Electrobun](https://blackboard.sh/electrobun) on each system's own
 webview (WebView2, WKWebView, WebKitGTK). It contains **no OpenSlate logic**:
 it loads the web app, which imports `@openslate/core` like every other
-surface, so signing, verification and the wire format live in one place.
+surface, so signing, verification and the wire format live in one place. The
+main process only opens the window, sends outside links to the browser, and
+installs updates once it has checked they're signed (below).
 
 Two editions:
 
@@ -37,6 +39,54 @@ Releases are on GitHub: <https://github.com/cinderblock/openslate/releases>.
 **Uninstalling:** the uninstaller offers *App* or *App and Data*. *App and
 Data* also deletes your signing keys, picks and notes. Download a backup of
 any identity you'll want again first (Publish → Identities).
+
+## Updates
+
+The app updates itself. Shortly after it starts, and every six hours, it asks
+its edition's update feed whether there's a newer version; if so it
+downloads it (usually a patch of a few KB, otherwise the whole bundle) and
+offers *Restart to update* at the top of the window.
+
+Electrobun's updater doesn't check what it downloads, so the app does
+([`src/bun/update.ts`](./src/bun/update.ts)). Each release carries, per
+platform, a statement of exactly which update it is (app, platform, version,
+build) and the SHA-256 of its unpacked bundle, signed with an Ed25519 key the
+app has built in ([`update-keys.ts`](./src/bun/update-keys.ts)). An update is
+installed only if:
+
+- a trusted key signed its statement, and the statement names the same
+  update the feed offers;
+- it's newer than the running version, so an old release can't be served
+  again to roll an install back;
+- the bundle Electrobun prepared hashes to the signed SHA-256, checked after
+  the download and again just before installing. A bundle that doesn't is
+  deleted, and one full download is tried before giving up until the next
+  check.
+
+Two keys are trusted: the **release** key, which signs in GitHub Actions (the
+`OPENSLATE_UPDATE_SIGNING_KEY` secret of the `desktop-release` environment,
+which only `desktop-v*` tags can use), and a **recovery** key kept offline, to
+sign an update that replaces the release key if it's ever lost or leaked.
+
+**Feeds.** Electrobun names its `update.json` only by channel and platform,
+so each edition gets a release of its own as its feed:
+`desktop-updates-standard` and `desktop-updates-offline` (the app's
+`release.baseUrl`). A `desktop-v*` tag builds, signs and *stages* the
+updates there, under `v<version>-…` names that nothing fetches. Publishing
+the versioned release runs [`desktop-publish.yml`](../../.github/workflows/desktop-publish.yml),
+which copies them to the live names (bundle, then signature, then
+`update.json`), so installs are offered a version only once its release is
+published. See [`scripts/feed.ts`](./scripts/feed.ts).
+
+To check a feed's files by hand: download them into a folder and run
+`bun scripts/verify-update.ts <folder>`.
+
+**Testing an update locally:** build with `OPENSLATE_UPDATE_BASE_URL` set to
+a local server and `OPENSLATE_TEST_UPDATE_KEY` set to a throwaway public key
+(that build then trusts only that key), install it, build a newer version
+the same way, sign it with `scripts/sign-update.ts`, and serve its updater
+files. `OPENSLATE_UPDATE_LOG=<file>` logs each step, and
+`OPENSLATE_UPDATE_AUTO_APPLY=1` installs without the click.
 
 ## Building
 

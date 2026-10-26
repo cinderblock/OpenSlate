@@ -31,6 +31,9 @@ These builds aren't code-signed yet, so your system will warn you.
   in Terminal (`"/Applications/OpenSlate Offline.app"` for that edition) and open it again.
 - **Linux:** extract the archive and run `installer`. Needs `libwebkit2gtk-4.1-0`.
 
+**Updates:** the app updates itself. It checks for a new version now and then, downloads it,
+checks it's signed by OpenSlate's release key, and then offers *Restart to update*.
+
 **Before uninstalling:** *App and Data* deletes your signing keys too. Download a backup of any
 identity you want to keep first (Publish → Identities).
 
