@@ -2,9 +2,11 @@
 # Linux, each on its own runner (Electrobun can't cross-build), and self-tests
 # every build in a real window before keeping its installer.
 #
-# A desktop-v<version> tag, matching apps/desktop/package.json, also drafts a
-# GitHub release with the installers and their checksums. Publishing the draft
-# is left to a person.
+# A desktop-v<version> tag, matching apps/desktop/package.json, also signs
+# each edition's updates and stages them in its update feed (not live yet),
+# and drafts a GitHub release with the installers and their checksums.
+# Publishing the draft is left to a person; that makes the updates live
+# (desktop-publish.yml).
 
 name: desktop
 
@@ -118,20 +120,87 @@ jobs:
           path: apps/desktop/release/*
           if-no-files-found: error
 
+      # Electrobun's updater files (update.json, the bundle, any patch from
+      # the version before), for the edition's update feed.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: updates-${{ matrix.os }}-${{ matrix.flavor }}
+          path: apps/desktop/artifacts/stable-*
+          if-no-files-found: error
+
+  # Pull requests: sign every update with a throwaway key and check it the
+  # way the app will, so the release job's signing can't be the first run.
+  updates:
+    name: Sign updates (throwaway key)
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: updates-*-standard
+          path: feed/standard
+          merge-multiple: true
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: updates-*-offline
+          path: feed/offline
+          merge-multiple: true
+      - name: Sign and check
+        working-directory: apps/desktop
+        run: |
+          read -r secret public < <(bun -e 'import { encodePublicKey, encodeSecretKey, generateKeyPair } from "@openslate/core"; const k = generateKeyPair(); console.log(encodeSecretKey(k.secretKey), encodePublicKey(k.publicKey))')
+          for edition in standard offline; do
+            OPENSLATE_UPDATE_SIGNING_KEY="$secret" bun scripts/sign-update.ts "../../feed/$edition"
+            bun scripts/verify-update.ts "../../feed/$edition" --key "$public"
+          done
+
   release:
     name: Draft the release
     if: startsWith(github.ref, 'refs/tags/')
     needs: build
     runs-on: ubuntu-24.04
+    # Holds the update signing key, for desktop-v* tags only.
+    environment: desktop-release
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: bun install --frozen-lockfile
       - uses: actions/download-artifact@v8
         with:
           pattern: desktop-*
           path: release
           merge-multiple: true
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: updates-*-standard
+          path: feed/standard
+          merge-multiple: true
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: updates-*-offline
+          path: feed/offline
+          merge-multiple: true
+      - name: Sign the updates and stage them in each edition's feed
+        working-directory: apps/desktop
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OPENSLATE_UPDATE_SIGNING_KEY: ${{ secrets.OPENSLATE_UPDATE_SIGNING_KEY }}
+        run: |
+          for edition in standard offline; do
+            bun scripts/sign-update.ts "../../feed/$edition"
+            bun scripts/verify-update.ts "../../feed/$edition"
+            bun scripts/feed.ts stage "$edition" "../../feed/$edition"
+          done
       - name: Checksums
         working-directory: release
         run: sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt

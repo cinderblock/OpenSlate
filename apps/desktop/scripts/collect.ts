@@ -3,8 +3,8 @@
  * the release: OpenSlate[-Offline]-<version>-<os>-<arch><suffix>, e.g.
  * OpenSlate-Offline-0.1.0-windows-x64-Setup.zip. Electrobun's own names
  * (win-x64-OpenSlateOffline-Setup.zip) carry neither version nor a readable
- * edition. Only installers go: the updater files (stable-*) aren't published
- * until the app checks for updates.
+ * edition. Only installers go: the updater files (stable-*) go to the
+ * edition's update feed instead (sign-update.ts, feed.ts).
  *
  *   bun scripts/collect.ts
  */

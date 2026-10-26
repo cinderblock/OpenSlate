@@ -1,0 +1,39 @@
+# Publishing a desktop-v<version> release makes its updates live: each
+# edition's update feed (staged by desktop.yml's release job) switches to the
+# new version, and installed apps start offering it.
+
+name: desktop-publish
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-publish
+
+env:
+  BUN_VERSION: "1.4.2"
+
+jobs:
+  feed:
+    name: Make the updates live
+    if: startsWith(github.event.release.tag_name, 'desktop-v')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: bun install --frozen-lockfile
+      - name: Switch each edition's feed to this version
+        working-directory: apps/desktop
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          for edition in standard offline; do
+            bun scripts/feed.ts publish "$edition" "$TAG"
+          done
