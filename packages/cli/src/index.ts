@@ -321,6 +321,7 @@ async function cmdSignBatch(
           endorsedBy: raw.endorsed_by,
           attribution: raw.attribution,
           adopts: raw.adopts,
+          articles: raw.articles,
           context: raw.context,
         });
         const token = signSlate(payload, identity.keyPair.secretKey);
