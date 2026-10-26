@@ -34,7 +34,9 @@ import {
   onboardingStore,
   setStanding,
 } from "../lib/myVote";
+import { DESKTOP_DOWNLOADS_URL, IS_DESKTOP_APP, THIS_DEVICE } from "../lib/platform";
 import {
+  CATALOG_BUILT_IN,
   type CatalogEntry,
   DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
   catalogEntryLogoUrl,
@@ -199,8 +201,8 @@ export function Wizard() {
               Welcome to OpenSlate
             </h2>
             <p>
-              Endorsements you can verify, from the people and groups you choose. Everything stays
-              in this browser. What would you like to do?
+              Endorsements you can verify, from the people and groups you choose. Everything stays{" "}
+              {IS_DESKTOP_APP ? "on" : "in"} {THIS_DEVICE}. What would you like to do?
             </p>
             {isPublicSite() && <AlphaWizardNote />}
             <div className="wizard-choices">
@@ -447,8 +449,9 @@ function AboutOpenSlate() {
         <li>
           <Lock className="icon" />
           <span>
-            <strong>No account.</strong> Your picks, notes and signing keys stay in this browser.
-            They're never sent to us, and reach others only when you share them.
+            <strong>No account.</strong> Your picks, notes and signing keys stay{" "}
+            {IS_DESKTOP_APP ? "on" : "in"} {THIS_DEVICE}. They're never sent to us, and reach others
+            only when you share them.
           </span>
         </li>
         <li>
@@ -460,11 +463,22 @@ function AboutOpenSlate() {
         </li>
         <li>
           <Server className="icon" />
-          <span>
-            <strong>Don't want to use this website?</strong> Run your own copy. The app is plain
-            files any web server can host, or that run on your own computer. A desktop app is on the
-            way.
-          </span>
+          {IS_DESKTOP_APP ? (
+            <span>
+              <strong>Runs on your computer.</strong>{" "}
+              {CATALOG_BUILT_IN
+                ? "This edition carries a copy of the public endorsements and voter guides, so planning your ballot works with no internet. "
+                : ""}
+              Polls, forecasts and results still need a connection.
+            </span>
+          ) : (
+            <span>
+              <strong>Don't want to use this website?</strong> Run OpenSlate on your own computer:
+              the desktop app for Windows, macOS and Linux comes with or without a built-in copy of
+              the endorsements, for planning your ballot offline. Or host the app's plain files on
+              any web server.
+            </span>
+          )}
         </li>
       </ul>
       <p className="wizard-about-links">
@@ -472,9 +486,21 @@ function AboutOpenSlate() {
           Source code on GitHub
         </a>
         {" · "}
-        <a href={`${REPO_URL}#how-to-run`} target="_blank" rel="noreferrer">
-          How to run your own
-        </a>
+        {IS_DESKTOP_APP ? (
+          <a href={DESKTOP_DOWNLOADS_URL} target="_blank" rel="noreferrer">
+            Newer versions
+          </a>
+        ) : (
+          <>
+            <a href={DESKTOP_DOWNLOADS_URL} target="_blank" rel="noreferrer">
+              Download the desktop app
+            </a>
+            {" · "}
+            <a href={`${REPO_URL}#how-to-run`} target="_blank" rel="noreferrer">
+              How to run your own
+            </a>
+          </>
+        )}
       </p>
     </section>
   );
@@ -686,8 +712,8 @@ function AreaStep({
         Where do you vote?
       </h2>
       <p>
-        This trims a statewide list to the races on your ballot. It's optional, stays in this
-        browser, and you can change it any time.
+        This trims a statewide list to the races on your ballot. It's optional, stays{" "}
+        {IS_DESKTOP_APP ? "on" : "in"} {THIS_DEVICE}, and you can change it any time.
       </p>
       {loading ? (
         <SummariesWait summaries={summaries} />
@@ -943,7 +969,7 @@ function IdentityStep({
         <>
           <p>
             Your identity is a key pair. It signs your endorsements so anyone can check they came
-            from you and weren't changed. The secret half never leaves this browser.
+            from you and weren't changed. The secret half never leaves {THIS_DEVICE}.
           </p>
           {all.length > 0 && (
             <p className="hint">
@@ -991,9 +1017,10 @@ function IdentityStep({
       ) : (
         <>
           <p>
-            Created <strong>{created.name ?? "your identity"}</strong>. Download a backup now: if
-            this browser's data is cleared, the backup is the only way to keep signing as{" "}
-            {created.name ?? "you"}. Anyone with the file can sign as you, so keep it private.
+            Created <strong>{created.name ?? "your identity"}</strong>. Download a backup now: if{" "}
+            {IS_DESKTOP_APP ? "the app's" : "this browser's"} data is cleared, the backup is the
+            only way to keep signing as {created.name ?? "you"}. Anyone with the file can sign as
+            you, so keep it private.
           </p>
           <code className="key">{created.publicKey}</code>
           <WizardFooter>

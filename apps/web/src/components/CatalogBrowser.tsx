@@ -14,8 +14,10 @@ import {
   useFollows,
 } from "../lib/myVote";
 import {
+  CATALOG_BUILT_IN,
   type CatalogEntry,
   DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
+  PUBLIC_ENDORSEMENTS_CATALOG,
   catalogEntryLogoUrl,
   catalogQueryOptions,
 } from "../lib/query";
@@ -46,7 +48,11 @@ export function isBallotEntry(entry: CatalogEntry): boolean {
 export function CatalogBrowser() {
   const queryClient = useQueryClient();
   const [catalogUrl, setCatalogUrl] = useState(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG);
-  const [pendingUrl, setPendingUrl] = useState(catalogUrl);
+  // A built-in copy's address isn't one to type; offer the live catalog instead.
+  const [pendingUrl, setPendingUrl] = useState(
+    CATALOG_BUILT_IN ? PUBLIC_ENDORSEMENTS_CATALOG : catalogUrl,
+  );
+  const showingBuiltIn = CATALOG_BUILT_IN && catalogUrl === DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG;
   const {
     data: catalog,
     isLoading,
@@ -329,12 +335,24 @@ export function CatalogBrowser() {
           >
             Load
           </button>
+          {CATALOG_BUILT_IN && !showingBuiltIn && (
+            <button
+              type="button"
+              onClick={() => {
+                setCatalogUrl(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG);
+                setElection(null);
+              }}
+            >
+              Use the built-in copy
+            </button>
+          )}
           <button type="button" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw className="icon" /> {isFetching ? "Refreshing…" : "Refresh"}
           </button>
         </div>
         {catalog && (
           <p className="hint">
+            {showingBuiltIn && "A copy built into this app, for use offline · "}
             {catalog.entries.length} entries · generated {formatLocalDate(catalog.generated_at)}
           </p>
         )}

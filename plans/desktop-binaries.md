@@ -1,6 +1,8 @@
 # Desktop binaries: build and publish, standard and offline
 
-**Branch:** `feat/desktop-binaries` (own worktree). **Started:** 2026-10-24.
+**Branch:** `feat/desktop-binaries` (own worktree,
+`~/.t3/worktrees/OpenSlate/feat-desktop-binaries`), built on `origin/master` with
+only this task's commits. **Started:** 2026-10-24.
 
 ## Goal
 
@@ -45,6 +47,19 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
 
 - Build and publish desktop binaries, with and without embedded endorsements
   (user, 2026-10-24).
+- Ship **unsigned** (no Apple/Windows code signing) for now, **but self-updates
+  must be signed**: the app installs only updates signed by our own key
+  (user, 2026-10-25).
+- Tag scheme `desktop-v<version>`, protected by a tag ruleset (user,
+  2026-10-25; ruleset created, see Findings).
+- No Mac available to test by hand: macOS ships tested only by CI's
+  self-test (user, 2026-10-25).
+- Approved: mark PR #1 ready, merge, push the tag (user, 2026-10-25).
+  Publishing the drafted release is a separate yes. Held until the signed
+  updater is in, so 0.1.0 installs can update themselves.
+- Both update keys live only as GitHub secrets, no password-manager copy;
+  go ahead: merge PR #1, tag and publish `desktop-v0.1.0` (user,
+  2026-10-25).
 
 ## Design (current)
 
@@ -68,17 +83,141 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
 
 1. ☑ Electrobun 2.0.4 research (config, artifacts, CI, `views://` storage,
    signing): see Findings.
-2. ☐ **(current)** Move this thread into a worktree on `feat/desktop-binaries`.
-3. ☐ Snapshot script + web changes; test a snapshot build in a browser.
-4. ☐ Electrobun app builds and runs locally on Windows (both flavors);
-   data persists across restarts.
-5. ☐ Icons (png/ico/icns) generated and committed.
-6. ☐ CI workflow; dry run via `workflow_dispatch` on the branch.
-7. ☐ Docs: README (How to Run → Desktop), apps/desktop/README, welcome screen
-   link.
-8. ☐ Publish: merge, tag, release — needs the user's go-ahead (see questions).
+2. ☑ Moved into the worktree on `feat/desktop-binaries`.
+3. ☑ Snapshot script + web changes (`1d656f6`, `40bdbc2`, `118baf6`); an
+   offline web build checked in a browser: catalog, logos, a voter guide all
+   from the copy, no request left localhost.
+4. ☑ Electrobun app (`8259e34`) builds and runs on Windows, both editions;
+   self-test passes; storage survives restarts; installer and uninstaller
+   work.
+5. ☑ Icons generated and committed.
+6. ☑ CI workflow (`6579abe`), first run on draft PR #1
+   (https://github.com/cinderblock/OpenSlate/pull/1, run 40167794253): all 8
+   jobs green; the self-test passed for both editions on windows-2025,
+   macos-14 and ubuntu-24.04 (Xvfb), storage across a restart included.
+   (`workflow_dispatch` only works once the file is on the default branch.)
+7. ☑ Docs: apps/desktop/README, RELEASE_NOTES, root README (`afa69d1`); the
+   macOS app is `OpenSlate Offline.app` (with a space), checked in the dmg.
+8. ☑ Signed self-updates (see "Updates" below): built, unit-tested, and
+   tested end to end on Windows against a local feed.
+9. ☑ `desktop-release` / `desktop-recovery` environments and key secrets.
+10. ☐ **(current)** Merge PR #1, tag `desktop-v0.1.0`, check the draft, publish
+   it (approved 2026-10-25); publishing makes the feeds live. Then check the
+   live feeds verify with the app's keys, and delete the local key files.
+
+## Updates (design, 2026-10-25)
+
+Electrobun's updater checks nothing cryptographically: its `hash` is a
+13-character build ID (`/^[a-z0-9]{1,13}$/`), and the bundle, patches and
+`update.json` are trusted as served. So the app adds its own check:
+
+- **Signed statement** per edition and platform,
+  `<channel>-<os>-<arch>-signature.json`: `{ statement, signatures: [{ key,
+  signature }] }`, where `statement` is a JSON string `{ type:
+  "openslate-desktop-update", identifier, channel, platform, arch, version,
+  hash, tarSha256, tarBytes }` and each signature is Ed25519 over the
+  statement's UTF-8 bytes (core's `ed25519:` base58 keys, base64url
+  signatures).
+- **In the app** (`src/bun/update.ts`): check, fetch and verify the statement
+  (a trusted key; identifier, channel, platform, arch, version and hash match
+  Electrobun's `update.json`; version newer than the running one, so an old
+  signed release can't be replayed), let Electrobun download, then hash the
+  prepared `self-extraction/<hash>.tar` and compare with `tarSha256` before
+  anything is applied. A mismatch deletes the prepared update and the local
+  patch base, and retries once with the full bundle. The page shows "ready,
+  restart to update"; the restart re-checks the hash and calls `applyUpdate`.
+- **Two trusted keys** baked in: *release* (a GitHub Actions secret in the
+  `desktop-release` environment, tags `desktop-v*` only) and *recovery*
+  (`OPENSLATE_UPDATE_RECOVERY_KEY` in a separate `desktop-recovery`
+  environment, also `desktop-v*` tags only, used by no workflow; signs a
+  release that changes keys if the release key leaks).
+- **Feeds**: one prerelease per edition (`desktop-updates-standard`,
+  `desktop-updates-offline`), `release.baseUrl` =
+  `https://github.com/cinderblock/OpenSlate/releases/download/<that tag>`
+  (`scripts/feed.ts`). The tag job uploads `v0.1.0-`-prefixed copies of
+  `update.json`, the signature and the bundle, plus the patches (named for
+  the build they start from, so inert until `update.json` changes). Nothing
+  is live until the versioned release is published: `desktop-publish.yml`
+  (`release: published`) copies the staged files to the live names, bundle
+  then signature then `update.json`, and prunes anything older than the
+  previous version. The live bundle keeps Electrobun's name (see Findings).
+- **Keys** generated 2026-10-25 with core's `generateKeyPair`: release
+  `ed25519:BzKVTftwYGSDUf6CzqGmbBykFMrSN4tCcfFaTmrT6eEX`, recovery
+  `ed25519:Hmpghduf2yLhjUsmsYgcBokTQKG9jLZ5SBmVUmyZZHyz`. The private halves
+  live only in those GitHub secrets (user, 2026-10-25: "all keys live on
+  github"); the local files were deleted once the release job had signed
+  with the release key.
 
 ## Findings / gotchas
+
+### Updates (2026-10-25, Windows 11)
+
+- Tag ruleset "Desktop release tags" (id 25842427) created: `refs/tags/desktop-v*`,
+  rules creation/update/deletion/non_fast_forward, repo admins bypass.
+- **Electrobun makes a delta patch only if the previous bundle in the feed has
+  its own name** (`stable-win-x64-OpenSlate.tar.zst`): with a versioned name
+  in `artifact.file` the build says "previous update metadata does not match
+  this release; skipping delta patch". With the original name: "Patch: 3.80 KB
+  (0.0% of new size)" instead of a 35 MB download. Hence the stage/publish
+  copy.
+- The build fetches `${baseUrl}/stable-win-x64-update.json` (and the bundle)
+  to make the patch; "no previous release found; skipping delta patch" when
+  the feed has none, which is fine for the first release.
+- `Bun.zstdDecompressSync` gives the same tar as Electrobun's `zig-zstd`: the
+  CI-side SHA-256 matched what the app hashed after both a full download and
+  a patch.
+- End to end against a local feed (test key, `OPENSLATE_UPDATE_BASE_URL`):
+  0.1.0 installed by `Setup.exe` → found 0.1.1, verified, patched (3.8 KB),
+  hash matched, banner showed "OpenSlate 0.1.1 is ready" → installed and
+  relaunched as 0.1.1 (`version.json`). Untrusted key on 0.1.2: "the update
+  isn't signed by a key this app trusts", nothing downloaded. Correctly
+  signed 0.1.2 with one byte of the bundle flipped: rejected after the
+  download, retried in full, rejected, discarded, stayed on 0.1.1; once the
+  genuine bundle was back, it updated to 0.1.2. 0.1.2 → 0.1.3 likewise.
+- Not exercised: the *Restart to update* click itself. Synthetic mouse input
+  (`mouse_event`) didn't reach the WebView2 window. The click calls
+  `__electrobunSendToHost({ openslateUpdate: "apply" })`, the same channel the
+  self-test uses, and the install it triggers is the auto-apply path tested
+  above. macOS and Linux updates are untested (no Mac; Linux would need a
+  desktop session).
+- Setup.exe ends on an "Installation complete" dialog; the install writes
+  `HKCU\…\Uninstall\us.openslate.desktop.stable`, Desktop and Start menu
+  shortcuts. Applying an update leaves
+  `.electrobun-update-<id>.result.json` in the channel folder.
+
+### From building it (2026-10-24, Windows 11)
+
+- **`navigationRules` as a `BrowserWindow` option didn't block anything**
+  (`JSON.stringify([...])`; the native side may want a comma-separated
+  string). `mainWindow.webview.setNavigationRules(["^*", "views://*"])` after
+  creating the window works: the self-test's `location.href = "https://…"`
+  stays on `views://mainview/index.html`.
+- Electrobun's config loader doesn't run in the project folder:
+  `readFileSync("package.json")` → `ENOENT … ConfigLoadFailed`. Resolve with
+  `new URL("./package.json", import.meta.url)`.
+- First `electrobun` run from Git Bash failed: Hutch's `install.ps1` picked up
+  Git's `/usr/bin/tar` (`Cannot connect to C: resolve failed`). From
+  PowerShell it installs (to `~/.hutch`, and adds `~/.hutch/bin` to the user
+  PATH). Later runs from bash are fine.
+- `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port` is ignored
+  (Electrobun sets its own arguments); `win.chromiumFlags` is CEF-only. Hence
+  the in-app self-test (`OPENSLATE_SELFTEST`) to inspect the real window.
+- A missing `views://` file is a network error ("Failed to fetch"), not 404.
+- Service workers: `getRegistrations()` throws "The document is in an invalid
+  state" on `views://`, as expected; the desktop build has none.
+- The updater file is `stable-win-x64-update.json`, without the app name, so
+  the two editions **can't share a release's update files**. Dropped
+  `release.baseUrl` and publish installers only; the updater needs separate
+  locations per edition first.
+- The `build/stable-*/…/launcher.exe` isn't runnable in place ("installer
+  package is incomplete"); test via the zip's `Setup.exe`. Installs to
+  `%LOCALAPPDATA%\us.openslate.desktop\stable\app`, with Start menu and
+  desktop shortcuts; uninstall offers *App* / *App and Data* (data = keys).
+- Window icon in the title bar stays generic (Electrobun issue #565); the
+  taskbar and shortcuts use ours.
+- Sizes (CI, zipped artifacts): Windows 34 MB standard / 43 MB offline;
+  macOS dmg 21 / 30 MB; Linux 36 / 45 MB. Windows Setup zip 36 MB locally. Snapshot 31 MB, 1,729 files
+  (376 slates, 291 logos, 7 guides), 17 s to take.
 
 ### Electrobun 2.0.4 (research 2026-10-24, from the v2.0.4 tag on GitHub; not yet run)
 
@@ -137,22 +276,32 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
 ## Progress log
 
 - [x] Explored: desktop stub, catalog/guide URL handling, worker origin rule.
-- [ ] Everything in Plan / steps from 1 on.
+- [x] Snapshot script, built-in catalog support, desktop Vite mode.
+- [x] Electrobun app, icons, self-test; verified on Windows.
+- [x] CI workflow written (actionlint clean).
+- [x] CI green on all six builds, self-tests included (run 40167794253).
+- [x] Root README; macOS app name in RELEASE_NOTES.
+- [x] Cleaned up local self-test data (`%LOCALAPPDATA%\us.openslate.desktop*`).
+- [x] Tag ruleset (id 25842427).
+- [x] Signed updates: `update-signature.ts`, `update.ts`, keys, banner,
+      `sign-update.ts`, `verify-update.ts`, `feed.ts`, CI (PRs sign with a
+      throwaway key; tags sign for real and stage), `desktop-publish.yml`,
+      docs. Tests: 10 unit, end to end on Windows (above). Test install,
+      feed server and files cleaned up.
+- [x] `desktop-release` and `desktop-recovery` environments (deployment
+      tags `desktop-v*`), each with its key as a secret (2026-10-25).
+- [ ] Merge, tag (approved); publish (separate yes).
 
 ## Open questions for the user
 
-0. Is there a Mac (Apple Silicon) available to smoke-test the macOS build?
-   Without one, the macOS artifact ships untested at runtime.
-
-1. Code signing: unsigned builds trigger SmartScreen (Windows) and Gatekeeper
-   (macOS: users must right-click → Open, or `xattr -d`). Signing needs an
-   Apple Developer account ($99/yr) and a Windows certificate (or SignPath
-   Foundation, free for OSS). Recommendation: ship unsigned first, document
-   the workaround, add signing later.
-2. Release tag scheme: recommendation `desktop-v0.1.0`, protected by a tag
-   ruleset (a GitHub settings change, so it needs your yes).
+None open. (Answered 2026-10-25: create the environments and secrets, keys
+live on GitHub only, merge PR #1, tag and publish `desktop-v0.1.0`.)
 
 ## Things not to do
+
+- Don't push a branch based on local master: other threads' unpushed commits
+  ride along (some wait on the user). The branch was rebuilt on
+  `origin/master`; the old head is `backup/desktop-binaries-on-local-master`.
 
 - Don't write a Windows dark-titlebar workaround; pin an Electrobun with the
   upstream fix (see `plans/electrobun-dark-mode.md`).

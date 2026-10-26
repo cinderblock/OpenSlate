@@ -6,6 +6,7 @@ import {
   fetchGuideFile,
   guideListUrl,
   guidesFor,
+  parseGuideList,
 } from "../src/lib/guides";
 
 const CA: GuideEntry = {
@@ -20,6 +21,25 @@ describe("voter guides", () => {
     expect(
       guideListUrl("https://cinderblock.github.io/openslate-public-endorsements/index.json"),
     ).toBe("https://cinderblock.github.io/openslate-public-endorsements/guides.json");
+  });
+
+  test("a list's guides resolve against the list, so a snapshot can carry them", () => {
+    const listUrl = "views://mainview/catalog/guides.json";
+    const guides = parseGuideList(
+      {
+        version: 1,
+        guides: [
+          { ...CA, url: "guides/example.org/ca/guide.jws" },
+          { ...CA, url: "https://example.org/sf/guide.jws" },
+          { election: "2026-11-03", jurisdiction: "us/ca/la" } as GuideEntry,
+        ],
+      },
+      listUrl,
+    );
+    expect(guides.map((g) => g.url)).toEqual([
+      "views://mainview/catalog/guides/example.org/ca/guide.jws",
+      "https://example.org/sf/guide.jws",
+    ]);
   });
 
   test("a guide covers its own area and the areas inside it, for its election", () => {

@@ -61,7 +61,11 @@ const manifestColors: Partial<ManifestOptions> & {
 
 // Alias the workspace core package to its TypeScript source so Vite compiles it
 // as part of the app (Vite does not transpile TS inside node_modules by default).
-export default defineConfig({
+//
+// `--mode desktop` builds for the desktop app (apps/desktop): settings from
+// .env.desktop instead of .env.production, and no service worker, since its
+// pages load from views://, where service workers can't register.
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     // React Aria ships UI strings ("Clear search", "No results") for ~30
@@ -69,6 +73,7 @@ export default defineConfig({
     { ...optimizeLocales.vite({ locales: ["en-US"] }), enforce: "pre" },
     neverBundle(appSecret),
     VitePWA({
+      disable: mode === "desktop",
       registerType: "autoUpdate",
       // PWA service worker is built only in production; dev keeps HMR clean.
       devOptions: { enabled: false },
@@ -137,4 +142,4 @@ export default defineConfig({
       "/api": { target: "http://localhost:8787", changeOrigin: true },
     },
   },
-});
+}));
