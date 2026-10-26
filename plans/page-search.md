@@ -95,6 +95,14 @@ Phase 2 steps:
   page and Back, "Nothing in Against all matches… Show all 6"); typecheck,
   335 tests and Biome (CRLF config) clean; committed
 
+## Status
+
+Done and deployed 2026-10-26: `dc6e504`, `9cb30d2`, `8044b13` pushed to
+master (rebased onto upstream's ballot-style My ballot, `bd35565`; only the
+imports conflicted) and live on https://openslate.us within a minute.
+The user called it enough for now; a race page and Identities were left
+without search on purpose (short lists).
+
 ## Findings / gotchas
 
 - `validateQuerySearch` lives in `router.tsx`, not `lib/search.ts`: the
