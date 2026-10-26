@@ -6,8 +6,9 @@
 // - release: signs each release in GitHub Actions (the
 //   OPENSLATE_UPDATE_SIGNING_KEY secret of the desktop-release environment,
 //   available only to desktop-v* tags).
-// - recovery: kept offline by the maintainer. Signs an update that replaces
-//   the release key if it's ever lost or leaked.
+// - recovery: the OPENSLATE_UPDATE_RECOVERY_KEY secret of the separate
+//   desktop-recovery environment, which no workflow uses. Signs an update
+//   that replaces the release key if it's ever leaked.
 //
 // A test build (OPENSLATE_TEST_UPDATE_KEY at build time, electrobun.config.ts)
 // trusts its test key instead, and nothing else.

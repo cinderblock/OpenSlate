@@ -57,6 +57,9 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
 - Approved: mark PR #1 ready, merge, push the tag (user, 2026-10-25).
   Publishing the drafted release is a separate yes. Held until the signed
   updater is in, so 0.1.0 installs can update themselves.
+- Both update keys live only as GitHub secrets, no password-manager copy;
+  go ahead: merge PR #1, tag and publish `desktop-v0.1.0` (user,
+  2026-10-25).
 
 ## Design (current)
 
@@ -97,11 +100,10 @@ downloads (the "What is OpenSlate?" section shipped in `e72ee5c`).
    macOS app is `OpenSlate Offline.app` (with a space), checked in the dmg.
 8. ☑ Signed self-updates (see "Updates" below): built, unit-tested, and
    tested end to end on Windows against a local feed.
-9. ☐ **(current)** The user's yes to create the `desktop-release` environment
-   and its `OPENSLATE_UPDATE_SIGNING_KEY` secret (a GitHub settings change),
-   and to take the two private keys into their password manager.
-10. ☐ Merge PR #1, tag `desktop-v0.1.0` (approved), then publish the drafted
-   release (needs a separate yes); publishing makes the feeds live.
+9. ☑ `desktop-release` / `desktop-recovery` environments and key secrets.
+10. ☐ **(current)** Merge PR #1, tag `desktop-v0.1.0`, check the draft, publish
+   it (approved 2026-10-25); publishing makes the feeds live. Then check the
+   live feeds verify with the app's keys, and delete the local key files.
 
 ## Updates (design, 2026-10-25)
 
@@ -125,9 +127,10 @@ Electrobun's updater checks nothing cryptographically: its `hash` is a
   patch base, and retries once with the full bundle. The page shows "ready,
   restart to update"; the restart re-checks the hash and calls `applyUpdate`.
 - **Two trusted keys** baked in: *release* (a GitHub Actions secret in the
-  `desktop-release` environment, tags `desktop-v*` only) and *recovery* (kept
-  offline by the user; signs a release that changes keys if the release key
-  is lost or leaked).
+  `desktop-release` environment, tags `desktop-v*` only) and *recovery*
+  (`OPENSLATE_UPDATE_RECOVERY_KEY` in a separate `desktop-recovery`
+  environment, also `desktop-v*` tags only, used by no workflow; signs a
+  release that changes keys if the release key leaks).
 - **Feeds**: one prerelease per edition (`desktop-updates-standard`,
   `desktop-updates-offline`), `release.baseUrl` =
   `https://github.com/cinderblock/OpenSlate/releases/download/<that tag>`
@@ -140,9 +143,10 @@ Electrobun's updater checks nothing cryptographically: its `hash` is a
   previous version. The live bundle keeps Electrobun's name (see Findings).
 - **Keys** generated 2026-10-25 with core's `generateKeyPair`: release
   `ed25519:BzKVTftwYGSDUf6CzqGmbBykFMrSN4tCcfFaTmrT6eEX`, recovery
-  `ed25519:Hmpghduf2yLhjUsmsYgcBokTQKG9jLZ5SBmVUmyZZHyz`. Private halves in
-  `%LOCALAPPDATA%\OpenSlate-release\desktop-update-{release,recovery}-key.txt`
-  (not in any repo) until the user moves them to their password manager.
+  `ed25519:Hmpghduf2yLhjUsmsYgcBokTQKG9jLZ5SBmVUmyZZHyz`. The private halves
+  live only in those GitHub secrets (user, 2026-10-25: "all keys live on
+  github"); the local files were deleted once the release job had signed
+  with the release key.
 
 ## Findings / gotchas
 
@@ -284,19 +288,14 @@ Electrobun's updater checks nothing cryptographically: its `hash` is a
       throwaway key; tags sign for real and stage), `desktop-publish.yml`,
       docs. Tests: 10 unit, end to end on Windows (above). Test install,
       feed server and files cleaned up.
-- [ ] `desktop-release` environment + secret (user's yes), keys to the
-      user's password manager.
+- [x] `desktop-release` and `desktop-recovery` environments (deployment
+      tags `desktop-v*`), each with its key as a secret (2026-10-25).
 - [ ] Merge, tag (approved); publish (separate yes).
 
 ## Open questions for the user
 
-1. May I create the `desktop-release` environment (deployment tags
-   `desktop-v*` only) and set its `OPENSLATE_UPDATE_SIGNING_KEY` secret to the
-   release key? The tag's release job can't sign without it.
-2. Move both private keys from `%LOCALAPPDATA%\OpenSlate-release\` into your
-   password manager, then delete the files. The recovery key is the only way
-   to replace the release key in installed apps.
-3. (Later) Publishing `desktop-v0.1.0`'s draft: a separate yes.
+None open. (Answered 2026-10-25: create the environments and secrets, keys
+live on GitHub only, merge PR #1, tag and publish `desktop-v0.1.0`.)
 
 ## Things not to do
 

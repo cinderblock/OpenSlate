@@ -65,8 +65,12 @@ installed only if:
 
 Two keys are trusted: the **release** key, which signs in GitHub Actions (the
 `OPENSLATE_UPDATE_SIGNING_KEY` secret of the `desktop-release` environment,
-which only `desktop-v*` tags can use), and a **recovery** key kept offline, to
-sign an update that replaces the release key if it's ever lost or leaked.
+which only `desktop-v*` tags can use), and a **recovery** key, to sign an
+update that replaces the release key if it's ever leaked. The recovery key is
+the `OPENSLATE_UPDATE_RECOVERY_KEY` secret of a separate `desktop-recovery`
+environment that no workflow uses, so the release job never sees it; using it
+means adding a workflow (or a step) that names that environment. GitHub
+secrets can't be read back, so neither key exists anywhere else.
 
 **Feeds.** Electrobun names its `update.json` only by channel and platform,
 so each edition gets a release of its own as its feed:
