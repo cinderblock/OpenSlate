@@ -89,9 +89,80 @@ The user asked (2026-10-21):
 7. Shown on each race card (race-level links) and on the race page (race and
    per-candidate links). Screen only, not printed.
 
-### Part B2 — curated news per ballot item (needs the user's decision) ← current
+### Part B2 — news per ballot item → Part C
 
-Not started. Proposal, see Open questions 1.
+The user's answer (2026-10-25): signed links attached to ballot items, no
+curation step, collated with the item automatically. Designed as `articles`
+in Part C.
+
+### Part C — structure in the spec (2026-10-25) ← current
+
+Why: the app was parsing meaning out of free text: seat counts from "3
+seats", party from "Democratic · Attorney", the measure number and label
+from "California — Proposition 43 (Limits …)", the measure type from a
+listing's `statement`. The user ruled that out for the data format. The
+listing scripts already hold every one of these values separately (CA SoS:
+party, designation, incumbent, measure number / label / type; SF: seats and
+measure type; OC: "Vote For: N"; Alameda: party, designation, incumbent;
+LA/SCC/SD/OC: designation) and flatten them into `statement`.
+
+Design (amended in place in v1, like `district` and `choice_id`: optional
+fields, consumers upgrade before publishers use them):
+
+- `Subject.ballot` (`BallotContest`): how the ballot prints the contest. Not
+  part of identity; a ballot listing's value wins (like `district`).
+  - `heading`: the contest's heading as printed ("Proposition 43", "Measure
+    A", "Attorney General").
+  - `number`: a measure's number or letter ("43", "A"), on its own so
+    nothing has to parse it out of `heading` or `title`.
+  - `label`: what's printed under the heading: a measure's ballot label, a
+    retention question.
+  - `measure_type`: "Initiative Statute", "Legislative Constitutional
+    Amendment", "Bond Measure"…
+  - `vote_for`: integer ≥ 1, the most choices a voter may mark ("Vote for
+    no more than N").
+  - `ranks`: integer ≥ 2, a ranked-choice contest: rank up to N choices (SF
+    uses ranked choice for some offices; "Vote for one" would be wrong
+    there).
+- `Position.ballot` (`BallotChoice`): how the ballot prints a choice; for
+  listings, and anyone copying from them.
+  - `party`: the party (preference) as printed.
+  - `designation`: the ballot designation (occupation) as printed.
+  - `incumbent`: `true` (never `false`: omit it, like `write_in`).
+- Listings (§8.2) put these in `ballot`, not `statement`. Consumers MUST NOT
+  parse structure out of `statement` or `title`.
+- `SlatePayload.articles` (`Article[]`): links attached to ballot items,
+  never positions. Anyone signs them (a newsroom about its own coverage, a
+  researcher, a voter); consumers collate them by subject identity (and
+  `choice` / `choice_id`), exactly as positions are, with no curation step.
+  Fields: `subject` (req), `choice`, `choice_id`, `uri` (req), `title`
+  (req), `publisher`, `published_at` (RFC 3339 full-date or date-time), `kind`
+  (`news` | `analysis` | `opinion` | `explainer` | `guide` | other),
+  `summary`. MUST NOT count as support or opposition; SHOULD show who
+  attached it; dedupe by `uri`.
+
+Steps:
+
+1. C1 SPEC.md (§3.3, §3.4, new §3.13 `BallotContest` / `BallotChoice`, new
+   §3.14 `Article`, §8.2, changelog, Appendix A), `packages/core` zod schema,
+   exported JSON schema, vectors (positive: all fields; negative:
+   `incumbent: false`, article without uri…), core tests.
+2. C2 web app reads the structured fields: `voteFor` from
+   `subject.ballot.vote_for` (and `ranks` → "Rank up to N"), designation and
+   party from `ballot`, measure heading / label / type / number from
+   `subject.ballot`, research links from `ballot.number`; Quick fill's party
+   from `ballot.party`. Collate carries a listing's `ballot` onto the race
+   and its choices.
+3. C3 web app collates `articles`: under each race on the race page
+   (newest first, who attached it, publisher, date), and a count / the
+   latest few on My ballot's card. Never counted as endorsements.
+4. C4 public-endorsements repo: every listing script writes `ballot` fields
+   instead of flattening into `statement`; re-sign in CI; Pages publishes.
+   Only after C1–C3 are live (old verifiers reject the new fields).
+5. C5 once the live listings carry the fields: remove the app's
+   free-text fallbacks (`SEATS`, `partyOf`'s split, `splitMeasureTitle`,
+   `measureNote` from `statement`).
+6. C6 data for `articles`: who publishes them (see Open questions).
 
 ## Findings / gotchas
 
@@ -141,16 +212,13 @@ Not started. Proposal, see Open questions 1.
 
 ## Open questions for the user
 
-1. **News coverage per ballot item.** Recommendation: a new signed document
-   type, a *reading list* (`openslate-reading+jws`, or an optional
-   `readings` array in a slate), where a curator signs links per subject:
-   `{ subject, uri, title, publisher, published_at, kind: news | analysis |
-   guide | official }`. It is not a position, so it never counts as an
-   endorsement. The public-endorsements repo (or anyone) publishes them; the
-   app imports and follows curators like sources and shows the links under
-   each race. Alternatives: (b) a live news search through a project Worker
-   (unvetted results, and a server sees which races people look at), or
-   (c) only the Google News search link from B1 (already done, no curation).
+1. ~~News per ballot item~~: answered 2026-10-25 (Part C, `articles`).
+2. ~~Seats as a real field~~: answered 2026-10-25 (Part C, structure in the
+   spec, no parsed strings).
+3. Who publishes the first `articles` (C6)? Candidates: a researcher-signed
+   slate per newsroom in the public-endorsements repo (e.g. CalMatters'
+   per-proposition coverage, transcribed like endorsements are), or
+   newsrooms signing their own. Open until C1–C3 are live.
 
 ## Findings added during the build
 
@@ -173,19 +241,13 @@ Not started. Proposal, see Open questions 1.
   ballot source → 1; no ballot source → unknown, no line (local boards are
   often multi-seat, so guessing "one" would mislead).
 
-## Open questions (continued)
-
-2. **Seats as a real field.** `voteFor` parses "N seats" out of the ballot
-   source's free-text note. Cleaner: an optional `Subject.seats` (or
-   `vote_for`) in SPEC §3.3, written by the ballot-source scripts in the
-   public-endorsements repo. Needs a spec change (the schema is strict, so
-   older verifiers would reject slates carrying it). Recommendation: do it
-   together with any other v1 schema additions (e.g. B2's reading list), not
-   on its own.
-
 ## Things not to do
 
 - Don't use the `neutral` stance to carry news links: neutral is a position
   and would show up as one.
 - Don't fetch anything (news, guides) to build links: privacy and the
   no-central-server rule.
+- Don't parse structure out of free text (`statement`, `title`) in new code:
+  the user ruled it out for the data format (2026-10-25). Add a field.
+- Don't publish listings with the new fields before the app that accepts
+  them is live: the schema is closed, so older verifiers reject them.
