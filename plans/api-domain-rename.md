@@ -94,6 +94,12 @@ Three phases:
   only): 10–50 requests a day on `polls.`, mostly `/api/polls`,
   `/api/health` and `/api/civic/elections`. Scanners and crawlers sent about
   ten times that to other paths.
+- **Traffic after the switch** (checked 2026-10-25 6:24 PM PDT, 01:24Z
+  10-26): `polls.` had 52 app requests on 10-23 (UTC dates) and 26 on 10-24,
+  some of them our own checks, then none at all from 10-25 00:00Z (10-24
+  5 PM PDT) on. `api.` picked up 14, then 42. So the open copies of the app
+  switched within hours; what's left to wait for is copies nobody has opened
+  since (installed apps, tabs left open).
 - **Cloudflare keeps about 30 days of these analytics** on this plan: a wider
   range errors with "cannot request a time range wider than 4w2d".
 - **`/api/polls/polls` is not a route;** VoteHub answers 500 "Poll not
