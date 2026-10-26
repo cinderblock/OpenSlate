@@ -13,7 +13,7 @@ import { TokenField } from "./ui/Token";
 
 /**
  * Paste, load or scan a slate, verify it, and save it. Standalone under
- * Publish → Verify; `embedded` under Sources → Add sources, where saving it
+ * Publish → Verify; `embedded` under Sources → Add endorsements, where saving it
  * makes its source show on My ballot.
  */
 export function ImportVerifyPanel({ embedded = false }: { embedded?: boolean }) {

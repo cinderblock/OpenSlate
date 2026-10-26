@@ -245,7 +245,7 @@ export function Wizard() {
             onSkip={skip}
             onManual={() => {
               finish("vote");
-              void navigate({ to: "/sources" });
+              void navigate({ to: "/sources", search: { add: true } });
             }}
           />
         )}

@@ -27,7 +27,7 @@ export function ContactsCard() {
       });
       setContactError(null);
     } else if (parsed.kind === "slate") {
-      setContactError("That QR code is a slate. Import it under “Add sources” above.");
+      setContactError("That QR code is a slate. Import it under “Add endorsements” above.");
     } else {
       setContactError("Couldn't recognise that QR code.");
     }

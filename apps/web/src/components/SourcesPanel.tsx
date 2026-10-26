@@ -1,4 +1,6 @@
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
+  ArrowDown,
   Landmark,
   Library,
   Link2,
@@ -8,7 +10,7 @@ import {
   UserCheck,
   UserPlus,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type DecodedSlate, electionOf } from "../lib/collate";
 import { slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
@@ -100,6 +102,30 @@ export function SourcesPanel() {
   const endorsers = groups.some((g) => !g.ballot);
   const [addTab, setAddTab] = useState<AddTab>("catalog");
 
+  // "Add endorsements" elsewhere (My ballot) links to `?add`: land on that
+  // section, not the top of a long Following list. Then drop the flag, so
+  // back and reload don't keep jumping.
+  const { add } = useSearch({ from: "/sources" });
+  const navigate = useNavigate({ from: "/sources" });
+  const addHeading = useRef<HTMLHeadingElement>(null);
+  const showAdd = useCallback(() => {
+    const heading = addHeading.current;
+    if (!heading) return;
+    // Two columns put it near the top already; scroll only when it's down the page.
+    const top = heading.getBoundingClientRect().top;
+    if (top < 0 || top > window.innerHeight / 2) heading.scrollIntoView({ block: "start" });
+    heading.focus({ preventScroll: true });
+  }, []);
+  useEffect(() => {
+    if (!add || !isReady) return;
+    showAdd();
+    void navigate({
+      search: ({ add: _, ...rest }) => rest,
+      replace: true,
+      resetScroll: false,
+    });
+  }, [add, isReady, navigate, showAdd]);
+
   return (
     <section className="panel">
       <h2>Sources</h2>
@@ -110,6 +136,14 @@ export function SourcesPanel() {
         race pages.
       </p>
 
+      {/* On one column, "Add endorsements" is below everything you already
+          have; on a wide screen it's the column beside it, so no need. */}
+      {isReady && groups.length > 0 && (
+        <button type="button" className="sources-jump" onClick={showAdd}>
+          <UserPlus className="icon" /> Add endorsements <ArrowDown className="icon" />
+        </button>
+      )}
+
       {isReady && groups.length > 0 && (
         <PageSearch
           search={search}
@@ -117,13 +151,13 @@ export function SourcesPanel() {
           placeholder="Search your sources by name, reporter, link or election…"
         >
           {shown.length === 0
-            ? `None of your sources match “${search.query.trim()}”. The public catalog under Add sources has its own search.`
+            ? `None of your sources match “${search.query.trim()}”. The public catalog under Add endorsements has its own search.`
             : matchCount(shown.length, groups.length, "sources", search.query)}
         </PageSearch>
       )}
 
       {/* Two columns on a wide screen once there's something imported: what you
-          have on the left, "Add sources" on the right. One column, in this
+          have on the left, "Add endorsements" on the right. One column, in this
           order, on a phone. */}
       <div className={isReady && groups.length > 0 ? "sources-layout" : undefined}>
         {isReady && ballots.length > 0 && (
@@ -153,7 +187,7 @@ export function SourcesPanel() {
                 {search.searching
                   ? "None you follow match."
                   : disagreeing.length === 0
-                    ? "You aren't following anyone yet. Follow some from Add sources."
+                    ? "You aren't following anyone yet. Follow some from Add endorsements."
                     : "You aren't following anyone to agree with yet."}
               </p>
             ) : (
@@ -212,10 +246,14 @@ export function SourcesPanel() {
         )}
 
         <div className="sources-add">
-          <h3 className="section-heading">
-            <UserPlus className="icon" /> Add sources
+          <h3 className="section-heading" id="add-endorsements" ref={addHeading} tabIndex={-1}>
+            <UserPlus className="icon" /> Add endorsements
           </h3>
-          <div className="segmented" role="tablist" aria-label="Add sources from">
+          <p className="hint">
+            Follow more organizations from the public catalog, or add a slate someone shared with
+            you.
+          </p>
+          <div className="segmented" role="tablist" aria-label="Add endorsements from">
             <button
               type="button"
               role="tab"

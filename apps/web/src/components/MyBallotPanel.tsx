@@ -16,6 +16,7 @@ import {
   Pencil,
   Printer,
   ThumbsDown,
+  UserPlus,
   WandSparkles,
   X,
 } from "lucide-react";
@@ -563,7 +564,7 @@ export function MyBallotPanel() {
             <button type="button" className="primary" onClick={() => openWizard()}>
               Get started
             </button>
-            <Link to="/sources" className="link">
+            <Link to="/sources" search={{ add: true }} className="link">
               or browse sources yourself →
             </Link>
           </div>
@@ -596,6 +597,11 @@ export function MyBallotPanel() {
           </button>
         </div>
         <span className="grow" />
+        {/* The way back to adding more once the wizard's done: Sources is
+            where it happens, but "Sources" alone doesn't say so. */}
+        <Link to="/sources" search={{ add: true }} className="button-link">
+          <UserPlus className="icon" /> Add endorsements
+        </Link>
         <button
           type="button"
           aria-expanded={filling}
@@ -863,8 +869,10 @@ export function MyBallotPanel() {
         <div className="card">
           <p>
             None of the sources you follow cover this election.{" "}
-            <Link to="/sources">Follow some</Link>, or tick “Include races only unfollowed sources
-            cover”.
+            <Link to="/sources" search={{ add: true }}>
+              Follow some
+            </Link>
+            , or tick “Include races only unfollowed sources cover”.
           </p>
         </div>
       )}

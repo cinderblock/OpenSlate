@@ -19,6 +19,11 @@ function validateQuerySearch(search: Record<string, unknown>): { q?: string } {
   return typeof search.q === "string" && search.q !== "" ? { q: search.q } : {};
 }
 
+/** Sources' `?add`, a link straight to its "Add endorsements" section, on top of `?q=`. */
+function validateSourcesSearch(search: Record<string, unknown>): { q?: string; add?: true } {
+  return { ...validateQuerySearch(search), ...(search.add === true ? { add: true } : {}) };
+}
+
 // --- My vote ---
 
 const ballotRoute = createRoute({
@@ -30,7 +35,7 @@ const ballotRoute = createRoute({
 const sourcesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/sources",
-  validateSearch: validateQuerySearch,
+  validateSearch: validateSourcesSearch,
   component: lazyRouteComponent(() => import("./components/SourcesPanel"), "SourcesPanel"),
 });
 const raceRoute = createRoute({

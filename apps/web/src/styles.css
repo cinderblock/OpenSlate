@@ -662,7 +662,7 @@ dialog.feedback-dialog::backdrop {
   border-top: 1px solid var(--border);
   padding-top: 0.75rem;
 }
-/* A link that leaves the app, dressed as a button. */
+/* A link dressed as a button. */
 a.button-link {
   display: inline-block;
   border-radius: 8px;
@@ -2017,7 +2017,14 @@ button.source-chip {
 .section-heading {
   margin: 1.5rem 0 0.5rem;
 }
-/* What you have imported on the left, "Add sources" on the right; see the
+.sources-jump {
+  margin-bottom: 0.75rem;
+}
+/* Clear of the edge when "Add endorsements" is scrolled to. */
+#add-endorsements {
+  scroll-margin-top: 1rem;
+}
+/* What you have imported on the left, "Add endorsements" on the right; see the
    race page above for why the last row is the flexible one. */
 @media screen and (min-width: 70rem) {
   .sources-layout {
@@ -2053,7 +2060,11 @@ button.source-chip {
   .sources-add {
     grid-area: add;
   }
-  /* Line "Add sources" up with the top of the first card. */
+  /* The add column is right beside the lists here. */
+  .sources-jump {
+    display: none;
+  }
+  /* Line "Add endorsements" up with the top of the first card. */
   .sources-add > .section-heading {
     margin-top: 0.75rem;
   }
