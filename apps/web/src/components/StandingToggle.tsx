@@ -4,7 +4,7 @@ import { ToggleGroup } from "./ui/ToggleGroup";
 
 /**
  * Follow a source, follow it to disagree, or neither (both released). The
- * same control on the Sources page, in the catalog and in the setup wizard.
+ * same control on the Sources page, in the catalog and in setup.
  */
 export function StandingToggle({
   name,

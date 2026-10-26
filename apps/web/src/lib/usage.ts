@@ -69,8 +69,7 @@ export const USAGE_SCHEMA = {
   "ballot.quick_fill": { by: ["party", "source"] },
   "ballot.print": { scope: ["ballot", "marked"] },
   "slate.sign": {},
-  "wizard.finish": { path: ["vote", "publish"] },
-  "wizard.skip": {},
+  "setup.finish": {},
 } as const satisfies Record<string, Record<string, readonly string[]>>;
 
 type Schema = typeof USAGE_SCHEMA;
@@ -102,9 +101,7 @@ export const USAGE_EVENT_DESCRIPTIONS: Record<EventName, string> = {
   "ballot.print":
     "That My ballot was printed, and whether the whole ballot or only the races marked",
   "slate.sign": "That a slate was signed",
-  "wizard.finish":
-    "That the getting-started guide was finished, and whether to plan a vote or to publish",
-  "wizard.skip": "That the getting-started guide was skipped",
+  "setup.finish": "That setup (where you vote, whose endorsements you trust) was finished",
 };
 
 export interface SanitizedUsageEvent {

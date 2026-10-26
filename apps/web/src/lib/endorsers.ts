@@ -99,7 +99,7 @@ export function localLeans(slates: DecodedSlate[]): Map<string, EndorserLean> {
 /**
  * Look up endorsers by source id. Reads the default public catalog (cached and
  * persisted like any query, so this costs nothing once the Sources page or the
- * wizard has loaded it). Mounted once, by `EndorsersProvider`; components use
+ * setup has loaded it). Mounted once, by `EndorsersProvider`; components use
  * `useEndorser`.
  */
 export function useEndorserDirectory(): (sourceId: string) => EndorserInfo {

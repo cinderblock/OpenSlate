@@ -47,7 +47,7 @@ export interface CatalogEntry {
   scope?: string;
   /**
    * Races per position jurisdiction (core's `racesByJurisdiction`; `""` for
-   * none). With it the wizard matches the entry to an area without fetching
+   * none). With it setup matches the entry to an area without fetching
    * the slate. Older catalogs leave it out.
    */
   jurisdictions?: Record<string, number>;

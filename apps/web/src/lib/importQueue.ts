@@ -4,8 +4,8 @@ import { forEachConcurrently } from "./fetchProgress";
 import type { Catalog, CatalogEntry } from "./query";
 
 /**
- * Catalog imports that keep going in the background, so the getting-started
- * wizard can close as soon as the voter has picked and they can look around
+ * Catalog imports that keep going in the background, so setup can hand
+ * over to the ballot as soon as the voter has picked and they can look around
  * while their sources download. Slates are stored as they're checked, in
  * batches, so the ballot fills in as it goes. Imports started while one is
  * running wait their turn.

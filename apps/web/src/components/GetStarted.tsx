@@ -1,9 +1,9 @@
-import { type SlatePayload, createIdentity, parseSlate, serializeIdentity } from "@openslate/core";
+import { type SlatePayload, parseSlate } from "@openslate/core";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
-import { Code, FlaskConical, Lock, PenLine, Server, Vote } from "lucide-react";
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Code, FlaskConical, Lock, MapPin, Pencil, Server } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { isPublicSite } from "../lib/alpha";
 import { backgroundImports, catalogEntryUrl } from "../lib/catalogImport";
 import {
@@ -14,12 +14,10 @@ import {
   summaryOf,
 } from "../lib/catalogSummary";
 import { areaOptionsOf } from "../lib/collate";
-import { addIdentity, slatesCollection } from "../lib/collections";
+import { slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
 import { REPO_URL } from "../lib/feedback";
 import { httpHref } from "../lib/httpHref";
-import { useActiveIdentity } from "../lib/identities";
-import { downloadIdentityBackup } from "../lib/identityBackup";
 import {
   type Area,
   isAreaSet,
@@ -32,7 +30,6 @@ import {
   defaultToUnfollowed,
   localToday,
   myElectionStore,
-  onboardingStore,
   setStanding,
 } from "../lib/myVote";
 import { useSearchBox } from "../lib/pageSearch";
@@ -48,41 +45,40 @@ import {
 import { matchesSearch, searchTextOf } from "../lib/search";
 import { type Standing, sourceIdOf } from "../lib/sources";
 import { track } from "../lib/usage";
-import { closeWizard } from "../lib/wizard";
-import { AlphaWizardNote } from "./AlphaNotice";
-import { AreaPicker } from "./AreaPicker";
+import { AreaPicker, describeArea } from "./AreaPicker";
 import { isBallotEntry } from "./CatalogBrowser";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { LeanSummary } from "./LeanMeter";
 import { PageSearch, matchCount } from "./PageSearch";
 import { StandingToggle } from "./StandingToggle";
+import { electionOptions } from "./electionOptions";
 import { Checkbox } from "./ui/Checkbox";
 import { ProgressBar } from "./ui/ProgressBar";
-import { Radio, RadioGroup } from "./ui/Radio";
-import { TextField } from "./ui/TextField";
-
-type Step = "welcome" | "election" | "area" | "sources" | "identity";
-
-const VOTE_STEPS: Step[] = ["election", "area", "sources"];
+import { Select } from "./ui/Select";
 
 const CATALOG_URL = DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG;
 
 /** Catalog entry path → how the user picked it. Not in the map = not picked. */
 type Picks = ReadonlyMap<string, Exclude<Standing, "off">>;
 
-/** The getting-started wizard. Loaded and mounted by WizardHost while open. */
-export function Wizard() {
+type HeadingRef = React.RefObject<HTMLHeadingElement>;
+
+/**
+ * Getting set up to vote, right on My ballot: where you vote, then whose
+ * endorsements you trust. It's the home page until anything is imported, so a
+ * visitor lands in it with no choice to make first; `/?setup=true` brings it
+ * back later (Sources links there). Publishing lives elsewhere, on purpose.
+ */
+export function GetStarted({ again }: { again: boolean }) {
   const navigate = useNavigate();
-  const [step, setStep] = useState<Step>("welcome");
   const [election, setElection] = useState("");
   const [area, setArea] = useState<Area>(() => areaStore.get());
+  const [areaDone, setAreaDone] = useState(false);
   const [selected, setSelected] = useState<Picks>(new Map());
   const [downloadAll, setDownloadAll] = useState(false);
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const escapeTarget = useRef<(() => void) | null>(null);
+  const areaHeading = useRef<HTMLHeadingElement>(null);
+  const sourcesHeading = useRef<HTMLHeadingElement>(null);
 
-  // WizardHost starts this fetch as the wizard opens.
   const catalog = useQuery(catalogQueryOptions(CATALOG_URL));
   const { data: imported } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
 
@@ -92,50 +88,35 @@ export function Wizard() {
     [catalog.data, today],
   );
 
-  // Preselect the next upcoming election as soon as the catalog is in, so
-  // anything the next steps need about it starts loading right away.
+  // The next upcoming election, as soon as the catalog is in, so anything the
+  // area step needs about it starts loading right away.
   useEffect(() => {
     if (!election && elections[0]) setElection(elections[0][0]);
   }, [election, elections]);
 
-  const summaries = useElectionSummaries(
-    catalog.data?.entries,
-    election,
-    // An older catalog's slates are only worth fetching for someone planning a vote.
-    step !== "welcome" && step !== "identity",
-  );
+  const summaries = useElectionSummaries(catalog.data?.entries, election);
 
-  // Move focus to each step's heading so keyboard and screen-reader users land
-  // on the new content.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run per step
+  // Move focus to the card that just opened (or reopened), so keyboard and
+  // screen-reader users land on it. Not on the first render: the page's own
+  // heading comes first.
+  const firstRender = useRef(true);
   useEffect(() => {
-    headingRef.current?.focus();
-  }, [step]);
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    (areaDone ? sourcesHeading : areaHeading).current?.focus();
+  }, [areaDone]);
 
-  // A modal <dialog> traps focus, makes the page behind it inert and handles
-  // Escape (as `cancel`, which opens the step's Skip nudge).
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog && !dialog.open) dialog.showModal();
-    return () => dialog?.close();
-  }, []);
-
-  function skip() {
-    if (onboardingStore.get() === "") onboardingStore.set("skipped");
-    track({ name: "wizard.skip" });
-    closeWizard();
-  }
-
-  function finish(path: "vote" | "publish") {
-    onboardingStore.set("done");
-    track({ name: "wizard.finish", dims: { path } });
-    closeWizard();
-    void navigate({ to: path === "vote" ? "/" : "/publish" });
+  function confirmArea() {
+    areaStore.set(area);
+    myElectionStore.set(election);
+    setAreaDone(true);
   }
 
   /**
-   * Start downloading the picks and close: the import carries on in the
-   * background, with a banner over the ballot until it's done.
+   * Start downloading the picks: the import carries on in the background,
+   * with a banner over the ballot until it's done.
    */
   function followSelected() {
     areaStore.set(area);
@@ -172,100 +153,64 @@ export function Wizard() {
         },
       });
     }
-    finish("vote");
+    track({ name: "setup.finish" });
+    window.scrollTo({ top: 0 });
+    if (again) void navigate({ to: "/", search: {} });
   }
 
-  const voteIndex = VOTE_STEPS.indexOf(step);
-
   return (
-    <dialog
-      ref={dialogRef}
-      className="wizard"
-      aria-labelledby="wizard-heading"
-      onCancel={(e) => {
-        e.preventDefault();
-        // Escape is a way out too, so it gets the same nudge as the step's
-        // Skip link rather than leaving outright.
-        if (escapeTarget.current) escapeTarget.current();
-        else skip();
-      }}
-    >
-      <EscapeContext.Provider value={escapeTarget}>
-        {voteIndex >= 0 && (
-          <ol className="wizard-progress" aria-label={`Step ${voteIndex + 1} of 3`}>
-            {VOTE_STEPS.map((s, i) => (
-              <li key={s} className={i <= voteIndex ? "done" : ""} />
-            ))}
-          </ol>
-        )}
+    <section className="panel get-started">
+      <h2>{again ? "Set up for an election" : "Plan your vote"}</h2>
+      <p className="get-started-lead">
+        Tell us where you vote and whose endorsements you trust, and see them side by side on your
+        own ballot, race by race. No account: everything stays {IS_DESKTOP_APP ? "on" : "in"}{" "}
+        {THIS_DEVICE}.
+      </p>
+      {again ? (
+        <p>
+          <Link to="/" search={{}}>
+            ← Back to my ballot
+          </Link>
+        </p>
+      ) : (
+        <AboutOpenSlate />
+      )}
 
-        {step === "welcome" && (
-          <>
-            <h2 id="wizard-heading" ref={headingRef} tabIndex={-1}>
-              Welcome to OpenSlate
-            </h2>
-            <p>
-              Endorsements you can verify, from the people and groups you choose. Everything stays{" "}
-              {IS_DESKTOP_APP ? "on" : "in"} {THIS_DEVICE}. What would you like to do?
-            </p>
-            {isPublicSite() && <AlphaWizardNote />}
-            <div className="wizard-choices">
-              <button type="button" className="wizard-choice" onClick={() => setStep("election")}>
-                <Vote className="wizard-choice-icon" />
-                <strong>Plan my vote</strong>
-                <span>
-                  Pick the organizations you trust and see their endorsements side by side, race by
-                  race.
-                </span>
-              </button>
-              <button type="button" className="wizard-choice" onClick={() => setStep("identity")}>
-                <PenLine className="wizard-choice-icon" />
-                <strong>Publish endorsements</strong>
-                <span>
-                  Sign your own recommendations so friends or members can verify they came from you.
-                </span>
-              </button>
-            </div>
-            <AboutOpenSlate />
-            <WizardFooter onSkip={skip} />
-          </>
-        )}
-
-        {step === "election" && (
-          <ElectionStep
-            headingRef={headingRef}
+      <section className="card setup-step" aria-labelledby="setup-area-heading">
+        <h3 id="setup-area-heading" ref={areaHeading} tabIndex={-1}>
+          <span className="setup-step-number">1</span> Where do you vote?
+        </h3>
+        {areaDone ? (
+          <p className="setup-step-done">
+            <MapPin className="icon" />{" "}
+            <span className="grow">
+              {isAreaSet(area) ? describeArea(area) : "Every race, anywhere"}
+              {election && <span className="hint"> · {formatElectionDate(election)}</span>}
+            </span>
+            <button type="button" className="link" onClick={() => setAreaDone(false)}>
+              <Pencil className="icon" /> Change
+            </button>
+          </p>
+        ) : (
+          <AreaStep
+            catalogLoading={catalog.isLoading}
+            catalogError={catalog.error}
             elections={elections}
             today={today}
-            isLoading={catalog.isLoading}
-            error={catalog.error}
             election={election}
             setElection={setElection}
-            onBack={() => setStep("welcome")}
-            onNext={() => setStep("area")}
-            onSkip={skip}
-            onManual={() => {
-              finish("vote");
-              void navigate({ to: "/sources", search: { add: true } });
-            }}
-          />
-        )}
-
-        {step === "area" && catalog.data && (
-          <AreaStep
-            headingRef={headingRef}
             summaries={summaries}
-            election={election}
             area={area}
             setArea={setArea}
-            onBack={() => setStep("election")}
-            onNext={() => setStep("sources")}
-            onSkip={skip}
+            onNext={confirmArea}
           />
         )}
+      </section>
 
-        {step === "sources" && catalog.data && (
+      {areaDone && catalog.data && (
+        <section className="card setup-step" aria-labelledby="setup-sources-heading">
           <SourcesStep
-            headingRef={headingRef}
+            headingRef={sourcesHeading}
             summaries={summaries}
             election={election}
             area={area}
@@ -273,22 +218,18 @@ export function Wizard() {
             setSelected={setSelected}
             downloadAll={downloadAll}
             setDownloadAll={setDownloadAll}
-            onBack={() => setStep("area")}
             onNext={followSelected}
-            onSkip={skip}
           />
-        )}
+        </section>
+      )}
 
-        {step === "identity" && (
-          <IdentityStep
-            headingRef={headingRef}
-            onBack={() => setStep("welcome")}
-            onDone={() => finish("publish")}
-            onSkip={skip}
-          />
-        )}
-      </EscapeContext.Provider>
-    </dialog>
+      <p className="hint">
+        Have endorsements from a friend, or rather browse every source yourself?{" "}
+        <Link to="/sources" search={{ add: true }}>
+          Add endorsements on the Sources page →
+        </Link>
+      </p>
+    </section>
   );
 }
 
@@ -310,135 +251,20 @@ function sourceIdOfToken(token: string): string | undefined {
   }
 }
 
-function WizardFooter({
-  onBack,
-  onSkip,
-  children,
-}: {
-  onBack?: () => void;
-  onSkip?: () => void;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div className="wizard-footer">
-      {onBack && (
-        <button type="button" className="link" onClick={onBack}>
-          ← Back
-        </button>
-      )}
-      {onSkip && <SkipSetup onSkip={onSkip} />}
-      <span className="grow" />
-      {children}
-    </div>
-  );
+/** A step's buttons. `sticky`: kept in view under a long list, so going on is one click away. */
+function StepActions({ sticky, children }: { sticky?: boolean; children: React.ReactNode }) {
+  return <div className={`setup-actions${sticky ? " sticky" : ""}`}>{children}</div>;
 }
 
-/** How long the "we recommend you don't" nudge shows before the real button appears. */
-const CONFIRM_ARM_DELAY_MS = 1200;
-
-/** Where the dialog sends Escape: the ConfirmLink on screen registers itself here. */
-const EscapeContext = createContext<React.MutableRefObject<(() => void) | null> | null>(null);
-
-function SkipSetup({ onSkip }: { onSkip: () => void }) {
-  return (
-    <ConfirmLink
-      label="Skip setup"
-      nudge="We recommend you don't. It's easier and faster than doing it manually."
-      confirm="Skip anyway"
-      onConfirm={onSkip}
-    />
-  );
-}
-
-/**
- * A way out that takes two steps (skip setup), so a newcomer
- * eager to "get to the real thing" reads why staying is worth it first.
- * Hovering (mouse) or pressing the link (touch, keyboard) shows the nudge;
- * after a short pause a separate confirm button appears beside it, out from
- * under a pointer that's still clicking the first one. Moving the mouse away
- * before then backs out.
- */
-function ConfirmLink({
-  label,
-  nudge,
-  confirm,
-  onConfirm,
-}: {
-  label: string;
-  nudge: string;
-  confirm: string;
-  onConfirm: () => void;
-}) {
-  const [stage, setStage] = useState<"idle" | "hover" | "warned" | "armed">("idle");
-  const timer = useRef<ReturnType<typeof setTimeout>>();
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const escapeTarget = useContext(EscapeContext);
-
-  useEffect(() => () => clearTimeout(timer.current), []);
-
-  function warn(next: "hover" | "warned") {
-    if (stage === "armed") return;
-    if (stage === "idle") {
-      timer.current = setTimeout(() => setStage("armed"), CONFIRM_ARM_DELAY_MS);
-    }
-    // A press keeps the nudge open even if the mouse wanders off afterwards.
-    if (stage !== "warned") setStage(next);
-  }
-
-  // Escape counts as pressing the link, and moves focus to it so Tab reaches
-  // the confirm button next. Re-registered each render to see the current stage.
-  useEffect(() => {
-    if (!escapeTarget) return;
-    const onEscape = () => {
-      triggerRef.current?.focus();
-      warn("warned");
-    };
-    escapeTarget.current = onEscape;
-    return () => {
-      if (escapeTarget.current === onEscape) escapeTarget.current = null;
-    };
-  });
-
-  return (
-    <span className="wizard-skip">
-      <button
-        ref={triggerRef}
-        type="button"
-        className="link"
-        aria-expanded={stage !== "idle"}
-        onClick={() => warn("warned")}
-        onPointerEnter={(e) => {
-          if (e.pointerType === "mouse") warn("hover");
-        }}
-        onPointerLeave={() => {
-          if (stage !== "hover") return;
-          clearTimeout(timer.current);
-          setStage("idle");
-        }}
-      >
-        {label}
-      </button>
-      <span className="wizard-skip-nudge" aria-live="polite">
-        {stage !== "idle" && <span>{nudge}</span>}
-        {stage === "armed" && (
-          <button type="button" className="link" onClick={onConfirm}>
-            {confirm}
-          </button>
-        )}
-      </span>
-    </span>
-  );
-}
-
-/** The welcome step's answer to "what is this, and do I have to use this website?" */
+/** "What is this, and do I have to use this website?", folded away under the lead. */
 function AboutOpenSlate() {
   return (
-    <section className="wizard-about" aria-labelledby="wizard-about-heading">
-      <h3 id="wizard-about-heading">What is OpenSlate?</h3>
+    <details className="setup-about">
+      <summary>What is OpenSlate?</summary>
       <p>
-        A free tool for sharing endorsements anyone can check, and for lining up the ones you trust
-        on your ballot. Every endorsement is signed, so you can see who issued it and that nobody
-        changed it along the way.
+        A free tool for lining up the endorsements you trust on your ballot, and for sharing
+        endorsements anyone can check. Every endorsement is signed, so you can see who issued it and
+        that nobody changed it along the way.
       </p>
       <ul>
         {!isPublicSite() && (
@@ -485,7 +311,7 @@ function AboutOpenSlate() {
           )}
         </li>
       </ul>
-      <p className="wizard-about-links">
+      <p className="setup-about-links">
         <a href={REPO_URL} target="_blank" rel="noreferrer">
           Source code on GitHub
         </a>
@@ -506,11 +332,9 @@ function AboutOpenSlate() {
           </>
         )}
       </p>
-    </section>
+    </details>
   );
 }
-
-type HeadingRef = React.RefObject<HTMLHeadingElement>;
 
 /**
  * The catalog's elections with how many organizations publish for each (a
@@ -529,79 +353,6 @@ function electionsOf(entries: CatalogEntry[], today: string): Array<[string, num
   });
 }
 
-function ElectionStep({
-  headingRef,
-  elections,
-  today,
-  isLoading,
-  error,
-  election,
-  setElection,
-  onBack,
-  onNext,
-  onSkip,
-  onManual,
-}: {
-  headingRef: HeadingRef;
-  elections: Array<[string, number]>;
-  today: string;
-  isLoading: boolean;
-  error: Error | null;
-  election: string;
-  setElection: (next: string) => void;
-  onBack: () => void;
-  onNext: () => void;
-  onSkip: () => void;
-  onManual: () => void;
-}) {
-  return (
-    <>
-      <h2 id="wizard-heading" ref={headingRef} tabIndex={-1}>
-        Which election?
-      </h2>
-      {isLoading && <ProgressBar label="Loading the public catalog" value={0} />}
-      {error && (
-        <>
-          <p className="error">Couldn't load the public catalog: {error.message}</p>
-          <p>
-            You can still add endorsements yourself: paste one a friend sent, or load one from a
-            link.
-          </p>
-        </>
-      )}
-      {elections.length > 0 && (
-        <RadioGroup
-          aria-label="Election"
-          className="wizard-options"
-          value={election}
-          onChange={setElection}
-        >
-          {elections.map(([date, count]) => (
-            <Radio key={date} value={date} variant="card">
-              <span className="grow">
-                <strong>{formatElectionDate(date)}</strong>
-                {date < today && <span className="tag tag-inline">past</span>}
-              </span>
-              <span className="hint">{count} organizations</span>
-            </Radio>
-          ))}
-        </RadioGroup>
-      )}
-      <WizardFooter onBack={onBack} onSkip={onSkip}>
-        {error ? (
-          <button type="button" className="primary" onClick={onManual}>
-            Add sources myself
-          </button>
-        ) : (
-          <button type="button" className="primary" onClick={onNext} disabled={!election}>
-            Next →
-          </button>
-        )}
-      </WizardFooter>
-    </>
-  );
-}
-
 /** Each of the election's catalog entries, summarized; `done` of `total` slates read so far. */
 interface ElectionSummaries {
   entries: EntrySummary[];
@@ -611,16 +362,15 @@ interface ElectionSummaries {
 }
 
 /**
- * Where each of the election's organizations has races, for the area and
- * sources steps. A current catalog says so per entry, so this is immediate and
- * downloads nothing. For an older catalog's entries it fetches the slates
- * (once `active`), and reads them without checking signatures: it's only a
- * preview, and the import checks every slate it keeps.
+ * Where each of the election's organizations has races, for both steps. A
+ * current catalog says so per entry, so this is immediate and downloads
+ * nothing. For an older catalog's entries it fetches the slates, and reads them
+ * without checking signatures: it's only a preview, and the import checks
+ * every slate it keeps.
  */
 function useElectionSummaries(
   entries: CatalogEntry[] | undefined,
   election: string,
-  active: boolean,
 ): ElectionSummaries {
   const forElection = useMemo(
     () => (entries ?? []).filter((e) => e.election === election),
@@ -631,7 +381,6 @@ function useElectionSummaries(
     queries: unsummarized.map((entry) => ({
       ...slateFromUrlOptions(catalogEntryUrl(entry, CATALOG_URL)),
       staleTime: 1000 * 60 * 5,
-      enabled: active,
     })),
   });
   // Each slate is read once, however many times the list re-renders as the
@@ -668,63 +417,97 @@ function useElectionSummaries(
 
 /**
  * Shown while an older catalog's slates load: a bar, and a firm word against
- * skipping, since without them the next steps can't match anyone to your ballot.
+ * moving on, since without them nobody can be matched to your ballot.
  */
 function SummariesWait({ summaries }: { summaries: ElectionSummaries }) {
   if (summaries.done >= summaries.total) return null;
   return (
-    <div className="wizard-wait">
+    <div className="setup-wait">
       <ProgressBar label="Loading endorsements" value={summaries.done} maxValue={summaries.total} />
       <p>
         <strong>Please wait for this to finish.</strong> This catalog doesn't say where each
-        organization's endorsements are, so we read them all to match them to your ballot. If you
-        skip setup now, you'll have to find your sources by hand.
+        organization's endorsements are, so we read them all to match them to your ballot.
       </p>
     </div>
   );
 }
 
 function AreaStep({
-  headingRef,
-  summaries,
+  catalogLoading,
+  catalogError,
+  elections,
+  today,
   election,
+  setElection,
+  summaries,
   area,
   setArea,
-  onBack,
   onNext,
-  onSkip,
 }: {
-  headingRef: HeadingRef;
-  summaries: ElectionSummaries;
+  catalogLoading: boolean;
+  catalogError: Error | null;
+  elections: Array<[string, number]>;
+  today: string;
   election: string;
+  setElection: (next: string) => void;
+  summaries: ElectionSummaries;
   area: Area;
   setArea: (next: Area) => void;
-  onBack: () => void;
   onNext: () => void;
-  onSkip: () => void;
 }) {
   const options = useMemo(
     () => areaOptionsOf(summaryJurisdictions(summaries.entries)),
     [summaries],
   );
 
+  if (catalogLoading) return <ProgressBar label="Loading the public catalog" value={0} />;
+  if (catalogError) {
+    return (
+      <>
+        <p className="error">Couldn't load the public catalog: {catalogError.message}</p>
+        <p>
+          You can still add endorsements yourself: paste one a friend sent, or load one from a link.
+        </p>
+        <StepActions>
+          <Link to="/sources" search={{ add: true }} className="button-link primary">
+            Add endorsements myself
+          </Link>
+        </StepActions>
+      </>
+    );
+  }
+
   const loading = summaries.done < summaries.total;
 
   return (
     <>
-      <h2 id="wizard-heading" ref={headingRef} tabIndex={-1}>
-        Where do you vote?
-      </h2>
       <p>
-        This trims a statewide list to the races on your ballot. It's optional, stays{" "}
+        This trims a statewide list to the races on your ballot. It stays{" "}
         {IS_DESKTOP_APP ? "on" : "in"} {THIS_DEVICE}, and you can change it any time.
       </p>
+      {/* The next upcoming election is picked already; a choice only when there is one. */}
+      {elections.length > 1 && (
+        <Select
+          className="setup-election"
+          label="Election"
+          value={election}
+          onChange={setElection}
+          options={electionOptions(
+            elections.map(([date]) => ({ date })),
+            today,
+          ).map((option, i) => ({
+            ...option,
+            badge: `${elections[i]?.[1] ?? 0} organizations`,
+          }))}
+        />
+      )}
       {loading ? (
         <SummariesWait summaries={summaries} />
       ) : (
         <AreaPicker options={options} area={area} election={election} onChange={setArea} />
       )}
-      <WizardFooter onBack={onBack} onSkip={onSkip}>
+      <StepActions>
+        <span className="grow" />
         {/* Picking an area is the way through; showing everything stays a quiet
             way out, and only once there's a picker to pass up. */}
         {!loading && !isAreaSet(area) && (
@@ -740,7 +523,7 @@ function AreaStep({
         >
           Next →
         </button>
-      </WizardFooter>
+      </StepActions>
     </>
   );
 }
@@ -754,9 +537,7 @@ function SourcesStep({
   setSelected,
   downloadAll,
   setDownloadAll,
-  onBack,
   onNext,
-  onSkip,
 }: {
   headingRef: HeadingRef;
   summaries: ElectionSummaries;
@@ -766,9 +547,7 @@ function SourcesStep({
   setSelected: (next: Picks) => void;
   downloadAll: boolean;
   setDownloadAll: (next: boolean) => void;
-  onBack: () => void;
   onNext: () => void;
-  onSkip: () => void;
 }) {
   const [showOthers, setShowOthers] = useState(false);
   const search = useSearchBox();
@@ -854,7 +633,7 @@ function SourcesStep({
     const standing = selected.get(entry.path) ?? "off";
     const name = entry.attribution?.of.name ?? entry.slug;
     return (
-      <div key={entry.path} className={`wizard-source standing-${standing}`}>
+      <div key={entry.path} className={`setup-source standing-${standing}`}>
         <EndorserAvatar
           sourceId={sourceIdOf(entry)}
           name={name}
@@ -873,7 +652,7 @@ function SourcesStep({
             </>
           )}
         </span>
-        <span className="hint wizard-source-meta">
+        <span className="hint setup-source-meta">
           {item.races} race{item.races === 1 ? "" : "s"}
           {isAreaSet(area) ? " on your ballot" : ""}
           {entry.lean && (
@@ -887,9 +666,9 @@ function SourcesStep({
 
   return (
     <>
-      <h2 id="wizard-heading" ref={headingRef} tabIndex={-1}>
-        Whose recommendations do you trust?
-      </h2>
+      <h3 id="setup-sources-heading" ref={headingRef} tabIndex={-1}>
+        <span className="setup-step-number">2</span> Whose endorsements do you trust?
+      </h3>
       <p>
         Follow a few for {formatElectionDate(election)}: a party, a newspaper, groups that share
         your values. Mark ones you disagree with too: what they back counts against it on your
@@ -905,21 +684,21 @@ function SourcesStep({
           {matchCount(shownCount, organizations, "organizations", search.query)}
         </PageSearch>
       )}
-      <div className="wizard-scroll">
+      <div className="setup-sources">
         {shownGroups.map((group) => (
-          <fieldset key={group.label} className="wizard-group">
+          <fieldset key={group.label} className="setup-group">
             <legend>{group.label}</legend>
             {group.items.map(renderItem)}
           </fieldset>
         ))}
         {shownOthers.length > 0 &&
           (search.searching ? (
-            <fieldset className="wizard-group">
+            <fieldset className="setup-group">
               <legend>Based elsewhere</legend>
               {shownOthers.map(renderItem)}
             </fieldset>
           ) : (
-            <fieldset className="wizard-group">
+            <fieldset className="setup-group">
               <legend>
                 <button type="button" className="link" onClick={() => setShowOthers((v) => !v)}>
                   {showOthers ? "▾" : "▸"} {others.length} more based elsewhere
@@ -931,7 +710,7 @@ function SourcesStep({
       </div>
       <p className="hint">
         These are secondhand reports: a researcher's signed record of what each organization
-        published. Have a slate from a friend? Add it on the Sources page afterwards.
+        published.
         {ballots.length > 0 && (
           <>
             {" "}
@@ -942,11 +721,7 @@ function SourcesStep({
         )}
       </p>
       {organizations > 0 && (
-        <Checkbox
-          className="wizard-download-all"
-          isSelected={downloadAll}
-          onChange={setDownloadAll}
-        >
+        <Checkbox className="setup-download-all" isSelected={downloadAll} onChange={setDownloadAll}>
           <span>
             <strong>Download all {organizations} organizations' lists, not just my picks</strong>
             <span className="hint ui-option-note">
@@ -956,11 +731,13 @@ function SourcesStep({
           </span>
         </Checkbox>
       )}
-      <WizardFooter onBack={onBack} onSkip={onSkip}>
-        {/* Following someone is the way through, as on the area step. */}
-        {selected.size === 0 && (
+      <StepActions sticky>
+        <span className="grow" />
+        {/* Following someone is the way through; going on without is the quiet
+            way out, and only when there's still something to download. */}
+        {selected.size === 0 && (ballots.length > 0 || downloadAll) && (
           <button type="button" className="hollow" onClick={onNext}>
-            {downloadAll ? "Download without following" : "Continue without sources"}
+            {downloadAll ? "Download without following" : "See the ballot without following anyone"}
           </button>
         )}
         <button type="button" className="primary" onClick={onNext} disabled={selected.size === 0}>
@@ -968,119 +745,7 @@ function SourcesStep({
             ? "Follow and see my ballot →"
             : `${followLabel.charAt(0).toUpperCase()}${followLabel.slice(1)} and see my ballot →`}
         </button>
-      </WizardFooter>
-    </>
-  );
-}
-
-function IdentityStep({
-  headingRef,
-  onBack,
-  onDone,
-  onSkip,
-}: {
-  headingRef: HeadingRef;
-  onBack: () => void;
-  onDone: () => void;
-  onSkip: () => void;
-}) {
-  const { all, setActiveKey } = useActiveIdentity();
-  const [name, setName] = useState("");
-  const [kind, setKind] = useState<"individual" | "organization">("individual");
-  const [createdKey, setCreatedKey] = useState<string | null>(null);
-  const created = all.find((i) => i.publicKey === createdKey);
-  const [backedUp, setBackedUp] = useState(false);
-
-  function create() {
-    const stored = serializeIdentity(
-      createIdentity(name.trim() ? { name: name.trim(), kind } : { kind }),
-    );
-    addIdentity(stored);
-    setActiveKey(stored.publicKey);
-    track({ name: "identity.create" });
-    setCreatedKey(stored.publicKey);
-  }
-
-  return (
-    <>
-      <h2 id="wizard-heading" ref={headingRef} tabIndex={-1}>
-        {created ? "Back up your identity" : "Create your signing identity"}
-      </h2>
-      {!created ? (
-        <>
-          <p>
-            Your identity is a key pair. It signs your endorsements so anyone can check they came
-            from you and weren't changed. The secret half never leaves {THIS_DEVICE}.
-          </p>
-          {all.length > 0 && (
-            <p className="hint">
-              You already have {all.length} identit{all.length === 1 ? "y" : "ies"}. You can go
-              straight to Compose, or make another.
-            </p>
-          )}
-          <TextField
-            label="Name people will see (optional)"
-            value={name}
-            placeholder="e.g. Jamie Rivera, or Elm Street Tenants Association"
-            onChange={setName}
-          />
-          <RadioGroup
-            aria-label="Who is publishing"
-            className="wizard-kind"
-            orientation="horizontal"
-            value={kind}
-            onChange={(value) => setKind(value as typeof kind)}
-          >
-            <Radio value="individual" variant="card">
-              <span>
-                <strong>Just me</strong>
-                <span className="hint ui-option-note">My own recommendations</span>
-              </span>
-            </Radio>
-            <Radio value="organization" variant="card">
-              <span>
-                <strong>An organization</strong>
-                <span className="hint ui-option-note">A group's endorsements</span>
-              </span>
-            </Radio>
-          </RadioGroup>
-          <WizardFooter onBack={onBack} onSkip={onSkip}>
-            {all.length > 0 && (
-              <button type="button" onClick={onDone}>
-                Go to Compose
-              </button>
-            )}
-            <button type="button" className="primary" onClick={create}>
-              Create identity
-            </button>
-          </WizardFooter>
-        </>
-      ) : (
-        <>
-          <p>
-            Created <strong>{created.name ?? "your identity"}</strong>. Download a backup now: if{" "}
-            {IS_DESKTOP_APP ? "the app's" : "this browser's"} data is cleared, the backup is the
-            only way to keep signing as {created.name ?? "you"}. Anyone with the file can sign as
-            you, so keep it private.
-          </p>
-          <code className="key">{created.publicKey}</code>
-          <WizardFooter>
-            <button
-              type="button"
-              className={backedUp ? "" : "primary"}
-              onClick={() => {
-                downloadIdentityBackup(created);
-                setBackedUp(true);
-              }}
-            >
-              {backedUp ? "Downloaded ✓" : "Download backup"}
-            </button>
-            <button type="button" className={backedUp ? "primary" : "hollow"} onClick={onDone}>
-              Continue to Compose →
-            </button>
-          </WizardFooter>
-        </>
-      )}
+      </StepActions>
     </>
   );
 }

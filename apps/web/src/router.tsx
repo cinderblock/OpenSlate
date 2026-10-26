@@ -19,6 +19,11 @@ function validateQuerySearch(search: Record<string, unknown>): { q?: string } {
   return typeof search.q === "string" && search.q !== "" ? { q: search.q } : {};
 }
 
+/** My ballot's `?setup`, the guided setup over an existing ballot, on top of `?q=`. */
+function validateBallotSearch(search: Record<string, unknown>): { q?: string; setup?: true } {
+  return { ...validateQuerySearch(search), ...(search.setup === true ? { setup: true } : {}) };
+}
+
 /** Sources' `?add`, a link straight to its "Add endorsements" section, on top of `?q=`. */
 function validateSourcesSearch(search: Record<string, unknown>): { q?: string; add?: true } {
   return { ...validateQuerySearch(search), ...(search.add === true ? { add: true } : {}) };
@@ -29,7 +34,7 @@ function validateSourcesSearch(search: Record<string, unknown>): { q?: string; a
 const ballotRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  validateSearch: validateQuerySearch,
+  validateSearch: validateBallotSearch,
   component: lazyRouteComponent(() => import("./components/MyBallotPanel"), "MyBallotPanel"),
 });
 const sourcesRoute = createRoute({

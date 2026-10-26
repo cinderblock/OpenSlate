@@ -32,19 +32,31 @@ behind a deliberately less obvious entry point.
 3. Publish has equal billing with My vote in the header on every page.
 4. The voter flow is a modal over an empty page, not the page itself.
 
-## Proposed plan (awaiting user's calls; see Open questions)
+## Plan (design settled 2026-10-26)
 
-1. Drop the welcome fork. The first visit goes straight to the voter flow.
-2. Reorder to address → sources → ballot. Election auto-selects the next
-   upcoming one, with a small "change election" control rather than a step.
-3. Replace the header mode switch with a quiet "Publish" entry point. Inside
-   `/publish/*` keep the Publish tabs plus a clear way back to My ballot.
-4. Taglines and copy: voter language everywhere by default.
-5. Keep `IdentityStep` reachable from the Publish side (first visit to
-   `/publish` with no identity), not from the voter onboarding.
-6. Usage telemetry: `wizard.finish` `path` dim may lose "publish"; update
-   `USAGE_SCHEMA` accordingly.
-7. README: update the "how it's used" framing.
+1. **`GetStarted.tsx`** (from `Wizard.tsx`, via `git mv`): an inline page, not a
+   dialog. My ballot renders it when nothing is imported yet (and not
+   importing), or on `/?setup=true` (a re-entry linked from Sources' "Add
+   endorsements"). Two numbered cards: *Where do you vote?* (AreaPicker, with an
+   Election select only when the catalog has more than one) then, once that's
+   confirmed, *Whose endorsements do you trust?* (the old sources step).
+   "…and see my ballot" starts the background import exactly as before. No
+   welcome fork, no Skip nudge (it's a page; leaving is just navigating).
+   "What is OpenSlate?" becomes a collapsed `<details>`.
+2. **Delete** `WizardHost.tsx`, `lib/wizard.ts`, `onboardingStore` (only the
+   auto-open used it), `AlphaWizardNote` (the page-top alpha banner already
+   covers an inline page; the note only existed so a modal didn't double it).
+3. **Header**: the `[My vote | Publish]` switch and "Get started" go. Quiet
+   header link: "Publish" (or "My ballot" while under `/publish/*`), beside
+   Settings. Footer: "Publish your own endorsements". Settings: a short
+   "Publish your own endorsements" card linking there.
+4. **Publish side**: `IdentityStep` becomes `CreateIdentity`, shown inside
+   Compose's signing card when there's no identity yet (create, then back up).
+5. **Telemetry**: `wizard.finish {path}` + `wizard.skip` → `setup.finish` (no
+   dims). Nothing reads event names server-side (checked: only web app + tests).
+6. CSS: `wizard-*` → `setup-*`; drop dialog-only rules (backdrop, progress,
+   choices, skip nudge, sticky footer, inner 50vh scroll).
+7. README: rewrite the getting-started paragraphs.
 
 ## Decisions already made (don't re-ask)
 
@@ -61,13 +73,29 @@ behind a deliberately less obvious entry point.
 
 None right now.
 
+## Findings / gotchas
+
+- Inline, the sources list is ~7000px tall (no dialog to scroll inside), so
+  its action bar is `position: sticky` at the bottom of the screen; otherwise
+  "…and see my ballot" is a long scroll away.
+- `CreateIdentity` must stay on screen after the key exists (for the backup
+  step), but Compose's "no identity" condition flips the moment it's added.
+  Compose keeps it up with `settingUpIdentity` until *Continue to signing*.
+- `bunx biome check` on the whole tree reports ~116 pre-existing issues
+  (CRLF working copies, plus lint in untouched `BallotTags.tsx` /
+  `ballotCheck.ts`). Checked changed files on LF-normalized content instead.
+- `@openslate/desktop` typecheck fails on this machine: `electrobun` isn't
+  installed (module-not-found). Unrelated; web typechecks clean.
+
 ## Progress
 
 - [x] User's answers on the open questions (see Decisions)
-- [ ] **Current:** waiting for add-more-endorsements thread to commit
-- [ ] Implementation
-- [ ] typecheck, lint, test; checked in browser at desktop and phone widths
-- [ ] README updated
+- [x] Waited for add-more-endorsements to commit (`bd1aa89`)
+- [x] Implementation (plan items 1–7)
+- [x] typecheck (web), biome on changed files, `bun test` (575 pass)
+- [x] Checked in the browser, fresh profile: setup → follow → ballot; Publish
+  → create identity → backup → signing; phone width; `/?setup=true` re-entry
+- [x] README updated
 
 ## Things not to do
 

@@ -1,4 +1,4 @@
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import {
   ArrowDown,
   Landmark,
@@ -251,7 +251,11 @@ export function SourcesPanel() {
           </h3>
           <p className="hint">
             Follow more organizations from the public catalog, or add a slate someone shared with
-            you.
+            you. Starting on a new election?{" "}
+            <Link to="/" search={{ setup: true }}>
+              Walk through setup again
+            </Link>
+            .
           </p>
           <div className="segmented" role="tablist" aria-label="Add endorsements from">
             <button

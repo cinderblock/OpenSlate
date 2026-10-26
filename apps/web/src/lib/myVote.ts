@@ -95,15 +95,6 @@ export const myElectionStore = createLocalStore<string>("openslate.myElection.v1
 
 export const useMyElection = () => useLocalStore(myElectionStore);
 
-/** Whether the getting-started wizard has been finished or skipped. */
-export const onboardingStore = createLocalStore<"" | "done" | "skipped">(
-  "openslate.onboarding.v1",
-  "",
-  (raw) => (raw === "" || raw === "done" || raw === "skipped" ? raw : undefined),
-);
-
-export const useOnboarding = () => useLocalStore(onboardingStore);
-
 /** Local "YYYY-MM-DD". UTC would flip election day to "past" mid-afternoon in the Americas. */
 export function localToday(): string {
   return new Date().toLocaleDateString("en-CA");

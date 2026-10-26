@@ -142,25 +142,6 @@ a {
   margin: 0;
   font-size: 1.8rem;
 }
-.mode-switch {
-  display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  overflow: hidden;
-}
-.mode-switch .mode {
-  padding: 0.35rem 1rem;
-  color: var(--muted);
-  text-decoration: none;
-  font-size: 0.95rem;
-}
-.mode-switch .mode:hover {
-  color: var(--text);
-}
-.mode-switch .mode.active {
-  background: var(--accent);
-  color: #fff;
-}
 .header-links {
   display: flex;
   gap: 1.25rem;
@@ -282,21 +263,6 @@ a {
   .update-banner-actions {
     grid-column: 2;
   }
-}
-.alpha-wizard-note {
-  display: flex;
-  gap: 0.6rem;
-  align-items: flex-start;
-  padding: 0.6rem 0.8rem;
-  border-left: 4px solid var(--warn);
-  border-radius: 6px;
-  background: color-mix(in oklab, var(--surface), var(--warn) 8%);
-  font-size: 0.95rem;
-}
-.alpha-wizard-note .icon {
-  flex: none;
-  margin-top: 0.15em;
-  color: var(--warn);
 }
 
 .tabs {
@@ -674,6 +640,11 @@ a.button-link {
 }
 a.button-link:hover {
   border-color: var(--accent);
+}
+a.button-link.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 /* QR dialog */
@@ -1349,12 +1320,6 @@ button.source-chip {
 }
 .race-note .ui-field {
   margin-top: 0.4rem;
-}
-.empty-state {
-  padding: 1.5rem;
-}
-.empty-state h3 {
-  margin-top: 0;
 }
 /* On a phone the other marks drop under the name; the bubble and count
    stay on the left, as on paper. */
@@ -2132,127 +2097,114 @@ details.card > summary {
   cursor: pointer;
   font-weight: 600;
 }
-/* Getting-started wizard */
-dialog.wizard::backdrop {
-  background: var(--backdrop, rgb(0 0 0 / 0.6));
+/* Setup, inline on My ballot (GetStarted.tsx): where you vote, then whose
+   endorsements you trust, as two numbered cards. */
+.get-started {
+  max-width: 46rem;
 }
-.wizard {
-  width: min(640px, calc(100% - 2rem));
-  max-height: 92vh;
-  overflow-y: auto;
-  margin: 4vh auto;
-  color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 1.5rem;
-  box-shadow: 0 20px 60px var(--shadow);
-}
-.wizard h2 {
-  margin: 0 0 0.75rem;
-}
-.wizard h2:focus {
-  outline: none;
-}
-.wizard-progress {
-  display: flex;
-  gap: 0.35rem;
-  list-style: none;
-  padding: 0;
-  margin: 0 0 1.25rem;
-}
-.wizard-progress li {
-  flex: 1;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--border);
-}
-.wizard-progress li.done {
-  background: var(--accent);
-}
-.wizard-choices {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin: 1rem 0;
-}
-@media (max-width: 560px) {
-  .wizard-choices {
-    grid-template-columns: 1fr;
-  }
-}
-.wizard-choice {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.35rem;
-  text-align: left;
-  padding: 1rem;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text);
-  cursor: pointer;
-}
-.wizard-choice:hover,
-.wizard-choice:focus-visible {
-  border-color: var(--accent);
-}
-.wizard-choice strong {
+.get-started-lead {
   font-size: 1.05rem;
 }
-.wizard-choice span:last-child {
+.setup-about {
+  margin: 0 0 1rem;
+}
+.setup-about > summary {
+  cursor: pointer;
   color: var(--muted);
-  font-size: 0.9rem;
 }
-.wizard-choice-icon {
-  width: 1.75rem;
-  height: 1.75rem;
-  color: var(--accent);
-}
-.wizard-about {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border);
-}
-.wizard-about h3 {
-  margin: 0 0 0.5rem;
-  font-size: 1rem;
-}
-.wizard-about p {
-  margin: 0 0 0.6rem;
-}
-.wizard-about ul {
+.setup-about ul {
   list-style: none;
   padding: 0;
-  margin: 0 0 0.75rem;
+  margin: 0.5rem 0 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
-.wizard-about li {
+.setup-about li {
   display: flex;
   gap: 0.6rem;
   align-items: flex-start;
 }
-.wizard-about li .icon {
+.setup-about li .icon {
   margin-top: 0.15em;
   vertical-align: baseline;
   color: var(--accent);
 }
-.wizard-about li span {
+.setup-about li span {
   font-size: 0.95rem;
 }
-.wizard-about-links {
+.setup-about-links {
   font-weight: 600;
+}
+.setup-step {
+  padding: 1.25rem;
+}
+.setup-step h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 0.75rem;
+  font-size: 1.2rem;
+}
+.setup-step h3:focus {
+  outline: none;
+}
+.setup-step-number {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.95rem;
+}
+/* A finished step folds to one line, with the way back into it. */
+.setup-step-done {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+.setup-election {
+  margin-bottom: 0.75rem;
+}
+.setup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+/* Under the long organizations list: pinned to the bottom of the screen while
+   the list scrolls past, so the way on to the ballot is always in reach. */
+.setup-actions.sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin-inline: -1.25rem;
+  margin-bottom: -1.25rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--surface);
+  border-radius: 0 0 10px 10px;
+}
+/* While something loads: the bar, then why it's worth waiting. */
+.setup-wait {
+  margin: 0.75rem 0;
+}
+.setup-wait p {
+  margin: 0.5rem 0 0;
 }
 /* One organization on the sources step: a card that lights up by how it's picked.
    A fixed grid, not a wrapping row, so Follow / Disagree sit in the same place on
    every card whether or not it has a lean meter. */
-.wizard-scroll {
+.setup-sources {
   container-type: inline-size;
 }
-.wizard-source {
+.setup-source {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-areas:
@@ -2268,44 +2220,44 @@ dialog.wizard::backdrop {
   font-size: 0.95rem;
   transition: background 0.12s, border-color 0.12s;
 }
-.wizard-source > .avatar {
+.setup-source > .avatar {
   grid-area: avatar;
 }
-.wizard-source > .grow {
+.setup-source > .grow {
   grid-area: name;
   align-self: end;
 }
-.wizard-source > .standing-toggle {
+.setup-source > .standing-toggle {
   grid-area: toggle;
 }
 /* Too narrow for the toggle beside the name: it gets its own row, still the same on every card. */
 @container (max-width: 30rem) {
-  .wizard-source {
+  .setup-source {
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas:
       "avatar name"
       "avatar meta"
       ". toggle";
   }
-  .wizard-source > .avatar {
+  .setup-source > .avatar {
     align-self: start;
   }
-  .wizard-source > .standing-toggle {
+  .setup-source > .standing-toggle {
     justify-self: start;
     margin-top: 0.3rem;
   }
 }
-.wizard-source.standing-follow {
+.setup-source.standing-follow {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
   box-shadow: inset 3px 0 0 var(--accent);
 }
-.wizard-source.standing-disagree {
+.setup-source.standing-disagree {
   border-color: var(--bad);
   background: color-mix(in srgb, var(--bad) 10%, var(--surface-2));
   box-shadow: inset 3px 0 0 var(--bad);
 }
-.wizard-source-meta {
+.setup-source-meta {
   grid-area: meta;
   align-self: start;
   display: flex;
@@ -2314,17 +2266,7 @@ dialog.wizard::backdrop {
   column-gap: 0.9rem;
   row-gap: 0.2rem;
 }
-.wizard-options {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-.wizard-scroll {
-  max-height: 50vh;
-  overflow-y: auto;
-  padding-right: 0.25rem;
-}
-.wizard-group {
+.setup-group {
   border: none;
   padding: 0;
   margin: 0 0 1rem;
@@ -2332,102 +2274,35 @@ dialog.wizard::backdrop {
   flex-direction: column;
   gap: 0.35rem;
 }
-.wizard-group legend {
+.setup-group legend {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--muted);
   margin-bottom: 0.35rem;
 }
-.wizard-group legend button.link {
+.setup-group legend button.link {
   text-transform: none;
   letter-spacing: normal;
   font-size: 0.9rem;
 }
-.ui-radio-group.wizard-kind {
+.ui-checkbox.setup-download-all {
+  align-items: flex-start;
+  margin-top: 0.75rem;
+}
+.setup-download-all .ui-checkbox-box {
+  margin-top: 0.15em;
+}
+
+/* Compose's first-identity card (CreateIdentity.tsx). */
+.create-identity h3 {
+  margin-top: 0;
+}
+.ui-radio-group.create-identity-kind {
   margin: 0.75rem 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
-}
-.wizard-footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border);
-  /* Stays in view while a tall step (the district map) scrolls under it, so
-     Next is always one click away. Covers the dialog's bottom padding. */
-  position: sticky;
-  bottom: -1.5rem;
-  margin-bottom: -1.5rem;
-  padding-bottom: 1.5rem;
-  background: var(--surface);
-  z-index: 1;
-}
-/* While something loads: the bar, then why it's worth waiting. */
-.wizard-wait {
-  margin: 0.75rem 0;
-}
-.wizard-wait p,
-p.wizard-wait {
-  margin: 0.5rem 0 0;
-}
-.ui-checkbox.wizard-download-all {
-  align-items: flex-start;
-  margin-top: 0.75rem;
-}
-.wizard-download-all .ui-checkbox-box {
-  margin-top: 0.15em;
-}
-/* A two-step way out: "Skip setup" → nudge → confirm (Wizard.tsx ConfirmLink). */
-.wizard-skip,
-.wizard-skip-nudge {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem;
-}
-.wizard-skip button.link {
-  color: var(--muted);
-}
-/* The nudge floats just above the footer (the sticky footer is its containing
-   block) instead of joining the row, so showing it never rewraps the footer
-   or resizes the dialog. Empty, it's still the live region, just no box. */
-.wizard-skip-nudge:not(:empty) {
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + 0.4rem);
-  width: max-content;
-  max-width: 100%;
-  padding: 0.5rem 0.75rem;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 6px 20px var(--shadow);
-  font-size: 0.9rem;
-  animation: wizard-skip-in 0.2s ease-out;
-}
-.wizard-skip-nudge > span {
-  color: var(--muted);
-  font-style: italic;
-}
-.wizard-skip-nudge > button {
-  font-size: inherit;
-  animation: wizard-skip-in 0.2s ease-out;
-}
-@keyframes wizard-skip-in {
-  from {
-    opacity: 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .wizard-skip-nudge:not(:empty),
-  .wizard-skip-nudge > button {
-    animation: none;
-  }
 }
 
 @media print {
@@ -2570,7 +2445,7 @@ p.wizard-wait {
   margin: 0;
 }
 
-/* The wizard's import carrying on in the background (ImportBanner.tsx).
+/* Setup's import carrying on in the background (ImportBanner.tsx).
    Sticks to the top while it runs, so the bar stays in sight on a long ballot. */
 .import-banner {
   position: sticky;

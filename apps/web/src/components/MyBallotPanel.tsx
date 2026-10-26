@@ -1,5 +1,5 @@
 import { type Stance, matchBallotName } from "@openslate/core";
-import { Link } from "@tanstack/react-router";
+import { Link, useSearch } from "@tanstack/react-router";
 import {
   ArrowLeft,
   ArrowRight,
@@ -20,7 +20,17 @@ import {
   WandSparkles,
   X,
 } from "lucide-react";
-import { type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  Suspense,
+  lazy,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { ProgressBar } from "react-aria-components";
 import { flushSync } from "react-dom";
 import { articlesByRace } from "../lib/articles";
@@ -83,7 +93,6 @@ import { isBallotSource, isFollowed, standingOf } from "../lib/sources";
 import { subjectKey } from "../lib/subjects";
 import { type RaceStatus, isDecided, marksOn, raceStatus, stepThrough } from "../lib/triage";
 import { track } from "../lib/usage";
-import { openWizard } from "../lib/wizard";
 import { AreaPicker, describeArea } from "./AreaPicker";
 import { BallotProblemsNotice, ChoiceBallotTags, RaceUnlistedNote } from "./BallotTags";
 import { EndorserAvatar } from "./EndorserAvatar";
@@ -98,6 +107,11 @@ import { Segmented } from "./ui/Segmented";
 import { Select } from "./ui/Select";
 import { Switch } from "./ui/Switch";
 import { TextArea, TextField } from "./ui/TextField";
+
+// Setup's code (the catalog list, the area picker) is fetched only when it's shown.
+const GetStarted = lazy(() =>
+  import("./GetStarted").then((module) => ({ default: module.GetStarted })),
+);
 
 /** Same order as `compareRaces`: numbers in labels sort numerically. */
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -163,6 +177,7 @@ const STATUS_LABEL: Record<RaceStatus, string> = {
 };
 
 export function MyBallotPanel() {
+  const { setup } = useSearch({ from: "/" });
   const { slates, isReady } = useDecodedSlates();
   const importing = useImportRunning(backgroundImports);
   const [follows] = useFollows();
@@ -538,8 +553,8 @@ export function MyBallotPanel() {
     );
   }
 
-  // The wizard's import is still bringing in the first slates (ImportBanner
-  // shows how far along); "Get started" here would say the opposite.
+  // Setup's import is still bringing in the first slates (ImportBanner shows
+  // how far along); showing setup again here would say the opposite.
   if (slates.length === 0 && importing) {
     return (
       <section className="panel">
@@ -549,27 +564,13 @@ export function MyBallotPanel() {
     );
   }
 
-  if (slates.length === 0) {
+  // Nothing in yet: setup is the page. A visitor is here to plan a vote, so
+  // they land straight in it. `?setup` brings it back once there's a ballot.
+  if (slates.length === 0 || setup) {
     return (
-      <section className="panel">
-        <h2>My ballot</h2>
-        <div className="card empty-state">
-          <h3>Whose recommendations do you trust?</h3>
-          <p>
-            OpenSlate lines up endorsements from the organizations and people you choose, race by
-            race, so you can see where they agree and make your own picks. Nothing leaves this
-            browser.
-          </p>
-          <div className="row">
-            <button type="button" className="primary" onClick={() => openWizard()}>
-              Get started
-            </button>
-            <Link to="/sources" search={{ add: true }} className="link">
-              or browse sources yourself →
-            </Link>
-          </div>
-        </div>
-      </section>
+      <Suspense fallback={<section className="panel" />}>
+        <GetStarted again={slates.length > 0} />
+      </Suspense>
     );
   }
 
@@ -597,7 +598,7 @@ export function MyBallotPanel() {
           </button>
         </div>
         <span className="grow" />
-        {/* The way back to adding more once the wizard's done: Sources is
+        {/* The way back to adding more once setup's done: Sources is
             where it happens, but "Sources" alone doesn't say so. */}
         <Link to="/sources" search={{ add: true }} className="button-link">
           <UserPlus className="icon" /> Add endorsements

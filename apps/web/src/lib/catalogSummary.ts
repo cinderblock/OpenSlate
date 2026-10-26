@@ -3,9 +3,9 @@ import { type Area, inArea } from "./jurisdictions";
 import type { CatalogEntry } from "./query";
 
 /**
- * What the getting-started wizard knows about a catalog entry before it
+ * What setup knows about a catalog entry before it
  * downloads the slate: where the entry's races are. A catalog from a current
- * `openslate sign --batch` lists this per entry; for an older one the wizard
+ * `openslate sign --batch` lists this per entry; for an older one setup
  * reads it from the slate instead.
  *
  * Pure helpers: no React, no storage. Unit-tested in test/catalogSummary.test.ts.

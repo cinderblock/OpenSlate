@@ -14,8 +14,8 @@ import { track } from "./usage";
 
 /**
  * Import one catalog entry: fetch its slate, verify it, store it. Shared by
- * the catalog browser's row and bulk buttons and by the getting-started
- * wizard, so they stay in sync. Resolves with the token even when it was
+ * the catalog browser's row and bulk buttons and by setup (My ballot),
+ * so they stay in sync. Resolves with the token even when it was
  * already imported, so callers can still flip their row state.
  */
 export type ImportOutcome =
@@ -142,7 +142,7 @@ export async function fetchCatalogBundle(
 }
 
 /**
- * Imports that carry on after the getting-started wizard closes. ImportBanner
+ * Imports that carry on after setup hands over to the ballot. ImportBanner
  * shows how far along they are.
  */
 export const backgroundImports = createImportQueue({

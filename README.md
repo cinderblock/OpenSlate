@@ -27,9 +27,11 @@ you trust agree and split on each contest, and make **your own picks** from
 sources you can verify, alongside live polls and (after polls close) results.
 A self-hosted server can add Kalshi market forecasts (opt-in, see below).
 
-The web app has two modes:
+The web app is built for voters first: most visitors come to get help voting,
+so that's the whole front of the app. Publishing is there for whoever looks
+for it. Its two sides:
 
-- **My vote** (the default): *My ballot* shows the races for your election and
+- **My vote** (everything up front): *My ballot* shows the races for your election and
   area laid out like the real ballot: the official candidate list in ballot
   order where one is imported, how many to vote for, a bubble per choice to
   mark your pick, and beside it how many of your followed sources back that
@@ -45,7 +47,7 @@ The web app has two modes:
   ("sierra prop" lists the propositions Sierra Club weighed in on). Every
   page with a long list has one: Sources, the public catalog, Results and each
   slate's results, your picks and the elections under Publish, and the
-  getting-started guide's organizations. Every word has to match, case and
+  setup's organizations. Every word has to match, case and
   accents don't matter, and a number only matches a whole number ("prop 1"
   isn't Prop 10). *One at a time* shows a single race and
   moves on once it's decided: number keys pick a choice, Shift+number rules it out, arrow
@@ -82,30 +84,32 @@ The web app has two modes:
   many of its names didn't match. Any candidate race takes a *write-in*: a
   name not printed on the ballot, signed as one, and flagged when the list
   doesn't certify it.
-- **Publish**: create a signing identity, sign your My-ballot picks (plus any
-  other race or issue, on your ballot or not) as a slate, see the slates you've
-  signed, and verify or inspect any block.
+- **Publish** (a quiet *Publish* link in the header, the footer and Settings):
+  create a signing identity (Compose walks you through your first one and its
+  backup), sign your My-ballot picks (plus any other race or issue, on your
+  ballot or not) as a slate, see the slates you've signed, and verify or
+  inspect any block.
 
-A skippable getting-started guide sets up a first visit: pick an election,
-where you vote, and whose recommendations you trust (or create an identity to
-publish). Its first screen also says what OpenSlate is: alpha software
-written by AI with a human watching over it, no account, open source, and how
-to run your own copy instead of using the website (linking here). Reopen it
-any time from *Get started* in the header. An *Alpha* badge beside the name
+A first visit goes straight into setup, right on My ballot, with nothing to
+choose first: *Where do you vote?* (the next election is picked already), then
+*Whose endorsements do you trust?*, then your ballot. A folded *What is
+OpenSlate?* says what it is: alpha software written by AI with a human
+watching over it, no account, open source, and how to run your own copy
+instead of using the website (linking here). Run setup again later from
+*Add endorsements* on the Sources page. An *Alpha* badge beside the name
 opens the same warning at the top of the page. On the public site
-(openslate.us) that warning starts open, on every page, until you dismiss it,
-and the welcome screen puts it first; a copy you run yourself keeps it to the
-badge and one line on the welcome screen.
+(openslate.us) that warning starts open, on every page, until you dismiss it;
+a copy you run yourself keeps it to the badge.
 
-The guide works from the catalog's list alone: each entry says where its races
+Setup works from the catalog's list alone: each entry says where its races
 are, so the area and source steps are there at once, and only the lists you
 pick are downloaded at the end (with the official ballot lists). That download
-carries on in the background: the guide closes straight away, and a banner with
+carries on in the background: the ballot opens straight away, and a banner with
 a progress bar says your ballot is still filling in until it's done. Tick
 *Download all* to fetch every organization's list instead, in one request, so
 the server can't tell whose recommendations you use; the ones you didn't pick
 are kept unfollowed, for comparison. With an older catalog that doesn't list
-races, the guide reads every slate first, with a progress bar.
+races, setup reads every slate first, with a progress bar.
 
 The goal: give citizens deeper insight into the things they care about, without
 relying solely on simplified endorsements from a single newspaper or org.
@@ -318,7 +322,7 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 | --- | --- |
 | [`packages/core`](./packages/core) | `@openslate/core` — the standard's reference impl: types, schema, canonical JSON, Ed25519 sign/verify, JSON Schema export. Pure TS, minimal audited deps. |
 | [`packages/cli`](./packages/cli) | `@openslate/cli` — `keygen` / `pubkey` / `sign` (incl. `--batch` for research bundles) / `validate` / `verify` / `inspect` / `adopt` (copy or reference another slate's positions). |
-| [`apps/web`](./apps/web) | React + Vite SPA. Two modes. *My vote*: a getting-started guide, My ballot (your followed sources' endorsements by race, for your election and area, with private picks), and Sources (follow, disagree with, or leave off, the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/), import from link/file/QR/paste). *Publish*: identities, sign your picks (or any race) as a slate and share it, verify and inspect slates; view live polls and election results (and Kalshi market forecasts, when a self-hosted server opts in); pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
+| [`apps/web`](./apps/web) | React + Vite SPA, voter-first. *My vote*: setup inline on My ballot, My ballot (your followed sources' endorsements by race, for your election and area, with private picks), and Sources (follow, disagree with, or leave off, the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/), import from link/file/QR/paste). *Publish* (a quiet link): identities, sign your picks (or any race) as a slate and share it, verify and inspect slates; view live polls and election results (and Kalshi market forecasts, when a self-hosted server opts in); pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
 | [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + relays for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic, with your `GOOGLE_API_KEY`), opinion polls ([VoteHub](https://votehub.com)), election results ([civicAPI](https://civicapi.org)), and, opt-in with `KALSHI_FORECASTS=true`, market forecasts ([Kalshi](https://kalshi.com)). |
 | [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls and [civicAPI](https://civicapi.org) results behind permissive CORS, relays opt-in address lookups to the [Census geocoder](https://geocoding.geo.census.gov/) (`POST /api/geocode/census`; nothing cached, logged or stored), and answers Google Civic Information lookups with the project's key (`GET /api/civic/elections`, `POST /api/civic/voterinfo`; only for openslate.us pages, addresses never cached, logged or stored). Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, `/api/geocode/census` and `/api/civic/*` shapes so the web client treats either backend identically. Runs at `https://api.openslate.us`. |
 | [`apps/desktop`](./apps/desktop) | [Electrobun](https://blackboard.sh/electrobun) desktop app around the web build, for Windows, macOS and Linux; standard and offline (catalog built in) editions, built and self-tested in CI, with signed self-updates. |
@@ -340,7 +344,7 @@ its operator opts in. The Settings page lets each user pick direct-vs-proxy per 
 where both are possible. The Hono/Worker mirrors also help self-hosters who
 want a uniform fetch surface or edge caching on election night.
 
-The web app's **Sources** page (and the getting-started guide) additionally imports pre-signed slates from a
+The web app's **Sources** page (and setup) additionally imports pre-signed slates from a
 sibling repo, [openslate-public-endorsements][ope] — published as static files
 on GitHub Pages, fetched directly with no server in between. Its catalog also
 carries each org's logo and left-right counts, so the app never contacts the

@@ -29,9 +29,9 @@ const DISMISSED_KEY = "openslate.alphaNoticeDismissed.v1";
 
 /**
  * Whether the page-top alpha banner is open: at first on the public site,
- * until the visitor says "Got it" (or reads the wizard's version); on a
- * self-run copy only when asked for. Page state shared by the banner, the
- * badge and the wizard; only the dismissal is persisted.
+ * until the visitor says "Got it"; on a self-run copy only when asked for.
+ * Page state shared by the banner and the badge; only the dismissal is
+ * persisted.
  */
 let bannerOpen: boolean | undefined;
 const listeners = new Set<() => void>();

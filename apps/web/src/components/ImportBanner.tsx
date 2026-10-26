@@ -9,7 +9,7 @@ import { ProgressBar } from "./ui/ProgressBar";
 const DONE_SHOWN_MS = 6000;
 
 /**
- * Over every page while the getting-started wizard's import carries on in the
+ * Over every page while setup's import carries on in the
  * background: a bar, and a note that the ballot is still filling in. Says when
  * it's done, and lists what didn't import.
  */

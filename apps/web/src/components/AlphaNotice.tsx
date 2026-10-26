@@ -1,6 +1,5 @@
 import { FlaskConical } from "lucide-react";
-import { forwardRef, useEffect } from "react";
-import { setAlphaBannerOpen } from "../lib/alpha";
+import { forwardRef } from "react";
 import { REPO_URL, openFeedback } from "../lib/feedback";
 
 const BANNER_ID = "alpha-banner";
@@ -53,26 +52,3 @@ export const AlphaBadge = forwardRef<HTMLButtonElement, { open: boolean; onToggl
     );
   },
 );
-
-/**
- * The welcome step's version, for the public site: the first thing a new
- * visitor reads. Having read it counts as "Got it" for the page banner, so
- * closing the wizard doesn't show the same warning again.
- */
-export function AlphaWizardNote() {
-  useEffect(() => setAlphaBannerOpen(false), []);
-  return (
-    <p className="alpha-wizard-note">
-      <FlaskConical className="icon" />
-      <span>
-        <strong>This is alpha software, written by AI with a human watching over it.</strong> Things
-        might be wrong, change, or break, so check anything that matters against your official voter
-        guide. Spot a problem? Use <em>Send feedback</em> at the bottom of any page, or{" "}
-        <a href={REPO_URL} target="_blank" rel="noreferrer">
-          help fix it on GitHub
-        </a>
-        .
-      </span>
-    </p>
-  );
-}

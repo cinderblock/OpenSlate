@@ -10,7 +10,6 @@ import {
   PenLine,
   Settings,
   ShieldCheck,
-  Sparkles,
   SquarePen,
   Users,
   Vote,
@@ -20,14 +19,12 @@ import { AlphaBadge, AlphaBanner } from "./components/AlphaNotice";
 import { DesktopUpdateBanner } from "./components/DesktopUpdate";
 import { FeedbackHost } from "./components/FeedbackHost";
 import { ImportBanner } from "./components/ImportBanner";
-import { WizardHost } from "./components/WizardHost";
 import { Switch } from "./components/ui/Switch";
 import { useAlphaBannerOpen } from "./lib/alpha";
 import { useDbStatus } from "./lib/dbStatus";
 import { EndorsersContext, useEndorserDirectory } from "./lib/endorsers";
 import { REPO_URL, openFeedback } from "./lib/feedback";
 import { useUsageEnabled } from "./lib/usage";
-import { openWizard } from "./lib/wizard";
 
 type Mode = "vote" | "publish";
 
@@ -47,6 +44,11 @@ interface NavItem {
   prefixes?: string[];
 }
 
+/**
+ * Voting is what visitors come for, so it's the whole front of the app.
+ * Publishing is a quiet link in the header (and the footer, and Settings) for
+ * those who go looking.
+ */
 const MODES: Record<
   Mode,
   { label: string; icon: LucideIcon; home: NavItem["to"]; nav: NavItem[] }
@@ -115,27 +117,18 @@ export function RootLayout() {
               onToggle={() => setAlphaOpen(!alphaOpen)}
             />
           </span>
-          <nav className="mode-switch" aria-label="Mode">
-            {(Object.keys(MODES) as Mode[]).map((key) => {
-              const ModeIcon = MODES[key].icon;
-              return (
-                <Link
-                  key={key}
-                  to={MODES[key].home}
-                  className={`mode${mode === key ? " active" : ""}`}
-                  aria-current={mode === key ? "page" : undefined}
-                  activeProps={{}}
-                >
-                  <ModeIcon className="icon" /> {MODES[key].label}
-                </Link>
-              );
-            })}
-          </nav>
           <span className="grow" />
           <span className="header-links">
-            <button type="button" className="header-link" onClick={() => openWizard()}>
-              <Sparkles className="icon" /> Get started
-            </button>
+            {/* The way between the two: to Publish from anywhere else, and back. */}
+            {mode === "publish" ? (
+              <Link to={MODES.vote.home} className="header-link" activeProps={{}}>
+                <Vote className="icon" /> My ballot
+              </Link>
+            ) : (
+              <Link to={MODES.publish.home} className="header-link" activeProps={{}}>
+                <PenLine className="icon" /> {MODES.publish.label}
+              </Link>
+            )}
             <Link
               to="/settings"
               className={`header-link${pathname === "/settings" ? " active" : ""}`}
@@ -147,7 +140,7 @@ export function RootLayout() {
         </header>
         <p className="tagline">
           {mode === "publish"
-            ? "Sign endorsements anyone can verify, and share them anywhere."
+            ? "Publish: sign endorsements anyone can verify, and share them anywhere."
             : "Collect the endorsements you trust and plan your vote with them."}
         </p>
 
@@ -179,7 +172,6 @@ export function RootLayout() {
           <Outlet />
         </main>
 
-        <WizardHost />
         <FeedbackHost />
 
         <footer>
@@ -188,6 +180,8 @@ export function RootLayout() {
           <a href={REPO_URL} target="_blank" rel="noreferrer">
             Open source on GitHub
           </a>
+          {" · "}
+          <Link to="/publish">Publish your own endorsements</Link>
           {" · "}
           <button type="button" className="link" onClick={openFeedback}>
             <MessageSquare className="icon" /> Send feedback

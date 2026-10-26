@@ -22,6 +22,7 @@ import { usePageSearch } from "../lib/pageSearch";
 import { matchesSearch, positionSearchText } from "../lib/search";
 import { subjectKey, useImportedSubjects } from "../lib/subjects";
 import { track } from "../lib/usage";
+import { CreateIdentity } from "./CreateIdentity";
 import { RawInspector } from "./ImportVerifyPanel";
 import { PageSearch, matchCount } from "./PageSearch";
 import { QrDialog } from "./Qr";
@@ -66,6 +67,8 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "bas
  */
 export function ComposePanel() {
   const { active: identity, all: myIdentities, activeKey, setActiveKey } = useActiveIdentity();
+  // A first identity stays in its setup card until it's backed up (or passed over).
+  const [settingUpIdentity, setSettingUpIdentity] = useState(false);
   const { slates } = useDecodedSlates();
   const listing = useMemo(() => listingOf(slates), [slates]);
   const [follows] = useFollows();
@@ -242,11 +245,11 @@ export function ComposePanel() {
       <div className="card-columns">
         <div>
           <div className="card signing-as">
-            {myIdentities.length === 0 ? (
-              <p className="hint">
-                <strong>No identity yet.</strong>{" "}
-                <Link to="/publish/identities">Create one in Identities</Link> before signing.
-              </p>
+            {myIdentities.length === 0 || settingUpIdentity ? (
+              <CreateIdentity
+                onCreated={() => setSettingUpIdentity(true)}
+                onDone={() => setSettingUpIdentity(false)}
+              />
             ) : myIdentities.length === 1 ? (
               <p className="hint">
                 Signing as <strong>{identity?.name ?? "(unnamed)"}</strong>{" "}
