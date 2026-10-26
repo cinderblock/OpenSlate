@@ -54,11 +54,9 @@ export function envBase(key: string, fallback: string): string {
 /**
  * The project's backend (the public worker, or a self-hosted apps/server):
  * VoteHub polls and the Census and Google relays. "" means same origin.
- * VITE_POLLS_BASE is its old name, still read so existing self-hosted builds
- * keep working.
  */
 export function apiBase(): string {
-  return envBase("VITE_API_BASE", envBase("VITE_POLLS_BASE", ""));
+  return envBase("VITE_API_BASE", "");
 }
 
 export const PROVIDERS: Record<string, ProviderInfo> = {

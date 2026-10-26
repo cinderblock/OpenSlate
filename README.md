@@ -160,9 +160,6 @@ VITE_RESULTS_BASE=https://api.yourdomain.dev/api/results/v2 \
 bun run build
 ```
 
-`VITE_API_BASE` was called `VITE_POLLS_BASE` before 2026-10-24; the old name
-still works when the new one isn't set.
-
 #### Bare
 
 Run it all locally — your laptop, a VM, a Raspberry Pi, anything with
@@ -436,11 +433,6 @@ Analytics and the zone settings are managed in
 [cinderblock/ops](https://github.com/cinderblock/ops)
 (`cloudflare/config/projects/openslate.yaml`). Nothing in this repo holds a
 Cloudflare credential.
-
-`polls.openslate.us` is the poll-cache worker's old name. It still answers so
-that copies of the app installed before the switch keep working, until they
-stop calling it; see [`plans/api-domain-rename.md`](./plans/api-domain-rename.md).
-`apps/poll-cache/scripts/host-usage.ts` counts requests under each name.
 
 `apps/web/.env.production` is committed on purpose: everything in it ships in
 the public bundle anyway. Usage statistics and private feedback go to the

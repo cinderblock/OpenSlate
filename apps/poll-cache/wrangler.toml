@@ -8,8 +8,6 @@ compatibility_date = "2026-05-01"
 # match the worker ops provisions.
 #
 # Production answers only at api.openslate.us, not at a workers.dev duplicate.
-# Its old name, polls.openslate.us, still answers too until installed copies of
-# the app stop calling it (plans/api-domain-rename.md).
 workers_dev = false
 preview_urls = false
 
