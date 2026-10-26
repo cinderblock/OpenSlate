@@ -25,6 +25,20 @@ check apps packages` still fails on master `612c12a` (2026-10-24):
 Why it matters: lint can't gate anything while it's red, and the a11y one may
 be a real accessibility problem.
 
+## Imported catalog slates never update
+
+Once a catalog slate is imported, the web app keeps that token: nothing
+fetches the catalog's newer version of the same entry, and the catalog
+browser shows no "update available". A re-issued slate (a corrected listing,
+new fields) only reaches users who remove it and import it again. Seen
+2026-10-25: the election-authority listings were re-issued with SPEC §3.14
+`ballot` fields (endorsements repo `31f09df`), but a browser that imported
+them before still has the old tokens, so the app has to keep reading the
+old `statement` text (plan `ballot-print-and-links.md` step C5). Likewise
+the 2026-10-24 `district` listings: a dev profile imported earlier still
+lacks them. Matters because listing fixes and new fields never reach
+existing users.
+
 ## Dark theme: some text and white-on-colour fills fall below 4.5:1
 
 Dark `--bad` (`#e74c3c`) as text measures 4.41:1 on `--surface` and 4.02:1 on
