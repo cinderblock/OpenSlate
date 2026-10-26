@@ -394,7 +394,7 @@ anywhere.
    limit (429, code 971, reading tunnels and then a WAF zone), which has
    nothing to do with this change. A third run, 5 min later, passed: 0/0/0,
    "Everything is in sync".
-5. Approve the GitHub protections above (tag ruleset, deploy ruleset, npm
+5. ~~Approve the GitHub protections above~~ Applied 2026-10-19 (see above). (tag ruleset, deploy ruleset, npm
    environment)?
 6. ~~Remove the unused ops Web Analytics site for openslate.us?~~ User
    2026-10-22: remove. Ops `3db3300` sets `web_analytics: false`. That only
