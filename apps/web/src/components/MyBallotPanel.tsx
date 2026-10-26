@@ -87,6 +87,7 @@ import { AreaPicker, describeArea } from "./AreaPicker";
 import { BallotProblemsNotice, ChoiceBallotTags, RaceUnlistedNote } from "./BallotTags";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { LeanSummary } from "./LeanMeter";
+import { PageSearch } from "./PageSearch";
 import { PrintBallot, type PrintSection } from "./PrintBallot";
 import { QuickFill } from "./QuickFill";
 import { electionOptions } from "./electionOptions";
@@ -95,7 +96,7 @@ import { InfoPopover } from "./ui/InfoPopover";
 import { Segmented } from "./ui/Segmented";
 import { Select } from "./ui/Select";
 import { Switch } from "./ui/Switch";
-import { SearchField, TextArea, TextField } from "./ui/TextField";
+import { TextArea, TextField } from "./ui/TextField";
 
 /** Same order as `compareRaces`: numbers in labels sort numerically. */
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -622,29 +623,23 @@ export function MyBallotPanel() {
       </div>
 
       {collated.length > 0 && (
-        <div className="page-search no-print">
-          <SearchField
-            aria-label="Search the ballot"
-            placeholder="Search races, candidates, measures, endorsers…"
-            value={search.query}
-            onChange={search.setQuery}
-          />
-          {search.searching && (
-            <p className="hint" aria-live="polite">
-              {found === 0
-                ? `Nothing ${filter === "all" ? "on this ballot" : `in ${STATUS_LABEL[filter]}`} matches “${search.query.trim()}”.`
-                : `${found} race${found === 1 ? "" : "s"} match${found === 1 ? "es" : ""}.`}
-              {foundUnderAll > found && (
-                <>
-                  {" "}
-                  <button type="button" className="link" onClick={() => setFilter("all")}>
-                    Show all {foundUnderAll}
-                  </button>
-                </>
-              )}
-            </p>
+        <PageSearch
+          search={search}
+          label="Search the ballot"
+          placeholder="Search races, candidates, measures, endorsers…"
+        >
+          {found === 0
+            ? `Nothing ${filter === "all" ? "on this ballot" : `in ${STATUS_LABEL[filter]}`} matches “${search.query.trim()}”.`
+            : `${found} race${found === 1 ? "" : "s"} match${found === 1 ? "es" : ""}.`}
+          {foundUnderAll > found && (
+            <>
+              {" "}
+              <button type="button" className="link" onClick={() => setFilter("all")}>
+                Show all {foundUnderAll}
+              </button>
+            </>
           )}
-        </div>
+        </PageSearch>
       )}
 
       {editingArea && (

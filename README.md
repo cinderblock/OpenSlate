@@ -42,8 +42,12 @@ The web app has two modes:
   To do, Maybe, Picked or Against all, watch the "decided" count climb, and
   reach *ballot zero*. The search box at the top finds races by seat or
   measure, candidate, party, place, or a source that took a position on it
-  ("sierra prop" lists the propositions Sierra Club weighed in on); Sources
-  has one for your imported sources. *One at a time* shows a single race and
+  ("sierra prop" lists the propositions Sierra Club weighed in on). Every
+  page with a long list has one: Sources, the public catalog, Results and each
+  slate's results, your picks and the elections under Publish, and the
+  getting-started guide's organizations. Every word has to match, case and
+  accents don't matter, and a number only matches a whole number ("prop 1"
+  isn't Prop 10). *One at a time* shows a single race and
   moves on once it's decided: number keys pick a choice, Shift+number rules it out, arrow
   keys step back and forth. *Quick fill* marks many races at once: pick (or rule
   out) every candidate of a party, or agree with, or go against, everything

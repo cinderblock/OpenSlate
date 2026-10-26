@@ -18,9 +18,12 @@ import { formatElectionDate } from "../lib/dates";
 import { useActiveIdentity } from "../lib/identities";
 import { jurisdictionLabel, jurisdictionRank } from "../lib/jurisdictions";
 import { localToday, useDecodedSlates, useFollows, useMyElection } from "../lib/myVote";
+import { usePageSearch } from "../lib/pageSearch";
+import { matchesSearch, positionSearchText } from "../lib/search";
 import { subjectKey, useImportedSubjects } from "../lib/subjects";
 import { track } from "../lib/usage";
 import { RawInspector } from "./ImportVerifyPanel";
+import { PageSearch, matchCount } from "./PageSearch";
 import { QrDialog } from "./Qr";
 import { SubjectPicker } from "./SubjectPicker";
 import { electionOptions } from "./electionOptions";
@@ -102,6 +105,16 @@ export function ComposePanel() {
     [draft.rows, election],
   );
   const [leftOut, setLeftOut] = useState<ReadonlySet<string>>(new Set());
+
+  // The search box only narrows the list: a pick it hides is still signed.
+  const search = usePageSearch("/publish");
+  const shownPicks = useMemo(
+    () =>
+      search.searching
+        ? picks.filter((row) => matchesSearch(positionSearchText(row), search.terms))
+        : picks,
+    [picks, search.searching, search.terms],
+  );
 
   const [others, setOthers] = useState<OtherEntry[]>([]);
   const [pickedSubject, setPickedSubject] = useState<Subject | null>(null);
@@ -278,8 +291,16 @@ export function ComposePanel() {
                 <p className="hint">
                   Untick a pick to keep it private. Change picks on <Link to="/">My ballot</Link>.
                 </p>
+                <PageSearch
+                  search={search}
+                  label="Search your picks"
+                  placeholder="Search your picks by race, candidate, place or statement…"
+                >
+                  {matchCount(shownPicks.length, picks.length, "picks", search.query)} The ones
+                  hidden here are still signed unless you untick them.
+                </PageSearch>
                 <ul className="pick-list">
-                  {picks.map((row) => (
+                  {shownPicks.map((row) => (
                     <PickRow
                       key={row.id}
                       row={row}

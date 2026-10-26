@@ -22,6 +22,7 @@ import {
   catalogEntryLogoUrl,
   catalogQueryOptions,
 } from "../lib/query";
+import { matchesSearch, searchTerms, searchTextOf } from "../lib/search";
 import { ELECTION_AUTHORITY, type Standing, sourceIdOf, standingOf } from "../lib/sources";
 import { track } from "../lib/usage";
 import { EndorserAvatar } from "./EndorserAvatar";
@@ -104,10 +105,21 @@ export function CatalogBrowser() {
   const activeElection = election ?? elections.find((e) => e >= today) ?? elections.at(-1) ?? "";
 
   const rows = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const terms = searchTerms(search);
     return (catalog?.entries ?? [])
       .filter((entry) => !activeElection || entry.election === activeElection)
-      .filter((entry) => !q || (entry.attribution?.of.name ?? entry.slug).toLowerCase().includes(q))
+      .filter(
+        (entry) =>
+          terms.length === 0 ||
+          matchesSearch(
+            searchTextOf([
+              entry.attribution?.of.name ?? entry.slug,
+              entry.attribution?.of.uri,
+              entry.issuer.name,
+            ]),
+            terms,
+          ),
+      )
       .sort(
         (a, b) =>
           // Ballot lists first: they're the frame the endorsements hang on.
@@ -202,7 +214,7 @@ export function CatalogBrowser() {
             <SearchField
               className="grow"
               label="Search"
-              placeholder="organization name…"
+              placeholder="organization name, site or reporter…"
               value={search}
               onChange={setSearch}
             />

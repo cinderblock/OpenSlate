@@ -28,10 +28,10 @@ import { DisagreeModeSetting } from "./DisagreeModeSetting";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { ImportVerifyPanel } from "./ImportVerifyPanel";
 import { LeanMeter } from "./LeanMeter";
+import { PageSearch, matchCount } from "./PageSearch";
 import { SlatesList } from "./SlatesList";
 import { SpectrumStrip } from "./SpectrumStrip";
 import { StandingToggle } from "./StandingToggle";
-import { SearchField } from "./ui/TextField";
 
 interface SourceGroup {
   source: Source;
@@ -111,21 +111,15 @@ export function SourcesPanel() {
       </p>
 
       {isReady && groups.length > 0 && (
-        <div className="page-search">
-          <SearchField
-            aria-label="Search your sources"
-            placeholder="Search your sources by name, reporter, link or election…"
-            value={search.query}
-            onChange={search.setQuery}
-          />
-          {search.searching && (
-            <p className="hint" aria-live="polite">
-              {shown.length === 0
-                ? `None of your sources match “${search.query.trim()}”. The public catalog under Add sources has its own search.`
-                : `${shown.length} of ${groups.length} sources match.`}
-            </p>
-          )}
-        </div>
+        <PageSearch
+          search={search}
+          label="Search your sources"
+          placeholder="Search your sources by name, reporter, link or election…"
+        >
+          {shown.length === 0
+            ? `None of your sources match “${search.query.trim()}”. The public catalog under Add sources has its own search.`
+            : matchCount(shown.length, groups.length, "sources", search.query)}
+        </PageSearch>
       )}
 
       {/* Two columns on a wide screen once there's something imported: what you

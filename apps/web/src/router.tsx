@@ -41,11 +41,13 @@ const raceRoute = createRoute({
 const resultsIndexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/results",
+  validateSearch: validateQuerySearch,
   component: lazyRouteComponent(() => import("./components/ResultsView"), "ResultsView"),
 });
 const resultsForSlateRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/results/$token",
+  validateSearch: validateQuerySearch,
   component: lazyRouteComponent(() => import("./components/ResultsForSlate"), "ResultsForSlate"),
 });
 
@@ -54,6 +56,7 @@ const resultsForSlateRoute = createRoute({
 const composeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/publish",
+  validateSearch: validateQuerySearch,
   component: lazyRouteComponent(() => import("./components/ComposePanel"), "ComposePanel"),
 });
 const identitiesRoute = createRoute({
@@ -64,6 +67,7 @@ const identitiesRoute = createRoute({
 const electionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/publish/elections",
+  validateSearch: validateQuerySearch,
   component: lazyRouteComponent(() => import("./components/ElectionsPanel"), "ElectionsPanel"),
 });
 const verifyRoute = createRoute({

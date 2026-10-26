@@ -4,13 +4,16 @@ import { Link, useParams } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { slatesCollection } from "../lib/collections";
 import { shortKey } from "../lib/identities";
+import { usePageSearch } from "../lib/pageSearch";
 import { useResolvedRaces } from "../lib/results";
 import { slateToCsv, suggestCsvFilename } from "../lib/results-csv";
 import { slateToMarkdown } from "../lib/results-markdown";
+import { matchesSearch, positionSearchText } from "../lib/search";
 import { positionOutcome, summarizeSlate } from "../lib/slate-summary";
 import { subjectKey } from "../lib/subjects";
 import { firsthandSubjectKeys, payloadsFromTokens } from "../lib/supersession";
 import { track } from "../lib/usage";
+import { PageSearch } from "./PageSearch";
 import { ResultsPanel } from "./ResultsPanel";
 import { SecondhandBanner } from "./SecondhandBanner";
 import { type OutcomeFilter, SlateSummaryHeadline } from "./SlateSummaryHeadline";
@@ -44,6 +47,10 @@ export function ResultsForSlate() {
   const races = useResolvedRaces(subjects);
 
   const summary = useMemo(() => summarizeSlate(positions, races), [positions, races]);
+
+  // The search box narrows the positions shown, never the summary or exports.
+  const search = usePageSearch("/results/$token");
+  const positionText = useMemo(() => positions.map(positionSearchText), [positions]);
 
   // SPEC §3.9: compute firsthand coverage across the user's local set so we
   // can flag individual positions of a secondhand slate that *could* be cross-
@@ -79,13 +86,17 @@ export function ResultsForSlate() {
   const attributedTo = attribution?.of.name;
 
   // Apply the outcome filter using the per-position outcomes derived from `races`.
-  const visiblePositions = positions
+  const underFilter = positions
     .map((position, i) => ({ position, race: races[i], index: i }))
     .filter(({ position, race }) => {
       if (filter === "all") return true;
       const outcome = positionOutcome(position, race);
       return outcome === filter;
     });
+  // Then the search.
+  const visiblePositions = underFilter.filter(({ index }) =>
+    matchesSearch(positionText[index] ?? "", search.terms),
+  );
 
   return (
     <section className="panel">
@@ -157,13 +168,35 @@ export function ResultsForSlate() {
         onFilterChange={setFilter}
       />
 
+      {positions.length > 0 && (
+        <PageSearch
+          search={search}
+          label="Search this slate's positions"
+          placeholder="Search races, measures, candidates, places…"
+        >
+          {visiblePositions.length === 0
+            ? `Nothing ${filter === "all" ? "" : "under this filter "}matches “${search.query.trim()}”.`
+            : `${visiblePositions.length} of ${underFilter.length} position${underFilter.length === 1 ? "" : "s"} match${visiblePositions.length === 1 ? "es" : ""}.`}
+          {filter !== "all" && (
+            <>
+              {" "}
+              <button type="button" className="link" onClick={() => setFilter("all")}>
+                Search every outcome
+              </button>
+            </>
+          )}
+        </PageSearch>
+      )}
+
       {positions.length === 0 ? (
         <div className="card">
           <p className="hint">This slate has no positions.</p>
         </div>
       ) : visiblePositions.length === 0 ? (
         <div className="card">
-          <p className="hint">No positions match the current filter.</p>
+          <p className="hint">
+            No positions match the current {search.searching ? "filter and search" : "filter"}.
+          </p>
         </div>
       ) : (
         visiblePositions.map(({ position, index: i }) => {

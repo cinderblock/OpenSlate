@@ -35,6 +35,7 @@ import {
   onboardingStore,
   setStanding,
 } from "../lib/myVote";
+import { useSearchBox } from "../lib/pageSearch";
 import { DESKTOP_DOWNLOADS_URL, IS_DESKTOP_APP, THIS_DEVICE } from "../lib/platform";
 import {
   CATALOG_BUILT_IN,
@@ -44,6 +45,7 @@ import {
   catalogQueryOptions,
   slateFromUrlOptions,
 } from "../lib/query";
+import { matchesSearch, searchTextOf } from "../lib/search";
 import { type Standing, sourceIdOf } from "../lib/sources";
 import { track } from "../lib/usage";
 import { closeWizard } from "../lib/wizard";
@@ -52,6 +54,7 @@ import { AreaPicker } from "./AreaPicker";
 import { isBallotEntry } from "./CatalogBrowser";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { LeanSummary } from "./LeanMeter";
+import { PageSearch, matchCount } from "./PageSearch";
 import { StandingToggle } from "./StandingToggle";
 import { Checkbox } from "./ui/Checkbox";
 import { ProgressBar } from "./ui/ProgressBar";
@@ -768,6 +771,7 @@ function SourcesStep({
   onSkip: () => void;
 }) {
   const [showOthers, setShowOthers] = useState(false);
+  const search = useSearchBox();
 
   // Each organization with how many races on *your* ballot it weighs in on,
   // grouped by where it publishes for (statewide, a city…).
@@ -776,7 +780,17 @@ function SourcesStep({
   const { groups, others } = useMemo(() => {
     const scored = summaries.entries
       .filter((s) => !isBallotEntry(s.entry))
-      .map((s) => ({ entry: s.entry, races: racesInArea(s, area), scope: s.scope }));
+      .map((s) => ({
+        entry: s.entry,
+        races: racesInArea(s, area),
+        scope: s.scope,
+        // Found by its name, its site, and where it publishes for.
+        searchText: searchTextOf([
+          s.entry.attribution?.of.name ?? s.entry.slug,
+          s.entry.attribution?.of.uri,
+          jurisdictionLabel(s.scope),
+        ]),
+      }));
     // A group that publishes for another city still weighs in on statewide
     // races, but it isn't "yours": list it under "based elsewhere".
     const elsewhere = (s: (typeof scored)[number]) => {
@@ -807,6 +821,17 @@ function SourcesStep({
       others: scored.filter(elsewhere).sort((a, b) => b.races - a.races),
     };
   }, [summaries, area]);
+
+  // The search narrows each group; groups with nothing left go, and the
+  // "based elsewhere" ones show without a click.
+  const matches = (item: { searchText: string }) => matchesSearch(item.searchText, search.terms);
+  const shownGroups = search.searching
+    ? groups
+        .map((group) => ({ ...group, items: group.items.filter(matches) }))
+        .filter((group) => group.items.length > 0)
+    : groups;
+  const shownOthers = search.searching ? others.filter(matches) : others;
+  const shownCount = shownGroups.reduce((n, g) => n + g.items.length, 0) + shownOthers.length;
 
   function pick(path: string, standing: Standing) {
     const next = new Map(selected);
@@ -871,23 +896,38 @@ function SourcesStep({
         ballot, and what they oppose counts for it. You can change this later on the Sources page.
       </p>
       <SummariesWait summaries={summaries} />
+      {organizations > 0 && (
+        <PageSearch
+          search={search}
+          label="Search organizations"
+          placeholder="Search organizations by name, site or place…"
+        >
+          {matchCount(shownCount, organizations, "organizations", search.query)}
+        </PageSearch>
+      )}
       <div className="wizard-scroll">
-        {groups.map((group) => (
+        {shownGroups.map((group) => (
           <fieldset key={group.label} className="wizard-group">
             <legend>{group.label}</legend>
             {group.items.map(renderItem)}
           </fieldset>
         ))}
-        {others.length > 0 && (
-          <fieldset className="wizard-group">
-            <legend>
-              <button type="button" className="link" onClick={() => setShowOthers((v) => !v)}>
-                {showOthers ? "▾" : "▸"} {others.length} more based elsewhere
-              </button>
-            </legend>
-            {showOthers && others.map(renderItem)}
-          </fieldset>
-        )}
+        {shownOthers.length > 0 &&
+          (search.searching ? (
+            <fieldset className="wizard-group">
+              <legend>Based elsewhere</legend>
+              {shownOthers.map(renderItem)}
+            </fieldset>
+          ) : (
+            <fieldset className="wizard-group">
+              <legend>
+                <button type="button" className="link" onClick={() => setShowOthers((v) => !v)}>
+                  {showOthers ? "▾" : "▸"} {others.length} more based elsewhere
+                </button>
+              </legend>
+              {showOthers && others.map(renderItem)}
+            </fieldset>
+          ))}
       </div>
       <p className="hint">
         These are secondhand reports: a researcher's signed record of what each organization

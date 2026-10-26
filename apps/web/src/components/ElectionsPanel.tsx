@@ -6,10 +6,18 @@ import { civicElectionsQueryOptions, useCivicRoutes } from "../lib/civic";
 import { formatElectionDate } from "../lib/dates";
 import { type ElectionEntry, electionEntries } from "../lib/electionList";
 import { localToday, useDecodedSlates, useMyElection } from "../lib/myVote";
+import { usePageSearch } from "../lib/pageSearch";
+import { matchesSearch, searchTextOf } from "../lib/search";
+import { PageSearch, matchCount } from "./PageSearch";
 import { ReportCivicProblem } from "./ReportCivicProblem";
 import { Switch } from "./ui/Switch";
 
 const TODAY = localToday();
+
+/** Hidden until "Show past + Test elections": past ones, and Google's test election. */
+function isHidden(entry: ElectionEntry): boolean {
+  return entry.past === true || entry.id === "2000";
+}
 
 export function ElectionsPanel() {
   // Google's list, with the user's own key when they've saved one, else through
@@ -36,8 +44,16 @@ export function ElectionsPanel() {
     [electionsQuery.data, slates, draft.rows],
   );
 
+  const search = usePageSearch("/publish/elections");
+  const found = useMemo(
+    () =>
+      search.searching
+        ? entries.filter((e) => matchesSearch(electionSearchText(e), search.terms))
+        : entries,
+    [entries, search.searching, search.terms],
+  );
   const visible = useMemo(() => {
-    const filtered = showPast ? entries : entries.filter((e) => e.past !== true && e.id !== "2000");
+    const filtered = showPast ? found : found.filter((e) => !isHidden(e));
     return [...filtered].sort((a, b) => {
       // Upcoming (date in future) first, ascending by date.
       // Unknown-date next.
@@ -48,9 +64,11 @@ export function ElectionsPanel() {
       if (aBucket === 2) return (b.electionDay ?? "").localeCompare(a.electionDay ?? "");
       return (a.electionDay ?? "").localeCompare(b.electionDay ?? "");
     });
-  }, [entries, showPast]);
+  }, [found, showPast]);
 
-  const pastCount = entries.filter((e) => e.past === true || e.id === "2000").length;
+  const pastCount = entries.filter(isHidden).length;
+  // Matches the "Show past" switch is hiding.
+  const foundPast = showPast ? 0 : found.length - visible.length;
 
   return (
     <section className="panel">
@@ -66,6 +84,29 @@ export function ElectionsPanel() {
           Show past + Test elections <span className="hint">({pastCount} hidden)</span>
         </Switch>
       </div>
+
+      {entries.length > 0 && (
+        <PageSearch
+          search={search}
+          label="Search elections"
+          placeholder="Search elections by name, date, place or id…"
+        >
+          {matchCount(
+            visible.length,
+            showPast ? entries.length : entries.length - pastCount,
+            "elections",
+            search.query,
+          )}
+          {foundPast > 0 && (
+            <>
+              {" "}
+              <button type="button" className="link" onClick={() => setShowPast(true)}>
+                Show {foundPast} past or test
+              </button>
+            </>
+          )}
+        </PageSearch>
+      )}
 
       {(civic.isLoading || electionsQuery.isLoading) && <p className="hint">Loading elections…</p>}
       {electionsQuery.error && (
@@ -92,7 +133,11 @@ export function ElectionsPanel() {
 
       {visible.length === 0 ? (
         <div className="card">
-          <p className="hint">No elections {showPast ? "found" : "upcoming"}.</p>
+          <p className="hint">
+            {search.searching
+              ? "No elections match."
+              : `No elections ${showPast ? "found" : "upcoming"}.`}
+          </p>
         </div>
       ) : (
         visible.map((entry) => (
@@ -106,6 +151,17 @@ export function ElectionsPanel() {
       )}
     </section>
   );
+}
+
+/** What an election is found by: its name, date (as dated and as shown), division and id. */
+function electionSearchText(entry: ElectionEntry): string {
+  return searchTextOf([
+    entry.name,
+    entry.electionDay,
+    entry.electionDay && formatElectionDate(entry.electionDay),
+    entry.ocdDivisionId,
+    entry.id,
+  ]);
 }
 
 function ElectionCard({

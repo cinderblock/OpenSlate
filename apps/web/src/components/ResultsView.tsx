@@ -3,9 +3,13 @@ import { useLiveQuery } from "@tanstack/react-db";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { slatesCollection } from "../lib/collections";
+import { formatElectionDate } from "../lib/dates";
 import { shortKey } from "../lib/identities";
+import { usePageSearch } from "../lib/pageSearch";
+import { matchesSearch, searchTextOf } from "../lib/search";
 import { firsthandSubjectKeys, payloadsFromTokens, supersessionFor } from "../lib/supersession";
 import { Leaderboard } from "./Leaderboard";
+import { PageSearch, matchCount } from "./PageSearch";
 import { TokenField } from "./ui/Token";
 
 // Listing page for /results. The user picks an imported slate (or pastes a
@@ -32,6 +36,7 @@ export function ResultsView() {
       .map(({ token, importedAt }) => {
         const result = verifySlate(token);
         const payload = result.payload;
+        const election = payload?.context?.election;
         return {
           token,
           importedAt,
@@ -40,10 +45,24 @@ export function ResultsView() {
           positions: payload?.positions ?? [],
           valid: result.valid,
           supersession: payload ? supersessionFor(payload, firstKeys) : null,
+          // Found by who signed it, who it reports on, and its election.
+          searchText: searchTextOf([
+            payload?.issuer.name,
+            payload?.issuer.key,
+            payload?.attribution?.of.name,
+            payload?.attribution?.of.uri,
+            election,
+            election && formatElectionDate(election),
+          ]),
         };
       })
       .sort((a, b) => (a.importedAt < b.importedAt ? 1 : -1));
   }, [slates]);
+
+  const search = usePageSearch("/results");
+  const shown = search.searching
+    ? rows.filter((row) => matchesSearch(row.searchText, search.terms))
+    : rows;
 
   const trimmed = pasted.trim();
   const pastedValid = useMemo(() => {
@@ -98,8 +117,15 @@ export function ResultsView() {
       ) : (
         <div className="card">
           <h3>Your imported slates</h3>
+          <PageSearch
+            search={search}
+            label="Search your imported slates"
+            placeholder="Search by who signed it, who it reports on, or election…"
+          >
+            {matchCount(shown.length, rows.length, "slates", search.query)}
+          </PageSearch>
           <ul className="position-list slate-grid">
-            {rows.map((row) => {
+            {shown.map((row) => {
               const signerName =
                 row.issuer?.name?.trim() || shortKey(row.issuer?.key ?? "(unknown)");
               return (

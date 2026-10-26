@@ -3,6 +3,7 @@ import type { ChoiceGroup, Race } from "../src/lib/collate";
 import {
   foldText,
   matchesSearch,
+  positionSearchText,
   raceSearchText,
   searchTerms,
   sourceSearchText,
@@ -98,6 +99,19 @@ describe("race search", () => {
     expect(finds(prop, "sierra")).toBe(false);
   });
 
+  test("a number matches a whole number, not part of one", () => {
+    const district2 = race("State Senate, District 2", [choice("Ann")], { election: "2026-11-03" });
+    const district20 = race("State Senate, District 20", [choice("Bo")], {
+      election: "2026-11-03",
+    });
+    expect(finds(district2, "senate 2")).toBe(true);
+    expect(finds(district20, "senate 2")).toBe(false);
+    expect(finds(prop, "prop 5")).toBe(false);
+    expect(finds(prop, "prop 50")).toBe(true);
+    // Not a number on its own: still matches inside a word or a longer number.
+    expect(finds(district20, "district 20")).toBe(true);
+  });
+
   test("a term doesn't match across the seam of two fields", () => {
     // "Mayor" then "Oakland": joined without a separator, "oroak" would match.
     expect(finds(mayor, "oroak")).toBe(false);
@@ -113,5 +127,20 @@ describe("source search", () => {
     expect(matchesSearch(text, searchTerms("sierraclub.org"))).toBe(true);
     expect(matchesSearch(text, searchTerms("2026-11"))).toBe(true);
     expect(matchesSearch(text, searchTerms("teamsters"))).toBe(false);
+  });
+});
+
+describe("position search", () => {
+  const text = positionSearchText({
+    subject: { title: "Mayor", jurisdiction: "us/ca/oakland", election: "2026-11-03" },
+    choice: "Barbara Lee",
+    statement: "Housing first.",
+  });
+
+  test("finds a position by race, choice, place, election or statement", () => {
+    expect(matchesSearch(text, searchTerms("oakland lee"))).toBe(true);
+    expect(matchesSearch(text, searchTerms("2026-11-03"))).toBe(true);
+    expect(matchesSearch(text, searchTerms("housing"))).toBe(true);
+    expect(matchesSearch(text, searchTerms("governor"))).toBe(false);
   });
 });

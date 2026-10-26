@@ -13,7 +13,9 @@ straight to what they're looking for:
   Disagree with and Imported but not followed lists) by name, the researcher
   who reported them, their link, or an election date.
 
-Feature request from the user, 2026-10-26.
+Feature request from the user, 2026-10-26. Widened the same day: "all pages
+with large amounts of things that could/should be filtered should get a text
+search".
 
 ## Environment / context
 
@@ -53,6 +55,36 @@ Feature request from the user, 2026-10-26.
 4. Sources: search above the lists, filtering, empty note.
 5. Typecheck, tests, check in the browser, commit.
 
+## Phase 2: every page with a long list
+
+Surveyed every route and the wizard (2026-10-26):
+
+| Page | What's searched | Notes |
+| --- | --- | --- |
+| Results `/results` | imported slates: issuer, reported org, reporter, key, election | `?q=`; the Leaderboard keeps ranking all of them |
+| A slate's results `/results/$token` | positions: title, choice, place, election, statement | `?q=`; combines with the outcome filter |
+| Publish `/publish` | My picks: title, choice, place, statement | `?q=`; only what's *shown*: a pick hidden by the search is still signed |
+| Publish → Elections | name, date, division, id | `?q=` |
+| Wizard, sources step | organization name, link, where it publishes | component state (it's a dialog) |
+| Public catalog (Sources) | upgrade to the shared matcher: name, link, reporter, slug | already had a box |
+
+Left alone, short lists: a race page, Identities, Settings, Slates list and
+Contacts (both already searchable, Fuse / own matcher).
+
+Phase 2 steps:
+
+- [x] P2.1 `searchTextOf` and `positionSearchText` in `lib/search.ts`, tests
+- [x] P2.2 `?q=` on `/results`, `/results/$token`, `/publish`, `/publish/elections`
+- [x] P2.3 Results list, a slate's results
+- [x] P2.4 Compose picks, Elections
+- [x] P2.5 Wizard sources step, catalog matcher
+- [x] P2.6 verified in the browser 2026-10-26: Results list ("sierra", 1 of 5),
+  a slate's results ("senate 2", 1 of 55), My picks in an incognito tab
+  ("bonta", 1 of 3, Sign still says 3 positions), the wizard (337
+  organizations, "alameda democratic" finds 1, Escape clears without
+  closing), the catalog ("club redwood"). Elections only had one entry
+  (no Google key in the test profile). Typecheck, tests, Biome clean.
+
 ## Progress log
 
 - [x] 1. search helpers + tests (`test/search.test.ts`, 9 tests)
@@ -74,7 +106,18 @@ Feature request from the user, 2026-10-26.
 - Chrome drew its own clear "×" for `type="search"` beside the kit's, on every
   `SearchField` (Slates list and catalog too). Hidden in `20f67ba`.
 
+- A digit-only query word matched inside other numbers: "senate 2" found
+  District 4, 6, 20… because every subject's election is 2026. Digit-only
+  terms now match whole numbers only (`matchesSearch`).
+- Shared `PageSearch` component (`components/PageSearch.tsx`) and
+  `useSearchBox` (no URL, for the wizard dialog) / `usePageSearch` (URL).
+- Running `biome format --write apps/web/src` rewrote 15 untouched LF files
+  to CRLF (content identical). Reverted after checking each against HEAD.
+  Run Biome only on the files you changed.
+
 ## Things not to do
+
+- Don't run Biome with `--write` over a whole directory in this shared tree.
 
 - Don't fold the catalog search into the page search without asking: the
   catalog's list is what you *could* add, a different thing from what you have.
