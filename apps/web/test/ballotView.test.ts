@@ -242,6 +242,19 @@ describe("the ballot's own fields (SPEC §3.14)", () => {
     });
   });
 
+  test("a measure with no label from the listing keeps its title under the heading", () => {
+    const m = {
+      ...race("measure", []),
+      subject: { title: "Alameda — Measure N (Leases and Sales)", kind: "measure" },
+      ballot: { heading: "Measure N", number: "N" },
+    };
+    expect(raceHeading(m)).toEqual({
+      heading: "Measure N",
+      number: "N",
+      label: "Alameda — Measure N (Leases and Sales)",
+    });
+  });
+
   test("an office's heading; the title when the listing has none", () => {
     const ag = race("race", [], true);
     expect(raceHeading({ ...ag, ballot: { heading: "Attorney General", vote_for: 1 } })).toEqual({

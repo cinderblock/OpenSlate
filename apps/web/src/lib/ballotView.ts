@@ -160,7 +160,11 @@ export function raceHeading(race: Pick<Race, "subject" | "ballot" | "choices">):
     race.subject.kind === "measure"
       ? splitMeasureTitle(race.subject.title)
       : { heading: race.subject.title };
-  const label = ballot?.heading ? ballot.label : (ballot?.label ?? old.detail);
+  // A measure the listing gives no label for (only "Measure N") keeps its title as the
+  // line under the heading, so it still says what it's about.
+  const label = ballot?.heading
+    ? (ballot.label ?? (race.subject.kind === "measure" ? race.subject.title : undefined))
+    : (ballot?.label ?? old.detail);
   const measureType = ballot?.measure_type ?? legacyMeasureNote(race as Race);
   const number = ballot?.number ?? old.number;
   return {
