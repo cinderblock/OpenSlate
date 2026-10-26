@@ -2,7 +2,7 @@ import { z } from "zod";
 import { canonicalize, utf8 } from "./canonical";
 import { b64url, decodePublicKey, sign as edSign } from "./crypto";
 import { type DecodedSlate, decodeToken, verifySignature } from "./envelope";
-import { attributionSchema, contextSchema, issuerSchema, subjectSchema } from "./schema";
+import { attributionSchema, contextSchema, httpUrl, issuerSchema, subjectSchema } from "./schema";
 
 /**
  * A voter guide: what an election authority publishes about the things on
@@ -85,7 +85,7 @@ export const passageSchema = z
     /** Who wrote it, e.g. "Attorney General", "Legislative Analyst", or the candidate. */
     by: z.string().min(1).optional(),
     blocks: z.array(blockSchema),
-    source: z.string().url(),
+    source: httpUrl,
     /** The publisher's own caveat, verbatim (e.g. "not checked for accuracy by any official agency"). */
     disclaimer: z.string().optional(),
   })
@@ -97,7 +97,7 @@ export const photoSchema = z
     file: relativePath,
     alt: z.string().optional(),
     /** Where the original was published. */
-    source: z.string().url(),
+    source: httpUrl,
     credit: z.string().optional(),
     license: z.string().optional(),
   })
@@ -145,7 +145,7 @@ export const argumentSchema = z
     paid: z.boolean().optional(),
     /** Who paid, as printed (e.g. "The true source(s) of funds for the printing fee …"). */
     funding: z.string().min(1).optional(),
-    source: z.string().url(),
+    source: httpUrl,
     disclaimer: z.string().optional(),
   })
   .strict();
@@ -160,7 +160,7 @@ export const documentSchema = z
   .object({
     title: z.string().min(1),
     file: relativePath.optional(),
-    source: z.string().url(),
+    source: httpUrl,
     mediaType: z.string().min(1),
     /** 1-based page in the original where this document starts. */
     page: z.number().int().positive().optional(),

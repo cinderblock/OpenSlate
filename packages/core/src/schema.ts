@@ -16,6 +16,18 @@ export type Stance = z.infer<typeof stanceSchema>;
 /** RFC 3339 date-time with a timezone offset (e.g. `2026-05-28T17:00:00Z`). */
 const rfc3339 = z.string().datetime({ offset: true });
 
+/**
+ * An absolute `http:` or `https:` URL (SPEC §3.13). Links in slates get
+ * clicked, so a `javascript:` or `data:` URL is an attack, not a link.
+ */
+export const httpUrl = z
+  .string()
+  .url()
+  // Runs even when `.url()` has already failed. `.url()` checks it parses.
+  .refine((value) => /^https?:/i.test(value), {
+    message: "must be an http: or https: URL",
+  });
+
 export const subjectSchema = z
   .object({
     title: z.string().min(1),
@@ -25,7 +37,7 @@ export const subjectSchema = z
     /** Whose voters decide it, when narrower than `jurisdiction` (SPEC §3.3). Not identity. */
     district: z.string().min(1).optional(),
     election: z.string().min(1).optional(),
-    uri: z.string().url().optional(),
+    uri: httpUrl.optional(),
   })
   .strict();
 export type Subject = z.infer<typeof subjectSchema>;
@@ -41,7 +53,7 @@ export const positionSchema = z
     write_in: z.literal(true).optional(),
     weight: z.number().min(0).max(1).optional(),
     statement: z.string().optional(),
-    source: z.string().url().optional(),
+    source: httpUrl.optional(),
   })
   .strict()
   .refine((p) => p.choice !== undefined || (p.choice_id === undefined && !p.write_in), {
@@ -54,7 +66,7 @@ export const issuerSchema = z
     key: z.string().min(1),
     name: z.string().optional(),
     kind: z.string().min(1).optional(),
-    uri: z.string().url().optional(),
+    uri: httpUrl.optional(),
   })
   .strict();
 export type Issuer = z.infer<typeof issuerSchema>;
@@ -64,7 +76,7 @@ export const referenceSchema = z
     issuer: z.string().min(1),
     name: z.string().optional(),
     slate: z.string().optional(),
-    uri: z.string().url().optional(),
+    uri: httpUrl.optional(),
     note: z.string().optional(),
   })
   .strict();
@@ -96,13 +108,13 @@ export const attributionSchema = z
     of: z
       .object({
         name: z.string().min(1),
-        uri: z.string().url().optional(),
+        uri: httpUrl.optional(),
         kind: z.string().min(1).optional(),
       })
       .strict(),
     mode: attributionModeSchema,
     retrieved_at: rfc3339,
-    sources: z.array(z.string().url()).optional(),
+    sources: z.array(httpUrl).optional(),
   })
   .strict();
 export type Attribution = z.infer<typeof attributionSchema>;
@@ -118,10 +130,10 @@ export const adoptionSchema = z
     issuer: z.string().min(1),
     of: z.string().min(1).optional(),
     election: z.string().min(1).optional(),
-    uri: z.string().url().optional(),
+    uri: httpUrl.optional(),
     slate: z.string().min(1).optional(),
     subjects: z.array(subjectSchema).optional(),
-    source: z.string().url().optional(),
+    source: httpUrl.optional(),
     note: z.string().optional(),
   })
   .strict()

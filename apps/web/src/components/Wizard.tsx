@@ -17,6 +17,7 @@ import { areaOptionsOf } from "../lib/collate";
 import { addIdentity, slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
 import { REPO_URL } from "../lib/feedback";
+import { httpHref } from "../lib/httpHref";
 import { useActiveIdentity } from "../lib/identities";
 import { downloadIdentityBackup } from "../lib/identityBackup";
 import {
@@ -838,10 +839,10 @@ function SourcesStep({
         />
         <span className="grow">
           <strong>{name}</strong>
-          {entry.attribution?.of.uri && (
+          {httpHref(entry.attribution?.of.uri) && (
             <>
               {" "}
-              <a href={entry.attribution.of.uri} target="_blank" rel="noreferrer">
+              <a href={httpHref(entry.attribution?.of.uri)} target="_blank" rel="noreferrer">
                 site
               </a>
             </>

@@ -325,6 +325,16 @@ only certified write-in candidates' votes are counted. A position for a name
 the listing *does* print on the ballot SHOULD NOT carry `write_in`;
 consumers SHOULD treat it as the printed candidate.
 
+### 3.13 URLs
+
+Every field this specification gives as a link (`Issuer.uri`, `Subject.uri`,
+`Position.source`, `Reference.uri`, `Attribution.of.uri`,
+`Attribution.sources`, `Adoption.uri`, `Adoption.source`) MUST be an
+absolute URL with the scheme `http` or `https`. Verifiers MUST reject a
+payload with any other scheme. Consumers show these as links, and a
+`javascript:` or `data:` URL in a link runs whatever its author wrote as soon
+as someone follows it.
+
 ---
 
 ## 4. Canonical JSON
@@ -528,6 +538,8 @@ ballot, and consumers SHOULD say so.
   prefer the newest slate from an issuer.
 - **No confidentiality.** Slates are public artifacts; do not put secrets in them.
 - **Closed schema** (§3.8) limits injection of unvalidated data.
+- **Links are http(s) only** (§3.13). Consumers that show a link from any
+  other source (an index, a catalog) SHOULD apply the same rule.
 
 ---
 
@@ -538,6 +550,11 @@ version by adding OPTIONAL fields (verifiers must already reject unknown fields,
 such additions ship with a coordinated spec revision). Incompatible changes bump `v`.
 
 ### 10.1 Changelog (within v1)
+
+- **2026-10-25** — Links (§3.13) MUST be `http:` or `https:` URLs; a
+  `javascript:` or `data:` URL in a link is an attack on whoever follows it.
+  Amended in place: this rejects slates that verified before, but none that
+  were published carried such a link.
 
 - **2026-10-24** — Added optional `district` to `Subject` (§3.3): who votes
   on a contest, when narrower than its `jurisdiction`. Not part of identity.

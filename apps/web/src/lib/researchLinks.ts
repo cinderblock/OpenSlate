@@ -1,5 +1,6 @@
 import type { Subject } from "@openslate/core";
 import { splitMeasureTitle } from "./ballotView";
+import { httpHref } from "./httpHref";
 
 /**
  * Where to read up on a race or a candidate: links to Ballotpedia, official
@@ -72,10 +73,11 @@ export function raceLinks(race: RaceLike, today: string): ResearchLink[] {
   const jurisdiction = race.jurisdiction ?? race.subject.jurisdiction;
   const measure = race.subject.kind === "measure";
 
-  if (race.subject.uri) {
+  const more = httpHref(race.subject.uri);
+  if (more) {
     links.push({
       label: "More info",
-      href: race.subject.uri,
+      href: more,
       description: "Linked by the slate itself",
     });
   }

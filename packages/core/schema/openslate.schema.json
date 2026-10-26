@@ -28,7 +28,8 @@
             },
             "uri": {
               "type": "string",
-              "format": "uri"
+              "format": "uri",
+              "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"
             }
           },
           "required": [
@@ -96,7 +97,8 @@
                   },
                   "uri": {
                     "type": "string",
-                    "format": "uri"
+                    "format": "uri",
+                    "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"
                   }
                 },
                 "required": [
@@ -137,7 +139,8 @@
               },
               "source": {
                 "type": "string",
-                "format": "uri"
+                "format": "uri",
+                "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"
               }
             },
             "required": [
@@ -172,7 +175,8 @@
               },
               "uri": {
                 "type": "string",
-                "format": "uri"
+                "format": "uri",
+                "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"
               },
               "note": {
                 "type": "string"
@@ -196,7 +200,8 @@
                 },
                 "uri": {
                   "type": "string",
-                  "format": "uri"
+                  "format": "uri",
+                  "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"
                 },
                 "kind": {
                   "type": "string",
@@ -224,7 +229,8 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "format": "uri"
+                "format": "uri",
+                "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"
               }
             }
           },
@@ -254,7 +260,8 @@
               },
               "uri": {
                 "type": "string",
-                "format": "uri"
+                "format": "uri",
+                "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"
               },
               "slate": {
                 "type": "string",
@@ -291,7 +298,8 @@
                     },
                     "uri": {
                       "type": "string",
-                      "format": "uri"
+                      "format": "uri",
+                      "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"
                     }
                   },
                   "required": [
@@ -302,7 +310,8 @@
               },
               "source": {
                 "type": "string",
-                "format": "uri"
+                "format": "uri",
+                "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"
               },
               "note": {
                 "type": "string"

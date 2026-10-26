@@ -379,6 +379,25 @@ export const NEGATIVES: NegativeDef[] = [
     expect: { error_contains: ["attribution"] },
   },
   {
+    name: "javascript-uri",
+    description:
+      "Validly signed token whose `issuer.uri` is a `javascript:` URL. URLs MUST be http: or https:; MUST be rejected (SPEC §3.13).",
+    build: (h) => {
+      const key = h.pubkey("alice");
+      return h.sign(
+        { alg: "EdDSA", typ: "openslate+jws", kid: key },
+        {
+          v: 1,
+          issuer: { key, uri: "javascript:alert(document.cookie)" },
+          issued_at: "2026-01-01T00:00:00Z",
+          positions: [],
+        },
+        h.seed("alice"),
+      );
+    },
+    expect: { error_contains: ["issuer.uri", "http"] },
+  },
+  {
     name: "write-in-false",
     description:
       "Validly signed token with `write_in: false`. Only `true` is allowed; MUST be rejected (SPEC §3.4).",

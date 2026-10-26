@@ -74,6 +74,14 @@ describe("raceLinks", () => {
       href: "https://example.org/gov",
     });
   });
+
+  test("never a link that isn't http(s)", () => {
+    const hostile = {
+      ...governor,
+      subject: { ...governor.subject, uri: "javascript:alert(1)" },
+    };
+    expect(raceLinks(hostile, "2026-10-21").map((l) => l.label)).not.toContain("More info");
+  });
 });
 
 describe("candidateLinks", () => {

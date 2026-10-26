@@ -1,0 +1,11 @@
+{
+  "name": "javascript-uri",
+  "description": "Validly signed token whose `issuer.uri` is a `javascript:` URL. URLs MUST be http: or https:; MUST be rejected (SPEC §3.13).",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5IiwidXJpIjoiamF2YXNjcmlwdDphbGVydChkb2N1bWVudC5jb29raWUpIn0sInBvc2l0aW9ucyI6W10sInYiOjF9.gH3NUsrDkFNeS-5IWqdFtQRiSIgGW3f_l29U5LihIpnX9aGCmFieGegH_TS9GCWRVu2GnZaQgP_d5xP5-dwNBA",
+  "expect": {
+    "error_contains": [
+      "issuer.uri",
+      "http"
+    ]
+  }
+}

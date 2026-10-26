@@ -41,6 +41,19 @@ slateDef.properties.positions.items.dependencies = {
   write_in: ["choice"],
 };
 
+// `httpUrl` (SPEC §3.13) is a refinement too: every URL is http: or https:.
+function httpOnly(node: unknown): void {
+  if (Array.isArray(node)) {
+    for (const item of node) httpOnly(item);
+    return;
+  }
+  if (!node || typeof node !== "object") return;
+  const object = node as Record<string, unknown>;
+  if (object.format === "uri") object.pattern = "^[Hh][Tt][Tt][Pp][Ss]?:";
+  for (const value of Object.values(object)) httpOnly(value);
+}
+httpOnly(slateDef);
+
 // Combined schema: top-level $ref points to SlatePayload; both SlatePayload
 // and JwsHeader are reachable via definitions so a single fetch is enough.
 const combined = {

@@ -6,6 +6,7 @@ import { importCatalogEntry } from "../lib/catalogImport";
 import { electionOf } from "../lib/collate";
 import { formatLocalDate } from "../lib/dates";
 import { reportFeedback } from "../lib/feedback";
+import { httpHref } from "../lib/httpHref";
 import {
   defaultToUnfollowed,
   localToday,
@@ -231,8 +232,12 @@ export function CatalogBrowser() {
                     logoBackground={entry.logo_background}
                   />
                   <div className="grow">
-                    {entry.attribution?.of.uri ? (
-                      <a href={entry.attribution.of.uri} target="_blank" rel="noreferrer">
+                    {httpHref(entry.attribution?.of.uri) ? (
+                      <a
+                        href={httpHref(entry.attribution?.of.uri)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         {name}
                       </a>
                     ) : (
