@@ -72,17 +72,16 @@ Three phases:
        2026-11-17 (after the election) and 14 quiet days; the user cut that
        short on 2026-10-25 after a day with no app traffic: "cleanup now. we
        don't need to keep them longer".
-7. [ ] **Current step.** With the user's yes, ops: delete the `polls.openslate.us` entry, move
+7. [x] With the user's yes, ops: delete the `polls.openslate.us` entry, move
        `provision: true` to the `api.` entry, and update the file's header and
        rate-limit comments. Dry run from a clean ops worktree first: expect one
        delete, `worker-domain:openslate-poll-cache:polls.openslate.us` (its
        AAAA record is Cloudflare's and goes with it).
-       Staged 2026-10-25 as ops `00b6012`, committed but not pushed, in a clean
-       worktree at `%TEMP%/ops-openslate-polls`. Its dry run deletes exactly
-       `AAAA polls.openslate.us` and
-       `worker-domain:openslate-poll-cache:polls.openslate.us`, nothing else.
-       Pushing it to ops master applies it, and that waits for the user's yes.
-8. [ ] The rest of the cleanup, committed locally and pushed after step 7:
+       Ops `00b6012`, pushed with the user's yes and applied by ops CI
+       2026-10-25 7:17 PM PDT (02:17Z 10-26). The custom domain was deleted;
+       the separate AAAA delete failed (see Findings) but the record went with
+       the domain. A dry run afterwards showed 0 changes.
+8. [x] The rest of the cleanup (`65d54c3`), pushed after step 7:
    - [x] Removed the README paragraph on `polls.` and the `wrangler.toml` note.
    - [x] Deleted `scripts/host-usage.ts` and its package script.
    - [x] Dropped the `VITE_POLLS_BASE` fallback in `apiBase()` and its README
@@ -90,8 +89,8 @@ Three phases:
          would now call its own origin; the rename was a day old.
    - [x] Grepped: no `polls.openslate`, `VITE_POLLS_BASE` or `host-usage`
          outside `plans/` (historical plans left as they are).
-   - [ ] After the ops apply: check `polls.openslate.us` no longer resolves
-         and `api.` still answers `/api/health`; then push.
+   - [x] After the ops apply: `polls.openslate.us` is NXDOMAIN at 1.1.1.1;
+         `api.` answers `/api/health` and `/api/polls` 200 with CORS.
 
 ## Findings / gotchas
 
@@ -105,6 +104,10 @@ Three phases:
   5 PM PDT) on. `api.` picked up 14, then 42. So the open copies of the app
   switched within hours; what's left to wait for is copies nobody has opened
   since (installed apps, tabs left open).
+- **Ops sync tries to delete a custom domain's own AAAA record** and
+  Cloudflare refuses (400, code 1043, "configured as read only"), so the run
+  went red although the domain delete removed the record anyway. Logged in ops
+  ISSUES.md (`6969b22`).
 - **Cloudflare keeps about 30 days of these analytics** on this plan: a wider
   range errors with "cannot request a time range wider than 4w2d".
 - **`/api/polls/polls` is not a route;** VoteHub answers 500 "Poll not
@@ -118,12 +121,12 @@ Three phases:
 - [x] Step 4: pushed `5fa22c1`; openslate.us serves a bundle naming only `api.` (an installed copy switched on its next load), and `api.` answers the openslate.us page with CORS.
 - [x] Step 5: the env var and test hostnames renamed.
 - [x] Step 6: cut short by the user, 2026-10-25.
-- [ ] Step 7: staged (ops `00b6012`), waiting on the user's yes to push it.
-- [ ] Step 8: code cleanup committed locally; push after step 7.
+- [x] Step 7: ops `00b6012` applied 2026-10-25.
+- [x] Step 8: code cleanup pushed. The rename is finished.
 
 ## Open questions for the user
 
-1. Push ops `00b6012` (removes `polls.openslate.us`)? Recommendation: yes.
+None. The rename is finished.
 
 ## Things not to do
 
