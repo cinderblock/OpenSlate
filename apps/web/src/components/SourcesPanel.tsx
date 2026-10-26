@@ -19,6 +19,8 @@ import {
   useDisagreeMode,
   useFollows,
 } from "../lib/myVote";
+import { usePageSearch } from "../lib/pageSearch";
+import { matchesSearch, sourceSearchText } from "../lib/search";
 import { type Source, type Standing, isBallotSource, standingOf } from "../lib/sources";
 import { CatalogBrowser } from "./CatalogBrowser";
 import { ContactsCard } from "./ContactsCard";
@@ -29,9 +31,12 @@ import { LeanMeter } from "./LeanMeter";
 import { SlatesList } from "./SlatesList";
 import { SpectrumStrip } from "./SpectrumStrip";
 import { StandingToggle } from "./StandingToggle";
+import { SearchField } from "./ui/TextField";
 
 interface SourceGroup {
   source: Source;
+  /** What the search box finds it by (`sourceSearchText`). */
+  searchText: string;
   slates: DecodedSlate[];
   elections: string[];
   positions: number;
@@ -47,6 +52,7 @@ function groupBySource(slates: DecodedSlate[], follows: Record<string, Standing>
   for (const slate of slates) {
     const group = groups.get(slate.source.id) ?? {
       source: slate.source,
+      searchText: "",
       slates: [],
       elections: [],
       positions: 0,
@@ -64,7 +70,10 @@ function groupBySource(slates: DecodedSlate[], follows: Record<string, Standing>
     groups.set(slate.source.id, group);
   }
   return [...groups.values()]
-    .map((g) => ({ ...g, elections: g.elections.sort() }))
+    .map((g) => {
+      const elections = g.elections.sort();
+      return { ...g, elections, searchText: sourceSearchText(g.source, elections) };
+    })
     .sort((a, b) => a.source.name.localeCompare(b.source.name));
 }
 
@@ -75,10 +84,20 @@ export function SourcesPanel() {
   const [follows] = useFollows();
   const [disagreeMode] = useDisagreeMode();
   const groups = useMemo(() => groupBySource(slates, follows), [slates, follows]);
-  const ballots = groups.filter((g) => g.ballot);
-  const following = groups.filter((g) => !g.ballot && g.standing === "follow");
-  const disagreeing = groups.filter((g) => !g.ballot && g.standing === "disagree");
-  const notFollowing = groups.filter((g) => !g.ballot && g.standing === "off");
+  // The search box narrows the lists; the spectrum still shows everyone you follow.
+  const search = usePageSearch("/sources");
+  const shown = search.searching
+    ? groups.filter((g) => matchesSearch(g.searchText, search.terms))
+    : groups;
+  const ballots = shown.filter((g) => g.ballot);
+  const following = shown.filter((g) => !g.ballot && g.standing === "follow");
+  const disagreeing = shown.filter((g) => !g.ballot && g.standing === "disagree");
+  const notFollowing = shown.filter((g) => !g.ballot && g.standing === "off");
+  const allFollowing = useMemo(
+    () => groups.filter((g) => !g.ballot && g.standing === "follow"),
+    [groups],
+  );
+  const endorsers = groups.some((g) => !g.ballot);
   const [addTab, setAddTab] = useState<AddTab>("catalog");
 
   return (
@@ -90,6 +109,24 @@ export function SourcesPanel() {
         against it, and what they oppose counts for it. The rest stay imported so you can compare on
         race pages.
       </p>
+
+      {isReady && groups.length > 0 && (
+        <div className="page-search">
+          <SearchField
+            aria-label="Search your sources"
+            placeholder="Search your sources by name, reporter, link or election…"
+            value={search.query}
+            onChange={search.setQuery}
+          />
+          {search.searching && (
+            <p className="hint" aria-live="polite">
+              {shown.length === 0
+                ? `None of your sources match “${search.query.trim()}”. The public catalog under Add sources has its own search.`
+                : `${shown.length} of ${groups.length} sources match.`}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Two columns on a wide screen once there's something imported: what you
           have on the left, "Add sources" on the right. One column, in this
@@ -112,16 +149,18 @@ export function SourcesPanel() {
           </div>
         )}
 
-        {isReady && groups.length > ballots.length && (
+        {isReady && endorsers && (!search.searching || shown.length > ballots.length) && (
           <div className="card sources-following">
             <h3>
               <UserCheck className="icon" /> Following ({following.length})
             </h3>
             {following.length === 0 ? (
               <p className="hint">
-                {disagreeing.length === 0
-                  ? "You aren't following anyone yet. Follow some from Add sources."
-                  : "You aren't following anyone to agree with yet."}
+                {search.searching
+                  ? "None you follow match."
+                  : disagreeing.length === 0
+                    ? "You aren't following anyone yet. Follow some from Add sources."
+                    : "You aren't following anyone to agree with yet."}
               </p>
             ) : (
               <ul className="source-list">
@@ -150,7 +189,8 @@ export function SourcesPanel() {
               </>
             )}
             {notFollowing.length > 0 && (
-              <details>
+              // Open while searching, so a match in here isn't hidden behind it.
+              <details key={String(search.searching)} open={search.searching}>
                 <summary>Imported but not followed ({notFollowing.length})</summary>
                 <ul className="source-list">
                   {notFollowing.map((group) => (
@@ -164,7 +204,7 @@ export function SourcesPanel() {
 
         {/* Only the sources you agree with: a source you disagree with on the
             strip would read as "where you sit". */}
-        {isReady && following.length > 0 && (
+        {isReady && allFollowing.length > 0 && (
           <div className="card sources-spectrum">
             <h3>
               <Scale className="icon" /> Left to right
@@ -173,7 +213,7 @@ export function SourcesPanel() {
               Where the sources you follow sit, by the side they took wherever the Democratic and
               Republican parties split. Tap one for its counts.
             </p>
-            <SpectrumStrip sources={following.map((g) => g.source)} />
+            <SpectrumStrip sources={allFollowing.map((g) => g.source)} />
           </div>
         )}
 

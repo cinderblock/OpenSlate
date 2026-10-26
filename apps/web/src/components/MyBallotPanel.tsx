@@ -73,9 +73,11 @@ import {
   useFollows,
   useMyElection,
 } from "../lib/myVote";
+import { usePageSearch } from "../lib/pageSearch";
 import { MIN_PRINT_SCALE, type PrintFit, fitToPage } from "../lib/printFit";
 import { type MyPosition, useMyPositionsByRace } from "../lib/published";
 import { VOTE411, raceLinks } from "../lib/researchLinks";
+import { matchesSearch, raceSearchText } from "../lib/search";
 import { isBallotSource, isFollowed, standingOf } from "../lib/sources";
 import { subjectKey } from "../lib/subjects";
 import { type RaceStatus, isDecided, marksOn, raceStatus, stepThrough } from "../lib/triage";
@@ -93,7 +95,7 @@ import { InfoPopover } from "./ui/InfoPopover";
 import { Segmented } from "./ui/Segmented";
 import { Select } from "./ui/Select";
 import { Switch } from "./ui/Switch";
-import { TextArea, TextField } from "./ui/TextField";
+import { SearchField, TextArea, TextField } from "./ui/TextField";
 
 /** Same order as `compareRaces`: numbers in labels sort numerically. */
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -265,6 +267,17 @@ export function MyBallotPanel() {
   const races = useMemo(() => collated.filter((race) => !race.maybe), [collated]);
   const maybeRaces = useMemo(() => collated.filter((race) => race.maybe), [collated]);
 
+  // The search box: narrows what's listed, never what's counted or exported.
+  const search = usePageSearch("/");
+  const raceText = useMemo(
+    () => new Map(collated.map((race) => [race.key, raceSearchText(race)])),
+    [collated],
+  );
+  const matches = useCallback(
+    (race: Race) => matchesSearch(raceText.get(race.key) ?? "", search.terms),
+    [raceText, search.terms],
+  );
+
   // What the shown races' endorsements name that the ballot listing doesn't have.
   const offBallot = useMemo(() => {
     const keys = new Set(races.map((race) => race.key));
@@ -326,12 +339,15 @@ export function MyBallotPanel() {
   );
 
   // Under a filter: races that match it, plus the ones you've just dealt with.
+  // Then only those the search finds.
   const shown = useMemo(
     () =>
-      filter === "all"
-        ? races
-        : races.filter((race) => statuses.get(race.key) === filter || touched.has(race.key)),
-    [races, statuses, filter, touched],
+      races.filter(
+        (race) =>
+          (filter === "all" || statuses.get(race.key) === filter || touched.has(race.key)) &&
+          matches(race),
+      ),
+    [races, statuses, filter, touched, matches],
   );
   const doneHere =
     filter === "all" ? 0 : shown.filter((race) => statuses.get(race.key) !== filter).length;
@@ -394,8 +410,10 @@ export function MyBallotPanel() {
     }
     // The user's districts with nothing on this ballot get a section saying so
     // (e.g. an odd-numbered Senate district in 2026), in ballot order, rather
-    // than silently going missing. Not under a status filter: nothing to do there.
-    for (const [family, n] of filter === "all" ? Object.entries(area.districts) : []) {
+    // than silently going missing. Not under a status filter or a search:
+    // nothing to do there, and nothing that was looked for.
+    const noRaces = filter === "all" && !search.searching ? Object.entries(area.districts) : [];
+    for (const [family, n] of noRaces) {
       // Only families races are filed under (not school districts, which only
       // narrow a race's `district`).
       if (n === NO_DISTRICT || !(family in DISTRICT_COUNTS || family in areaOptions.districts))
@@ -411,14 +429,21 @@ export function MyBallotPanel() {
       });
     }
     return out.sort((a, b) => a.rank - b.rank || collator.compare(a.label, b.label));
-  }, [shown, filter, area.districts, areaOptions, election]);
+  }, [shown, filter, search.searching, area.districts, areaOptions, election]);
 
   const myRows = useMemo(
     () => Object.values(draft.rows).filter((row) => row.electionId === election),
     [draft.rows, election],
   );
 
-  const maybeSections = useMemo(() => sectionsOf(maybeRaces), [maybeRaces]);
+  const maybeShown = useMemo(() => maybeRaces.filter(matches), [maybeRaces, matches]);
+  const maybeSections = useMemo(() => sectionsOf(maybeShown), [maybeShown]);
+  // How many races the search finds, and how many more a status filter hides.
+  const found = shown.length + (filter === "all" ? maybeShown.length : 0);
+  const foundUnderAll = useMemo(
+    () => (search.searching && filter !== "all" ? races.filter(matches).length : 0),
+    [search.searching, filter, races, matches],
+  );
   // What's yours to print and export: the ballot, and any maybe you've marked.
   const yours = useMemo(
     () => [
@@ -595,6 +620,32 @@ export function MyBallotPanel() {
           <Printer className="icon" /> Print
         </button>
       </div>
+
+      {collated.length > 0 && (
+        <div className="page-search no-print">
+          <SearchField
+            aria-label="Search the ballot"
+            placeholder="Search races, candidates, measures, endorsers…"
+            value={search.query}
+            onChange={search.setQuery}
+          />
+          {search.searching && (
+            <p className="hint" aria-live="polite">
+              {found === 0
+                ? `Nothing ${filter === "all" ? "on this ballot" : `in ${STATUS_LABEL[filter]}`} matches “${search.query.trim()}”.`
+                : `${found} race${found === 1 ? "" : "s"} match${found === 1 ? "es" : ""}.`}
+              {foundUnderAll > found && (
+                <>
+                  {" "}
+                  <button type="button" className="link" onClick={() => setFilter("all")}>
+                    Show all {foundUnderAll}
+                  </button>
+                </>
+              )}
+            </p>
+          )}
+        </div>
+      )}
 
       {editingArea && (
         <div className="card no-print">
@@ -863,13 +914,14 @@ export function MyBallotPanel() {
               </div>
             ) : (
               <BallotSection
-                // Remount when the area changes, so "open by default" re-applies.
-                key={`${section.label}|${isAreaSet(area)}`}
+                // Remount when the area changes or a search starts or ends, so
+                // "open by default" re-applies.
+                key={`${section.label}|${isAreaSet(area)}|${search.searching}`}
                 label={section.label}
                 races={section.races}
                 // With no area set the ballot covers the whole state: hundreds of
-                // district and local races. Start those closed.
-                defaultOpen={isAreaSet(area) || section.rank < 2}
+                // district and local races. Start those closed, unless searching.
+                defaultOpen={search.searching || isAreaSet(area) || section.rank < 2}
                 election={election ?? ""}
                 rows={draft.rows}
                 patch={patch}
@@ -887,7 +939,7 @@ export function MyBallotPanel() {
       {!focusing && filter === "all" && maybeSections.length > 0 && (
         <div className="ballot-maybe">
           <h3>
-            Might be on your ballot <span className="hint">· {maybeRaces.length}</span>
+            Might be on your ballot <span className="hint">· {maybeShown.length}</span>
           </h3>
           <p className="hint">
             Only some of the voters where each of these is listed vote on it, like one trustee area
@@ -905,10 +957,10 @@ export function MyBallotPanel() {
           </p>
           {maybeSections.map((section) => (
             <BallotSection
-              key={section.label}
+              key={`${section.label}|${search.searching}`}
               label={section.label}
               races={section.races}
-              defaultOpen={false}
+              defaultOpen={search.searching}
               election={election ?? ""}
               rows={draft.rows}
               patch={patch}

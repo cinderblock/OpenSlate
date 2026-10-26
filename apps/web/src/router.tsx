@@ -14,16 +14,23 @@ import { type RouteTemplate, track } from "./lib/usage";
 // still precaches every chunk, so the app keeps working offline.
 const rootRoute = createRootRoute({ component: RootLayout });
 
+/** A page's `?q=`, the search box at its top: kept only when it's a non-empty string. */
+function validateQuerySearch(search: Record<string, unknown>): { q?: string } {
+  return typeof search.q === "string" && search.q !== "" ? { q: search.q } : {};
+}
+
 // --- My vote ---
 
 const ballotRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
+  validateSearch: validateQuerySearch,
   component: lazyRouteComponent(() => import("./components/MyBallotPanel"), "MyBallotPanel"),
 });
 const sourcesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/sources",
+  validateSearch: validateQuerySearch,
   component: lazyRouteComponent(() => import("./components/SourcesPanel"), "SourcesPanel"),
 });
 const raceRoute = createRoute({

@@ -864,6 +864,16 @@ a.button-link:hover {
 .print-only {
   display: none;
 }
+/* The search box at the top of My ballot and Sources. */
+.page-search {
+  margin: 0.5rem 0 0.75rem;
+}
+.page-search .ui-searchfield {
+  max-width: 36rem;
+}
+.page-search .hint {
+  margin: 0.35rem 0 0;
+}
 /* My ballot */
 .ballot-toolbar {
   display: flex;
