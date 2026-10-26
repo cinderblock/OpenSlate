@@ -143,8 +143,9 @@ fields, consumers upgrade before publishers use them):
 
 Steps:
 
-1. C1 SPEC.md (§3.3, §3.4, new §3.13 `BallotContest` / `BallotChoice`, new
-   §3.14 `Article`, §8.2, changelog, Appendix A), `packages/core` zod schema,
+1. C1 SPEC.md (§3.3, §3.4, new §3.14 `BallotContest` / `BallotChoice`, new
+   §3.15 `Article`, §8.2, changelog, Appendix A; §3.13 became the http(s)
+   links rule), `packages/core` zod schema,
    exported JSON schema, vectors (positive: all fields; negative:
    `incumbent: false`, article without uri…), core tests.
 2. C2 web app reads the structured fields: `voteFor` from
@@ -161,7 +162,13 @@ Steps:
    Only after C1–C3 are live (old verifiers reject the new fields).
 5. C5 once the live listings carry the fields: remove the app's
    free-text fallbacks (`SEATS`, `partyOf`'s split, `splitMeasureTitle`,
-   `measureNote` from `statement`).
+   `legacyMeasureNote`, and "listed by a ballot source → vote for one").
+   **Blocked**: the app never refreshes a catalog slate it already
+   imported (ISSUES.md "Imported catalog slates never update"), so
+   browsers that imported the listings before 2026-10-25 keep the old
+   `statement` text. Removing the fallbacks now would drop party,
+   designation and vote-for lines for them. Do C5 after that issue is
+   fixed.
 6. C6 data for `articles`: who publishes them (see Open questions).
 
 ## Findings / gotchas
@@ -208,7 +215,28 @@ Steps:
   `ballotCheck.ts`); verified at 1280 and iPhone 12 Pro; print fits one page
   at 79%.
 - [ ] B2 — news per ballot item: see Part C
-- [ ] C — structured ballot fields and attached articles in the spec
+- [x] Security (2026-10-25, `0503c96`, pushed): zod's `.url()` accepted
+  `javascript:` / `data:` URLs and React 18 runs a `javascript:` href on
+  click (keys live in this origin). SPEC §3.13: links MUST be http(s);
+  core `httpUrl` for slates and guides; `httpHref` for catalog links;
+  negative vector `javascript-uri`. All 14,948 published links and the CA
+  guide's 3,044 pass.
+- [x] C1 spec + core + vectors (`6169747`), C2 app reads the fields
+  (`549ca19`), C3 articles UI (`c24ec5b`), CLI passes `articles`
+  (`c975975`, `86d3838`): pushed to master and live on openslate.us
+  (checked the deployed chunks).
+- [x] C4 endorsements repo `31f09df` (branch `feat/ballot-fields`, pushed
+  to master, publish run 40263969087 succeeded): all 8 listing scripts
+  write `ballot`, Newport Beach's hand-made listing too; rebuilt from
+  evidence; diff proven to be only `statement` → `ballot`; published SF
+  listing verified (25 ranked positions, no statements). Checked in the
+  dev app with locally signed copies: "Rank up to ten choices", "Vote for
+  no more than three", party · designation · incumbent, proposition
+  label and type.
+- [ ] C5 remove the text fallbacks: blocked (see step 5).
+- [ ] C6 publish real `articles`: waiting on the user (Open question 3).
+- [ ] Not built: ranking for ranked-choice races. The card says "Rank up
+  to N choices" but marks are still one bubble per choice.
 
 ## Open questions for the user
 
@@ -221,6 +249,22 @@ Steps:
    newsrooms signing their own. Open until C1–C3 are live.
 
 ## Findings added during the build
+
+- Ranked choice isn't in any county's list. Sourced rules in the scripts:
+  SF city offices and Supervisors rank up to 10 (sf.gov/ranked-choice-voting);
+  Alameda County ranks up to 5
+  (acvote.alamedacountyca.gov/voting/rcv): every Oakland contest (school
+  directors too), Berkeley Mayor / Council / Auditor (not Rent Board or
+  school board), San Leandro Mayor / Council, Albany Council and school
+  board (multi-winner). Before this, the app printed "Vote for one" on all
+  of them.
+- LA's and San Diego's lists give no vote-for count, so their contests
+  carry none (the app shows no line rather than guess).
+- LA's measure labels are the full ballot question, often several
+  sentences: long on the card and on paper.
+- A dev browser profile's catalog import can be days old: races filed with
+  `district` (Oct 24) only appear once the listing is re-imported.
+
 
 - `title=` tooltips are banned (user's global rule: invisible on touch). The
   chips' hover text (statement, secondhand, "not followed" names) was dropped
