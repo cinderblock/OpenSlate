@@ -50,3 +50,9 @@ in more. (Not the Publish/Compose flow; the user confirmed this.)
   viewport. Scrolling unconditionally on a wide screen just hid the page title.
 - Dropping `?add` passes `resetScroll: false`, so the router's default
   reset-to-top can't undo the jump (not tested without it).
+
+## Status
+
+Done and deployed 2026-10-26: `bd1aa89` pushed to master and live on
+https://openslate.us about a minute later (the `SourcesPanel` chunk has the
+jump button).
