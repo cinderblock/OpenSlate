@@ -35,6 +35,8 @@ interface SourceGroup {
   slates: DecodedSlate[];
   elections: string[];
   positions: number;
+  /** Links attached to ballot items (SPEC §3.15). */
+  articles: number;
   standing: Standing;
   /** An official candidate list, not a recommendation. */
   ballot: boolean;
@@ -48,13 +50,15 @@ function groupBySource(slates: DecodedSlate[], follows: Record<string, Standing>
       slates: [],
       elections: [],
       positions: 0,
+      articles: 0,
       standing: standingOf(follows, slate.source.id),
       ballot: isBallotSource(slate.source),
     };
     group.slates.push(slate);
     group.positions += slate.payload.positions.length;
-    for (const position of slate.payload.positions) {
-      const election = electionOf(position.subject, slate.payload);
+    group.articles += slate.payload.articles?.length ?? 0;
+    for (const { subject } of [...slate.payload.positions, ...(slate.payload.articles ?? [])]) {
+      const election = electionOf(subject, slate.payload);
       if (election && !group.elections.includes(election)) group.elections.push(election);
     }
     groups.set(slate.source.id, group);
@@ -248,7 +252,11 @@ function SourceRow({ group }: { group: SourceGroup }) {
         )}
         <div className="hint">
           {group.elections.map(formatElectionDate).join(", ") || "no election date"} ·{" "}
-          {group.positions} {group.ballot ? "ballot lines" : "positions"} ·{" "}
+          {group.positions > 0 || group.articles === 0
+            ? `${group.positions} ${group.ballot ? "ballot lines" : "positions"} · `
+            : ""}
+          {group.articles > 0 &&
+            `${group.articles} ${group.articles === 1 ? "article" : "articles"} · `}
           {source.secondhand
             ? `reported by ${source.signerName ?? "a researcher"}, not signed by them`
             : "signed by them"}

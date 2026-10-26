@@ -35,7 +35,9 @@ The web app has two modes:
   mark your pick, and beside it how many of your followed sources back that
   choice. It also keeps your private notes, shows what you've already signed,
   and links each race to the official voter guide, Ballotpedia, CalMatters and
-  a news search. *Print* makes a paper copy of your ballot, endorsement counts
+  a news search, plus any articles a slate attaches to it (news and analysis
+  that anyone can sign and link to a race, shown as reading, never counted as
+  endorsements). *Print* makes a paper copy of your ballot, endorsement counts
   beside the bubbles, shrunk to fit one page. Work through it like an inbox: filter races by
   To do, Maybe, Picked or Against all, watch the "decided" count climb, and
   reach *ballot zero*. *One at a time* shows a single race and moves on once

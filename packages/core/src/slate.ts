@@ -2,6 +2,7 @@ import { type KeyPair, decodePublicKey, encodePublicKey } from "./crypto";
 import { type DecodedSlate, decodeToken, encodeToken, verifySignature } from "./envelope";
 import {
   type Adoption,
+  type Article,
   type Attribution,
   type Issuer,
   type JwsHeader,
@@ -17,6 +18,7 @@ export interface BuildSlateInput {
   endorsedBy?: Reference[];
   attribution?: Attribution;
   adopts?: Adoption[];
+  articles?: Article[];
   context?: SlatePayload["context"];
   issuedAt?: Date | string;
   expiresAt?: Date | string;
@@ -40,6 +42,7 @@ export function buildSlate(input: BuildSlateInput): SlatePayload {
     endorsed_by: input.endorsedBy,
     attribution: input.attribution,
     adopts: input.adopts,
+    articles: input.articles,
     nonce: input.nonce,
   });
 }

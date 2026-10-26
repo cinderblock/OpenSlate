@@ -22,6 +22,7 @@ import {
 import { type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProgressBar } from "react-aria-components";
 import { flushSync } from "react-dom";
+import { articlesByRace } from "../lib/articles";
 import { ballotProblems } from "../lib/ballotCheck";
 import { type DraftRow, NOTE_CHOICE, rowIdFor, useBallotDraft } from "../lib/ballotDraft";
 import { ballotFileName, ballotToCsv, ballotToJson } from "../lib/ballotExport";
@@ -252,6 +253,12 @@ export function MyBallotPanel() {
       }),
     [slates, follows, disagree, election, area, showUnfollowed],
   );
+  // Articles slates attach to each race (SPEC §3.15): how many, on each card.
+  const articleCounts = useMemo(() => {
+    const out = new Map<string, number>();
+    for (const [key, list] of articlesByRace(slates, follows)) out.set(key, list.length);
+    return out;
+  }, [slates, follows]);
   // Races only part of a jurisdiction votes on, where the area can't tell which
   // part the user is in (a water district, a trustee area): listed apart, so a
   // county's every school board doesn't pad the ballot.
@@ -840,6 +847,7 @@ export function MyBallotPanel() {
           rows={draft.rows}
           patch={patch}
           mine={focused ? mine.get(focused.key) : undefined}
+          articles={focused ? articleCounts.get(focused.key) : undefined}
           onStep={(direction) => focusStep(direction)}
           onExit={() => setFocusing(false)}
         />
@@ -866,6 +874,7 @@ export function MyBallotPanel() {
                 rows={draft.rows}
                 patch={patch}
                 mine={mine}
+                articles={articleCounts}
                 // Under a filter, races you've dealt with shrink to a summary.
                 statuses={filter === "all" ? undefined : statuses}
                 filter={filter}
@@ -904,6 +913,7 @@ export function MyBallotPanel() {
               rows={draft.rows}
               patch={patch}
               mine={mine}
+              articles={articleCounts}
               statuses={undefined}
               filter={filter}
             />
@@ -953,6 +963,7 @@ function BallotSection({
   rows,
   patch,
   mine,
+  articles,
   statuses,
   filter,
 }: {
@@ -963,6 +974,8 @@ function BallotSection({
   rows: Record<string, DraftRow>;
   patch: Patch;
   mine: Map<string, MyPosition[]>;
+  /** How many articles are attached to each race, by key. */
+  articles: Map<string, number>;
   statuses: Map<string, RaceStatus> | undefined;
   filter: StatusFilter;
 }) {
@@ -985,6 +998,7 @@ function BallotSection({
                 rows={rows}
                 patch={patch}
                 mine={mine.get(race.key)}
+                articles={articles.get(race.key)}
               />
             );
             return status && status !== filter ? (
@@ -1071,6 +1085,7 @@ function FocusRace({
   rows,
   patch,
   mine,
+  articles,
   onStep,
   onExit,
 }: {
@@ -1084,6 +1099,7 @@ function FocusRace({
   rows: Record<string, DraftRow>;
   patch: Patch;
   mine: MyPosition[] | undefined;
+  articles: number | undefined;
   onStep: (direction: 1 | -1) => void;
   onExit: () => void;
 }) {
@@ -1163,6 +1179,7 @@ function FocusRace({
           rows={rows}
           patch={patch}
           mine={mine}
+          articles={articles}
           numbered
         />
       </div>
@@ -1194,6 +1211,7 @@ const RaceCard = memo(
     prev.election === next.election &&
     prev.patch === next.patch &&
     prev.mine === next.mine &&
+    prev.articles === next.articles &&
     prev.numbered === next.numbered &&
     raceRowIds(next.race, next.election).every((id) => prev.rows[id] === next.rows[id]) &&
     sameRows(
@@ -1226,6 +1244,7 @@ function RaceCardInner({
   rows,
   patch,
   mine,
+  articles,
   numbered,
 }: {
   race: Race;
@@ -1234,6 +1253,8 @@ function RaceCardInner({
   patch: Patch;
   /** What I've signed on this race, if anything. */
   mine?: MyPosition[];
+  /** How many articles are attached to the race (SPEC §3.15). */
+  articles?: number;
   /** Show each choice's key (focus mode). */
   numbered?: boolean;
 }) {
@@ -1323,6 +1344,14 @@ function RaceCardInner({
             </a>
           </span>
         ))}
+        {articles ? (
+          <>
+            {" · "}
+            <Link to="/race/$key" params={{ key: race.key }} hash="articles">
+              {articles} {articles === 1 ? "article" : "articles"}
+            </Link>
+          </>
+        ) : null}
       </p>
       <details className="race-note no-print">
         <summary>{noteRow?.privateNote ? "My note ✎" : "Add a private note"}</summary>

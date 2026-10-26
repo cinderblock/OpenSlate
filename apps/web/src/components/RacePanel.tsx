@@ -1,6 +1,7 @@
 import type { CandidateInfo, Passage, Stance, Subject } from "@openslate/core";
 import { Link, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { type AttachedArticle, articleDate, articlesByRace } from "../lib/articles";
 import { useBallotDraft } from "../lib/ballotDraft";
 import { type ChoiceGroup, type Race, collateRaces, stanceTone } from "../lib/collate";
 import { type GuideForSubject, useGuideItem } from "../lib/guides";
@@ -41,6 +42,12 @@ export function RacePanel() {
   const race = useMemo(
     () =>
       collateRaces(slates, { follows, includeUnfollowed: true }).find((r) => r.key === targetKey),
+    [slates, follows, targetKey],
+  );
+
+  // Articles slates attach to this race (SPEC §3.15).
+  const articles = useMemo(
+    () => articlesByRace(slates, follows).get(targetKey) ?? [],
     [slates, follows, targetKey],
   );
 
@@ -122,7 +129,7 @@ export function RacePanel() {
         )}
 
         {/* Beside the endorsements on a wide screen; between My positions and them on a phone. */}
-        <aside className="race-context" aria-label="Read up, polls, forecast and results">
+        <aside className="race-context" aria-label="Read up, news, polls, forecast and results">
           {subject && (
             <ReadUp
               links={raceLinks(
@@ -136,6 +143,8 @@ export function RacePanel() {
               )}
             />
           )}
+
+          {articles.length > 0 && <InTheNews articles={articles} />}
 
           <PollsPanel subject={pollSubject} />
 
@@ -203,6 +212,47 @@ function ReadUp({ links }: { links: ResearchLink[] }) {
             <div className="hint">{link.description}</div>
           </li>
         ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * Articles attached to this race by the imported slates (SPEC §3.15): reading,
+ * never endorsements, so from every slate, followed or not.
+ */
+function InTheNews({ articles }: { articles: AttachedArticle[] }) {
+  return (
+    <div className="card read-up" id="articles">
+      <h3>In the news</h3>
+      <p className="hint">Linked to this race by the slates you've imported. Not endorsements.</p>
+      <ul className="read-up-list">
+        {articles.map((article) => {
+          const by = article.attachedBy.map(
+            (a) => `${a.source.name}${a.valid ? "" : " (signature didn't verify)"}`,
+          );
+          // Whoever published it attached it: no need to say so twice.
+          const self = by.length === 1 && by[0] === article.publisher;
+          return (
+            <li key={article.href}>
+              <a href={article.href} target="_blank" rel="noreferrer">
+                {article.title} ↗
+              </a>
+              <div className="hint">
+                {[
+                  article.publisher,
+                  articleDate(article.publishedAt),
+                  article.kind,
+                  article.choices.length > 0 ? `about ${article.choices.join(", ")}` : "",
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </div>
+              {article.summary && <div>{article.summary}</div>}
+              {!self && <div className="hint">Linked by {by.join(", ")}</div>}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
