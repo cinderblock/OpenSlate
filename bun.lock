@@ -12,7 +12,10 @@
     },
     "apps/desktop": {
       "name": "@openslate/desktop",
-      "version": "0.0.0",
+      "version": "0.1.0",
+      "dependencies": {
+        "@openslate/core": "workspace:*",
+      },
       "devDependencies": {
         "electrobun": "2.0.4",
       },

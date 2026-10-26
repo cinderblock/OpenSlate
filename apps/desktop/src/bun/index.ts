@@ -1,9 +1,11 @@
 // OpenSlate desktop: the Electrobun main (Bun) process. It opens one window on
 // the web app, built for the desktop and bundled as views://mainview, and
-// sends links to other sites to the system browser. Everything else, signing
-// and verifying included, happens in the web app.
+// sends links to other sites to the system browser, and installs updates
+// once it has checked they're signed by us (update.ts). Everything else,
+// signing and verifying endorsements included, happens in the web app.
 import Electrobun, { BrowserWindow, Utils } from "electrobun/main";
-import { recordOutsideLink, selftest } from "./selftest";
+import { isSelftest, recordOutsideLink, selftest } from "./selftest";
+import { startUpdates } from "./update";
 
 const APP_URL = "views://mainview/index.html";
 
@@ -93,4 +95,5 @@ mainWindow.webview.setNavigationRules(["^*", "views://*"]);
 Electrobun.events.on("new-window-open", (event) => openOutside(urlOf(event)));
 mainWindow.webview.on("will-navigate", (event) => openOutside(urlOf(event)));
 
-selftest(mainWindow);
+if (isSelftest) selftest(mainWindow);
+else startUpdates(mainWindow);

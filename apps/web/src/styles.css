@@ -249,6 +249,40 @@ a {
     grid-column: 2;
   }
 }
+/* The desktop app's "an update is ready" (DesktopUpdate.tsx), shaped like the alpha banner. */
+.update-banner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid color-mix(in oklab, var(--border), var(--accent) 40%);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--surface), var(--accent) 8%);
+}
+.update-banner-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--accent);
+}
+.update-banner-text {
+  margin: 0;
+}
+.update-banner-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-self: end;
+}
+@media (max-width: 40rem) {
+  .update-banner {
+    grid-template-columns: auto 1fr;
+  }
+  .update-banner-actions {
+    grid-column: 2;
+  }
+}
 .alpha-wizard-note {
   display: flex;
   gap: 0.6rem;

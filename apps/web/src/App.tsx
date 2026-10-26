@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useRef } from "react";
 import { AlphaBadge, AlphaBanner } from "./components/AlphaNotice";
+import { DesktopUpdateBanner } from "./components/DesktopUpdate";
 import { FeedbackHost } from "./components/FeedbackHost";
 import { WizardHost } from "./components/WizardHost";
 import { Switch } from "./components/ui/Switch";
@@ -93,6 +94,7 @@ export function RootLayout() {
   return (
     <EndorsersContext.Provider value={endorsers}>
       <div className="app">
+        <DesktopUpdateBanner />
         {alphaOpen && (
           <AlphaBanner
             onClose={() => {

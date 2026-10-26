@@ -91,6 +91,9 @@ const PAGE_CHECKS = `(async () => {
 })();`;
 
 const reportFile = process.env.OPENSLATE_SELFTEST;
+
+/** Whether this run is a self-test (which doesn't check for updates). */
+export const isSelftest = Boolean(reportFile);
 const outsideLinks: string[] = [];
 
 /** In a self-test, keeps a link to another site rather than opening it; says whether it did. */
@@ -100,7 +103,7 @@ export function recordOutsideLink(url: string): boolean {
   return true;
 }
 
-/** Runs the page checks in `window` if OPENSLATE_SELFTEST names a report file. */
+/** Runs the page checks in `window`, for the report file OPENSLATE_SELFTEST names. */
 export function selftest(window: BrowserWindow): void {
   if (!reportFile) return;
 
