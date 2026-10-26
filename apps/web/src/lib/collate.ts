@@ -110,7 +110,7 @@ export function positionTone(
 export type DisagreeMode = "choice" | "side";
 
 /** Followed to agree first, then to disagree, then the rest. */
-const STANDING_ORDER: Record<Standing, number> = { follow: 0, disagree: 1, off: 2 };
+export const STANDING_ORDER: Record<Standing, number> = { follow: 0, disagree: 1, off: 2 };
 
 export interface RacePosition {
   source: Source;
@@ -147,6 +147,8 @@ export interface ChoiceGroup {
    * human to check (a likely typo, an unusual short form).
    */
   suggestion?: string;
+  /** Position on the official ballot (0 first), when a ballot source lists the choice. */
+  ballotIndex?: number;
 }
 
 export interface Race {
@@ -360,6 +362,7 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
       choices: race.choices
         .map((group) => ({
           ...group,
+          ...(ballotOrder.has(group.choice) ? { ballotIndex: ballotOrder.get(group.choice) } : {}),
           positions: [...group.positions].sort(
             (a, b) =>
               STANDING_ORDER[a.standing] - STANDING_ORDER[b.standing] ||

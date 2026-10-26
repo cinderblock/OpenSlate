@@ -21,9 +21,22 @@ import {
 } from "lucide-react";
 import { type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProgressBar } from "react-aria-components";
+import { flushSync } from "react-dom";
 import { ballotProblems } from "../lib/ballotCheck";
 import { type DraftRow, NOTE_CHOICE, rowIdFor, useBallotDraft } from "../lib/ballotDraft";
 import { ballotFileName, ballotToCsv, ballotToJson } from "../lib/ballotExport";
+import {
+  type PrintScope,
+  ballotChoices,
+  designation,
+  isMarked,
+  isYesNo,
+  measureNote,
+  picksIn,
+  splitMeasureTitle,
+  voteFor,
+  voteForLine,
+} from "../lib/ballotView";
 import { backgroundImports } from "../lib/catalogImport";
 import {
   type ChoiceGroup,
@@ -35,7 +48,7 @@ import {
   positionJurisdictions,
   positionTone,
 } from "../lib/collate";
-import { formatElectionDate, formatLocalDate } from "../lib/dates";
+import { formatLocalDate } from "../lib/dates";
 import { downloadText } from "../lib/download";
 import { useImportRunning } from "../lib/importQueue";
 import {
@@ -59,7 +72,9 @@ import {
   useFollows,
   useMyElection,
 } from "../lib/myVote";
+import { MIN_PRINT_SCALE, type PrintFit, fitToPage } from "../lib/printFit";
 import { type MyPosition, useMyPositionsByRace } from "../lib/published";
+import { VOTE411, raceLinks } from "../lib/researchLinks";
 import { isBallotSource, isFollowed, standingOf } from "../lib/sources";
 import { subjectKey } from "../lib/subjects";
 import { type RaceStatus, isDecided, marksOn, raceStatus, stepThrough } from "../lib/triage";
@@ -69,6 +84,7 @@ import { AreaPicker, describeArea } from "./AreaPicker";
 import { BallotProblemsNotice, ChoiceBallotTags, RaceUnlistedNote } from "./BallotTags";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { LeanSummary } from "./LeanMeter";
+import { PrintBallot, type PrintSection } from "./PrintBallot";
 import { QuickFill } from "./QuickFill";
 import { electionOptions } from "./electionOptions";
 import { Checkbox } from "./ui/Checkbox";
@@ -81,9 +97,11 @@ import { TextArea, TextField } from "./ui/TextField";
 /** Same order as `compareRaces`: numbers in labels sort numerically. */
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
-/** The user's own picks. Private: kept in this browser, only shared if they publish. */
-const PICKS: Array<{ stance: Stance; label: string; icon: LucideIcon }> = [
-  { stance: "endorse", label: "Pick", icon: Check },
+/**
+ * The user's own marks besides a pick (the bubble). Private: kept in this
+ * browser, only shared if they publish.
+ */
+const OTHER_MARKS: Array<{ stance: Stance; label: string; icon: LucideIcon }> = [
   { stance: "lean_for", label: "Maybe", icon: CircleHelp },
   { stance: "oppose", label: "Against", icon: X },
 ];
@@ -105,6 +123,16 @@ const MY_STANCE_WORD: Record<Stance, string> = {
   lean_against: "lean against",
   neutral: "are neutral on",
   abstain: "abstain on",
+};
+
+/** How a mark other than a pick reads beside the name. */
+const MARK_LABEL: Record<Stance, string> = {
+  endorse: "my pick",
+  lean_for: "maybe",
+  lean_against: "leaning against",
+  oppose: "against",
+  neutral: "neutral",
+  abstain: "abstain",
 };
 
 function describeMine(position: MyPosition): string {
@@ -152,6 +180,13 @@ export function MyBallotPanel() {
   // screen; it stays put as the list around it changes.
   const [focusing, setFocusing] = useState(false);
   const [focusKey, setFocusKey] = useState<string | null>(null);
+  const [printOptions, setPrintOptions] = useState(false);
+  const [printScope, setPrintScope] = useState<PrintScope>("ballot");
+  const [printNotes, setPrintNotes] = useState(false);
+  /** The browser is printing (Ctrl+P as well as the Print button). */
+  const [printing, setPrinting] = useState(false);
+  const [fit, setFit] = useState<PrintFit | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
   const { patch: draftPatch, refile } = draft;
 
   const today = localToday();
@@ -404,6 +439,46 @@ export function MyBallotPanel() {
   ).length;
   const summary = elections.find((e) => e.date === election);
 
+  // The paper ballot is only rendered while it's wanted: a statewide ballot
+  // is hundreds of races. It's the whole ballot, whatever the status filter.
+  const printMounted = printOptions || printing;
+  const printSections = useMemo((): PrintSection[] => {
+    if (!printMounted) return [];
+    return sectionsOf(yours)
+      .map((section) => ({
+        label: section.label,
+        races:
+          printScope === "marked"
+            ? section.races.filter((race) => isMarked(race, election ?? "", draft.rows))
+            : section.races,
+      }))
+      .filter((section) => section.races.length > 0);
+  }, [printMounted, yours, printScope, election, draft.rows]);
+
+  // How it fits on paper, shown on the print card as the options change.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when what's printed changes
+  useEffect(() => {
+    if (!printOptions || !printRef.current) return;
+    setFit(fitToPage(printRef.current));
+  }, [printOptions, printSections, printNotes]);
+
+  // Ctrl+P prints the same ballot as the Print button. `beforeprint` runs
+  // before the browser lays out the pages, so render and fit synchronously.
+  useEffect(() => {
+    const before = () => {
+      flushSync(() => setPrinting(true));
+      if (printRef.current) fitToPage(printRef.current);
+      track({ name: "ballot.print", dims: { scope: printScope } });
+    };
+    const after = () => setPrinting(false);
+    window.addEventListener("beforeprint", before);
+    window.addEventListener("afterprint", after);
+    return () => {
+      window.removeEventListener("beforeprint", before);
+      window.removeEventListener("afterprint", after);
+    };
+  }, [printScope]);
+
   function exportBallot(format: "json" | "csv") {
     const input = {
       election,
@@ -504,8 +579,13 @@ export function MyBallotPanel() {
         >
           <Download className="icon" /> Export
         </button>
-        <button type="button" onClick={() => window.print()} disabled={counts.picked === 0}>
-          <Printer className="icon" /> Print my picks
+        <button
+          type="button"
+          aria-expanded={printOptions}
+          onClick={() => setPrintOptions((v) => !v)}
+          disabled={races.length === 0}
+        >
+          <Printer className="icon" /> Print
         </button>
       </div>
 
@@ -569,6 +649,58 @@ export function MyBallotPanel() {
         </div>
       )}
 
+      {printOptions && (
+        <div className="card no-print print-options">
+          <p className="hint">
+            Prints like the real ballot: every choice with a bubble, filled where you picked, and
+            beside it how many of the sources you follow back it. Take it with you to fill in your
+            ballot.
+          </p>
+          <div className="row export-options">
+            <Segmented
+              aria-label="What to print"
+              options={[
+                { id: "ballot", label: "Whole ballot" },
+                { id: "marked", label: "Only races I've marked" },
+              ]}
+              value={printScope}
+              onChange={setPrintScope}
+            />
+            <Checkbox isSelected={printNotes} onChange={setPrintNotes}>
+              Include my private notes
+            </Checkbox>
+          </div>
+          <p className="print-fit" aria-live="polite">
+            {printSections.length === 0
+              ? "Nothing to print yet: mark a race, or print the whole ballot."
+              : !fit
+                ? ""
+                : fit.pages === 1
+                  ? fit.scale >= 0.995
+                    ? "Fits on one page."
+                    : `Fits on one page, printed at ${Math.round(fit.scale * 100)}% size.`
+                  : `About ${fit.pages} pages, even at the smallest readable size (${Math.round(MIN_PRINT_SCALE * 100)}%). ${
+                      isAreaSet(area)
+                        ? "For one page, print only the races you've marked."
+                        : "For one page, set where you vote, or print only the races you've marked."
+                    }`}
+          </p>
+          <div className="row">
+            <button
+              type="button"
+              className="primary"
+              onClick={() => window.print()}
+              disabled={printSections.length === 0}
+            >
+              <Printer className="icon" /> Print
+            </button>
+            <button type="button" className="link" onClick={() => setPrintOptions(false)}>
+              close
+            </button>
+          </div>
+        </div>
+      )}
+
       <BallotProblemsNotice problems={offBallot} />
 
       <QuickFill
@@ -607,6 +739,9 @@ export function MyBallotPanel() {
         <Switch isSelected={showUnfollowed} onChange={setShowUnfollowed}>
           Include races only unfollowed sources cover
         </Switch>
+        <a href={VOTE411.href} target="_blank" rel="noreferrer">
+          Your ballot by address on {VOTE411.label} ↗
+        </a>
       </div>
 
       {races.length > 0 && (
@@ -662,8 +797,8 @@ export function MyBallotPanel() {
               </button>
             ) : (
               counts.picked > 0 && (
-                <button type="button" className="link" onClick={() => window.print()}>
-                  Print my picks
+                <button type="button" className="link" onClick={() => setPrintOptions(true)}>
+                  Print your ballot
                 </button>
               )
             )}
@@ -776,12 +911,17 @@ export function MyBallotPanel() {
         </div>
       )}
 
-      <PrintPicks
-        election={election}
-        races={yours}
-        rows={myRows}
-        area={isAreaSet(area) ? describeArea(area) : ""}
-      />
+      {printMounted && (
+        <PrintBallot
+          ref={printRef}
+          election={election ?? ""}
+          area={isAreaSet(area) ? describeArea(area) : ""}
+          sections={printSections}
+          rows={draft.rows}
+          followedCount={followedCount}
+          notes={printNotes}
+        />
+      )}
     </section>
   );
 }
@@ -968,8 +1108,11 @@ function FocusRace({
       else if (event.key === "ArrowLeft" || event.key === "k") onStep(-1);
       else {
         const digit = /^Digit([1-9])$/.exec(event.code)?.[1];
-        const group = digit && race ? race.choices[Number(digit) - 1] : undefined;
+        // Numbered as shown: the ballot's order.
+        const group = digit && race ? ballotChoices(race)[Number(digit) - 1] : undefined;
         if (!race || !group) return;
+        // A yes/no question has no Against: "against Yes" is No.
+        if (event.shiftKey && isYesNo(race)) return;
         const choice = group.choice || undefined;
         const stance: Stance = event.shiftKey ? "oppose" : "endorse";
         const current = rows[rowIdFor(election, race.subject, choice)]?.stance;
@@ -1024,8 +1167,9 @@ function FocusRace({
         />
       </div>
       <p className="hint focus-keys">
-        <kbd>1</kbd>–<kbd>9</kbd> pick · <kbd>Shift</kbd>+number against · <kbd>←</kbd> <kbd>→</kbd>{" "}
-        previous / next · <kbd>Esc</kbd> whole list. Once a race is decided, the next one comes up.
+        <kbd>1</kbd>–<kbd>9</kbd> pick · <kbd>Shift</kbd>+number against (not on yes/no questions) ·{" "}
+        <kbd>←</kbd> <kbd>→</kbd> previous / next · <kbd>Esc</kbd> whole list. Once a race is
+        decided, the next one comes up.
       </p>
     </div>
   );
@@ -1033,9 +1177,12 @@ function FocusRace({
 
 /** Draft rows that belong to one race (its choices plus the race-level row). */
 function raceRowIds(race: Race, election: string): string[] {
+  const choices = race.choices.map((c) => c.choice).filter(Boolean);
+  // A yes/no question always shows Yes and No, whether or not anyone named them.
+  if (isYesNo(race)) choices.push("Yes", "No");
   return [
     rowIdFor(election, race.subject, undefined),
-    ...race.choices.filter((c) => c.choice).map((c) => rowIdFor(election, race.subject, c.choice)),
+    ...choices.map((choice) => rowIdFor(election, race.subject, choice)),
   ];
 }
 
@@ -1092,6 +1239,12 @@ function RaceCardInner({
 }) {
   const noteRow = rows[rowIdFor(election, race.subject, NOTE_CHOICE)];
   const [note, setNote] = useState(noteRow?.privateNote ?? "");
+  const measure = race.subject.kind === "measure";
+  const title = measure ? splitMeasureTitle(race.subject.title) : { heading: race.subject.title };
+  const choices = useMemo(() => ballotChoices(race), [race]);
+  const links = useMemo(() => raceLinks(race, localToday()), [race]);
+  const seats = voteFor(race);
+  const picked = picksIn(race, election, rows);
   const top = race.choices[0];
   const contested = race.choices.filter((c) => c.support > 0).length > 1;
   const verdict =
@@ -1104,18 +1257,25 @@ function RaceCardInner({
 
   return (
     <div className="card race-card">
-      <div className="card-title">
+      <div className="ballot-box-header">
         <Link to="/race/$key" params={{ key: race.key }} className="race-link">
-          <strong>{race.subject.title}</strong>
+          {title.heading}
         </Link>
-        {race.subject.kind === "measure" && <span className="tag">measure</span>}
-        <span className="grow" />
-        <span className="hint">
+        {seats !== undefined && <div className="vote-for">{voteForLine(seats)}</div>}
+        {title.detail && <div className="ballot-box-detail">{title.detail}</div>}
+        {measureNote(race) && (
+          <div className="ballot-box-detail">
+            <em>{measureNote(race)}</em>
+          </div>
+        )}
+      </div>
+      {(verdict || field) && (
+        <p className="race-summary hint">
           {verdict}
           {verdict && field && " · "}
-          {field && <span title={field.title}>{field.text}</span>}
-        </span>
-      </div>
+          {field}
+        </p>
+      )}
       <RaceUnlistedNote race={race} />
       {mine && mine.length > 0 && (
         <p className="my-slate hint no-print">
@@ -1124,7 +1284,7 @@ function RaceCardInner({
         </p>
       )}
       <ul className="choice-list">
-        {race.choices.map((group, i) => (
+        {choices.map((group, i) => (
           <ChoiceRow
             key={group.choice}
             shortcut={numbered && i < 9 ? i + 1 : undefined}
@@ -1146,9 +1306,24 @@ function RaceCardInner({
           />
         ))}
       </ul>
-      {race.subject.kind !== "measure" && (
-        <WriteInField race={race} election={election} patch={patch} />
+      {seats !== undefined && picked > seats && (
+        <p className="overvote">
+          ⚠ {picked} picks: {voteForLine(seats).toLowerCase()}. Mark more than that on the real
+          ballot and your vote in this race doesn't count.
+        </p>
       )}
+      {!isYesNo(race) && <WriteInField race={race} election={election} patch={patch} />}
+      <p className="research-links no-print">
+        <span className="hint">Read up:</span>{" "}
+        {links.map((link, i) => (
+          <span key={link.label}>
+            {i > 0 && " · "}
+            <a href={link.href} target="_blank" rel="noreferrer">
+              {link.label}
+            </a>
+          </span>
+        ))}
+      </p>
       <details className="race-note no-print">
         <summary>{noteRow?.privateNote ? "My note ✎" : "Add a private note"}</summary>
         <TextArea
@@ -1170,8 +1345,8 @@ function RaceCardInner({
  * endorsements only name who someone backed, so say so rather than pass a
  * one-name list off as the race.
  */
-function fieldHint(race: Race): { text: string; title: string } | null {
-  if (race.subject.kind === "measure") return null;
+function fieldHint(race: Race): string | null {
+  if (isYesNo(race)) return null;
   if (race.onBallot) {
     const field = race.choices.filter((c) => c.onBallot);
     // Named by a followed source, wherever My ballot counts it (`named`).
@@ -1181,16 +1356,9 @@ function fieldHint(race: Race): { text: string; title: string } | null {
       ),
     );
     const covered = field.filter((c) => named.has(c.choice)).length;
-    return {
-      text: `${covered} of ${field.length} candidates covered`,
-      title: "Candidates from the official ballot list; how many your sources have a position on",
-    };
+    return `${covered} of ${field.length} candidates covered`;
   }
-  return {
-    text: "field unknown",
-    title:
-      "Only the names your sources mention. The official candidate list for this race isn't imported, so there may be others.",
-  };
+  return "only names your sources mention: the official candidate list isn't imported";
 }
 
 function ChoiceRow({
@@ -1210,22 +1378,48 @@ function ChoiceRow({
   patch: Patch;
 }) {
   const choice = group.choice || undefined;
+  const label = group.choice || "Overall";
+  const stance = row?.stance;
+  const yesNo = isYesNo(race);
+  const note = designation(group);
   const followed = group.positions.filter((p) => p.standing !== "off");
   const others = group.positions.filter((p) => p.standing === "off");
+  const mark = (next: Stance) =>
+    patch(election, race.subject, choice, { stance: stance === next ? undefined : next });
   return (
     <li
-      className={`choice-row${row?.stance === "endorse" ? " picked" : ""}${row?.stance === "oppose" ? " ruled-out" : ""}`}
+      className={`choice-row${stance === "endorse" ? " picked" : ""}${stance === "oppose" ? " ruled-out" : ""}`}
     >
+      <button
+        type="button"
+        className={`bubble bubble-${stance ?? "none"}`}
+        aria-pressed={stance === "endorse"}
+        aria-keyshortcuts={shortcut === undefined ? undefined : `${shortcut}`}
+        onClick={() => mark("endorse")}
+      >
+        <span className="sr-only">My pick: {label}</span>
+      </button>
+      <span className={`endorse-count${group.support === 0 ? " zero" : ""}`}>
+        {group.support}
+        <span className="sr-only"> of your sources for</span>
+        <span aria-hidden="true">✓</span>
+        {group.opposition > 0 && (
+          <span className="against">
+            {" "}
+            {group.opposition}
+            <span className="sr-only"> against</span>
+            <span aria-hidden="true">✗</span>
+          </span>
+        )}
+      </span>
       <div className="choice-main">
         <div className="choice-name">
           {shortcut !== undefined && <kbd className="choice-key">{shortcut}</kbd>}
-          {group.choice || <em>{race.subject.title}</em>}
-          <span className="choice-count hint">
-            {group.support > 0 && `${group.support} for`}
-            {group.support > 0 && group.opposition > 0 && " · "}
-            {group.opposition > 0 && `${group.opposition} against`}
-          </span>
-          {group.ballotNote && <span className="ballot-note hint">{group.ballotNote}</span>}
+          {group.choice || <em>Overall</em>}
+          {stance && stance !== "endorse" && (
+            <span className={`tag tag-inline mark-${stance}`}>{MARK_LABEL[stance]}</span>
+          )}
+          {note && <span className="ballot-note hint">{note}</span>}
           <ChoiceBallotTags group={group} race={race} />
         </div>
         {(followed.length > 0 || others.length > 0) && (
@@ -1321,30 +1515,23 @@ function ChoiceRow({
         )}
       </div>
       <fieldset className="pick-buttons no-print">
-        <legend className="sr-only">My pick: {group.choice || race.subject.title}</legend>
-        {PICKS.map((pick) => {
-          const active = row?.stance === pick.stance;
-          const PickIcon = pick.icon;
+        <legend className="sr-only">Other marks: {label}</legend>
+        {/* On a yes/no question, "against Yes" is just No: the bubbles say it. */}
+        {OTHER_MARKS.filter((m) => !(yesNo && m.stance === "oppose")).map((m) => {
+          const active = stance === m.stance;
+          const MarkIcon = m.icon;
           return (
             <button
-              key={pick.stance}
+              key={m.stance}
               type="button"
-              className={`stance-btn stance-${pick.stance}${active ? " active" : ""}`}
+              className={`stance-btn stance-${m.stance}${active ? " active" : ""}`}
               aria-pressed={active}
               aria-keyshortcuts={
-                shortcut === undefined
-                  ? undefined
-                  : pick.stance === "endorse"
-                    ? `${shortcut}`
-                    : pick.stance === "oppose"
-                      ? `Shift+${shortcut}`
-                      : undefined
+                shortcut !== undefined && m.stance === "oppose" ? `Shift+${shortcut}` : undefined
               }
-              onClick={() =>
-                patch(election, race.subject, choice, { stance: active ? undefined : pick.stance })
-              }
+              onClick={() => mark(m.stance)}
             >
-              <PickIcon className="icon" /> {pick.label}
+              <MarkIcon className="icon" /> {m.label}
             </button>
           );
         })}
@@ -1407,49 +1594,5 @@ function WriteInField({ race, election, patch }: { race: Race; election: string;
         </p>
       )}
     </details>
-  );
-}
-
-/** Printed instead of the page: just the races the user picked, ballot-ordered. */
-function PrintPicks({
-  election,
-  races,
-  rows,
-  area,
-}: {
-  election: string | undefined;
-  races: Race[];
-  rows: DraftRow[];
-  area: string;
-}) {
-  const picked = races
-    .map((race) => ({
-      race,
-      picks: rows.filter(
-        (row) => row.id.startsWith(`${election}|${race.key}|`) && row.stance === "endorse",
-      ),
-      note: rows.find((row) => row.id === `${election}|${race.key}|${NOTE_CHOICE}`)?.privateNote,
-    }))
-    .filter((entry) => entry.picks.length > 0);
-  return (
-    <div className="print-only print-picks">
-      <h2>My picks{election ? ` · ${formatElectionDate(election)}` : ""}</h2>
-      {area && <p>{area}</p>}
-      <ol>
-        {picked.map(({ race, picks, note }) => (
-          <li key={race.key}>
-            <strong>{race.subject.title}</strong>:{" "}
-            {picks
-              .map((row) => `${row.choice ?? "Yes"}${row.writeIn ? " (write in)" : ""}`)
-              .join(", ")}
-            {note && <div className="print-note">{note}</div>}
-          </li>
-        ))}
-      </ol>
-      <p className="print-disclaimer">
-        Printed from OpenSlate on {formatElectionDate(localToday())}. One voter's picks, not an
-        official or sample ballot; check your official voter guide before you vote.
-      </p>
-    </div>
   );
 }

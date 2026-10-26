@@ -4,7 +4,8 @@ import { useMemo } from "react";
 import { useBallotDraft } from "../lib/ballotDraft";
 import { type ChoiceGroup, type Race, collateRaces, stanceTone } from "../lib/collate";
 import { type GuideForSubject, useGuideItem } from "../lib/guides";
-import { useDecodedSlates, useFollows } from "../lib/myVote";
+import { localToday, useDecodedSlates, useFollows } from "../lib/myVote";
+import { type ResearchLink, candidateLinks, raceLinks } from "../lib/researchLinks";
 import { subjectFromKey, subjectKey } from "../lib/subjects";
 import { ChoiceBallotTags, RaceUnlistedNote } from "./BallotTags";
 import { EndorserAvatar } from "./EndorserAvatar";
@@ -121,7 +122,11 @@ export function RacePanel() {
         )}
 
         {/* Beside the endorsements on a wide screen; between My positions and them on a phone. */}
-        <aside className="race-context" aria-label="Polls, forecast and results">
+        <aside className="race-context" aria-label="Read up, polls, forecast and results">
+          {subject && (
+            <ReadUp links={raceLinks({ subject, jurisdiction, election }, localToday())} />
+          )}
+
           <PollsPanel subject={pollSubject} />
 
           <ForecastsPanel subject={pollSubject} />
@@ -174,6 +179,25 @@ export function RacePanel() {
   );
 }
 
+/** Where to read more: voter guides, Ballotpedia, news. Plain links; nothing is fetched. */
+function ReadUp({ links }: { links: ResearchLink[] }) {
+  return (
+    <div className="card read-up">
+      <h3>Read up</h3>
+      <ul className="read-up-list">
+        {links.map((link) => (
+          <li key={link.label}>
+            <a href={link.href} target="_blank" rel="noreferrer">
+              {link.label} ↗
+            </a>
+            <div className="hint">{link.description}</div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /**
  * The guide's candidates, or what each vote on a measure means, for a race no
  * imported slate lists choices for (a shared link opened by a new visitor).
@@ -218,6 +242,7 @@ function ChoiceCard({
     (c) => c.choice === group.choice,
   );
   const means: Passage | undefined = group.choice ? guide?.item.means?.[group.choice] : undefined;
+  const links = candidateLinks(race, group.choice);
   const total = { for: 0, against: 0 };
   for (const p of group.positions) {
     const tone = stanceTone(p.stance);
@@ -240,6 +265,19 @@ function ChoiceCard({
         <p className="hint">No statement or photo in the official voter guide.</p>
       )}
       {guide && means && <GuideMeans passage={means} guide={guide} />}
+      {links.length > 0 && (
+        <p className="research-links">
+          <span className="hint">Read up on {group.choice}:</span>{" "}
+          {links.map((link, i) => (
+            <span key={link.label}>
+              {i > 0 && " · "}
+              <a href={link.href} target="_blank" rel="noreferrer">
+                {link.label}
+              </a>
+            </span>
+          ))}
+        </p>
+      )}
       {group.positions.length === 0 ? (
         <p className="hint">
           On the ballot; none of your imported sources take a position on {subjectTitle} for this

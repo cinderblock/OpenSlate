@@ -30,9 +30,13 @@ A self-hosted server can add Kalshi market forecasts (opt-in, see below).
 The web app has two modes:
 
 - **My vote** (the default): *My ballot* shows the races for your election and
-  area: the official candidate list where one is imported, your followed
-  sources' endorsements next to each choice, your private picks and notes, and
-  what you've already signed. Work through it like an inbox: filter races by
+  area laid out like the real ballot: the official candidate list in ballot
+  order where one is imported, how many to vote for, a bubble per choice to
+  mark your pick, and beside it how many of your followed sources back that
+  choice. It also keeps your private notes, shows what you've already signed,
+  and links each race to the official voter guide, Ballotpedia, CalMatters and
+  a news search. *Print* makes a paper copy of your ballot, endorsement counts
+  beside the bubbles, shrunk to fit one page. Work through it like an inbox: filter races by
   To do, Maybe, Picked or Against all, watch the "decided" count climb, and
   reach *ballot zero*. *One at a time* shows a single race and moves on once
   it's decided: number keys pick a choice, Shift+number rules it out, arrow

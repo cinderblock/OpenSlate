@@ -1,5 +1,6 @@
 import type { Stance, Subject } from "@openslate/core";
 import { type DraftRow, rowIdFor } from "./ballotDraft";
+import { ballotChoices } from "./ballotView";
 import { type Race, optionsOf, stanceTone, twoWayOptions } from "./collate";
 import type { Standing } from "./sources";
 
@@ -31,7 +32,9 @@ function stanceOn(rows: Rows, election: string, race: Race, choice: string): Sta
 }
 
 export function raceStatus(race: Race, rows: Rows, election: string): RaceStatus {
-  const stances = race.choices.map((c) => stanceOn(rows, election, race, c.choice));
+  // The choices as the ballot shows them: a measure's Yes and No even when no
+  // source named them.
+  const stances = ballotChoices(race).map((c) => stanceOn(rows, election, race, c.choice));
   if (stances.includes("endorse")) return "picked";
   // "Against" on a measure as a whole is a No vote, not a skip.
   if (
@@ -53,7 +56,7 @@ export function marksOn(
   election: string,
 ): { picked: string[]; maybe: string[]; against: string[] } {
   const out = { picked: [] as string[], maybe: [] as string[], against: [] as string[] };
-  for (const { choice } of race.choices) {
+  for (const { choice } of ballotChoices(race)) {
     const stance = stanceOn(rows, election, race, choice);
     const name = choice || race.subject.title;
     if (stance === "endorse") out.picked.push(name);

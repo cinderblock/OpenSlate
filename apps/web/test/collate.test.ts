@@ -226,6 +226,12 @@ describe("collateRaces", () => {
       ["C", true, 0],
     ]);
     expect(governor?.choices[0]?.ballotNote).toBe("Democratic · Attorney");
+    // The ballot's own order survives the support sort, for the ballot view.
+    expect(governor?.choices.map((c) => [c.choice, c.ballotIndex])).toEqual([
+      ["A", 1],
+      ["B", 2],
+      ["C", 0],
+    ]);
     expect(governor?.followedSources).toBe(3);
     expect(governor?.totalSources).toBe(3);
 
