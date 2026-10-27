@@ -489,9 +489,12 @@ export function MyBallotPanel() {
     maybeRaces.some((race) => LOOKUP_DISTRICT.test(race.district ?? "")) &&
     !Object.keys(area.districts).some((family) => SCHOOL_FAMILY.test(family));
 
-  // Ballot sources (official candidate lists) aren't recommendations to follow.
+  // Ballot sources (official candidate lists) aren't recommendations to follow,
+  // and news coverage (articles only, SPEC §3.15) recommends nothing either.
   const sourceIds = new Set(
-    slates.filter((s) => !isBallotSource(s.source)).map((s) => s.source.id),
+    slates
+      .filter((s) => !isBallotSource(s.source) && s.payload.positions.length > 0)
+      .map((s) => s.source.id),
   );
   const followedCount = [...sourceIds].filter((id) => isFollowed(follows, id)).length;
   const disagreeCount = [...sourceIds].filter(
