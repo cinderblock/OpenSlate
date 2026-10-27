@@ -20,6 +20,8 @@ const URL_ = "https://example.org/index.json";
 function fakes(overrides: Partial<ImportDeps> = {}) {
   const stored = new Set<string>();
   const batches: string[][] = [];
+  /** Every store and removal, in order. */
+  const log: string[] = [];
   const fetched: string[] = [];
   const deps: ImportDeps = {
     fetchBundle: async () => {
@@ -38,11 +40,16 @@ function fakes(overrides: Partial<ImportDeps> = {}) {
     store: (slates: VerifiedSlate[]) => {
       batches.push(slates.map((s) => s.token));
       for (const s of slates) stored.add(s.token);
+      log.push(...slates.map((s) => `store ${s.token}`));
+    },
+    remove: (tokens) => {
+      for (const token of tokens) stored.delete(token);
+      log.push(...tokens.map((token) => `remove ${token}`));
     },
     isStored: (token) => stored.has(token),
     ...overrides,
   };
-  return { deps, stored, batches, fetched };
+  return { deps, stored, batches, fetched, log };
 }
 
 function catalog(entries: CatalogEntry[], bundle?: Catalog["bundle"]): Catalog {
@@ -136,6 +143,45 @@ describe("createImportQueue", () => {
     expect(batches).toEqual([["token:b"]]);
     expect(followed.sort()).toEqual(["a", "b"]);
     expect(queue.status()?.imported).toBe(2);
+  });
+
+  test("an update removes what each slate replaces, after storing it", async () => {
+    const { deps, stored, log } = fakes();
+    for (const old of ["old:a", "old:a2", "old:b"]) stored.add(old);
+    const queue = createImportQueue(deps);
+    const entries = ["a", "b"].map(entry);
+    const replaces: Record<string, string[]> = { a: ["old:a", "old:a2"], b: ["old:b"] };
+    await queue.start({
+      kind: "update",
+      catalog: catalog(entries),
+      catalogUrl: URL_,
+      entries,
+      label: "Updating 2 sources",
+      replaces: (e) => replaces[e.slug] ?? [],
+    });
+    expect([...stored].sort()).toEqual(["token:a", "token:b"]);
+    // The ballot never lacks both versions.
+    const lastStore = Math.max(log.indexOf("store token:a"), log.indexOf("store token:b"));
+    expect(log.findIndex((line) => line.startsWith("remove"))).toBeGreaterThan(lastStore);
+    expect(queue.status()).toMatchObject({ kind: "update", state: "done", imported: 2 });
+  });
+
+  test("an update keeps the old slate when the new one fails its check", async () => {
+    const { deps, stored } = fakes();
+    stored.add("old:a");
+    const queue = createImportQueue(deps);
+    const entries = ["a"].map(entry);
+    await queue.start({
+      kind: "update",
+      catalog: catalog(entries),
+      catalogUrl: URL_,
+      entries,
+      label: "Updating 1 source",
+      check: () => "signed by a different key",
+      replaces: () => ["old:a"],
+    });
+    expect([...stored]).toEqual(["old:a"]);
+    expect(queue.status()?.errors).toEqual(["a: signed by a different key"]);
   });
 
   test("takes tokens from the bundle, with a byte bar, and fetches nothing else", async () => {

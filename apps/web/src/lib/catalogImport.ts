@@ -1,5 +1,6 @@
-import { verifySlate } from "@openslate/core";
+import { parseSlate, verifySlate } from "@openslate/core";
 import type { QueryClient } from "@tanstack/react-query";
+import { type StoredSlate, staleImports, updateProblem } from "./catalogUpdates";
 import { slatesCollection, upsertKnownIdentity } from "./collections";
 import { readTextWithProgress } from "./fetchProgress";
 import { createImportQueue } from "./importQueue";
@@ -96,19 +97,57 @@ export function verifyCatalogSlate(
  * Store verified slates in one transaction, so a bulk import makes the ballot
  * re-collate once instead of once per slate.
  */
-export function storeSlates(slates: VerifiedSlate[]): void {
+export function storeSlates(slates: VerifiedSlate[], kind: "import" | "update" = "import"): void {
   if (slates.length === 0) return;
   const importedAt = new Date().toISOString();
   slatesCollection.insert(slates.map(({ token }) => ({ token, importedAt })));
   // A catalog's slates mostly share one signer (its researcher): record each once.
   const issuers = new Map<string, string | undefined>();
   for (const slate of slates) {
-    track({ name: "slate.import", dims: { source: "catalog" } });
+    if (kind === "import") track({ name: "slate.import", dims: { source: "catalog" } });
     if (slate.issuerKey) issuers.set(slate.issuerKey, slate.issuerName);
   }
   for (const [issuerKey, displayName] of issuers) {
     upsertKnownIdentity(issuerKey, { displayName, source: "from-slate" });
   }
+}
+
+/** Remove slates in one transaction (a catalog update dropping the ones it replaced). */
+export function removeSlates(tokens: string[]): void {
+  const present = tokens.filter((token) => slatesCollection.has(token));
+  if (present.length > 0) slatesCollection.delete(present);
+}
+
+/**
+ * Bring the user's slates from `catalog` up to date: each entry newer than
+ * what they have of its stream replaces it (catalogUpdates.ts), through the
+ * background queue so ImportBanner shows it. Returns how many are out of date.
+ */
+export function updateFromCatalog(
+  catalog: Catalog,
+  catalogUrl: string,
+  stored: readonly StoredSlate[],
+): number {
+  const updates = staleImports(stored, catalog.entries);
+  if (updates.length === 0) return 0;
+  const byPath = new Map(updates.map((update) => [update.entry.path, update]));
+  track({ name: "catalog.update" });
+  void backgroundImports.start({
+    kind: "update",
+    catalog,
+    catalogUrl,
+    entries: updates.map((update) => update.entry),
+    label: updates.length === 1 ? "Updating 1 source" : `Updating ${updates.length} sources`,
+    // The bundle is every slate at once: only worth it when most have changed.
+    bundle: updates.length > catalog.entries.length / 2,
+    check: (entry, token) => {
+      const update = byPath.get(entry.path);
+      // Already verified by the queue; this only reads it.
+      return update ? updateProblem(update, parseSlate(token).payload) : "not an update";
+    },
+    replaces: (entry) => byPath.get(entry.path)?.replaces ?? [],
+  });
+  return updates.length;
 }
 
 function errorMessage(err: unknown): string {
@@ -151,5 +190,6 @@ export const backgroundImports = createImportQueue({
   fetchSlate: (entry, catalogUrl) => fetchCatalogSlate(entry, catalogUrl, queryClient),
   verify: verifyCatalogSlate,
   store: storeSlates,
+  remove: removeSlates,
   isStored: (token) => slatesCollection.has(token),
 });
