@@ -48,6 +48,19 @@ The user asked (2026-10-21):
   attached to ballot items, **but no curation should be needed**: if an
   article is attached to a particular ballot item, collating its link with
   that item should be trivial (automatic, like endorsements are).
+- 2026-10-26, user, on who publishes articles: not the project. We find
+  articles that news orgs (or any publisher) have published about specific
+  ballot items. Eventually publishers sign their own reference links, like
+  endorsers; for now we publish the link for them, the way we publish
+  endorsements we find (researcher-signed secondhand slates in the
+  endorsements repo).
+- 2026-10-26, user: fix the catalog refresh (so C5 can happen): yes.
+- 2026-10-26, user, on ranked choice: must be supported, and ranking is to
+  be **the primary interface**: the voter drags candidates up and down a
+  preference list. Where a contest isn't ranked, the list converts to their
+  best pick(s). Later (not now): strategic ranking, where the voter's own
+  list keeps a no-chance favourite first but the marked ballot votes for
+  others, until real ranked voting is available.
 
 ## Plan / steps
 
@@ -169,7 +182,69 @@ Steps:
    `statement` text. Removing the fallbacks now would drop party,
    designation and vote-for lines for them. Do C5 after that issue is
    fixed.
-6. C6 data for `articles`: who publishes them (see Open questions).
+6. C6 data for `articles`: answered 2026-10-26, see Part F.
+
+### Part D — imported catalog slates update (2026-10-26) ← current
+
+The app stores a catalog slate's token once and never looks again
+(ISSUES.md "Imported catalog slates never update"). Two halves:
+
+1. D1 endorsements repo: CI re-signs every slate on every publish, so every
+   `issued_at` changes even when nothing else did (seen: 350 SF Action's
+   entry says `issued_at` 2026-10-26 though its positions are from Oct 23).
+   An app that updates on "newer `issued_at`" would re-download all 376
+   slates after every publish. Fix at the source: after signing, a script
+   fetches the live `bundle.json` and, for every slate whose payload is the
+   same apart from `issued_at` (same signer), puts the published token back.
+   `issued_at` then only moves when the content does, which is also what
+   it should mean.
+2. D2 app: a pure `staleImports` matches stored slates to catalog entries by
+   stream (signer key, source id, election, scope) and returns the entries
+   whose `issued_at` is newer than the newest stored slate of that stream.
+   The app fetches those (the bundle when there are many), verifies them,
+   inserts the new tokens and deletes the stream's old ones. Runs on its
+   own whenever the default catalog loads and the user has imported from
+   it; a quiet line says how many sources were updated. Slates the user
+   imported some other way are never touched (signer and source must
+   match a catalog entry).
+3. D3 then C5 (remove the text fallbacks), once D1 and D2 are live.
+
+### Part E — ranking is the primary interface (2026-10-26)
+
+1. E1 spec: `Position.rank` (integer ≥ 1, 1 = first choice, requires
+   `choice`, only with `endorse` / `lean_for`): ranked endorsements are in
+   `statement` text today ("Ranked-choice first choice: …", "Rank Both
+   Candidates", 34 files), which the user ruled out. Core schema, JSON
+   schema, vectors, CLI.
+2. E2 app model: for candidate contests the voter's choice *is* an ordered
+   list (the existing, unused `useBallotRanking` store in
+   `lib/ballotDraft.ts`, keyed by election and subject). Marks derive from
+   it: a ranked contest marks ranks 1..N for the first N; a vote-for-N
+   contest marks the first N; unknown count: the first one. *Against* stays
+   a separate mark outside the list. Yes/no questions keep two bubbles.
+3. E3 UI: the card is a reorderable list (React Aria `GridList` with
+   `useDragAndDrop`, so keyboard and screen-reader reordering come with it;
+   drag handle on touch). A line splits "on my ballot" from the rest; rank
+   numbers on ranked contests. Print, export, Quick fill, focus mode and
+   triage read the derived marks.
+4. E4 endorsements repo: ranked endorsements carry `rank`; collation shows
+   how sources rank a choice ("ranked 1st by 3").
+5. Later (user, not now): strategic ranking.
+
+### Part F — articles from publishers (2026-10-26)
+
+1. F1 research (background agent, endorsements worktree `feat-articles`):
+   per publisher, an `orgs/<slug>/2026-11-03/positions.json` with
+   `positions: []` and `articles`, attribution naming the publisher,
+   evidence and NOTES like the endorsement scraper. Starting with the
+   California propositions.
+2. F2 endorsements pipeline: verify checks article subjects against the
+   ballot listings like positions; the catalog index counts articles and
+   takes `jurisdictions` from article subjects too (or setup never offers
+   an articles-only source).
+3. F3 app: setup and the catalog browser treat an articles-only source
+   properly (it's not something to follow for picks; its count is
+   articles).
 
 ## Findings / gotchas
 
@@ -233,20 +308,19 @@ Steps:
   dev app with locally signed copies: "Rank up to ten choices", "Vote for
   no more than three", party · designation · incumbent, proposition
   label and type.
-- [ ] C5 remove the text fallbacks: blocked (see step 5).
-- [ ] C6 publish real `articles`: waiting on the user (Open question 3).
-- [ ] Not built: ranking for ranked-choice races. The card says "Rank up
-  to N choices" but marks are still one bubble per choice.
+- [ ] C5 remove the text fallbacks: after Part D.
+- [x] C6 answered (Part F).
+- [ ] D1 publish keeps unchanged tokens
+- [ ] D2 app updates imported catalog slates
+- [ ] E1–E4 ranking
+- [ ] F1–F3 articles
 
 ## Open questions for the user
 
 1. ~~News per ballot item~~: answered 2026-10-25 (Part C, `articles`).
 2. ~~Seats as a real field~~: answered 2026-10-25 (Part C, structure in the
    spec, no parsed strings).
-3. Who publishes the first `articles` (C6)? Candidates: a researcher-signed
-   slate per newsroom in the public-endorsements repo (e.g. CalMatters'
-   per-proposition coverage, transcribed like endorsements are), or
-   newsrooms signing their own. Open until C1–C3 are live.
+3. ~~Who publishes the first `articles`~~: answered 2026-10-26 (Part F).
 
 ## Findings added during the build
 

@@ -27,6 +27,8 @@ be a real accessibility problem.
 
 ## Imported catalog slates never update
 
+In progress — feat/ballot-print (plan `ballot-print-and-links.md` Part D).
+
 Once a catalog slate is imported, the web app keeps that token: nothing
 fetches the catalog's newer version of the same entry, and the catalog
 browser shows no "update available". A re-issued slate (a corrected listing,
