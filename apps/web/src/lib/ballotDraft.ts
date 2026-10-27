@@ -1,5 +1,6 @@
 import type { Stance, Subject } from "@openslate/core";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import { createLocalStore, useLocalStore } from "./localStore";
 import { subjectKey } from "./subjects";
 
 export interface DraftRow {
@@ -20,47 +21,39 @@ export interface DraftRow {
   updatedAt: string;
 }
 
-type DraftMap = Record<string, DraftRow>;
+export type DraftMap = Record<string, DraftRow>;
 type RankingMap = Record<string, string[]>;
 
 const KEY = "openslate.ballotDraft.v1";
 const RANK_KEY = "openslate.ballotRanking.v1";
 
-function load(): DraftMap {
-  try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as DraftMap) : {};
-  } catch {
-    return {};
-  }
+function isRecord(raw: unknown): raw is Record<string, unknown> {
+  return typeof raw === "object" && raw !== null && !Array.isArray(raw);
 }
 
-function persist(map: DraftMap): void {
-  try {
-    if (Object.keys(map).length === 0) localStorage.removeItem(KEY);
-    else localStorage.setItem(KEY, JSON.stringify(map));
-  } catch {
-    // private mode etc. — in-memory only.
-  }
+function parseDraft(raw: unknown): DraftMap | undefined {
+  if (!isRecord(raw)) return undefined;
+  const ok = Object.values(raw).every(
+    (row) => isRecord(row) && typeof row.id === "string" && isRecord(row.subject),
+  );
+  return ok ? (raw as DraftMap) : undefined;
 }
 
-function loadRankings(): RankingMap {
-  try {
-    const raw = localStorage.getItem(RANK_KEY);
-    return raw ? (JSON.parse(raw) as RankingMap) : {};
-  } catch {
-    return {};
-  }
+function parseRankings(raw: unknown): RankingMap | undefined {
+  if (!isRecord(raw)) return undefined;
+  const ok = Object.values(raw).every(
+    (order) => Array.isArray(order) && order.every((name) => typeof name === "string"),
+  );
+  return ok ? (raw as RankingMap) : undefined;
 }
 
-function persistRankings(map: RankingMap): void {
-  try {
-    if (Object.keys(map).length === 0) localStorage.removeItem(RANK_KEY);
-    else localStorage.setItem(RANK_KEY, JSON.stringify(map));
-  } catch {
-    // private mode etc.
-  }
-}
+/**
+ * Every mark, statement and note, shared by every reader: a change from one
+ * panel, a browser agent's tool (`webmcp.ts`) or another tab shows everywhere.
+ */
+export const ballotDraftStore = createLocalStore<DraftMap>(KEY, {}, parseDraft);
+
+const rankingStore = createLocalStore<RankingMap>(RANK_KEY, {}, parseRankings);
 
 /** The `choice` of a race's private-note row; no candidate can be named this. */
 export const NOTE_CHOICE = "\u0000note";
@@ -132,7 +125,7 @@ function isEmpty(row: DraftRow): boolean {
   return !row.stance && !row.statement?.trim() && !row.privateNote?.trim();
 }
 
-interface RowFields {
+export interface RowFields {
   writeIn?: true;
   stance?: Stance;
   statement?: string;
@@ -146,7 +139,7 @@ export interface RowPatch {
   fields: RowFields;
 }
 
-function applyPatch(
+export function applyPatch(
   current: DraftMap,
   electionId: string,
   subject: Subject,
@@ -195,12 +188,7 @@ export function useBallotDraft(): {
   /** Move marks on re-filed races to the races as they're filed now (`refiledRows`). */
   refile: (subjects: readonly Subject[]) => void;
 } {
-  const [rows, setRows] = useState<DraftMap>(load);
-
-  // Auto-persist on any change.
-  useEffect(() => {
-    persist(rows);
-  }, [rows]);
+  const [rows, setRows] = useLocalStore(ballotDraftStore);
 
   const patch = useCallback(
     (electionId: string, subject: Subject, choice: string | undefined, fields: RowFields) => {
@@ -263,11 +251,7 @@ export function useBallotRanking(): {
   setRanking: (electionId: string, subject: Subject, order: string[]) => void;
   clearRanking: (electionId: string, subject: Subject) => void;
 } {
-  const [rankings, setRankings] = useState<RankingMap>(loadRankings);
-
-  useEffect(() => {
-    persistRankings(rankings);
-  }, [rankings]);
+  const [rankings, setRankings] = useLocalStore(rankingStore);
 
   const setRanking = useCallback((electionId: string, subject: Subject, order: string[]) => {
     setRankings((current) => ({ ...current, [rankingKeyFor(electionId, subject)]: order }));

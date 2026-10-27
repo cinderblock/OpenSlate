@@ -1,6 +1,12 @@
 import { expect, test } from "bun:test";
 import type { Subject } from "@openslate/core";
-import { type DraftRow, refiledRows, rowIdFor } from "../src/lib/ballotDraft";
+import {
+  type DraftRow,
+  applyPatch,
+  ballotDraftStore,
+  refiledRows,
+  rowIdFor,
+} from "../src/lib/ballotDraft";
 
 const E = "2026-11-03";
 const race = (title: string, jurisdiction: string): Subject => ({
@@ -50,4 +56,13 @@ test("a mark already on the re-filed race wins", () => {
   const old = row(before, "A", "endorse");
   const fresh = row(after, "A", "oppose");
   expect(refiledRows({ [old.id]: old, [fresh.id]: fresh }, [after])).toEqual({ [fresh.id]: fresh });
+});
+
+test("a write through the shared store is what every reader gets", () => {
+  const subject = race("Mayor", "us/ca/san-jose");
+  ballotDraftStore.set((rows) => applyPatch(rows, E, subject, "Ana", { stance: "endorse" }));
+  expect(ballotDraftStore.get()[rowIdFor(E, subject, "Ana")]?.stance).toBe("endorse");
+  // Clearing the only field drops the row rather than keeping an empty one.
+  ballotDraftStore.set((rows) => applyPatch(rows, E, subject, "Ana", { stance: undefined }));
+  expect(ballotDraftStore.get()).toEqual({});
 });
