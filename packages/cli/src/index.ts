@@ -264,7 +264,7 @@ interface IndexEntry {
   /** The slate's `context.jurisdiction`: where it publishes for. */
   scope?: string;
   /**
-   * Races per position jurisdiction (core's `racesByJurisdiction`), so an app
+   * Races per jurisdiction, positions and articles alike (core's `racesByJurisdiction`), so an app
    * can match the slate to a voter's area without downloading it.
    */
   jurisdictions: Record<string, number>;

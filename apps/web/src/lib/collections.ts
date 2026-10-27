@@ -42,7 +42,7 @@ type ImportedSlateRow = z.infer<typeof importedSlateSchema>;
 
 // --- Imported slates ---
 let confirmSlateInsert: ((values: ImportedSlateRow[]) => void) | null = null;
-let confirmSlateDelete: ((key: string) => void) | null = null;
+let confirmSlateDelete: ((keys: string[]) => void) | null = null;
 
 export const slatesCollection = createCollection({
   id: "slates",
@@ -55,9 +55,9 @@ export const slatesCollection = createCollection({
         for (const value of values) params.write({ type: "insert", value });
         params.commit();
       };
-      confirmSlateDelete = (key) => {
+      confirmSlateDelete = (keys) => {
         params.begin();
-        params.write({ type: "delete", key });
+        for (const key of keys) params.write({ type: "delete", key });
         params.commit();
       };
       void (async () => {
@@ -80,12 +80,12 @@ export const slatesCollection = createCollection({
     await Promise.all(values.map(putSlate));
     confirmSlateInsert?.(values);
   },
+  // Likewise a catalog update removes the slates it replaced in one go.
   onDelete: async ({ transaction }) => {
-    const mutation = transaction.mutations[0];
-    if (!mutation) return;
-    const key = String(mutation.key);
-    await deleteSlate(key);
-    confirmSlateDelete?.(key);
+    const keys = transaction.mutations.map((mutation) => String(mutation.key));
+    if (keys.length === 0) return;
+    await Promise.all(keys.map(deleteSlate));
+    confirmSlateDelete?.(keys);
   },
 });
 

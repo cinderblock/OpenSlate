@@ -95,6 +95,7 @@ Secret keys, when serialized (e.g. for backup), use the same scheme over the
 | `kind` | string | no | `candidate` \| `measure` \| `race` \| `option` \| other. |
 | `jurisdiction` | string | no | e.g. `us/ca/sf`. |
 | `district` | string | no | Whose voters decide it, when narrower than `jurisdiction`: a path like `jurisdiction`'s (below). Not part of identity. |
+| `voted_in` | string[] | no | The jurisdictions whose voters decide it together, when `jurisdiction` spans several: a regional measure's counties (below). Not part of identity. |
 | `election` | string | no | Election identifier or date. |
 | `uri` | string | no | Link for more info. |
 | `ballot` | `BallotContest` | no | How the ballot prints the contest: heading, measure number and label, how many to vote for (§3.14). Not part of identity. |
@@ -125,6 +126,36 @@ can't tell whether a voter is in a district SHOULD say so, not guess. Because
 it, still refer to the same subject; a ballot listing's (§8.2) value is the
 one to prefer.
 
+**`voted_in`** lists where a contest is on the ballot when its `jurisdiction`
+is a region whose path doesn't show what it contains. A path shows
+containment only by its prefix (`us/ca/sf` is in `us/ca`), so a measure filed
+under `us/ca/bay-area` says nothing about whose ballot it is on, and a region's
+name doesn't settle it either: one Bay Area measure is put to five counties,
+another to nine. `voted_in` names them, each a path like `jurisdiction`. A
+voter in any one of them has the contest on their ballot, as if it were filed
+under that path; `district`, if also given, still narrows it. For example:
+
+```json
+{
+  "title": "Bay Area — Regional Measure RTM (Regional Transit Measure)",
+  "kind": "measure",
+  "jurisdiction": "us/ca/bay-area",
+  "voted_in": [
+    "us/ca/alameda-county",
+    "us/ca/contra-costa-county",
+    "us/ca/san-mateo-county",
+    "us/ca/santa-clara-county",
+    "us/ca/sf"
+  ],
+  "election": "2026-11-03"
+}
+```
+
+It MUST NOT be empty, and SHOULD NOT repeat a path. Like `district`, it is not
+part of identity, and a ballot listing's value is the one to prefer: a
+county's listing knows the contest is on its own ballot, and SHOULD still name
+every jurisdiction that votes on it, so that slates agree.
+
 ### 3.4 `Position`
 
 | Field | Type | Req | Notes |
@@ -135,6 +166,7 @@ one to prefer.
 | `choice_id` | string | no | Catalog id of the choice (§3.11). Requires `choice`. |
 | `write_in` | boolean | no | `true`: the choice is a write-in, not printed on the ballot (§3.12). Requires `choice`. MUST NOT be `false`; omit it instead. |
 | `ballot` | `BallotChoice` | no | How the ballot prints the choice: party, ballot designation, incumbency (§3.14). Requires `choice`. |
+| `rank` | integer | no | Where the issuer ranks `choice` among the subject's choices: `1` is their first choice (§3.16). Requires `choice`; only with `endorse` or `lean_for`. |
 | `weight` | number | no | Strength/confidence in `[0, 1]`. |
 | `statement` | string | no | Free-text endorsement / rationale. |
 | `source` | string | no | URL backing the position. |
@@ -409,6 +441,29 @@ Consumers:
 
 Adoptions (§3.10) take on positions only, not articles.
 
+### 3.16 Ranked preferences — `rank`
+
+`rank` puts an issuer's choices in a subject in order of preference: `1` is
+their first choice, `2` their second, and so on. It is how a slate says
+"rank Alice first and Bob second" in a ranked-choice contest
+(`BallotContest.ranks`, §3.14), and it MAY be used in any other contest to
+say which of several acceptable choices the issuer prefers.
+
+- `rank` is an integer ≥ 1. It requires `choice`, and the stance MUST be
+  `endorse` or `lean_for`: ranking a choice is a vote for it.
+- Positions on the same subject in one slate SHOULD NOT share a rank, and
+  ranks SHOULD run from 1 without gaps. Consumers order positions by rank;
+  ties keep the order the slate lists them in.
+- Choices the issuer endorses without a rank (a dual endorsement: "rank both,
+  in either order") come after the ranked ones, in no particular order.
+- A rank is not a mark on the ballot. In a contest that isn't ranked, a
+  consumer that marks a ballot from a ranking marks the first `vote_for`
+  ranked choices; in a ranked-choice contest, the first `ranks` of them, in
+  that order.
+
+`statement` is free text (§3.14): consumers MUST NOT read a rank out of it
+("first choice", "#2").
+
 ---
 
 ## 4. Canonical JSON
@@ -627,6 +682,21 @@ version by adding OPTIONAL fields (verifiers must already reject unknown fields,
 such additions ship with a coordinated spec revision). Incompatible changes bump `v`.
 
 ### 10.1 Changelog (within v1)
+
+- **2026-10-26** — Added optional `voted_in` to `Subject` (§3.3): the
+  jurisdictions whose voters decide a contest together, when its
+  `jurisdiction` is a region whose path doesn't show what it contains (a
+  regional measure filed under `us/ca/bay-area`). Not part of identity.
+  Amended in place; verifiers built before this revision reject slates that
+  use it (closed schema, §3.8), so consumers should upgrade before publishers
+  use it.
+
+- **2026-10-26** — Added optional `rank` to `Position` (§3.16): an issuer's
+  order of preference among a subject's choices, for ranked-choice contests
+  and beyond, where ranked endorsements had been written into `statement`.
+  Amended in place; verifiers built before this revision reject slates that
+  use it (closed schema, §3.8), so consumers should upgrade before
+  publishers use it.
 
 - **2026-10-25** — Added optional `ballot` to `Subject` and `Position`
   (§3.14): how the ballot prints a contest and a choice, as fields, where

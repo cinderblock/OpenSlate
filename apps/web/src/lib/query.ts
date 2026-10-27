@@ -43,12 +43,14 @@ export interface CatalogEntry {
     sources?: string[];
   };
   positions: number;
+  /** Articles attached to ballot items (SPEC §3.15), when there are any. */
+  articles?: number;
   /** The slate's `context.jurisdiction`: where it publishes for. */
   scope?: string;
   /**
-   * Races per position jurisdiction (core's `racesByJurisdiction`; `""` for
-   * none). With it setup matches the entry to an area without fetching
-   * the slate. Older catalogs leave it out.
+   * Races per jurisdiction, by positions and articles alike (core's
+   * `racesByJurisdiction`; `""` for none). With it setup matches the entry
+   * to an area without fetching the slate. Older catalogs leave it out.
    */
   jurisdictions?: Record<string, number>;
   issued_at: string;
@@ -122,6 +124,15 @@ export const DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG =
   typeof location === "undefined" || !configuredCatalog
     ? (configuredCatalog ?? PUBLIC_ENDORSEMENTS_CATALOG)
     : new URL(configuredCatalog, location.href).href;
+
+/**
+ * News coverage: a slate of articles and no positions (SPEC §3.15). Like a
+ * ballot list it's reference, not a recommendation, so it comes along
+ * without being followed.
+ */
+export function isArticlesEntry(entry: CatalogEntry): boolean {
+  return entry.positions === 0 && (entry.articles ?? 0) > 0;
+}
 
 /** Fetch a catalog (index.json) listing publicly-attributed slates available for import. */
 export function catalogQueryOptions(catalogUrl: string) {

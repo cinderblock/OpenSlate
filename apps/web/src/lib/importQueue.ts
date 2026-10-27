@@ -16,6 +16,8 @@ import type { Catalog, CatalogEntry } from "./query";
  */
 
 export interface CatalogImportJob {
+  /** `update`: replacing slates the user has with the catalog's newer ones (catalogUpdates.ts). */
+  kind?: "import" | "update";
   catalog: Catalog;
   catalogUrl: string;
   entries: CatalogEntry[];
@@ -25,9 +27,14 @@ export interface CatalogImportJob {
   bundle?: boolean;
   /** Called for each entry whose slate is in, newly stored or already there. */
   onImported?: (entry: CatalogEntry) => void;
+  /** Why an entry's checked slate mustn't be stored, or undefined when it may. */
+  check?: (entry: CatalogEntry, token: string) => string | undefined;
+  /** Tokens an entry's slate replaces: removed once it's stored. */
+  replaces?: (entry: CatalogEntry) => readonly string[];
 }
 
 export interface ImportStatus {
+  kind: "import" | "update";
   state: "running" | "done";
   /** What the bar shows. No `maxValue`: the total isn't known yet. */
   label: string;
@@ -50,7 +57,9 @@ export interface ImportDeps {
   fetchSlate: (entry: CatalogEntry, catalogUrl: string) => Promise<string>;
   verify: (token: string, known: { has(token: string): boolean }) => VerifyOutcome;
   /** Store checked slates, all in one transaction. */
-  store: (slates: VerifiedSlate[]) => void;
+  store: (slates: VerifiedSlate[], kind: "import" | "update") => void;
+  /** Remove slates, all in one transaction. */
+  remove: (tokens: string[]) => void;
   isStored: (token: string) => boolean;
 }
 
@@ -87,10 +96,18 @@ export function createImportQueue(
   }
 
   async function run(job: CatalogImportJob): Promise<void> {
+    const kind = job.kind ?? "import";
     const errors: string[] = [];
     let imported = 0;
     const report = (bar: { label: string; value: number; maxValue?: number }) =>
-      set({ state: "running", ...bar, imported, errors: [...errors], queued: waiting.length });
+      set({
+        kind,
+        state: "running",
+        ...bar,
+        imported,
+        errors: [...errors],
+        queued: waiting.length,
+      });
 
     // Everything at once from the catalog's bundle when it has one, so even
     // the order of requests says nothing about which sources were picked.
@@ -110,13 +127,16 @@ export function createImportQueue(
     const total = job.entries.length;
     report({ label: job.label, value: 0, maxValue: total });
     const pending: VerifiedSlate[] = [];
+    /** Replaced slates, removed after their replacements are stored so the ballot never lacks both. */
+    const replaced: string[] = [];
     const seen = new Set<string>();
     const known = { has: (token: string) => seen.has(token) || deps.isStored(token) };
     let stored = 0;
     let flushedAt = Date.now();
     const flush = () => {
       stored += pending.length;
-      if (pending.length > 0) deps.store(pending.splice(0));
+      if (pending.length > 0) deps.store(pending.splice(0), kind);
+      if (replaced.length > 0) deps.remove(replaced.splice(0));
       flushedAt = Date.now();
     };
     // Each store re-collates the whole ballot (after the call returns, so its
@@ -137,13 +157,15 @@ export function createImportQueue(
         }
         if (token) {
           const result = deps.verify(token, known);
-          if (result.kind === "error") {
-            errors.push(`${name}: ${result.error}`);
-          } else {
+          const problem = result.kind === "error" ? result.error : job.check?.(entry, token);
+          if (problem) {
+            errors.push(`${name}: ${problem}`);
+          } else if (result.kind !== "error") {
             if (result.kind === "verified") {
               pending.push(result.slate);
               seen.add(result.slate.token);
             }
+            for (const old of job.replaces?.(entry) ?? []) if (old !== token) replaced.push(old);
             imported++;
             job.onImported?.(entry);
           }
@@ -159,6 +181,7 @@ export function createImportQueue(
       errors.push(errorMessage(err));
     }
     set({
+      kind,
       state: "done",
       label: job.label,
       value: done,

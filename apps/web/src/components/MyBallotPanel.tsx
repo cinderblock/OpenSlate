@@ -35,7 +35,15 @@ import { ProgressBar } from "react-aria-components";
 import { flushSync } from "react-dom";
 import { articlesByRace } from "../lib/articles";
 import { ballotProblems } from "../lib/ballotCheck";
-import { type DraftRow, NOTE_CHOICE, rowIdFor, useBallotDraft } from "../lib/ballotDraft";
+import {
+  type DraftRow,
+  NOTE_CHOICE,
+  rankingKeyFor,
+  rankingStore,
+  rowIdFor,
+  setRanking,
+  useBallotDraft,
+} from "../lib/ballotDraft";
 import { ballotFileName, ballotToCsv, ballotToJson } from "../lib/ballotExport";
 import {
   type PrintScope,
@@ -48,7 +56,6 @@ import {
   raceHeading,
   voteFor,
   voteForLine,
-  writeInGroup,
   writeInRows,
 } from "../lib/ballotView";
 import { backgroundImports } from "../lib/catalogImport";
@@ -89,6 +96,14 @@ import {
 import { usePageSearch } from "../lib/pageSearch";
 import { MIN_PRINT_SCALE, type PrintFit, fitToPage } from "../lib/printFit";
 import { type MyPosition, useMyPositionsByRace } from "../lib/published";
+import {
+  type ApplyRank,
+  isRanked,
+  markChange,
+  pickChange,
+  shownNames,
+  writeInGroup,
+} from "../lib/ranking";
 import { VOTE411, raceLinks } from "../lib/researchLinks";
 import { matchesSearch, raceSearchText } from "../lib/search";
 import { isBallotSource, isFollowed, standingOf } from "../lib/sources";
@@ -96,12 +111,14 @@ import { subjectKey } from "../lib/subjects";
 import { type RaceStatus, isDecided, marksOn, raceStatus, stepThrough } from "../lib/triage";
 import { track } from "../lib/usage";
 import { AreaPicker, describeArea } from "./AreaPicker";
-import { BallotProblemsNotice, ChoiceBallotTags, RaceUnlistedNote } from "./BallotTags";
+import { BallotProblemsNotice, RaceUnlistedNote } from "./BallotTags";
+import { ChoiceRow } from "./ChoiceRow";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { LeanSummary } from "./LeanMeter";
 import { PageSearch } from "./PageSearch";
 import { PrintBallot, type PrintSection } from "./PrintBallot";
 import { QuickFill } from "./QuickFill";
+import { RankedChoices } from "./RankedChoices";
 import { electionOptions } from "./electionOptions";
 import { Checkbox } from "./ui/Checkbox";
 import { InfoPopover } from "./ui/InfoPopover";
@@ -118,24 +135,6 @@ const GetStarted = lazy(() =>
 /** Same order as `compareRaces`: numbers in labels sort numerically. */
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
-/**
- * The user's own marks besides a pick (the bubble). Private: kept in this
- * browser, only shared if they publish.
- */
-const OTHER_MARKS: Array<{ stance: Stance; label: string; icon: LucideIcon }> = [
-  { stance: "lean_for", label: "Maybe", icon: CircleHelp },
-  { stance: "oppose", label: "Against", icon: X },
-];
-
-const STANCE_WORD: Record<Stance, string> = {
-  endorse: "endorses",
-  oppose: "opposes",
-  lean_for: "leans for",
-  lean_against: "leans against",
-  neutral: "is neutral on",
-  abstain: "abstains on",
-};
-
 /** First person, for "You endorsed X". */
 const MY_STANCE_WORD: Record<Stance, string> = {
   endorse: "endorsed",
@@ -144,16 +143,6 @@ const MY_STANCE_WORD: Record<Stance, string> = {
   lean_against: "lean against",
   neutral: "are neutral on",
   abstain: "abstain on",
-};
-
-/** How a mark other than a pick reads beside the name. */
-const MARK_LABEL: Record<Stance, string> = {
-  endorse: "my pick",
-  lean_for: "maybe",
-  lean_against: "leaning against",
-  oppose: "against",
-  neutral: "neutral",
-  abstain: "abstain",
 };
 
 function describeMine(position: MyPosition): string {
@@ -209,7 +198,7 @@ export function MyBallotPanel() {
   const [printing, setPrinting] = useState(false);
   const [fit, setFit] = useState<PrintFit | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
-  const { patch: draftPatch, refile } = draft;
+  const { patch: draftPatch, patchMany: draftPatchMany, refile } = draft;
 
   const today = localToday();
   const elections = useMemo(() => electionsOf(slates, follows), [slates, follows]);
@@ -355,6 +344,17 @@ export function MyBallotPanel() {
       draftPatch(electionId, subject, choice, fields);
     },
     [draftPatch],
+  );
+
+  // A ranking change: the race's order and the marks that go with it.
+  const applyRank = useCallback<ApplyRank>(
+    (electionId, subject, change) => {
+      const key = subjectKey(subject);
+      setTouched((current) => (current.has(key) ? current : new Set(current).add(key)));
+      draftPatchMany(electionId, change.patches);
+      setRanking(electionId, subject, change.order);
+    },
+    [draftPatchMany],
   );
 
   // Under a filter: races that match it, plus the ones you've just dealt with.
@@ -903,6 +903,7 @@ export function MyBallotPanel() {
           election={election ?? ""}
           rows={draft.rows}
           patch={patch}
+          applyRank={applyRank}
           mine={focused ? mine.get(focused.key) : undefined}
           articles={focused ? articleCounts.get(focused.key) : undefined}
           onStep={(direction) => focusStep(direction)}
@@ -931,6 +932,7 @@ export function MyBallotPanel() {
                 election={election ?? ""}
                 rows={draft.rows}
                 patch={patch}
+                applyRank={applyRank}
                 mine={mine}
                 articles={articleCounts}
                 // Under a filter, races you've dealt with shrink to a summary.
@@ -970,6 +972,7 @@ export function MyBallotPanel() {
               election={election ?? ""}
               rows={draft.rows}
               patch={patch}
+              applyRank={applyRank}
               mine={mine}
               articles={articleCounts}
               statuses={undefined}
@@ -1020,6 +1023,7 @@ function BallotSection({
   election,
   rows,
   patch,
+  applyRank,
   mine,
   articles,
   statuses,
@@ -1031,6 +1035,7 @@ function BallotSection({
   election: string;
   rows: Record<string, DraftRow>;
   patch: Patch;
+  applyRank: ApplyRank;
   mine: Map<string, MyPosition[]>;
   /** How many articles are attached to each race, by key. */
   articles: Map<string, number>;
@@ -1055,6 +1060,7 @@ function BallotSection({
                 election={election}
                 rows={rows}
                 patch={patch}
+                applyRank={applyRank}
                 mine={mine.get(race.key)}
                 articles={articles.get(race.key)}
               />
@@ -1142,6 +1148,7 @@ function FocusRace({
   election,
   rows,
   patch,
+  applyRank,
   mine,
   articles,
   onStep,
@@ -1156,6 +1163,7 @@ function FocusRace({
   election: string;
   rows: Record<string, DraftRow>;
   patch: Patch;
+  applyRank: ApplyRank;
   mine: MyPosition[] | undefined;
   articles: number | undefined;
   onStep: (direction: 1 | -1) => void;
@@ -1182,21 +1190,35 @@ function FocusRace({
       else if (event.key === "ArrowLeft" || event.key === "k") onStep(-1);
       else {
         const digit = /^Digit([1-9])$/.exec(event.code)?.[1];
-        // Numbered as shown: the ballot's order.
-        const group = digit && race ? ballotChoices(race)[Number(digit) - 1] : undefined;
-        if (!race || !group) return;
+        if (!race || !digit) return;
+        // Numbered as shown: a ranking first, else the ballot's order.
+        const saved = rankingStore.get()[rankingKeyFor(election, race.subject)];
+        const name = shownNames(race, election, rows, saved)[Number(digit) - 1];
+        if (name === undefined) return;
         // A yes/no question has no Against: "against Yes" is No.
         if (event.shiftKey && isYesNo(race)) return;
-        const choice = group.choice || undefined;
         const stance: Stance = event.shiftKey ? "oppose" : "endorse";
-        const current = rows[rowIdFor(election, race.subject, choice)]?.stance;
-        patch(election, race.subject, choice, { stance: current === stance ? undefined : stance });
+        if (isRanked(race) && name) {
+          applyRank(
+            election,
+            race.subject,
+            stance === "endorse"
+              ? pickChange(race, election, rows, saved, name)
+              : markChange(race, election, rows, saved, name, stance),
+          );
+        } else {
+          const choice = name || undefined;
+          const current = rows[rowIdFor(election, race.subject, choice)]?.stance;
+          patch(election, race.subject, choice, {
+            stance: current === stance ? undefined : stance,
+          });
+        }
       }
       event.preventDefault();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [election, patch]);
+  }, [election, patch, applyRank]);
 
   if (!race) {
     return (
@@ -1236,6 +1258,7 @@ function FocusRace({
           election={election}
           rows={rows}
           patch={patch}
+          applyRank={applyRank}
           mine={mine}
           articles={articles}
           numbered
@@ -1268,6 +1291,7 @@ const RaceCard = memo(
     prev.race === next.race &&
     prev.election === next.election &&
     prev.patch === next.patch &&
+    prev.applyRank === next.applyRank &&
     prev.mine === next.mine &&
     prev.articles === next.articles &&
     prev.numbered === next.numbered &&
@@ -1287,6 +1311,7 @@ function RaceCardInner({
   election,
   rows,
   patch,
+  applyRank,
   mine,
   articles,
   numbered,
@@ -1295,6 +1320,7 @@ function RaceCardInner({
   election: string;
   rows: Record<string, DraftRow>;
   patch: Patch;
+  applyRank: ApplyRank;
   /** What I've signed on this race, if anything. */
   mine?: MyPosition[];
   /** How many articles are attached to the race (SPEC §3.15). */
@@ -1307,6 +1333,9 @@ function RaceCardInner({
   const title = raceHeading(race);
   const instruction = instructionLine(race);
   const choices = useMemo(() => ballotChoices(race), [race]);
+  // Candidates are ranked (RankedChoices); what's left is shown as plain rows.
+  const ranked = isRanked(race);
+  const plain = ranked ? choices.filter((c) => c.choice === "") : choices;
   const links = useMemo(() => raceLinks(race, localToday()), [race]);
   const seats = voteFor(race);
   const picked = picksIn(race, election, rows);
@@ -1348,36 +1377,46 @@ function RaceCardInner({
           {formatLocalDate(mine[0]?.publishedAt)} · <Link to="/publish">Compose</Link>
         </p>
       )}
-      <ul className="choice-list">
-        {choices.map((group, i) => (
-          <ChoiceRow
-            key={group.choice}
-            shortcut={numbered && i < 9 ? i + 1 : undefined}
-            group={group}
-            race={race}
-            election={election}
-            row={rows[rowIdFor(election, race.subject, group.choice || undefined)]}
-            patch={patch}
-          />
-        ))}
-        {writeInRows(rows, race, election).map((row) => (
-          <ChoiceRow
-            key={row.id}
-            group={writeInGroup(row.choice ?? "")}
-            race={race}
-            election={election}
-            row={row}
-            patch={patch}
-          />
-        ))}
-      </ul>
+      {ranked && (
+        <RankedChoices
+          race={race}
+          election={election}
+          rows={rows}
+          applyRank={applyRank}
+          numbered={numbered}
+        />
+      )}
+      {/* A yes/no question's two bubbles; on a candidate race, a stance on the race as a whole. */}
+      {plain.length > 0 && (
+        <ul className="choice-list">
+          {plain.map((group, i) => {
+            const choice = group.choice || undefined;
+            const stance = rows[rowIdFor(election, race.subject, choice)]?.stance;
+            const mark = (next: Stance) =>
+              patch(election, race.subject, choice, {
+                stance: stance === next ? undefined : next,
+              });
+            return (
+              <ChoiceRow
+                key={group.choice}
+                shortcut={numbered && !ranked && i < 9 ? i + 1 : undefined}
+                group={group}
+                race={race}
+                stance={stance}
+                onPick={() => mark("endorse")}
+                onMark={mark}
+              />
+            );
+          })}
+        </ul>
+      )}
       {seats !== undefined && picked > seats && (
         <p className="overvote">
           ⚠ {picked} picks: {voteForLine(seats).toLowerCase()}. Mark more than that on the real
           ballot and your vote in this race doesn't count.
         </p>
       )}
-      {!isYesNo(race) && <WriteInField race={race} election={election} patch={patch} />}
+      {ranked && <WriteInField race={race} election={election} rows={rows} applyRank={applyRank} />}
       <p className="research-links no-print">
         <span className="hint">Read up:</span>{" "}
         {links.map((link, i) => (
@@ -1434,190 +1473,21 @@ function fieldHint(race: Race): string | null {
   return "only names your sources mention: the official candidate list isn't imported";
 }
 
-function ChoiceRow({
-  shortcut,
-  group,
-  race,
-  election,
-  row,
-  patch,
-}: {
-  /** The number key that picks this choice (focus mode). */
-  shortcut?: number;
-  group: ChoiceGroup;
-  race: Race;
-  election: string;
-  row: DraftRow | undefined;
-  patch: Patch;
-}) {
-  const choice = group.choice || undefined;
-  const label = group.choice || "Overall";
-  const stance = row?.stance;
-  const yesNo = isYesNo(race);
-  const note = designation(group);
-  const followed = group.positions.filter((p) => p.standing !== "off");
-  const others = group.positions.filter((p) => p.standing === "off");
-  const mark = (next: Stance) =>
-    patch(election, race.subject, choice, { stance: stance === next ? undefined : next });
-  return (
-    <li
-      className={`choice-row${stance === "endorse" ? " picked" : ""}${stance === "oppose" ? " ruled-out" : ""}`}
-    >
-      <button
-        type="button"
-        className={`bubble bubble-${stance ?? "none"}`}
-        aria-pressed={stance === "endorse"}
-        aria-keyshortcuts={shortcut === undefined ? undefined : `${shortcut}`}
-        onClick={() => mark("endorse")}
-      >
-        <span className="sr-only">My pick: {label}</span>
-      </button>
-      <span className={`endorse-count${group.support === 0 ? " zero" : ""}`}>
-        {group.support}
-        <span className="sr-only"> of your sources for</span>
-        <span aria-hidden="true">✓</span>
-        {group.opposition > 0 && (
-          <span className="against">
-            {" "}
-            {group.opposition}
-            <span className="sr-only"> against</span>
-            <span aria-hidden="true">✗</span>
-          </span>
-        )}
-      </span>
-      <div className="choice-main">
-        <div className="choice-name">
-          {shortcut !== undefined && <kbd className="choice-key">{shortcut}</kbd>}
-          {group.choice || <em>Overall</em>}
-          {stance && stance !== "endorse" && (
-            <span className={`tag tag-inline mark-${stance}`}>{MARK_LABEL[stance]}</span>
-          )}
-          {note && <span className="ballot-note hint">{note}</span>}
-          <ChoiceBallotTags group={group} race={race} />
-        </div>
-        {(followed.length > 0 || others.length > 0) && (
-          <div className="source-chips">
-            {followed.map((position) => {
-              // `named`: listed on the other side of a two-way race from the
-              // one the source named (Settings → My ballot).
-              const what = `${position.source.name} ${STANCE_WORD[position.stance]} ${position.named ?? (group.choice || race.subject.title)}`;
-              // Coloured and marked by how it counts for you: a source you
-              // disagree with counts the other way. ✗ = counts against.
-              const counted = positionTone(position);
-              const leaning = position.stance === "lean_for" || position.stance === "lean_against";
-              const disagree = position.standing === "disagree";
-              const countsAs = `you disagree with ${position.source.name}, so this counts ${counted === "for" ? "for" : "against"} ${group.choice || race.subject.title}`;
-              return (
-                <InfoPopover
-                  key={`${position.source.id}|${position.named ?? ""}`}
-                  className={`source-chip tone-${counted}${disagree ? " disagreed" : ""}`}
-                  bare={false}
-                  label={disagree && counted !== "neutral" ? `${what}; ${countsAs}` : what}
-                  trigger={
-                    <>
-                      <EndorserAvatar sourceId={position.source.id} name={position.source.name} />
-                      {disagree && <ThumbsDown className="icon" aria-hidden="true" />}
-                      {counted === "against" && "✗ "}
-                      {counted === "for" && leaning && "~ "}
-                      <span>
-                        {position.source.name}
-                        {position.named && (
-                          <span className="chip-named"> (said {position.named})</span>
-                        )}
-                      </span>
-                      {!position.valid && " ⚠"}
-                    </>
-                  }
-                >
-                  <div className="chip-detail-head">
-                    <EndorserAvatar
-                      sourceId={position.source.id}
-                      name={position.source.name}
-                      size="md"
-                    />
-                    <strong>{what}</strong>
-                  </div>
-                  {disagree && counted !== "neutral" && (
-                    <p className="hint">
-                      <ThumbsDown className="icon" aria-hidden="true" />{" "}
-                      {countsAs.charAt(0).toUpperCase() + countsAs.slice(1)}.
-                    </p>
-                  )}
-                  {position.statement && <p>“{position.statement}”</p>}
-                  {position.written && (
-                    <p className="hint">
-                      Named as “{position.written}”; the ballot spells it as above.
-                    </p>
-                  )}
-                  {position.source.secondhand && (
-                    <p className="hint">
-                      Reported by {position.source.signerName ?? "a researcher"}, not signed by{" "}
-                      {position.source.name}.
-                    </p>
-                  )}
-                  {!position.valid && <p className="warning">The signature did not verify.</p>}
-                  <LeanSummary sourceId={position.source.id} />
-                </InfoPopover>
-              );
-            })}
-            {others.length > 0 && (
-              // Sources you don't follow are summarised, not shown: comparing
-              // isn't trusting. The race page lists them all.
-              <InfoPopover
-                className="source-chip tone-neutral unfollowed"
-                bare={false}
-                label={`${others.length} sources you don't follow`}
-                trigger={
-                  <>
-                    +{others.length} {followed.length > 0 ? "more " : ""}you don't follow
-                  </>
-                }
-              >
-                <ul className="chip-detail-list">
-                  {others.map((p) => (
-                    <li key={p.source.id}>
-                      <EndorserAvatar sourceId={p.source.id} name={p.source.name} />
-                      {p.source.name} {STANCE_WORD[p.stance]} {group.choice || race.subject.title}
-                    </li>
-                  ))}
-                </ul>
-                <p className="hint">Not followed, so they don't count here.</p>
-              </InfoPopover>
-            )}
-          </div>
-        )}
-      </div>
-      <fieldset className="pick-buttons no-print">
-        <legend className="sr-only">Other marks: {label}</legend>
-        {/* On a yes/no question, "against Yes" is just No: the bubbles say it. */}
-        {OTHER_MARKS.filter((m) => !(yesNo && m.stance === "oppose")).map((m) => {
-          const active = stance === m.stance;
-          const MarkIcon = m.icon;
-          return (
-            <button
-              key={m.stance}
-              type="button"
-              className={`stance-btn stance-${m.stance}${active ? " active" : ""}`}
-              aria-pressed={active}
-              aria-keyshortcuts={
-                shortcut !== undefined && m.stance === "oppose" ? `Shift+${shortcut}` : undefined
-              }
-              onClick={() => mark(m.stance)}
-            >
-              <MarkIcon className="icon" /> {m.label}
-            </button>
-          );
-        })}
-      </fieldset>
-    </li>
-  );
-}
-
 /**
  * Write in a name (SPEC §3.12). A name that is plainly someone already on the
  * list picks them instead, so a write-in never duplicates a printed candidate.
  */
-function WriteInField({ race, election, patch }: { race: Race; election: string; patch: Patch }) {
+function WriteInField({
+  race,
+  election,
+  rows,
+  applyRank,
+}: {
+  race: Race;
+  election: string;
+  rows: Record<string, DraftRow>;
+  applyRank: ApplyRank;
+}) {
   const [name, setName] = useState("");
   const [said, setSaid] = useState<string | null>(null);
   function add() {
@@ -1629,14 +1499,21 @@ function WriteInField({ race, election, patch }: { race: Race; election: string;
       named.map((c) => c.choice),
     );
     const existing = match?.sure ? named.find((c) => c.choice === match.name) : undefined;
+    const saved = rankingStore.get()[rankingKeyFor(election, race.subject)];
+    const pick = (choice: string, writeIn: boolean) => {
+      // Already marked: writing it in again shouldn't unmark it.
+      if (rows[rowIdFor(election, race.subject, choice)]?.stance === "endorse") return;
+      applyRank(
+        election,
+        race.subject,
+        pickChange(race, election, rows, saved, choice, { writeIn }),
+      );
+    };
     if (existing?.onBallot && !existing.writeIn) {
-      patch(election, race.subject, existing.choice, { stance: "endorse" });
+      pick(existing.choice, false);
       setSaid(`${existing.choice} is on the ballot, so they're picked instead of written in.`);
     } else {
-      patch(election, race.subject, existing?.choice ?? typed, {
-        stance: "endorse",
-        writeIn: true,
-      });
+      pick(existing?.choice ?? typed, true);
       setSaid(null);
     }
     setName("");

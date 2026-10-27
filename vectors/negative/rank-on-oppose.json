@@ -1,0 +1,10 @@
+{
+  "name": "rank-on-oppose",
+  "description": "Validly signed token ranking a choice it opposes. A rank is a vote for the choice; MUST be rejected (SPEC §3.16).",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5In0sInBvc2l0aW9ucyI6W3siY2hvaWNlIjoiQSIsInJhbmsiOjEsInN0YW5jZSI6Im9wcG9zZSIsInN1YmplY3QiOnsidGl0bGUiOiJNYXlvciJ9fV0sInYiOjF9.Bak2MTR18sZjwhzHkB3cdFV_oZoiWM-m4nfEhdMqJBwjW0RlIjC-X9kB4MhTvkArVdC2bOvUU18d6mORsAqADg",
+  "expect": {
+    "error_contains": [
+      "rank"
+    ]
+  }
+}

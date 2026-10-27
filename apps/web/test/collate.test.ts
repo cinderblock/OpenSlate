@@ -25,6 +25,7 @@ interface P {
   stance?: Stance;
   jurisdiction?: string;
   district?: string;
+  votedIn?: string[];
   election?: string;
   kind?: string;
 }
@@ -37,7 +38,9 @@ function slate(input: {
   keyPair?: KeyPair;
   election?: string;
   issuedAt?: string;
-  positions: Array<P & { statement?: string; contest?: BallotContest; ballot?: BallotChoice }>;
+  positions: Array<
+    P & { statement?: string; contest?: BallotContest; ballot?: BallotChoice; rank?: number }
+  >;
 }): { token: string; importedAt: string } {
   const token = createSlate({
     keyPair: input.keyPair ?? (input.of ? researcher : generateKeyPair()),
@@ -49,6 +52,7 @@ function slate(input: {
         title: p.title,
         ...(p.jurisdiction ? { jurisdiction: p.jurisdiction } : {}),
         ...(p.district ? { district: p.district } : {}),
+        ...(p.votedIn ? { voted_in: p.votedIn } : {}),
         ...(p.election ? { election: p.election } : {}),
         ...(p.kind ? { kind: p.kind } : {}),
         ...(p.contest ? { ballot: p.contest } : {}),
@@ -57,6 +61,7 @@ function slate(input: {
       ...(p.choice ? { choice: p.choice } : {}),
       ...(p.statement ? { statement: p.statement } : {}),
       ...(p.ballot ? { ballot: p.ballot } : {}),
+      ...(p.rank ? { rank: p.rank } : {}),
     })),
     ...(input.of
       ? {
@@ -80,8 +85,18 @@ const ballot = slate({
   election: E,
   // Same title + jurisdiction + election as the endorsements, or it's another race.
   positions: [
-    { title: "Governor", choice: "C", stance: "neutral", statement: "Green · Teacher" },
-    { title: "Governor", choice: "A", stance: "neutral", statement: "Democratic · Attorney" },
+    {
+      title: "Governor",
+      choice: "C",
+      stance: "neutral",
+      ballot: { party: "Green", designation: "Teacher" },
+    },
+    {
+      title: "Governor",
+      choice: "A",
+      stance: "neutral",
+      ballot: { party: "Democratic", designation: "Attorney" },
+    },
     { title: "Governor", choice: "B", stance: "neutral" },
     { title: "Treasurer", choice: "T1", stance: "neutral" },
     { title: "Treasurer", choice: "T2", stance: "neutral" },
@@ -261,6 +276,20 @@ describe("collateRaces", () => {
     }
   });
 
+  test("a source's ranks come through on its positions (SPEC §3.16)", () => {
+    const ranked = slate({
+      of: "Rank Club",
+      positions: [
+        { title: "Mayor", choice: "Ann", rank: 1 },
+        { title: "Mayor", choice: "Bo", stance: "lean_for", rank: 2 },
+      ],
+    });
+    const [mayor] = collateRaces(decodeSlates([ranked]), { follows: {} });
+    const rankOf = (name: string) =>
+      mayor?.choices.find((c) => c.choice === name)?.positions[0]?.rank;
+    expect([rankOf("Ann"), rankOf("Bo")]).toEqual([1, 2]);
+  });
+
   test("a ballot source supplies the field in ballot order, without being a source", () => {
     const races = collateRaces([...slates, ...decodeSlates([ballot])], {
       follows: { "of:secretary of state": "off" },
@@ -273,7 +302,7 @@ describe("collateRaces", () => {
       ["B", true, 1],
       ["C", true, 0],
     ]);
-    expect(governor?.choices[0]?.ballotNote).toBe("Democratic · Attorney");
+    expect(governor?.choices[0]?.ballot).toEqual({ party: "Democratic", designation: "Attorney" });
     // The ballot's own order survives the support sort, for the ballot view.
     expect(governor?.choices.map((c) => [c.choice, c.ballotIndex])).toEqual([
       ["A", 1],
@@ -358,6 +387,48 @@ describe("collateRaces", () => {
     expect(collateRaces(slates, { follows: {} }).some((r) => r.maybe)).toBe(false);
   });
 
+  test("a regional measure is on the ballot where it's voted, taking the ballot source's", () => {
+    const rtm = {
+      title: "Bay Area — Regional Measure RTM",
+      kind: "measure",
+      jurisdiction: "us/ca/bay-area",
+    };
+    const fiveCounties = [
+      "us/ca/alameda-county",
+      "us/ca/contra-costa-county",
+      "us/ca/san-mateo-county",
+      "us/ca/santa-clara-county",
+      "us/ca/sf",
+    ];
+    const slates = decodeSlates([
+      // An endorser that gets the counties wrong loses to the listing.
+      slate({
+        name: "Endorser",
+        positions: [{ ...rtm, choice: "Yes", votedIn: ["us/ca/alameda-county"] }],
+      }),
+      slate({
+        of: "SF Department of Elections",
+        ofKind: "election-authority",
+        positions: [
+          { ...rtm, choice: "Yes", stance: "neutral", votedIn: fiveCounties },
+          { ...rtm, choice: "No", stance: "neutral", votedIn: fiveCounties },
+        ],
+      }),
+      // One that doesn't say still names the same measure.
+      slate({ name: "Other", positions: [{ ...rtm, choice: "No" }] }),
+    ]);
+    const sf = collateRaces(slates, {
+      follows: {},
+      area: { localities: ["us/ca/sf"], districts: { "us/ca/cd": "11" } },
+    });
+    expect(sf.map((r) => [r.subject.title, r.maybe ?? false, r.totalSources])).toEqual([
+      [rtm.title, false, 2],
+    ]);
+    expect(sf[0]?.votedIn).toEqual(fiveCounties);
+    const fresno = { localities: ["us/ca/fresno", "us/ca/fresno-county"], districts: {} };
+    expect(collateRaces(slates, { follows: {}, area: fresno })).toEqual([]);
+  });
+
   test("a source's newer slate replaces its older one on the same race", () => {
     const keyPair = generateKeyPair();
     const reissued = decodeSlates([
@@ -437,6 +508,26 @@ describe("areaOptionsOf", () => {
       localities: ["us/ca/sf", "us/ca/chula-vista"],
       districts: { "us/ca/cd": ["2", "12"], "us/ca/ad": ["17"] },
     });
+  });
+
+  test("offers a regional race's counties, not the region (SPEC §3.3 voted_in)", () => {
+    const slates = decodeSlates([
+      slate({
+        name: "A",
+        positions: [
+          {
+            title: "RTM",
+            jurisdiction: "us/ca/bay-area",
+            votedIn: ["us/ca/alameda-county", "us/ca/sf"],
+          },
+          { title: "Mayor", jurisdiction: "us/ca/sf" },
+        ],
+      }),
+    ]);
+    expect(areaOptionsOf(positionJurisdictions(slates)).localities).toEqual([
+      "us/ca/sf",
+      "us/ca/alameda-county",
+    ]);
   });
 
   test("weighs each item by its race count", () => {

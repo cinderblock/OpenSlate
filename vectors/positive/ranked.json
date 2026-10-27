@@ -1,0 +1,64 @@
+{
+  "name": "ranked",
+  "description": "Ranked preferences (SPEC §3.16): first and second choice in a ranked-choice contest, and a dual endorsement left unranked.",
+  "signer": "alice",
+  "payload": {
+    "v": 1,
+    "issuer": {
+      "key": "ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+      "name": "Alice",
+      "kind": "individual"
+    },
+    "issued_at": "2026-10-01T00:00:00Z",
+    "positions": [
+      {
+        "subject": {
+          "title": "Mayor of Springfield",
+          "kind": "race",
+          "election": "2026-11-03"
+        },
+        "stance": "endorse",
+        "choice": "A. Candidate",
+        "rank": 1
+      },
+      {
+        "subject": {
+          "title": "Mayor of Springfield",
+          "kind": "race",
+          "election": "2026-11-03"
+        },
+        "stance": "lean_for",
+        "choice": "B. Candidate",
+        "rank": 2
+      },
+      {
+        "subject": {
+          "title": "Springfield Council, District 4",
+          "kind": "race",
+          "election": "2026-11-03"
+        },
+        "stance": "endorse",
+        "choice": "C. Candidate"
+      },
+      {
+        "subject": {
+          "title": "Springfield Council, District 4",
+          "kind": "race",
+          "election": "2026-11-03"
+        },
+        "stance": "endorse",
+        "choice": "D. Candidate"
+      }
+    ]
+  },
+  "header": {
+    "alg": "EdDSA",
+    "typ": "openslate+jws",
+    "kid": "ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9"
+  },
+  "canonical_header": "{\"alg\":\"EdDSA\",\"kid\":\"ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9\",\"typ\":\"openslate+jws\"}",
+  "canonical_payload": "{\"issued_at\":\"2026-10-01T00:00:00Z\",\"issuer\":{\"key\":\"ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9\",\"kind\":\"individual\",\"name\":\"Alice\"},\"positions\":[{\"choice\":\"A. Candidate\",\"rank\":1,\"stance\":\"endorse\",\"subject\":{\"election\":\"2026-11-03\",\"kind\":\"race\",\"title\":\"Mayor of Springfield\"}},{\"choice\":\"B. Candidate\",\"rank\":2,\"stance\":\"lean_for\",\"subject\":{\"election\":\"2026-11-03\",\"kind\":\"race\",\"title\":\"Mayor of Springfield\"}},{\"choice\":\"C. Candidate\",\"stance\":\"endorse\",\"subject\":{\"election\":\"2026-11-03\",\"kind\":\"race\",\"title\":\"Springfield Council, District 4\"}},{\"choice\":\"D. Candidate\",\"stance\":\"endorse\",\"subject\":{\"election\":\"2026-11-03\",\"kind\":\"race\",\"title\":\"Springfield Council, District 4\"}}],\"v\":1}",
+  "signing_input": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTEwLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5Iiwia2luZCI6ImluZGl2aWR1YWwiLCJuYW1lIjoiQWxpY2UifSwicG9zaXRpb25zIjpbeyJjaG9pY2UiOiJBLiBDYW5kaWRhdGUiLCJyYW5rIjoxLCJzdGFuY2UiOiJlbmRvcnNlIiwic3ViamVjdCI6eyJlbGVjdGlvbiI6IjIwMjYtMTEtMDMiLCJraW5kIjoicmFjZSIsInRpdGxlIjoiTWF5b3Igb2YgU3ByaW5nZmllbGQifX0seyJjaG9pY2UiOiJCLiBDYW5kaWRhdGUiLCJyYW5rIjoyLCJzdGFuY2UiOiJsZWFuX2ZvciIsInN1YmplY3QiOnsiZWxlY3Rpb24iOiIyMDI2LTExLTAzIiwia2luZCI6InJhY2UiLCJ0aXRsZSI6Ik1heW9yIG9mIFNwcmluZ2ZpZWxkIn19LHsiY2hvaWNlIjoiQy4gQ2FuZGlkYXRlIiwic3RhbmNlIjoiZW5kb3JzZSIsInN1YmplY3QiOnsiZWxlY3Rpb24iOiIyMDI2LTExLTAzIiwia2luZCI6InJhY2UiLCJ0aXRsZSI6IlNwcmluZ2ZpZWxkIENvdW5jaWwsIERpc3RyaWN0IDQifX0seyJjaG9pY2UiOiJELiBDYW5kaWRhdGUiLCJzdGFuY2UiOiJlbmRvcnNlIiwic3ViamVjdCI6eyJlbGVjdGlvbiI6IjIwMjYtMTEtMDMiLCJraW5kIjoicmFjZSIsInRpdGxlIjoiU3ByaW5nZmllbGQgQ291bmNpbCwgRGlzdHJpY3QgNCJ9fV0sInYiOjF9",
+  "signature": "xMOLNenzPxE4lJFFQgo3bIF8vXS_8XWDfALbHwBq1jOk2LDMKq7JlPh4THvEfnEtZnGwEg0HiQs3thcN9IOyDg",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTEwLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5Iiwia2luZCI6ImluZGl2aWR1YWwiLCJuYW1lIjoiQWxpY2UifSwicG9zaXRpb25zIjpbeyJjaG9pY2UiOiJBLiBDYW5kaWRhdGUiLCJyYW5rIjoxLCJzdGFuY2UiOiJlbmRvcnNlIiwic3ViamVjdCI6eyJlbGVjdGlvbiI6IjIwMjYtMTEtMDMiLCJraW5kIjoicmFjZSIsInRpdGxlIjoiTWF5b3Igb2YgU3ByaW5nZmllbGQifX0seyJjaG9pY2UiOiJCLiBDYW5kaWRhdGUiLCJyYW5rIjoyLCJzdGFuY2UiOiJsZWFuX2ZvciIsInN1YmplY3QiOnsiZWxlY3Rpb24iOiIyMDI2LTExLTAzIiwia2luZCI6InJhY2UiLCJ0aXRsZSI6Ik1heW9yIG9mIFNwcmluZ2ZpZWxkIn19LHsiY2hvaWNlIjoiQy4gQ2FuZGlkYXRlIiwic3RhbmNlIjoiZW5kb3JzZSIsInN1YmplY3QiOnsiZWxlY3Rpb24iOiIyMDI2LTExLTAzIiwia2luZCI6InJhY2UiLCJ0aXRsZSI6IlNwcmluZ2ZpZWxkIENvdW5jaWwsIERpc3RyaWN0IDQifX0seyJjaG9pY2UiOiJELiBDYW5kaWRhdGUiLCJzdGFuY2UiOiJlbmRvcnNlIiwic3ViamVjdCI6eyJlbGVjdGlvbiI6IjIwMjYtMTEtMDMiLCJraW5kIjoicmFjZSIsInRpdGxlIjoiU3ByaW5nZmllbGQgQ291bmNpbCwgRGlzdHJpY3QgNCJ9fV0sInYiOjF9.xMOLNenzPxE4lJFFQgo3bIF8vXS_8XWDfALbHwBq1jOk2LDMKq7JlPh4THvEfnEtZnGwEg0HiQs3thcN9IOyDg"
+}

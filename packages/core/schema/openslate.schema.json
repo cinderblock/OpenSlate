@@ -91,6 +91,14 @@
                     "type": "string",
                     "minLength": 1
                   },
+                  "voted_in": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1
+                  },
                   "election": {
                     "type": "string",
                     "minLength": 1
@@ -185,6 +193,10 @@
                 "additionalProperties": false,
                 "minProperties": 1
               },
+              "rank": {
+                "type": "integer",
+                "minimum": 1
+              },
               "weight": {
                 "type": "number",
                 "minimum": 0,
@@ -213,7 +225,25 @@
               ],
               "ballot": [
                 "choice"
+              ],
+              "rank": [
+                "choice"
               ]
+            },
+            "if": {
+              "required": [
+                "rank"
+              ]
+            },
+            "then": {
+              "properties": {
+                "stance": {
+                  "enum": [
+                    "endorse",
+                    "lean_for"
+                  ]
+                }
+              }
             }
           }
         },
@@ -351,6 +381,14 @@
                       "type": "string",
                       "minLength": 1
                     },
+                    "voted_in": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "minItems": 1
+                    },
                     "election": {
                       "type": "string",
                       "minLength": 1
@@ -446,6 +484,14 @@
                   "district": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "voted_in": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1
                   },
                   "election": {
                     "type": "string",

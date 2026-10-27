@@ -1,6 +1,6 @@
 import type { BallotContest, Subject } from "@openslate/core";
-import { splitMeasureTitle } from "./ballotView";
 import { httpHref } from "./httpHref";
+import { jurisdictionLabel } from "./jurisdictions";
 
 /**
  * Where to read up on a race or a candidate: links to Ballotpedia, official
@@ -43,17 +43,19 @@ function yearOf(election: string | undefined): string {
 }
 
 /**
- * Search words for a race: the title without a measure's long ballot label
- * ("California – Proposition 43 (Limits …)" → "California Proposition 43"),
- * plus the year.
+ * Search words for a race, plus the year. A measure the ballot heads with a
+ * number goes by its place and heading ("California Proposition 43"), which is
+ * what news and Ballotpedia call it; anything else by its title.
  */
 export function raceQuery(race: RaceLike): string {
-  const title = race.subject.title
-    .replace(/\s*\(.*\)\s*$/, "")
-    .replace(/[–—,]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return [title, yearOf(race.election ?? race.subject.election)].filter(Boolean).join(" ");
+  const ballot = race.ballot ?? race.subject.ballot;
+  const jurisdiction = race.jurisdiction ?? race.subject.jurisdiction;
+  const name =
+    race.subject.kind === "measure" && ballot?.heading && ballot.number && jurisdiction
+      ? `${jurisdictionLabel(jurisdiction)} ${ballot.heading}`
+      : race.subject.title;
+  const words = name.replace(/[–—,]/g, " ").replace(/\s+/g, " ").trim();
+  return [words, yearOf(race.election ?? race.subject.election)].filter(Boolean).join(" ");
 }
 
 function ballotpediaSearch(query: string, jump: boolean): string {
@@ -85,12 +87,7 @@ export function raceLinks(race: RaceLike, today: string): ResearchLink[] {
   }
   // The Secretary of State's site only hosts the current election's guide.
   if (jurisdiction === "us/ca" && election >= today) {
-    const number = measure
-      ? (race.ballot?.number ??
-        race.subject.ballot?.number ??
-        // An older listing: from the title, until plan C5.
-        splitMeasureTitle(race.subject.title).number)
-      : undefined;
+    const number = measure ? (race.ballot?.number ?? race.subject.ballot?.number) : undefined;
     if (number) {
       links.push({
         label: "Official guide",

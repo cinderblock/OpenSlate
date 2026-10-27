@@ -1,4 +1,5 @@
 import type { Subject } from "@openslate/core";
+import { designation } from "./ballotView";
 import type { Race } from "./collate";
 import { formatElectionDate } from "./dates";
 import { jurisdictionLabel } from "./jurisdictions";
@@ -63,9 +64,10 @@ export function raceSearchText(race: Race): string {
     race.subject.title,
     race.jurisdiction && jurisdictionLabel(race.jurisdiction),
     race.district && jurisdictionLabel(race.district),
+    ...(race.votedIn ?? []).map(jurisdictionLabel),
     ...race.choices.flatMap((choice) => [
       choice.choice,
-      choice.ballotNote,
+      designation(choice),
       ...choice.positions.flatMap((p) => [p.source.name, p.written]),
     ]),
   ]);
@@ -99,6 +101,7 @@ export function positionSearchText(position: {
     position.choice,
     subject.jurisdiction && jurisdictionLabel(subject.jurisdiction),
     subject.district && jurisdictionLabel(subject.district),
+    ...(subject.voted_in ?? []).map(jurisdictionLabel),
     subject.election,
     subject.election && formatElectionDate(subject.election),
     position.statement,

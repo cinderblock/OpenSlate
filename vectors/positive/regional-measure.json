@@ -1,0 +1,40 @@
+{
+  "name": "regional-measure",
+  "description": "A measure filed under a region whose path doesn't show what it contains, with the counties that vote on it (SPEC §3.3 `voted_in`).",
+  "signer": "alice",
+  "payload": {
+    "v": 1,
+    "issuer": {
+      "key": "ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+      "name": "Alice",
+      "kind": "individual"
+    },
+    "issued_at": "2026-10-01T00:00:00Z",
+    "positions": [
+      {
+        "subject": {
+          "title": "Springfield Region — Measure RT",
+          "kind": "measure",
+          "jurisdiction": "us/ca/springfield-region",
+          "voted_in": [
+            "us/ca/shelbyville-county",
+            "us/ca/springfield-county"
+          ],
+          "election": "2026-11-03"
+        },
+        "stance": "endorse",
+        "choice": "Yes"
+      }
+    ]
+  },
+  "header": {
+    "alg": "EdDSA",
+    "typ": "openslate+jws",
+    "kid": "ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9"
+  },
+  "canonical_header": "{\"alg\":\"EdDSA\",\"kid\":\"ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9\",\"typ\":\"openslate+jws\"}",
+  "canonical_payload": "{\"issued_at\":\"2026-10-01T00:00:00Z\",\"issuer\":{\"key\":\"ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9\",\"kind\":\"individual\",\"name\":\"Alice\"},\"positions\":[{\"choice\":\"Yes\",\"stance\":\"endorse\",\"subject\":{\"election\":\"2026-11-03\",\"jurisdiction\":\"us/ca/springfield-region\",\"kind\":\"measure\",\"title\":\"Springfield Region — Measure RT\",\"voted_in\":[\"us/ca/shelbyville-county\",\"us/ca/springfield-county\"]}}],\"v\":1}",
+  "signing_input": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTEwLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5Iiwia2luZCI6ImluZGl2aWR1YWwiLCJuYW1lIjoiQWxpY2UifSwicG9zaXRpb25zIjpbeyJjaG9pY2UiOiJZZXMiLCJzdGFuY2UiOiJlbmRvcnNlIiwic3ViamVjdCI6eyJlbGVjdGlvbiI6IjIwMjYtMTEtMDMiLCJqdXJpc2RpY3Rpb24iOiJ1cy9jYS9zcHJpbmdmaWVsZC1yZWdpb24iLCJraW5kIjoibWVhc3VyZSIsInRpdGxlIjoiU3ByaW5nZmllbGQgUmVnaW9uIOKAlCBNZWFzdXJlIFJUIiwidm90ZWRfaW4iOlsidXMvY2Evc2hlbGJ5dmlsbGUtY291bnR5IiwidXMvY2Evc3ByaW5nZmllbGQtY291bnR5Il19fV0sInYiOjF9",
+  "signature": "_2zITBOgU9FnHExGqfHQ3i2U-NmLQItfDGFbvjRaZLI6kN8Rl-S5N5iyG2WKgfXtpFtUFRL46o0_GRrX_BmjDw",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTEwLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5Iiwia2luZCI6ImluZGl2aWR1YWwiLCJuYW1lIjoiQWxpY2UifSwicG9zaXRpb25zIjpbeyJjaG9pY2UiOiJZZXMiLCJzdGFuY2UiOiJlbmRvcnNlIiwic3ViamVjdCI6eyJlbGVjdGlvbiI6IjIwMjYtMTEtMDMiLCJqdXJpc2RpY3Rpb24iOiJ1cy9jYS9zcHJpbmdmaWVsZC1yZWdpb24iLCJraW5kIjoibWVhc3VyZSIsInRpdGxlIjoiU3ByaW5nZmllbGQgUmVnaW9uIOKAlCBNZWFzdXJlIFJUIiwidm90ZWRfaW4iOlsidXMvY2Evc2hlbGJ5dmlsbGUtY291bnR5IiwidXMvY2Evc3ByaW5nZmllbGQtY291bnR5Il19fV0sInYiOjF9._2zITBOgU9FnHExGqfHQ3i2U-NmLQItfDGFbvjRaZLI6kN8Rl-S5N5iyG2WKgfXtpFtUFRL46o0_GRrX_BmjDw"
+}

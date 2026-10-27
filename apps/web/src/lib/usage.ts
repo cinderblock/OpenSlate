@@ -68,6 +68,7 @@ export const USAGE_SCHEMA = {
   "page.view": { route: ROUTE_TEMPLATES },
   "slate.import": { source: SLATE_IMPORT_SOURCES },
   "catalog.import_all": {},
+  "catalog.update": {},
   "identity.create": {},
   "identity.import": {},
   "identity.export": {},
@@ -102,6 +103,7 @@ export const USAGE_EVENT_DESCRIPTIONS: Record<EventName, string> = {
   "slate.import":
     "That a slate was imported, and whether from the catalog, a URL, a file, a QR code or pasted",
   "catalog.import_all": "That “Import all” was used on the catalog",
+  "catalog.update": "That sources you imported were updated from the catalog",
   "identity.create": "That a new signing identity was created",
   "identity.import": "That an identity backup was restored",
   "identity.export": "That an identity backup was downloaded",

@@ -93,6 +93,30 @@ describe("placeRace", () => {
     expect(placeRace(oc, "us/ca/cypress-school-district/ta-B", cypress)).toBe("in");
     expect(placeRace(oc, "us/ca/cypress-school-district/ta-c", cypress)).toBe("out");
   });
+
+  test("a regional race is on the ballot in each jurisdiction it's voted in (SPEC §3.3)", () => {
+    const bayArea = "us/ca/bay-area";
+    const counties = ["us/ca/alameda-county", "us/ca/contra-costa-county", "us/ca/sf"];
+    const sf = { localities: ["us/ca/sf"], districts: { "us/ca/cd": "11" } };
+    const berkeley = { localities: ["us/ca/berkeley", "us/ca/alameda-county"], districts: {} };
+    const fresno = { localities: ["us/ca/fresno", "us/ca/fresno-county"], districts: {} };
+    // The region's path alone puts it on nobody's ballot.
+    expect(placeRace(bayArea, undefined, sf)).toBe("out");
+    expect(placeRace(bayArea, undefined, sf, counties)).toBe("in");
+    expect(placeRace(bayArea, undefined, berkeley, counties)).toBe("in");
+    expect(placeRace(bayArea, undefined, fresno, counties)).toBe("out");
+    // `voted_in` stands in for the jurisdiction: a voter who picked the region
+    // as a place isn't in it unless they're in one of its counties.
+    expect(placeRace(bayArea, undefined, { localities: [bayArea], districts: {} }, counties)).toBe(
+      "out",
+    );
+    // A district still narrows it.
+    const ward = { localities: ["us/ca/sf"], districts: { "us/ca/ward": "2" } };
+    expect(placeRace(bayArea, "us/ca/ward-2", ward, counties)).toBe("in");
+    expect(placeRace(bayArea, "us/ca/ward-3", ward, counties)).toBe("out");
+    // With no area set, everything is in.
+    expect(placeRace(bayArea, undefined, EMPTY_AREA, counties)).toBe("in");
+  });
 });
 
 describe("inArea", () => {

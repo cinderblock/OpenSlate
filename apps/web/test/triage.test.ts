@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { type Stance, createSlate, generateKeyPair } from "@openslate/core";
+import { type BallotChoice, type Stance, createSlate, generateKeyPair } from "@openslate/core";
 import { type DraftRow, rowIdFor } from "../src/lib/ballotDraft";
 import { type Race, collateRaces, decodeSlates } from "../src/lib/collate";
 import {
@@ -21,8 +21,9 @@ interface P {
   title: string;
   choice?: string;
   stance?: Stance;
-  statement?: string;
   kind?: string;
+  ballot?: BallotChoice;
+  measureType?: string;
 }
 
 function slate(of: string, positions: P[], ofKind?: string) {
@@ -35,10 +36,11 @@ function slate(of: string, positions: P[], ofKind?: string) {
         jurisdiction: "us/ca",
         election: E,
         ...(p.kind ? { kind: p.kind } : {}),
+        ...(p.measureType ? { ballot: { measure_type: p.measureType } } : {}),
       },
       stance: p.stance ?? "endorse",
       ...(p.choice !== undefined ? { choice: p.choice } : {}),
-      ...(p.statement ? { statement: p.statement } : {}),
+      ...(p.ballot ? { ballot: p.ballot } : {}),
     })),
     attribution: {
       of: { name: of, ...(ofKind ? { kind: ofKind } : {}) },
@@ -49,20 +51,28 @@ function slate(of: string, positions: P[], ofKind?: string) {
   return { token, importedAt: "2026-10-01T00:00:00Z" };
 }
 
-/** The official list: party in each candidate's note, measures as Yes / No. */
+/** The official list: each candidate's party in `ballot`, measures as Yes / No. */
 const ballot = slate(
   "Secretary of State",
   [
-    { title: "Governor", choice: "Dee", statement: "Democratic · Attorney" },
-    { title: "Governor", choice: "Ray", statement: "Republican · Rancher" },
-    { title: "Treasurer", choice: "Dana", statement: "Democratic" },
-    { title: "Treasurer", choice: "Dora", statement: "Democratic · Treasurer · incumbent" },
-    { title: "Controller", choice: "Rob", statement: "Republican" },
-    { title: "Controller", choice: "Gwen", statement: "Green · Teacher" },
-    { title: "Controller", choice: "Nia", statement: "No Party Preference" },
-    { title: "Justice", choice: "Judge J", statement: "Associate Justice of the Supreme Court" },
-    { title: "Prop 1", choice: "Yes", kind: "measure", statement: "Initiative Statute" },
-    { title: "Prop 1", choice: "No", kind: "measure", statement: "Initiative Statute" },
+    { title: "Governor", choice: "Dee", ballot: { party: "Democratic", designation: "Attorney" } },
+    { title: "Governor", choice: "Ray", ballot: { party: "Republican", designation: "Rancher" } },
+    { title: "Treasurer", choice: "Dana", ballot: { party: "Democratic" } },
+    {
+      title: "Treasurer",
+      choice: "Dora",
+      ballot: { party: "Democratic", designation: "Treasurer", incumbent: true },
+    },
+    { title: "Controller", choice: "Rob", ballot: { party: "Republican" } },
+    { title: "Controller", choice: "Gwen", ballot: { party: "Green", designation: "Teacher" } },
+    { title: "Controller", choice: "Nia", ballot: { party: "No Party Preference" } },
+    {
+      title: "Justice",
+      choice: "Judge J",
+      ballot: { designation: "Associate Justice of the Supreme Court" },
+    },
+    { title: "Prop 1", choice: "Yes", kind: "measure", measureType: "Initiative Statute" },
+    { title: "Prop 1", choice: "No", kind: "measure", measureType: "Initiative Statute" },
     { title: "Prop 2", choice: "Yes", kind: "measure" },
     { title: "Prop 2", choice: "No", kind: "measure" },
   ].map((p) => ({ ...p, stance: "neutral" as const })),
@@ -96,25 +106,18 @@ const brief = (edits: FillEdit[]) =>
   edits.map((e) => `${e.subject.title}:${e.choice ?? ""}=${e.stance}`).sort();
 
 describe("partyOf", () => {
-  test("reads the party off the front of a ballot note", () => {
-    expect(partyOf({ ballotNote: "Democratic · Voting Rights Attorney" })).toBe("Democratic");
-    expect(partyOf({ ballotNote: "Republican" })).toBe("Republican");
-    expect(partyOf({ ballotNote: "No Party Preference" })).toBe("No Party Preference");
-    expect(partyOf({ ballotNote: "democrat" })).toBe("Democratic");
+  test("reads the ballot's party field, with the usual spellings made one", () => {
+    expect(partyOf({ ballot: { party: "Democratic" } })).toBe("Democratic");
+    expect(partyOf({ ballot: { party: "Democratic Party" } })).toBe("Democratic");
+    expect(partyOf({ ballot: { party: "democrat" } })).toBe("Democratic");
+    expect(partyOf({ ballot: { party: "No Party Preference" } })).toBe("No Party Preference");
+    // Any party name counts, known or not.
+    expect(partyOf({ ballot: { party: "Common Sense" } })).toBe("Common Sense");
   });
 
-  test("offices, measure types and missing notes aren't parties", () => {
-    expect(
-      partyOf({ ballotNote: "Associate Justice, Court of Appeal, Third District" }),
-    ).toBeUndefined();
-    expect(partyOf({ ballotNote: "Initiative Statute" })).toBeUndefined();
-    expect(partyOf({ ballotNote: "Non-Partisan" })).toBeUndefined();
+  test("no party field, no party: a designation is never read as one", () => {
     expect(partyOf({})).toBeUndefined();
-    // The ballot's own field wins, and any party name counts, known or not.
-    expect(partyOf({ ballot: { party: "Democratic Party" }, ballotNote: "Republican" })).toBe(
-      "Democratic",
-    );
-    expect(partyOf({ ballot: { party: "Common Sense" } })).toBe("Common Sense");
+    expect(partyOf({ ballot: { designation: "Republican" } })).toBeUndefined();
   });
 
   test("partyPlural", () => {

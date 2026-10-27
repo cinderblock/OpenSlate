@@ -74,6 +74,23 @@ export function defaultToUnfollowed(sourceIds: Iterable<string>): void {
   });
 }
 
+/**
+ * Sources the user removed (Sources → Remove), so nothing adds them back on
+ * its own (CatalogUpdater's news coverage). Importing one again clears it.
+ */
+export const removedSourcesStore = createLocalStore<string[]>(
+  "openslate.removedSources.v1",
+  [],
+  (raw) => (Array.isArray(raw) && raw.every(isString) ? raw : undefined),
+);
+
+export function setRemoved(sourceId: string, removed: boolean): void {
+  removedSourcesStore.set((current) => {
+    const rest = current.filter((id) => id !== sourceId);
+    return removed ? [...rest, sourceId] : rest;
+  });
+}
+
 /** Where the user votes. */
 export const areaStore = createLocalStore<Area>("openslate.area.v1", EMPTY_AREA, (raw) => {
   if (typeof raw !== "object" || raw === null) return undefined;

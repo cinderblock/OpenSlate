@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useRef } from "react";
 import { AlphaBadge, AlphaBanner } from "./components/AlphaNotice";
+import { CatalogUpdater } from "./components/CatalogUpdater";
 import { DesktopUpdateBanner } from "./components/DesktopUpdate";
 import { FeedbackHost } from "./components/FeedbackHost";
 import { ImportBanner } from "./components/ImportBanner";
@@ -167,6 +168,7 @@ export function RootLayout() {
 
         <DbStatusBanner />
         <ImportBanner />
+        <CatalogUpdater />
 
         <main>
           <Outlet />

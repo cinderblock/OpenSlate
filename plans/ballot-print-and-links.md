@@ -48,6 +48,19 @@ The user asked (2026-10-21):
   attached to ballot items, **but no curation should be needed**: if an
   article is attached to a particular ballot item, collating its link with
   that item should be trivial (automatic, like endorsements are).
+- 2026-10-26, user, on who publishes articles: not the project. We find
+  articles that news orgs (or any publisher) have published about specific
+  ballot items. Eventually publishers sign their own reference links, like
+  endorsers; for now we publish the link for them, the way we publish
+  endorsements we find (researcher-signed secondhand slates in the
+  endorsements repo).
+- 2026-10-26, user: fix the catalog refresh (so C5 can happen): yes.
+- 2026-10-26, user, on ranked choice: must be supported, and ranking is to
+  be **the primary interface**: the voter drags candidates up and down a
+  preference list. Where a contest isn't ranked, the list converts to their
+  best pick(s). Later (not now): strategic ranking, where the voter's own
+  list keeps a no-chance favourite first but the marked ballot votes for
+  others, until real ranked voting is available.
 
 ## Plan / steps
 
@@ -169,7 +182,69 @@ Steps:
    `statement` text. Removing the fallbacks now would drop party,
    designation and vote-for lines for them. Do C5 after that issue is
    fixed.
-6. C6 data for `articles`: who publishes them (see Open questions).
+6. C6 data for `articles`: answered 2026-10-26, see Part F.
+
+### Part D — imported catalog slates update (2026-10-26) — done
+
+The app stores a catalog slate's token once and never looks again
+(ISSUES.md "Imported catalog slates never update"). Two halves:
+
+1. D1 endorsements repo: CI re-signs every slate on every publish, so every
+   `issued_at` changes even when nothing else did (seen: 350 SF Action's
+   entry says `issued_at` 2026-10-26 though its positions are from Oct 23).
+   An app that updates on "newer `issued_at`" would re-download all 376
+   slates after every publish. Fix at the source: after signing, a script
+   fetches the live `bundle.json` and, for every slate whose payload is the
+   same apart from `issued_at` (same signer), puts the published token back.
+   `issued_at` then only moves when the content does, which is also what
+   it should mean.
+2. D2 app: a pure `staleImports` matches stored slates to catalog entries by
+   stream (signer key, source id, election, scope) and returns the entries
+   whose `issued_at` is newer than the newest stored slate of that stream.
+   The app fetches those (the bundle when there are many), verifies them,
+   inserts the new tokens and deletes the stream's old ones. Runs on its
+   own whenever the default catalog loads and the user has imported from
+   it; a quiet line says how many sources were updated. Slates the user
+   imported some other way are never touched (signer and source must
+   match a catalog entry).
+3. D3 then C5 (remove the text fallbacks), once D1 and D2 are live.
+
+### Part E — ranking is the primary interface (2026-10-26)
+
+1. E1 spec: `Position.rank` (integer ≥ 1, 1 = first choice, requires
+   `choice`, only with `endorse` / `lean_for`): ranked endorsements are in
+   `statement` text today ("Ranked-choice first choice: …", "Rank Both
+   Candidates", 34 files), which the user ruled out. Core schema, JSON
+   schema, vectors, CLI.
+2. E2 app model: for candidate contests the voter's choice *is* an ordered
+   list (the existing, unused `useBallotRanking` store in
+   `lib/ballotDraft.ts`, keyed by election and subject). Marks derive from
+   it: a ranked contest marks ranks 1..N for the first N; a vote-for-N
+   contest marks the first N; unknown count: the first one. *Against* stays
+   a separate mark outside the list. Yes/no questions keep two bubbles.
+3. E3 UI: the card is a reorderable list (React Aria `GridList` with
+   `useDragAndDrop`, so keyboard and screen-reader reordering come with it;
+   drag handle on touch). A line splits "on my ballot" from the rest; rank
+   numbers on ranked contests. Print, export, Quick fill, focus mode and
+   triage read the derived marks.
+4. E4 endorsements repo: ranked endorsements carry `rank`; collation shows
+   how sources rank a choice ("ranked 1st by 3").
+5. Later (user, not now): strategic ranking.
+
+### Part F — articles from publishers (2026-10-26) — done
+
+1. F1 research (background agent, endorsements worktree `feat-articles`):
+   per publisher, an `orgs/<slug>/2026-11-03/positions.json` with
+   `positions: []` and `articles`, attribution naming the publisher,
+   evidence and NOTES like the endorsement scraper. Starting with the
+   California propositions.
+2. F2 endorsements pipeline: verify checks article subjects against the
+   ballot listings like positions; the catalog index counts articles and
+   takes `jurisdictions` from article subjects too (or setup never offers
+   an articles-only source).
+3. F3 app: setup and the catalog browser treat an articles-only source
+   properly (it's not something to follow for picks; its count is
+   articles).
 
 ## Findings / gotchas
 
@@ -233,22 +308,97 @@ Steps:
   dev app with locally signed copies: "Rank up to ten choices", "Vote for
   no more than three", party · designation · incumbent, proposition
   label and type.
-- [ ] C5 remove the text fallbacks: blocked (see step 5).
-- [ ] C6 publish real `articles`: waiting on the user (Open question 3).
-- [ ] Not built: ranking for ranked-choice races. The card says "Rank up
-  to N choices" but marks are still one bubble per choice.
+- [x] C5 (`a5c…` see git log, 2026-10-26): no fallbacks left. A race no
+  listing covers shows its title whole and no vote-for line; measure search
+  words come from place + `ballot.heading`; the export lost its BallotNote
+  column.
+- [x] C6 answered (Part F).
+- [x] D1 endorsements `e4f288d`: `scripts/keep-unchanged.ts` after
+  signing. First CI run 2026-10-26 5:56 PM PDT (00:56Z): "376 slate(s)
+  unchanged since the last publish, 0 new or changed". Tested end to end
+  with a throwaway key first (unchanged slate kept its token and date,
+  edited one got a new one).
+- [x] D2 `4bf99f6`: `lib/catalogUpdates.ts` (`staleImports`,
+  `updateProblem`), `updateFromCatalog` through the import queue (new
+  `kind: "update"`, `check`, `replaces`; old tokens removed after the new
+  are stored), `CatalogUpdater` in App, banner copy for updates, usage
+  event `catalog.update`. Verified: a local test catalog (Sierra Club
+  55 → 54 positions replaced, "Updated 1 source"), then the live catalog:
+  this dev profile's 5 slates from Oct 20–23 became the Oct 26 ones with
+  `ballot` fields ("Updated 5 sources").
+- [x] E1 spec `8b96a04`: `Position.rank` (§3.16), only with endorse /
+  lean_for, needs a choice; vectors ranked / rank-on-oppose / rank-zero.
+- [x] E2/E3 UI `457974a`: `lib/ranking.ts` (pure, tested),
+  `RankedChoices.tsx` (React Aria GridList + useDragAndDrop; one list with
+  a draggable "not ranked" line), `ChoiceRow.tsx` split out of
+  MyBallotPanel. Decisions made while building (not asked):
+  - the order is kept per race in `rankingStore`; marks stay in draft rows
+    and are re-derived on every ranking change (top `marksFor` = endorse,
+    the rest = lean_for "backups");
+  - unknown vote-for count: every ranked name is marked (no guess of one);
+  - the bubble moves a name into the last marked place (first in a vote-for-
+    one race), so the displaced pick becomes the first backup; a filled
+    bubble unranks;
+  - Maybe / Against stay as marks on unranked names; on a ranked name they
+    unrank it;
+  - a race-wide stance ("Overall") and yes/no questions stay plain rows.
+  Verified in the preview: bubble tap, backups line, keyboard drag
+  (Enter on the handle, arrows, Enter: "Insert before Not ranked"),
+  iPhone 12 Pro layout. **Not verified: a real mouse/touch drag** —
+  Playwright's synthetic drag doesn't fire HTML5 drag events.
+- [x] E3b `d47fe80`: print numbers a ranked-choice contest's bubbles and
+  labels backups; Compose publishes `rank`; collation passes sources'
+  `rank` to chips ("1st") and the race page.
+- [x] E4 data, endorsements `3e15315`: 26 ranked positions in 9 orgs carry
+  `rank` (the earlier "34 files" count included "rank both" dual
+  endorsements, which get no rank). Statements kept as evidence.
+- [x] F1 research (agent, endorsements `feat/articles`, 4 commits, not
+  pushed): 9 newsroom slates, ~150 articles, all 14 propositions and SF
+  B, D–I and RTM. Its plan: `plans/articles-2026-11-03.md` there.
+- [x] F2/F3 `4d977bd`: catalog jurisdictions count article subjects;
+  articles-only entries are "news coverage" (setup and updater add them for
+  your area without a follow; catalog browser Add button; removed sources
+  stay removed).
+- [x] F2b endorsements `785407e`: verify-positions schema-checks articles
+  and checks their races / choices against the listings (141 pass; a
+  broken subject fails as `articles[0]: race … isn't on the ballot`);
+  `.openslate-version` → `998eb8e`. Publish run 40433332637 (2026-10-26
+  ~7:00 PM PDT) succeeded: "367 slate(s) unchanged since the last publish,
+  18 new or changed". Live: 9 news-coverage entries with jurisdictions;
+  Harvey Milk Club's ranks in the published token.
+- [x] End to end in the dev app against the live catalog: the updater added
+  8 newsroom slates to an SF profile on its own; Prop 1's card links "7
+  articles"; the race page's "In the news" lists them.
+- [ ] Logged, not fixed: ISSUES.md "Regional measures (`us/ca/bay-area`)
+  never reach a voter's ballot" (RTM missing for SF voters; same gap keeps
+  Local News Matters from SF voters).
 
 ## Open questions for the user
 
 1. ~~News per ballot item~~: answered 2026-10-25 (Part C, `articles`).
 2. ~~Seats as a real field~~: answered 2026-10-25 (Part C, structure in the
    spec, no parsed strings).
-3. Who publishes the first `articles` (C6)? Candidates: a researcher-signed
-   slate per newsroom in the public-endorsements repo (e.g. CalMatters'
-   per-proposition coverage, transcribed like endorsements are), or
-   newsrooms signing their own. Open until C1–C3 are live.
+3. ~~Who publishes the first `articles`~~: answered 2026-10-26 (Part F).
+4. ~~Article follow-ups~~: answered 2026-10-26. KQED's undated guide pages
+   not needed (its dated explainers already cover all 14 props). Sac Bee
+   and AP via a real browser: done, endorsements `e670649` (Sac Bee 25
+   attachments on all 14 props; AP 3, all Prop 40, the only props it
+   reported on itself), published 2026-10-26 (keep-unchanged: 385
+   unchanged, 2 new). Politico and PPIC not attempted.
+6. Regional measures (ISSUES.md entry): user leans to a separate thread;
+   waiting on a yes to start one.
+5. Strategic ranking (keep a favourite first, mark others): the user said
+   later; not started.
 
 ## Findings added during the build
+
+- The query cache is persisted (IndexedDB `keyval-store` /
+  `openslate.query-cache`) with a 5-minute staleTime, so a just-published
+  catalog reaches an open app on its next refetch after that, not on a
+  reload within it. Fine for real use; when testing, delete that key.
+- The catalog's `issued_at`, `election`, `scope` and `issuer.key` match
+  every published slate's payload (checked all 376), so a stream can be
+  matched from the index alone.
 
 - Ranked choice isn't in any county's list. Sourced rules in the scripts:
   SF city offices and Supervisors rank up to 10 (sf.gov/ranked-choice-voting);

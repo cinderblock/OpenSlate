@@ -7,10 +7,10 @@ import {
   instructionLine,
   isMarked,
   isYesNo,
+  ordinal,
   picksIn,
   raceHeading,
   ranksFor,
-  splitMeasureTitle,
   voteFor,
   voteForLine,
 } from "../src/lib/ballotView";
@@ -106,61 +106,18 @@ describe("ballotChoices", () => {
     expect(no?.support).toBe(2);
   });
 
-  test("a measure's ballot note goes under the title; other options are kept", () => {
+  test("a listed Yes keeps its listing; other options are kept", () => {
     const r = race(
       "measure",
       [
-        group("yes", [], { onBallot: true, ballotNote: "Approve", ballotIndex: 0 }),
+        group("yes", [], { onBallot: true, ballotIndex: 0 }),
         group("Option C", [position("A", "endorse")], { support: 1 }),
       ],
       true,
     );
     const choices = ballotChoices(r);
     expect(choices.map((c) => c.choice)).toEqual(["Yes", "No", "Option C"]);
-    // Said of Yes and No alike, so it moves under the title.
-    expect(choices[0]?.ballotNote).toBeUndefined();
-    expect(raceHeading(r).measureType).toBe("Approve");
     expect(choices[0]?.onBallot).toBe(true);
-  });
-});
-
-describe("splitMeasureTitle", () => {
-  test("statewide proposition", () => {
-    expect(
-      splitMeasureTitle(
-        "California – Proposition 43 (Limits Voters' Ability to Raise Revenues for Local Government Services)",
-      ),
-    ).toEqual({
-      heading: "Proposition 43",
-      number: "43",
-      detail: "Limits Voters' Ability to Raise Revenues for Local Government Services",
-    });
-  });
-
-  test("local measures, letters and odd numbering", () => {
-    expect(
-      splitMeasureTitle(
-        "San Francisco – Proposition H (Parcel Tax to Fund Public Muni Operations)",
-      ),
-    ).toMatchObject({ heading: "Proposition H", number: "H" });
-    expect(
-      splitMeasureTitle(
-        "Isla Vista Community Services District – Measure F2026 (Establishment of an Appropriations Limit)",
-      ),
-    ).toMatchObject({
-      heading: "Measure F2026",
-      detail: "Establishment of an Appropriations Limit",
-    });
-    expect(splitMeasureTitle("Prop 1")).toEqual({ heading: "Proposition 1", number: "1" });
-  });
-
-  test("anything else is left whole", () => {
-    expect(splitMeasureTitle("Measure on the city charter")).toEqual({
-      heading: "Measure on the city charter",
-    });
-    expect(splitMeasureTitle("Governor of California")).toEqual({
-      heading: "Governor of California",
-    });
   });
 });
 
@@ -175,21 +132,12 @@ describe("isMarked", () => {
 });
 
 describe("voteFor", () => {
-  const listed = (note?: string) =>
-    group("A", [], { onBallot: true, ballotIndex: 0, ...(note ? { ballotNote: note } : {}) });
-
-  test("one, for an office the ballot source lists", () => {
-    expect(voteFor(race("race", [listed("Democratic · Attorney")], true))).toBe(1);
-  });
-
-  test("the ballot source's seat count, which then leaves the designation", () => {
-    const board = race("race", [listed("3 seats"), listed("Teacher · 3 seats")], true);
-    expect(voteFor(board)).toBe(3);
-    expect(board.choices.map(designation)).toEqual([undefined, "Teacher"]);
-  });
-
-  test("unknown without a ballot source: a board may fill several seats", () => {
+  test("unknown unless the listing says: a board may fill several seats", () => {
     expect(voteFor(race("race", [group("A", [])]))).toBeUndefined();
+    // Even a race a listing lists: it said nothing about how many.
+    const listed = race("race", [group("A", [], { onBallot: true, ballotIndex: 0 })], true);
+    expect(voteFor(listed)).toBeUndefined();
+    expect(instructionLine(listed)).toBeUndefined();
   });
 
   test("none for yes/no questions, retention races included", () => {
@@ -208,8 +156,8 @@ describe("voteFor", () => {
 });
 
 describe("the ballot's own fields (SPEC §3.14)", () => {
-  test("vote_for, over any older note", () => {
-    const board = race("race", [group("A", [], { onBallot: true, ballotNote: "3 seats" })], true);
+  test("vote_for", () => {
+    const board = race("race", [group("A", [], { onBallot: true })], true);
     expect(voteFor({ ...board, ballot: { vote_for: 2 } })).toBe(2);
     expect(instructionLine({ ...board, ballot: { vote_for: 2 } })).toBe(
       "Vote for no more than two",
@@ -263,13 +211,23 @@ describe("the ballot's own fields (SPEC §3.14)", () => {
     expect(raceHeading({ ...ag, ballot: { vote_for: 1 } }).heading).toBe("T");
   });
 
+  test("no listing: the title whole, with nothing read out of it", () => {
+    const prop = {
+      ...race("measure", []),
+      subject: { title: "California – Proposition 43 (Limits Revenues)", kind: "measure" },
+    };
+    expect(raceHeading(prop)).toEqual({
+      heading: "California – Proposition 43 (Limits Revenues)",
+    });
+  });
+
   test("a candidate's party, designation and incumbency", () => {
     const a = group("A", [], {
       ballot: { party: "Democratic", designation: "Attorney General", incumbent: true },
-      ballotNote: "ignored once the fields are there",
     });
     expect(designation(a)).toBe("Democratic · Attorney General · incumbent");
     expect(designation(group("B", [], { ballot: { designation: "Teacher" } }))).toBe("Teacher");
+    expect(designation(group("C", []))).toBeUndefined();
   });
 });
 
@@ -306,4 +264,20 @@ describe("picksIn", () => {
     }
     expect(picksIn(r, E, rows)).toBe(2);
   });
+});
+
+test("ordinal", () => {
+  expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 101, 111].map(ordinal)).toEqual([
+    "1st",
+    "2nd",
+    "3rd",
+    "4th",
+    "11th",
+    "12th",
+    "13th",
+    "21st",
+    "22nd",
+    "101st",
+    "111th",
+  ]);
 });

@@ -8,10 +8,10 @@ import {
   picksIn,
   raceHeading,
   voteFor,
-  writeInGroup,
   writeInRows,
 } from "./ballotView";
 import { type ChoiceGroup, type ElectionSummary, type Race, defaultElection } from "./collate";
+import { writeInGroup } from "./ranking";
 import { matchesSearch, raceSearchText, searchTerms } from "./search";
 
 /**

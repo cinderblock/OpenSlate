@@ -1,0 +1,10 @@
+{
+  "name": "voted-in-empty",
+  "description": "Validly signed token with an empty `voted_in`. It names at least one jurisdiction; MUST be rejected (SPEC §3.3).",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5In0sInBvc2l0aW9ucyI6W3siY2hvaWNlIjoiWWVzIiwic3RhbmNlIjoiZW5kb3JzZSIsInN1YmplY3QiOnsianVyaXNkaWN0aW9uIjoidXMvY2Evc3ByaW5nZmllbGQtcmVnaW9uIiwidGl0bGUiOiJNZWFzdXJlIFJUIiwidm90ZWRfaW4iOltdfX1dLCJ2IjoxfQ.4apskoAfJMCsIDd-UIZ5UlapHoKpuGnwdBXOdK9Uto35FtESMt-yuanAqdEJkl1erpCetoJat0BxqzwBnXfTDQ",
+  "expect": {
+    "error_contains": [
+      "voted_in"
+    ]
+  }
+}

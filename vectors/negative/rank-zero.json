@@ -1,0 +1,10 @@
+{
+  "name": "rank-zero",
+  "description": "Validly signed token with `rank: 0`. Ranks start at 1; MUST be rejected (SPEC §3.16).",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5In0sInBvc2l0aW9ucyI6W3siY2hvaWNlIjoiQSIsInJhbmsiOjAsInN0YW5jZSI6ImVuZG9yc2UiLCJzdWJqZWN0Ijp7InRpdGxlIjoiTWF5b3IifX1dLCJ2IjoxfQ.8nLGx7EvtviGpOGyQR_WzF6612gE2OPTaV09zBAW05sVOtauQhz37gn2wHQNmudOuj8SDfUb0-Aj51Ml4GDBCw",
+  "expect": {
+    "error_contains": [
+      "rank"
+    ]
+  }
+}
