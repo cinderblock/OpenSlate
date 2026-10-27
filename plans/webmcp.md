@@ -133,24 +133,18 @@ live.
 - [x] `fa2d974`: write-ins count toward picks
 - [x] the WebMCP tools, README, this plan (the commit after `fa2d974`)
 - [x] `agent.tool` usage event: tool and outcome, opt-in only
-- [ ] origin-trial token in `public/_headers` (needs open question 1)
+- [x] origin-trial token in `public/_headers`
 - [ ] a real-browser check in Chrome with WebMCP
 
 ## Open questions for the user
 
-1. **The Chrome origin-trial token for https://openslate.us.** Registering
-   needs the user's Google account at
-   https://developer.chrome.com/origintrials/#/register_trial/4163014905550602241
-   with origin `https://openslate.us`, no subdomains, and no third-party
-   matching. Either the user registers and pastes the token (it isn't
-   secret: every visitor's browser receives it), or the user authorizes me
-   to fill that form in their Chrome. The token goes in `public/_headers` as
-   `Origin-Trial: <token>` and deploys on push to master.
-2. **The same for Edge?** Edge runs its own trial with a separate token
+1. **The same for Edge?** Edge runs its own trial with a separate token
    (Microsoft's origin-trials site). Lower priority.
-3. **Try it end to end** once the token is live, in Chrome 149+ with an
-   agent that speaks WebMCP. Chrome's post says Gemini in Chrome support is
-   "coming soon"; otherwise use an agent extension.
+2. **Try it end to end** on openslate.us, in Chrome 149+ with an agent that
+   speaks WebMCP. Chrome's post says Gemini in Chrome support is "coming
+   soon"; otherwise use an agent extension. Check that
+   `document.modelContext` (or `navigator.modelContext`) exists on the live
+   site.
 
 ## Origin trial (Chrome)
 
@@ -159,9 +153,11 @@ live.
   from Chrome 149. Without a token for the page's origin, real visitors'
   Chrome exposes no `modelContext`. The flag
   `chrome://flags/#enable-webmcp-testing` is for local testing only.
-- Expiry: Edge's trial page gives 2026-11-17, and one guide says Chrome
-  149–156. Chrome's own post gives no date. Either way it covers the
-  2026-11-03 election. Expect to renew, or to drop the token once Chrome
+- **The token is in `public/_headers`** (user registered it, 2026-10-26).
+  It is for `https://openslate.us:443` with subdomains, feature `WebMCP`.
+  It expires 2027-03-30 00:00Z (Mar 29, 5:00 PM PDT), read from the token's
+  own claims. Edge's trial page gives 2026-11-17, but that is Edge's trial,
+  not Chrome's. Renew the token before it expires, or drop it once Chrome
   ships WebMCP.
 - Tokens can arrive in an `Origin-Trial` response header or in
   `<meta http-equiv="origin-trial">`. The header in `public/_headers` sits

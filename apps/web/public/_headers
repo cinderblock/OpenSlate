@@ -8,7 +8,13 @@
 # connect-src/img-src allow any https origin: catalogs, slate URLs and the
 # civicAPI map are user-chosen or upstream hosts.
 # Referrer-Policy no-referrer: requests to those hosts don't carry our origin.
+# Origin-Trial: Chrome's WebMCP origin trial, so a visitor's browser agent
+# can use My ballot's tools (src/lib/webmcp.ts, plans/webmcp.md). The token
+# is for https://openslate.us and its subdomains, and expires
+# 2027-03-30 00:00Z (Mar 29, 5:00 PM PDT): renew it, or drop it once Chrome
+# ships WebMCP.
 /*
   Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
+  Origin-Trial: AgG4XdnruCjd2C02nhnffb5LQ0TuMw3I9TsZ5mSPvLoRtjrA9IUeei3ZRXk7o/DQSey9+wcwwVxL3lxoyaJGwA4AAABfeyJvcmlnaW4iOiJodHRwczovL29wZW5zbGF0ZS51czo0NDMiLCJmZWF0dXJlIjoiV2ViTUNQIiwiZXhwaXJ5IjoxODA2MzY0ODAwLCJpc1N1YmRvbWFpbiI6dHJ1ZX0=
