@@ -86,5 +86,7 @@ instead", then Follow on Courage California (its row turned
 saying "0 of 0 sources followed". `openslate.follows.v2` was never written,
 and the slates collection held only the 5 election-office listings: Courage
 California's slate wasn't imported. The clicks were automated (CDP
-coordinate clicks), so this may be a test artifact, but it needs a manual
-repro. Matters because this is the first-run path every new voter takes.
+coordinate clicks), and the setup download runs in the background after
+the ballot opens (README), so the follow may only land when it finishes. Two
+page reloads within a few minutes may have cut it short. It needs a manual repro
+that waits for the "still filling in" banner to clear. Matters because this is the first-run path every new voter takes.
