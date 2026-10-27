@@ -1,6 +1,6 @@
 # Issues
 
-## Regional measures (`us/ca/bay-area`) never reach a voter's ballot
+## Regional measures (`us/ca/bay-area`) never reach a voter's ballot (in progress — fix/regional-measures, plans/regional-measures.md)
 
 Seen 2026-10-26 7:05 PM PDT (02:05Z): with the area set to San Francisco,
 My ballot has no "Bay Area — Regional Measure RTM (Regional Transit
