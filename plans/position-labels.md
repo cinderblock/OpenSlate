@@ -20,20 +20,22 @@ User feedback that set this up (2026-10-26):
 ## Environment / context
 
 - OpenSlate repo: `C:\Users\camer\git\Personal Projects\OpenSlate` (shared
-  working tree; other threads have uncommitted edits, including in
-  `packages/cli/src/index.ts`; stage only our hunks).
-- Spec: `SPEC.md` §3.1 (payload), §3.4 (Position), §3.6 (Stance), §3.10
-  (adoption), §10.1 (changelog).
-- Schema: `packages/core/src/schema.ts` (zod) → `packages/core/scripts/export-schema.ts`
-  → `packages/core/schema/openslate.schema.json`.
-- Test vectors: `packages/core/scripts/vectors-source.ts` → `vectors/`.
-- CLI: `packages/cli/src/index.ts` (`SignInput`, `cmdSign`, `cmdSignBatch`).
-- Core builder: `packages/core/src/slate.ts` (`BuildSlateInput`, `buildSlate`).
-- App: `apps/web/src/lib/collate.ts` (`RacePosition`), `components/ChoiceRow.tsx`
-  (source chips, "leans for"), `components/RacePanel.tsx` ("Lean for").
+  working tree; other threads commit and push master concurrently).
+- Spec: `SPEC.md` §3.1, §3.4, §3.6 (note), §3.10 (adopted labels), new
+  §3.17, §10.1 changelog.
+- Schema: `packages/core/src/schema.ts` (zod, `labelDefinitionSchema`, a
+  `superRefine` on the payload for uniqueness and membership) →
+  `packages/core/scripts/export-schema.ts` → `packages/core/schema/openslate.schema.json`.
+  Draft-07 JSON Schema can't express "label is in labels"; zod enforces it.
+- Vectors: `packages/core/scripts/vectors-source.ts` → `vectors/positive/labels.json`,
+  `vectors/negative/label-not-in-labels.json`, `vectors/negative/labels-duplicate.json`.
+- CLI: `packages/cli/src/index.ts` passes `labels` through `sign` and
+  `sign --batch`; `verify` prints them.
+- App: `apps/web/src/lib/collate.ts` (`RacePosition.label`, `labelDescription`),
+  `components/ChoiceRow.tsx` (chips), `components/RacePanel.tsx` (race page),
+  `lib/ballotAgent.ts` (`get_race` returns `label`, `label_description`).
 - The endorsements repo pins OpenSlate in `.openslate-version`; CI clones that
-  commit to sign. So: push OpenSlate first, then bump the pin, then push the
-  bundle.
+  commit to sign. Pinned to `53ad9c5` there (commit `d45d6e2`, local).
 
 ## Decisions already made (don't re-ask)
 
@@ -41,42 +43,34 @@ User feedback that set this up (2026-10-26):
   like `rank` and `voted_in`. Every existing slate stays valid; nothing stored
   in users' browsers changes.
 - `stance` keeps its meaning and stays required: it's the machine bucket.
+- Label descriptions are the issuer's words only; don't write our own (the
+  SVDSA "cautious"/"gentle" labels have none).
 
-## Design
+## Design (as built)
 
-- `Position.label` (string, optional): the issuer's own term for the
-  position, as it wrote it. Any stance. Consumers show it in place of their
-  own stance wording, and MUST NOT read a stance out of it.
-- `SlatePayload.labels` (optional `LabelDefinition[]`): `{ label, description? }`,
-  in the order the issuer wants them shown (a legend). Labels MUST be unique.
-  When `labels` is present, every own position's `label` MUST be one of
-  them (catches typos; a slate can omit `labels` entirely).
-- Adopted positions keep their `label`; its definition comes from the slate
-  they were adopted from.
-
-## Compatibility
-
-- Existing slates, identities, ballots and settings: unaffected (all fields
-  optional, no meaning changed).
-- Closed schema (§3.8): verifiers built before this revision reject a slate
-  that uses `label`/`labels`. The web app ships with the new core, but a stale
-  cached copy would drop just the labelled slate until it reloads. Same
-  trade-off as every earlier field addition; noted in the changelog.
+- `Position.label` (string, optional): the issuer's own term, any stance.
+  Consumers show it in place of their stance wording, count by stance, and
+  MUST NOT read a stance out of it.
+- `SlatePayload.labels` (optional `{ label, description? }[]`), legend order.
+  Unique; when present, every own position's label must be listed.
+- Adopted positions keep their label; its definition comes from the source slate.
+- App: chip reads `Silicon Valley DSA: “Recommended”, Shirley N. Weber`
+  (no "~" lean marker when labelled); popover adds the definition; race page
+  badge shows the label with the definition under it.
 
 ## Plan / steps
 
-1. [ ] **Current:** Spec text (§3.1, §3.4, new §3.17, §3.6 note, §3.10 note, §10.1).
-2. [ ] Schema (zod + JSON Schema export), builder, vectors (positive + negatives).
-3. [ ] CLI: pass `labels` through single and batch sign; inspect shows them.
-4. [ ] App: carry `label` + definition into `RacePosition`; ChoiceRow and
-   RacePanel show the label instead of "leans for"/"Lean for"; agent tools
-   include it.
-5. [ ] Checks (typecheck, lint, tests), commit in logical pieces.
-6. [ ] SVDSA bundle: add labels ("Endorsed", "Recommended", "Cautious
-   recommendation", "Gentle recommendation", "Not recommended", "No
-   recommendation", "Neutral") with the guide's own definitions.
-7. [ ] Ask the user to OK pushing OpenSlate, then bump `.openslate-version`
-   and push the endorsements repo.
+1. [x] Spec text — `6de93e4`.
+2. [x] Schema, builder, vectors — `6de93e4`.
+3. [x] CLI — `6de93e4`.
+4. [x] App — `53ad9c5`.
+5. [x] Checks: typecheck, 661 tests, lint all pass; vectors 32/32.
+6. [x] Visual check in the dev app (incognito profile, throwaway-key slate):
+   chips, popover and race page show labels and definitions.
+7. [x] Scraper skill teaches labels — `f1e3a66`; README — `feba3ae`.
+8. [x] SVDSA bundle labelled and pin bumped (endorsements repo `d45d6e2`).
+9. [ ] **Current:** user OKs pushing the endorsements repo (publishes SVDSA)
+   and OpenSlate's 4 local follow-ups (docs/issues only).
 
 ## Findings / gotchas
 
@@ -84,17 +78,34 @@ User feedback that set this up (2026-10-26):
   the voter's *own* mark, not an endorser's stance. The endorser wording is
   `ChoiceRow` STANCE_WORD ("leans for", plus a "~" on the chip) and
   `RacePanel` STANCE_LABEL ("Lean for").
+- `6de93e4` and `53ad9c5` reached origin when another thread pushed master
+  (2026-10-26 evening), before the user OKed a push. They were tested and
+  are additive; nothing to undo.
+- `vectors:generate` rewrites every vector with LF endings; git shows them
+  modified but the content diff is empty. Don't commit those.
+- The T3 preview's Default profile holds the user's real ballot; test imports
+  belong in the Incognito profile.
+- Statements render with doubled quotes (`“"…"”`) for every scraped bundle;
+  logged in `ISSUES.md` (`3f3f22a`), not fixed here.
 
 ## Progress log
 
-- [x] Design agreed in principle (user go-ahead 2026-10-26).
+- [x] Spec, core, CLI, vectors, app, skill, README committed.
+- [x] Verified end to end: throwaway-key batch sign of SVDSA, `verify` lists
+  8 labels, app renders them.
+- [ ] Push (waiting on the user).
 
 ## Open questions for the user
 
-1. Should the app's own Compose panel let a voter or org set labels on the
-   slates they publish? Not in this pass; recommend a follow-up.
+1. OK to push the endorsements repo (3 commits: SVDSA bundle, labels + pin,
+   San Mateo ids)? Pushing signs and publishes SVDSA.
+2. OK to push OpenSlate's 4 local commits (ISSUES fix and entry, scraper
+   skill, README)?
+3. Should the app's Compose panel let voters/orgs set labels on slates they
+   publish? Not built; recommend a follow-up.
 
 ## Things not to do
 
 - Don't reinterpret existing stances or make `label` required.
+- Don't invent label descriptions.
 - Don't push either repo without the user's OK.

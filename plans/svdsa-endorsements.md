@@ -28,6 +28,8 @@ SVDSA's picks. The user is a member of the chapter and asked for it.
   `endorse`; "We recommend" → `lean_for` (same rule DSA SF's bundle uses).
 - "No recommendation" / "we recommend no candidate" → `abstain`, no choice
   (DSA SF precedent). Prop 5 "We are neutral" → `neutral`.
+- Every position carries the guide's own term as `label` (SPEC §3.17, built
+  for this in [position-labels.md](position-labels.md)); stances unchanged.
 
 ## Plan / steps
 
@@ -38,8 +40,10 @@ SVDSA's picks. The user is a member of the chapter and asked for it.
 4. [x] `normalize-choices --apply` (114 ids, 0 unresolved), `verify-positions` OK,
    `bun run test` 22 pass.
 5. [x] NOTES.md with review flags.
-6. [x] Committed `4473dda` in openslate-public-endorsements (local master).
-7. [ ] **Current:** user reviews NOTES.md flags, then OKs the push (push → CI signs + publishes).
+6. [x] Committed (now `6859af3` after rebasing onto origin).
+7. [x] Labels + OpenSlate pin `53ad9c5` (`d45d6e2`); San Mateo County's new
+   listing matched every San Mateo title and name, 21 ids added (`6176d6d`).
+8. [ ] **Current:** user OKs the push (push → CI signs + publishes).
 
 ## Findings / gotchas
 
@@ -65,12 +69,14 @@ SVDSA's picks. The user is a member of the chapter and asked for it.
 - [x] Fetched guide 2026-10-26 7:30 PM PDT (2026-10-27 02:30Z).
 - [x] Bundle built and committed: 158 positions (5 endorse, 122 lean_for,
   4 lean_against, 26 abstain, 1 neutral).
-- [ ] Push to origin/master (needs the user's OK; carries 3 earlier local commits).
+- [x] Rebased onto origin (was 38 behind); the 3 earlier ride-along commits
+  were already upstream. Backup branch `backup/pre-rebase-svdsa-labels`.
+- [ ] Push to origin/master (needs the user's OK): 3 commits, all SVDSA.
 
 ## Open questions for the user
 
-1. OK to push? Local master is 4 ahead of origin: this commit plus 3 earlier ones
-   (cde383b logo_background, 25955d8 bundle.json in index.json, e90825e logos).
+1. OK to push? Local master is 3 ahead of origin, all SVDSA: `6859af3`
+   bundle, `d45d6e2` labels + pin, `6176d6d` San Mateo ids.
 2. Do the NOTES.md judgment calls look right (tiers, soft picks, blanket school measures)?
 3. User feedback (2026-10-26): "every endorser needs to be able to use their own
    language. we cannot 'coax' a recommendation to a full yes/reject." The SPEC §3.6
@@ -78,8 +84,8 @@ SVDSA's picks. The user is a member of the chapter and asked for it.
    term. Proposed: an optional `Position.label` (the endorser's wording, e.g.
    "Recommended", "Cautious recommendation") plus optional slate-level definitions
    of each label (e.g. "Endorsed: 75% chapter vote"). `stance` stays as the
-   machine bucket for collating. This is a schema change; waiting on the user's
-   go-ahead on the shape. Hold the SVDSA push until then?
+   machine bucket for collating. **Resolved:** user said go ahead if existing
+   configs don't break; built additively (see position-labels.md).
 4. User: "we need to timestamp our scrapes and include the provenance URL." Already
    in place: `attribution.retrieved_at`, `attribution.sources`, per-position
    `source`, and the evidence header; the app shows the retrieval date. Gaps:
