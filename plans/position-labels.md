@@ -71,6 +71,33 @@ User feedback that set this up (2026-10-26):
 8. [x] SVDSA bundle labelled and pin bumped (endorsements repo `d45d6e2`).
 9. [x] Everything published 2026-10-27 1:22 PM PDT (20:22Z); SVDSA is live with labels.
 
+## Phase 2: labels in Compose (user go-ahead 2026-10-27)
+
+Voters and orgs publishing from the app set their own labels.
+
+- **My labels** (`lib/myLabels.ts`, localStorage `openslate.myLabels.v1`): an
+  ordered vocabulary `{ label, description?, stance? }`, shared by the draft
+  like the picks themselves. `stance` is a local default only (picking the
+  label sets the pick's stance); it's never published.
+- **Draft rows** carry `label` (public, like `statement`). Renaming or
+  removing a label updates every row that uses it.
+- **Compose**: a "My labels" card (add, describe, default stance, reorder,
+  remove); a label select on each pick and on Other positions when any labels
+  exist. Signing writes `label` on positions and `labels` = the used labels
+  in vocabulary order, without the local stance.
+
+Steps:
+
+1. [x] Draft `label`, `relabeledRows`, `lib/myLabels.ts` + tests.
+2. [x] Compose UI: `components/MyLabelsCard.tsx`, a label select on picks and
+   Other positions, `labelsFor` at signing; stance options moved to
+   `components/stanceOptions.ts`.
+3. [x] 696 tests, typecheck, lint; checked in the dev app (incognito): added
+   two labels, labelled two picks (the default stance applied), renamed one
+   (the pick followed), signed: positions carry labels, `labels` has the
+   description and no stance. Committed `f741154` with the README.
+4. [ ] **Current:** push (deploys the app) once the user says so.
+
 ## Findings / gotchas
 
 - My ballot's "Maybe" (`MyBallotPanel.tsx:145`, `ChoiceRow` OTHER_MARKS) is
@@ -100,8 +127,8 @@ User feedback that set this up (2026-10-26):
    Pushing signs and publishes SVDSA. Origin's pin already includes labels.
 2. OK to push OpenSlate's 4 local commits (ISSUES fix and entry, scraper
    skill, README)?
-3. Should the app's Compose panel let voters/orgs set labels on slates they
-   publish? Not built; recommend a follow-up.
+3. Compose labels: **built** (user said "Yes. Implement it", 2026-10-27),
+   `f741154`, not pushed yet.
 
 ## Things not to do
 
