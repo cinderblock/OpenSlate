@@ -445,12 +445,21 @@ function placesOf<T>(
   return out;
 }
 
-/** Ballot order: by jurisdiction (statewide, districts, local), offices before measures, then title. */
+/**
+ * Where a race falls within its section: offices, then retention questions
+ * (the ballot prints judges with the offices, SPEC §3.14), then measures.
+ */
+function contestRank(race: Race): number {
+  if (race.ballot?.retention) return 1;
+  return race.subject.kind === "measure" ? 2 : 0;
+}
+
+/** Ballot order: by jurisdiction (statewide, districts, local), offices, retention questions, measures, then title. */
 export function compareRaces(a: Race, b: Race): number {
   return (
     jurisdictionRank(a.jurisdiction) - jurisdictionRank(b.jurisdiction) ||
     collator.compare(jurisdictionLabel(a.jurisdiction), jurisdictionLabel(b.jurisdiction)) ||
-    Number(a.subject.kind === "measure") - Number(b.subject.kind === "measure") ||
+    contestRank(a) - contestRank(b) ||
     collator.compare(a.subject.title, b.subject.title)
   );
 }

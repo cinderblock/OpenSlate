@@ -362,6 +362,29 @@ describe("collateRaces", () => {
     expect(races.map((r) => r.subject.title)).toEqual(["Governor", "Prop 1"]);
   });
 
+  test("a retention question sorts after the offices and before the measures, as the listing says", () => {
+    const yesNo = { kind: "measure", jurisdiction: "us/ca", election: E, choice: "Yes" };
+    const statewide = decodeSlates([
+      slate({
+        of: "Secretary of State",
+        ofKind: "election-authority",
+        positions: [
+          { ...yesNo, title: "Prop 1", contest: { heading: "Proposition 1", number: "1" } },
+          {
+            ...yesNo,
+            title: "Retain Justice A",
+            contest: { heading: "For Associate Justice of the Supreme Court", retention: true },
+          },
+          { title: "Governor", jurisdiction: "us/ca", election: E, choice: "X" },
+        ],
+      }),
+      // An endorser files it as a plain measure, with no listing.
+      slate({ name: "Endorser", positions: [{ ...yesNo, title: "Retain Justice A" }] }),
+    ]);
+    const races = collateRaces(statewide, { follows: {} });
+    expect(races.map((r) => r.subject.title)).toEqual(["Governor", "Retain Justice A", "Prop 1"]);
+  });
+
   test("filters by election, falling back to the slate's context election", () => {
     const mixed = decodeSlates([
       slate({ name: "A", election: "2026-06-02", positions: [{ title: "Primary race" }] }),

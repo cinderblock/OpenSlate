@@ -49,6 +49,8 @@ export const ballotContestSchema = z
     vote_for: z.number().int().min(1).optional(),
     /** Ranked choice: a voter ranks up to this many choices. */
     ranks: z.number().int().min(2).optional(),
+    /** A retention question: Yes or No on keeping someone in office. Never `false`: omit it. */
+    retention: z.literal(true).optional(),
   })
   .strict()
   .refine(notEmpty, { message: "ballot needs at least one field" })

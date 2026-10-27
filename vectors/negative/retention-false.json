@@ -1,0 +1,10 @@
+{
+  "name": "retention-false",
+  "description": "Validly signed token whose subject's `ballot` has `retention: false`. Only `true` is allowed; MUST be rejected (SPEC §3.14).",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5In0sInBvc2l0aW9ucyI6W3siY2hvaWNlIjoiWWVzIiwic3RhbmNlIjoibmV1dHJhbCIsInN1YmplY3QiOnsiYmFsbG90Ijp7InJldGVudGlvbiI6ZmFsc2V9LCJ0aXRsZSI6IlJldGFpbiBKdWRnZSBBIn19XSwidiI6MX0.GYIETE3YtStaGK9GqEXfM3l5rOlrxOmE9U1YGjvpuoE55hm9vbsYhPqvglr-kCDVc2QMB-Ag9ev6ahaT8MHADQ",
+  "expect": {
+    "error_contains": [
+      "retention"
+    ]
+  }
+}

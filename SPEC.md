@@ -398,6 +398,7 @@ consumers SHOULD prefer a listing's values.
 | `measure_type` | string | no | A measure's type as printed: `"Initiative Statute"`, `"Legislative Constitutional Amendment"`, `"Bond Measure"`. |
 | `vote_for` | integer | no | The most choices a voter may mark (≥ 1): the ballot's "Vote for no more than N". |
 | `ranks` | integer | no | A ranked-choice contest: a voter ranks up to this many choices (≥ 2). |
+| `retention` | boolean | no | `true`: a retention question, Yes or No on keeping someone in office ("Shall Associate Justice … be elected to the office …?"). The ballot prints it with the offices, before the measures. MUST NOT be `false`; omit it instead. |
 
 `Position.ballot` is a `BallotChoice`:
 

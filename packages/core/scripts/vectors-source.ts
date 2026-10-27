@@ -211,7 +211,7 @@ export const POSITIVES: PositiveDef[] = [
   {
     name: "ballot-listing",
     description:
-      "A ballot listing (SPEC §8.2) with how the ballot prints each contest and choice (§3.14): heading, number, label, measure type, vote_for, ranks; party, designation, incumbent.",
+      "A ballot listing (SPEC §8.2) with how the ballot prints each contest and choice (§3.14): heading, number, label, measure type, vote_for, ranks, retention; party, designation, incumbent.",
     signer: "bob",
     payload: {
       v: 1,
@@ -254,6 +254,19 @@ export const POSITIVES: PositiveDef[] = [
               number: "A",
               label: "Shall the city fix the monorail?",
               measure_type: "Bond Measure",
+            },
+          },
+          stance: "neutral",
+          choice: "Yes",
+        },
+        {
+          subject: {
+            title: "Springfield Municipal Court — Retain Judge C. Jurist",
+            kind: "measure",
+            ballot: {
+              heading: "For Judge of the Municipal Court",
+              label: "Shall Judge C. JURIST be elected to the office for the term provided by law?",
+              retention: true,
             },
           },
           stance: "neutral",
@@ -619,6 +632,31 @@ export const NEGATIVES: NegativeDef[] = [
       );
     },
     expect: { error_contains: ["incumbent"] },
+  },
+  {
+    name: "retention-false",
+    description:
+      "Validly signed token whose subject's `ballot` has `retention: false`. Only `true` is allowed; MUST be rejected (SPEC §3.14).",
+    build: (h) => {
+      const key = h.pubkey("alice");
+      return h.sign(
+        { alg: "EdDSA", typ: "openslate+jws", kid: key },
+        {
+          v: 1,
+          issuer: { key },
+          issued_at: "2026-01-01T00:00:00Z",
+          positions: [
+            {
+              subject: { title: "Retain Judge A", ballot: { retention: false } },
+              stance: "neutral",
+              choice: "Yes",
+            },
+          ],
+        },
+        h.seed("alice"),
+      );
+    },
+    expect: { error_contains: ["retention"] },
   },
   {
     name: "vote-for-and-ranks",
