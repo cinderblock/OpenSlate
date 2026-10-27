@@ -353,12 +353,16 @@ rather than positions, so it isn't a slate. It is one signed manifest
 published file with its SHA-256; clients fetch only the files a page needs and
 check each one. `openslate guide check|sign|verify` builds and checks one. The
 format lives in [`packages/core/src/guide.ts`](./packages/core/src/guide.ts) and
-isn't part of SPEC.md yet. California's Nov 3, 2026 guides (the state's, and
-San Francisco's pamphlet) are in
+isn't part of SPEC.md yet. California's Nov 3, 2026 guides (the state's;
+the pamphlets of San Francisco, Los Angeles, Orange, San Diego, Alameda and
+Santa Clara counties; San Mateo's filed measure documents; and the local
+measures' official documents in 17 more counties) are in
 [openslate-ballot-ca-2026-11-03](https://github.com/cinderblock/openslate-ballot-ca-2026-11-03),
 one repo per state and election with one manifest per publisher. A county
 pamphlet is one large PDF, so its full texts are linked by page (with the
-PDF's SHA-256) rather than mirrored. The catalog's `guides.json` lists each
+PDF's SHA-256) rather than mirrored; where no pamphlet has been scraped, each
+local measure's documents are linked from a hand-checked table, one per
+county. The catalog's `guides.json` lists each
 guide's URL, key, and the jurisdictions it `covers`, so a race page finds a
 county's statements for a congressional district.
 

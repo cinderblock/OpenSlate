@@ -1,16 +1,5 @@
 # Issues
 
-## Local measures outside the covered counties have no official text
-
-**In progress — master (ISSUES.md burn-down).**
-
-Seen 2026-10-26: My ballot links a measure's official text only when a voter
-guide in `guides.json` lists it (state, SF, LA, OC, Alameda, San Diego, Santa
-Clara, San Mateo). A local measure in any other county gets only Ballotpedia,
-CalMatters and news searches, which often have nothing on small city
-measures. Matters because a voter asked for "a link to the measure text for
-all the measures, especially the local ones".
-
 ## Cloudflare's analytics beacon is injected and then blocked by our CSP
 
 Every page on https://openslate.us logs a console error (seen 2026-10-23,
@@ -26,6 +15,31 @@ console shows an error. Either turn off the automatic beacon injection for
 the zone (a Cloudflare setting: needs the owner's authorization, through the
 ops repo), or decide to allow it in the CSP (which the `_headers` comment rules
 out on purpose).
+
+## Newport Beach's Measures P, Q and R are called off but still in the catalog
+
+Seen 2026-10-27: the City of Newport Beach's Nov 3 election page says its
+special municipal election on Measures P, Q and R "will not take place on
+November 3, 2026" (the ballot printer never got the Secretary of State's
+authorization, and the Registrar never supplied protected-address voter
+data). The catalog still lists all three as Nov 3 measures: the
+`newport-beach-city-clerk` slate and the Southern California News Group's
+positions on them (endorsements repo). Matters because voters in Newport
+Beach see three measures that aren't on their ballot. Newport Beach's
+Measure H *is* on the ballot (the OC guide has it).
+
+## Some catalog measure titles misdescribe the measure
+
+Seen 2026-10-27 while linking official measure documents
+(`plans/local-measure-text.md`): Chino Measure F and Upland Measure M are
+titled "Municipal Code Amendment" but are business license tax measures;
+Allan Hancock Joint Community College District Measure H is titled
+"Education and Economic Development Bond" but its official title is
+"Affordable Higher Education" (Santa Barbara County prints its letter as
+H2026). Titles are subject identity, so changing one means re-signing every
+slate that uses it and moving guide items with it (endorsements repo, and
+the ballot repo's `linked/*.json`). Matters because a voter reads the title
+as what the measure does.
 
 ## Some cities' council districts have no usable map
 

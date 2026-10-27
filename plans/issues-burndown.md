@@ -49,7 +49,7 @@ commit, push master.
 - [x] 4b. Endorsements CI gate: `verify-positions.ts` parses with `signInputSchema`; endorsements `1def270` (pin `5300971`), README `0beb2a3`
 - [x] 5. Council districts: `council` lookup layer (`<City>|<n>`, filed as `us/ca/<city>/council`), 433 districts in 84 cities from registrars' (OC, Alameda, LA), SANDAG's and cities' GIS (`plans/council-districts-lookup.md`). Follow-ups in ISSUES.md: citywide seats tagged as districts (Newport Beach; HP and San Leandro left out until checked), cities with no usable map
 - [x] 5b. Citywide council seats tagged as districts: only Newport Beach is (endorsements `795617d`, `CITYWIDE_COUNCILS`); Huntington Park's and San Leandro's District 2 seats are by district (LA's sample ballot data; San Leandro's City Clerk), so both cities joined the council lookup (444 districts)
-- [ ] 6. Local measure text
+- [x] 6. Local measure text: linked-document guides for 17 more counties (113 items, 320 documents), ballot repo `scripts/link-measures.ts` + `linked/<county>.json`, `guides.json` entries (`plans/local-measure-text.md`). New issues: Newport Beach P/Q/R called off but in the catalog; misdescriptive measure titles
 - [ ] 7. Cloudflare beacon
 
 ## Findings / gotchas
@@ -143,6 +143,14 @@ commit, push master.
   gives each block one council race. That data can verify any LA County
   contest's electorate. Newport Beach stays out of the council lookup (no
   district-tagged races to place).
+
+- Local measure text (2026-10-27, ~1:55 AM PDT): per-county reviewed link
+  tables, not an app-level "county elections office" fallback (that needs a
+  city→county table and doesn't reach the document). Research ran as five
+  parallel agents; their drafts needed a review pass (filing-deadline
+  notices dropped, titles trimmed). Some hosts refuse HTTP/1.1: PowerShell
+  `Invoke-WebRequest -HttpVersion 2.0` gets through; tables record such
+  retrievals as `manual`. Race pages are `https://openslate.us/#/race/<key>`.
 
 ## Open questions for the user
 
