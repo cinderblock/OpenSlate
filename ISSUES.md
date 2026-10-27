@@ -78,6 +78,8 @@ out on purpose).
 
 ## Setup's "Follow 1 and see my ballot" may neither follow nor import
 
+**In progress — master (ISSUES.md burn-down).**
+
 Seen 2026-10-26 ~8:45 PM PDT (03:45Z) in a fresh browser profile on the dev
 server (`bunx vite`, master `fa2d974`). On the home page: "Show every race
 instead", then Follow on Courage California (its row turned
