@@ -18,6 +18,8 @@ out on purpose).
 
 ## Some catalog measure titles misdescribe the measure
 
+**In progress — master (ISSUES.md burn-down).**
+
 Seen 2026-10-27 while linking official measure documents
 (`plans/local-measure-text.md`): Chino Measure F and Upland Measure M are
 titled "Municipal Code Amendment" but are business license tax measures;
