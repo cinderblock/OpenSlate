@@ -1,5 +1,7 @@
 import type { SlatePayload } from "@openslate/core";
-import type { CatalogEntry } from "./query";
+import { racesInArea, summaryOf } from "./catalogSummary";
+import { type Area, isAreaSet } from "./jurisdictions";
+import { type CatalogEntry, isArticlesEntry } from "./query";
 import { type SourceInput, sourceIdOf } from "./sources";
 
 /**
@@ -96,4 +98,27 @@ export function updateProblem(update: CatalogUpdate, payload: SlatePayload): str
     return "not the slate the catalog lists";
   if (!isLater(payload.issued_at, update.since)) return "not newer than the one you have";
   return undefined;
+}
+
+/**
+ * News coverage (an articles-only entry, SPEC §3.15) the user doesn't have
+ * yet: for an election they've imported anything for, on races where they
+ * vote, and not a source they removed. Articles are reference, not
+ * recommendations, so they come along without being picked.
+ */
+export function missingNews(
+  stored: readonly StoredSlate[],
+  entries: readonly CatalogEntry[],
+  { area, removed }: { area: Area; removed: ReadonlySet<string> },
+): CatalogEntry[] {
+  const streams = new Set(stored.map((slate) => payloadStream(slate.payload)));
+  const elections = new Set(stored.flatMap((slate) => slate.payload.context?.election ?? []));
+  return entries.filter(
+    (entry) =>
+      isArticlesEntry(entry) &&
+      elections.has(entry.election) &&
+      !streams.has(entryStream(entry)) &&
+      !removed.has(sourceIdOf(entry)) &&
+      (!isAreaSet(area) || racesInArea(summaryOf(entry), area) > 0),
+  );
 }

@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import type { SlatePayload } from "@openslate/core";
-import { type StoredSlate, staleImports, updateProblem } from "../src/lib/catalogUpdates";
+import {
+  type StoredSlate,
+  missingNews,
+  staleImports,
+  updateProblem,
+} from "../src/lib/catalogUpdates";
+import { EMPTY_AREA } from "../src/lib/jurisdictions";
 import type { CatalogEntry } from "../src/lib/query";
 
 const RESEARCHER = "ed25519:R";
@@ -121,5 +127,46 @@ describe("updateProblem", () => {
     expect(updateProblem(update, payload("2026-10-20T00:00:00Z"))).toBe(
       "not newer than the one you have",
     );
+  });
+});
+
+describe("missingNews", () => {
+  const news = entry("2026-10-25T00:00:00Z", {
+    slug: "calmatters",
+    path: "orgs/calmatters/2026-11-03/signed.slate",
+    attribution: {
+      of: { name: "CalMatters" },
+      mode: "scraped",
+      retrieved_at: "2026-10-01T00:00:00Z",
+    },
+    positions: 0,
+    articles: 12,
+    jurisdictions: { "us/ca": 12 },
+  });
+  const mine = [stored("t1", payload("2026-10-20T00:00:00Z"))];
+  const none = { area: EMPTY_AREA, removed: new Set<string>() };
+
+  test("news coverage for an election the user has, that they don't", () => {
+    expect(missingNews(mine, [news], none)).toEqual([news]);
+  });
+
+  test("not endorsements, not another election, not one they have", () => {
+    expect(missingNews(mine, [entry("2026-10-25T00:00:00Z")], none)).toEqual([]);
+    expect(missingNews(mine, [{ ...news, election: "2026-06-02" }], none)).toEqual([]);
+    const had = stored(
+      "t2",
+      payload("2026-10-20T00:00:00Z", {
+        attribution: {
+          of: { name: "CalMatters" },
+          mode: "scraped",
+          retrieved_at: "2026-10-01T00:00:00Z",
+        },
+      }),
+    );
+    expect(missingNews([...mine, had], [news], none)).toEqual([]);
+  });
+
+  test("not a source the user removed", () => {
+    expect(missingNews(mine, [news], { ...none, removed: new Set(["of:calmatters"]) })).toEqual([]);
   });
 });

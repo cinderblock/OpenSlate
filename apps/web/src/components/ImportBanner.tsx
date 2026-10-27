@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { CircleCheck, CloudDownload, TriangleAlert } from "lucide-react";
 import { useEffect } from "react";
-import { backgroundImports } from "../lib/catalogImport";
+import { ADDING_NEWS, backgroundImports } from "../lib/catalogImport";
 import { type ImportStatus, useImportStatus } from "../lib/importQueue";
 import { ProgressBar } from "./ui/ProgressBar";
 
@@ -96,6 +96,16 @@ export function ImportBanner() {
 /** The banner's words while sources update from the catalog. */
 function UpdateText({ status }: { status: ImportStatus }) {
   const sources = (n: number) => (n === 1 ? "1 source" : `${n} sources`);
+  if (status.label === ADDING_NEWS) {
+    return status.state === "running" ? (
+      <strong>Adding news coverage of your races.</strong>
+    ) : (
+      <>
+        <strong>Added news coverage from {sources(status.imported)}.</strong> Each race lists its
+        articles.
+      </>
+    );
+  }
   if (status.state === "running") {
     return (
       <>

@@ -2,8 +2,10 @@ import { useLiveQuery } from "@tanstack/react-db";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { updateFromCatalog } from "../lib/catalogImport";
+import { missingNews } from "../lib/catalogUpdates";
 import { decodeSlates } from "../lib/collate";
 import { slatesCollection } from "../lib/collections";
+import { areaStore, removedSourcesStore } from "../lib/myVote";
 import { DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG, catalogQueryOptions } from "../lib/query";
 
 const CATALOG_URL = DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG;
@@ -11,7 +13,8 @@ const CATALOG_URL = DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG;
 /**
  * Keeps slates imported from the catalog current: whenever the catalog loads
  * (on start, and again when it's refetched) every entry newer than what the
- * user has of it replaces their copy. Renders nothing; ImportBanner shows the
+ * user has of it replaces their copy, and news coverage of their races that
+ * they don't have yet comes along. Renders nothing; ImportBanner shows the
  * update while it runs.
  */
 export function CatalogUpdater() {
@@ -30,7 +33,11 @@ export function CatalogUpdater() {
     checked.current.add(data.generated_at);
     // decodeSlates caches each token's verification, so this is cheap.
     const stored = decodeSlates(rows).filter((slate) => slate.valid);
-    updateFromCatalog(data, CATALOG_URL, stored);
+    const news = missingNews(stored, data.entries, {
+      area: areaStore.get(),
+      removed: new Set(removedSourcesStore.get()),
+    });
+    updateFromCatalog(data, CATALOG_URL, stored, news);
   }, [catalog.data, rows, isReady]);
 
   return null;

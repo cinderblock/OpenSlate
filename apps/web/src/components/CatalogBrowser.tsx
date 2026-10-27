@@ -10,6 +10,7 @@ import { httpHref } from "../lib/httpHref";
 import {
   defaultToUnfollowed,
   localToday,
+  setRemoved,
   setStanding,
   useDecodedSlates,
   useFollows,
@@ -21,6 +22,7 @@ import {
   PUBLIC_ENDORSEMENTS_CATALOG,
   catalogEntryLogoUrl,
   catalogQueryOptions,
+  isArticlesEntry,
 } from "../lib/query";
 import { matchesSearch, searchTerms, searchTextOf } from "../lib/search";
 import { ELECTION_AUTHORITY, type Standing, sourceIdOf, standingOf } from "../lib/sources";
@@ -148,8 +150,9 @@ export function CatalogBrowser() {
     });
     if (result.kind === "error") {
       setErrors((prev) => ({ ...prev, [key]: result.error }));
-    } else if (!isBallotEntry(entry)) {
-      setStanding(sourceId, standing);
+    } else {
+      setRemoved(sourceId, false);
+      if (!isBallotEntry(entry) && !isArticlesEntry(entry)) setStanding(sourceId, standing);
     }
   }
 
@@ -161,7 +164,7 @@ export function CatalogBrowser() {
     // Sources new to this browser start unfollowed: comparing isn't trusting.
     defaultToUnfollowed(
       pending
-        .filter((entry) => !isBallotEntry(entry))
+        .filter((entry) => !isBallotEntry(entry) && !isArticlesEntry(entry))
         .map(sourceIdOf)
         .filter((id) => !alreadyImported.has(id) && !(id in follows)),
     );
@@ -226,10 +229,13 @@ export function CatalogBrowser() {
               const sourceId = sourceIdOf(entry);
               const has = isImported(entry);
               const ballot = isBallotEntry(entry);
+              const news = isArticlesEntry(entry);
+              // Reference, not recommendations: added, never followed.
+              const reference = ballot || news;
               const standing: Standing = has ? standingOf(follows, sourceId) : "off";
               const name = entry.attribution?.of.name ?? entry.slug;
               const rowClass =
-                has && (ballot || standing === "follow")
+                has && (reference || standing === "follow")
                   ? "following"
                   : standing === "disagree"
                     ? "disagreeing"
@@ -256,13 +262,16 @@ export function CatalogBrowser() {
                       name
                     )}
                     {ballot && <span className="tag tag-inline">official candidate list</span>}
+                    {news && <span className="tag tag-inline">news coverage</span>}
                     <div className="hint">
-                      {entry.positions} {ballot ? "candidates" : "positions"} · reported by{" "}
-                      {entry.issuer.name ?? "a researcher"}
+                      {news
+                        ? `${entry.articles} ${entry.articles === 1 ? "article" : "articles"}`
+                        : `${entry.positions} ${ballot ? "candidates" : "positions"}`}{" "}
+                      · reported by {entry.issuer.name ?? "a researcher"}
                       {entry.attribution &&
                         ` · ${entry.attribution.mode} ${formatLocalDate(entry.attribution.retrieved_at)}`}
                     </div>
-                    {!ballot && entry.lean && (
+                    {!reference && entry.lean && (
                       <LeanMeter
                         sourceId={sourceId}
                         name={name}
@@ -275,7 +284,7 @@ export function CatalogBrowser() {
                       <OffBallotLine problems={offBallot.get(`${sourceId}|${entry.election}`)} />
                     )}
                   </div>
-                  {ballot ? (
+                  {reference ? (
                     has ? (
                       <span className="hint">
                         <Check className="icon" /> Added

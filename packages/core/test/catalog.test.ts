@@ -51,4 +51,17 @@ describe("racesByJurisdiction", () => {
       "": 1,
     });
   });
+
+  test("an attached article covers its race too, once (SPEC §3.15)", () => {
+    const prop = { title: "Prop 1", kind: "measure", jurisdiction: "us/ca", election: E };
+    const measure = { title: "Measure A", kind: "measure", jurisdiction: "us/ca/sf", election: E };
+    const withArticles = {
+      ...payload([{ subject: prop, stance: "endorse", choice: "Yes" }]),
+      articles: [
+        { subject: prop, uri: "https://news.example/p1", title: "Prop 1, explained" },
+        { subject: measure, uri: "https://news.example/a", title: "Measure A" },
+      ],
+    } as SlatePayload;
+    expect(racesByJurisdiction(withArticles)).toEqual({ "us/ca": 1, "us/ca/sf": 1 });
+  });
 });

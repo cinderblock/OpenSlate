@@ -40,6 +40,7 @@ import {
   DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
   catalogEntryLogoUrl,
   catalogQueryOptions,
+  isArticlesEntry,
   slateFromUrlOptions,
 } from "../lib/query";
 import { matchesSearch, searchTextOf } from "../lib/search";
@@ -122,11 +123,18 @@ export function GetStarted({ again }: { again: boolean }) {
     areaStore.set(area);
     myElectionStore.set(election);
     const entries = summaries.entries.map((s) => s.entry);
-    const picked = (entry: CatalogEntry) => selected.has(entry.path) && !isBallotEntry(entry);
-    // Official candidate lists always come along: they're the ballot itself.
+    const picked = (entry: CatalogEntry) =>
+      selected.has(entry.path) && !isBallotEntry(entry) && !isArticlesEntry(entry);
+    // Official candidate lists always come along: they're the ballot itself. So
+    // does news coverage of races on it (SPEC §3.15): reference, not a pick.
+    const news = new Set(
+      summaries.entries
+        .filter((s) => isArticlesEntry(s.entry) && racesInArea(s, area) > 0)
+        .map((s) => s.entry.path),
+    );
     const chosen = downloadAll
       ? entries
-      : entries.filter((e) => selected.has(e.path) || isBallotEntry(e));
+      : entries.filter((e) => selected.has(e.path) || isBallotEntry(e) || news.has(e.path));
 
     if (downloadAll) {
       // The ones you didn't pick come along for comparison, not to trust:
@@ -134,7 +142,7 @@ export function GetStarted({ again }: { again: boolean }) {
       const importedSources = new Set(imported.flatMap((s) => sourceIdOfToken(s.token) ?? []));
       defaultToUnfollowed(
         entries
-          .filter((e) => !isBallotEntry(e) && !picked(e))
+          .filter((e) => !isBallotEntry(e) && !isArticlesEntry(e) && !picked(e))
           .map(sourceIdOf)
           .filter((id) => !importedSources.has(id)),
       );
@@ -233,13 +241,18 @@ export function GetStarted({ again }: { again: boolean }) {
   );
 }
 
-/** What the import bar says it's fetching: your picks, and the ballot lists that come along. */
+/** What the import bar says it's fetching: your picks, and what comes along with them. */
 function importLabel(chosen: CatalogEntry[], picked: (entry: CatalogEntry) => boolean): string {
   const picks = chosen.filter(picked).length;
-  const ballots = chosen.some(isBallotEntry);
-  const yours = picks === 1 ? "your pick" : `your ${picks} picks`;
-  if (picks === 0) return "Downloading the official ballot lists";
-  return ballots ? `Downloading ${yours} and the official ballot lists` : `Downloading ${yours}`;
+  const along = [
+    chosen.some(isBallotEntry) && "the official ballot lists",
+    chosen.some(isArticlesEntry) && "news coverage",
+  ].filter((part): part is string => Boolean(part));
+  const parts = [
+    ...(picks === 0 ? [] : [picks === 1 ? "your pick" : `your ${picks} picks`]),
+    ...along,
+  ];
+  return parts.length > 0 ? `Downloading ${parts.join(" and ")}` : "Downloading";
 }
 
 /** The source a stored slate speaks for, or undefined if it doesn't parse. */
@@ -555,10 +568,12 @@ function SourcesStep({
   // Each organization with how many races on *your* ballot it weighs in on,
   // grouped by where it publishes for (statewide, a city…).
   const ballots = summaries.entries.filter((s) => isBallotEntry(s.entry));
-  const organizations = summaries.entries.length - ballots.length;
+  const organizations = summaries.entries.filter(
+    (s) => !isBallotEntry(s.entry) && !isArticlesEntry(s.entry),
+  ).length;
   const { groups, others } = useMemo(() => {
     const scored = summaries.entries
-      .filter((s) => !isBallotEntry(s.entry))
+      .filter((s) => !isBallotEntry(s.entry) && !isArticlesEntry(s.entry))
       .map((s) => ({
         entry: s.entry,
         races: racesInArea(s, area),
