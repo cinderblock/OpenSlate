@@ -9,6 +9,7 @@ import {
 } from "../lib/ballotDraft";
 import {
   ballotChoices,
+  contestGroups,
   designation,
   instructionLine,
   picksIn,
@@ -68,21 +69,28 @@ export const PrintBallot = forwardRef<
         </p>
       </header>
       <div className="pb-columns">
-        {sections.map((section) => (
-          <section key={section.label} className="pb-section">
-            <h2>{section.label}</h2>
-            {section.races.map((race) => (
-              <PrintRace
-                key={race.key}
-                race={race}
-                election={election}
-                rows={rows}
-                notes={notes}
-                saved={rankings[rankingKeyFor(election, race.subject)]}
-              />
-            ))}
-          </section>
-        ))}
+        {sections.map((section) => {
+          const groups = contestGroups(section.races);
+          return (
+            <section key={section.label} className="pb-section">
+              <h2>{section.label}</h2>
+              {groups.map((group) => [
+                // Candidates, judges and measures apart, when the section has more than one kind.
+                groups.length > 1 && <h3 key={group.group}>{group.label}</h3>,
+                ...group.races.map((race) => (
+                  <PrintRace
+                    key={race.key}
+                    race={race}
+                    election={election}
+                    rows={rows}
+                    notes={notes}
+                    saved={rankings[rankingKeyFor(election, race.subject)]}
+                  />
+                )),
+              ])}
+            </section>
+          );
+        })}
       </div>
     </div>
   );

@@ -942,6 +942,13 @@ a.button-link.primary {
   letter-spacing: 0.06em;
   color: var(--muted);
 }
+/* Candidates, judges and measures within a section, under the section's title. */
+.ballot-subsection-title {
+  margin: 1rem 0 0;
+  padding-left: 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
 /* One column on a phone, two or three on a desktop. A grid rather than CSS
    columns, so the races still read (and tab) across, in ballot order. */
 .race-grid {
@@ -1512,6 +1519,12 @@ button.source-chip {
   padding: 1pt 3pt;
   background: #000;
   color: #fff;
+  break-after: avoid;
+}
+.pb-section h3 {
+  font-size: 8pt;
+  margin: 4pt 0 2pt;
+  border-bottom: 0.75pt solid #000;
   break-after: avoid;
 }
 .pb-race {

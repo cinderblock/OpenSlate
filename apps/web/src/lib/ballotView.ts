@@ -2,6 +2,9 @@ import type { Stance } from "@openslate/core";
 import { type DraftRow, rowIdFor } from "./ballotDraft";
 import {
   type ChoiceGroup,
+  CONTEST_GROUPS,
+  type ContestGroup,
+  contestGroup,
   positionTone,
   type Race,
   type RacePosition,
@@ -125,6 +128,27 @@ export function ballotChoices(race: Race): ChoiceGroup[] {
       a.opposition - b.opposition ||
       collator.compare(a.choice, b.choice),
   );
+}
+
+/** What a section's subheading calls each group: people to elect, judges to keep, measures. */
+export const CONTEST_GROUP_LABEL: Record<ContestGroup, string> = {
+  office: "Candidates",
+  retention: "Judges",
+  measure: "Measures",
+};
+
+/**
+ * A section's races split into candidates, judges and measures, in that
+ * order, each keeping the races' own order. Empty groups are left out.
+ */
+export function contestGroups<R extends Race>(
+  races: R[],
+): Array<{ group: ContestGroup; label: string; races: R[] }> {
+  return CONTEST_GROUPS.map((group) => ({
+    group,
+    label: CONTEST_GROUP_LABEL[group],
+    races: races.filter((race) => contestGroup(race) === group),
+  })).filter((g) => g.races.length > 0);
 }
 
 /** How the ballot heads a race. */

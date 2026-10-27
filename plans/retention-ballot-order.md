@@ -45,6 +45,18 @@ paper ballot prints them (judicial block before state measures).
    **Order matters:** the app's strict schema must accept the field before the
    signed data carrying it is published.
 
+## Follow-up: subsections (same friend, 2026-10-27)
+
+"Break each section (like California) into people to vote for and measures."
+Each section with more than one kind now splits into **Candidates**, **Judges**
+(retention questions) and **Measures** subheadings, each with a count, using
+`contestGroup` (collate.ts, the same function the sort uses) and
+`contestGroups` (ballotView.ts). Applies on screen (`BallotSection`) and in
+the print ballot (`PrintBallot`, an `h3` per group). A section with one kind
+(e.g. a Court of Appeal district, or a congressional district) gets no
+subheading. Checked in the local dev server with every race shown: California
+reads Candidates · 12, Judges · 2, Measures · 14.
+
 ## Findings / gotchas
 
 - Measures with a ballot listing but no `number`: all 66 are retention questions
@@ -68,6 +80,8 @@ paper ballot prints them (judicial block before state measures).
 - [x] Step 2: endorsements `b4b81e4`, 128 positions flagged, pinned at
   `2416fe3`. CI signed and published it (run 40569755753, success), and the
   Pages copy has 128 `"retention": true`.
+- [x] Follow-up: Candidates / Judges / Measures subsections, on screen and in
+  print. Tests, typecheck and lint pass, and it looks right in the local dev server.
 
 ## Things not to do
 

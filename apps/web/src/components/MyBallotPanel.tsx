@@ -43,6 +43,7 @@ import {
 import { ballotFileName, ballotToCsv, ballotToJson } from "../lib/ballotExport";
 import {
   ballotChoices,
+  contestGroups,
   instructionLine,
   isMarked,
   isYesNo,
@@ -1104,39 +1105,53 @@ function BallotSection({
   onPlace: OnPlace;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const groups = useMemo(() => contestGroups(races), [races]);
+  const grid = (groupRaces: Race[]) => (
+    <div className="race-grid">
+      {groupRaces.map((race) => {
+        const status = statuses?.get(race.key);
+        const card = (
+          <RaceCard
+            key={race.key}
+            race={race}
+            election={election}
+            rows={rows}
+            patch={patch}
+            applyRank={applyRank}
+            mine={mine.get(race.key)}
+            articles={articles.get(race.key)}
+            onPlace={onPlace}
+          />
+        );
+        return status && status !== filter ? (
+          <DoneRace key={race.key} race={race} status={status} election={election} rows={rows}>
+            {card}
+          </DoneRace>
+        ) : (
+          card
+        );
+      })}
+    </div>
+  );
   return (
     <details className="ballot-section" open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
       <summary className="ballot-section-title">
         {label} <span className="hint">· {races.length}</span>
       </summary>
       {/* Closed sections render nothing: a statewide ballot can run to 600+ races. */}
-      {open && (
-        <div className="race-grid">
-          {races.map((race) => {
-            const status = statuses?.get(race.key);
-            const card = (
-              <RaceCard
-                key={race.key}
-                race={race}
-                election={election}
-                rows={rows}
-                patch={patch}
-                applyRank={applyRank}
-                mine={mine.get(race.key)}
-                articles={articles.get(race.key)}
-                onPlace={onPlace}
-              />
-            );
-            return status && status !== filter ? (
-              <DoneRace key={race.key} race={race} status={status} election={election} rows={rows}>
-                {card}
-              </DoneRace>
-            ) : (
-              card
-            );
-          })}
-        </div>
-      )}
+      {open &&
+        // Candidates, judges and measures each under their own heading, when
+        // the section has more than one kind.
+        (groups.length > 1
+          ? groups.map((group) => (
+              <div key={group.group} className="ballot-subsection">
+                <h4 className="ballot-subsection-title">
+                  {group.label} <span className="hint">· {group.races.length}</span>
+                </h4>
+                {grid(group.races)}
+              </div>
+            ))
+          : grid(races))}
     </details>
   );
 }

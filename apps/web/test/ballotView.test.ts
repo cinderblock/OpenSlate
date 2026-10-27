@@ -3,6 +3,7 @@ import type { Stance } from "@openslate/core";
 import { type DraftRow, rowIdFor } from "../src/lib/ballotDraft";
 import {
   ballotChoices,
+  contestGroups,
   designation,
   instructionLine,
   isMarked,
@@ -280,4 +281,30 @@ test("ordinal", () => {
     "101st",
     "111th",
   ]);
+});
+
+describe("contestGroups", () => {
+  test("splits a section into candidates, judges and measures, in that order", () => {
+    const named = (title: string, kind: string, retention = false): Race => ({
+      ...race(kind, []),
+      key: title,
+      subject: { title, kind },
+      ...(retention ? { ballot: { retention: true as const } } : {}),
+    });
+    const groups = contestGroups([
+      named("Prop 1", "measure"),
+      named("Governor", "race"),
+      named("Retain Justice A", "measure", true),
+      named("Prop 2", "measure"),
+    ]);
+    expect(groups.map((g) => [g.label, g.races.map((r) => r.key)])).toEqual([
+      ["Candidates", ["Governor"]],
+      ["Judges", ["Retain Justice A"]],
+      ["Measures", ["Prop 1", "Prop 2"]],
+    ]);
+  });
+
+  test("leaves out a kind the section doesn't have", () => {
+    expect(contestGroups([race("measure", [])]).map((g) => g.label)).toEqual(["Measures"]);
+  });
 });

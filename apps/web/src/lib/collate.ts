@@ -446,12 +446,19 @@ function placesOf<T>(
 }
 
 /**
- * Where a race falls within its section: offices, then retention questions
- * (the ballot prints judges with the offices, SPEC §3.14), then measures.
+ * What a race asks within its section: whom to elect, whether to keep a judge
+ * (a retention question, SPEC §3.14), or a measure. Ballot order is this order.
  */
+export const CONTEST_GROUPS = ["office", "retention", "measure"] as const;
+export type ContestGroup = (typeof CONTEST_GROUPS)[number];
+
+export function contestGroup(race: Pick<Race, "subject" | "ballot">): ContestGroup {
+  if (race.ballot?.retention) return "retention";
+  return race.subject.kind === "measure" ? "measure" : "office";
+}
+
 function contestRank(race: Race): number {
-  if (race.ballot?.retention) return 1;
-  return race.subject.kind === "measure" ? 2 : 0;
+  return CONTEST_GROUPS.indexOf(contestGroup(race));
 }
 
 /** Ballot order: by jurisdiction (statewide, districts, local), offices, retention questions, measures, then title. */
