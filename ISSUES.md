@@ -34,6 +34,8 @@ known failures; take them off the list when fixed.
 
 ## The endorsements CI gate never schema-checks a bundle's `adopts` or `labels`
 
+**In progress — master (ISSUES.md burn-down).**
+
 Seen 2026-10-26: `scripts/verify-positions.ts` in `openslate-public-endorsements`
 copies `positions`, `endorsed_by`, `attribution`, `context` and `articles` out
 of each positions.json into a placeholder payload and drops everything else,
