@@ -2,6 +2,8 @@
 
 ## Local measures outside the covered counties have no official text
 
+**In progress — master (ISSUES.md burn-down).**
+
 Seen 2026-10-26: My ballot links a measure's official text only when a voter
 guide in `guides.json` lists it (state, SF, LA, OC, Alameda, San Diego, Santa
 Clara, San Mateo). A local measure in any other county gets only Ballotpedia,
