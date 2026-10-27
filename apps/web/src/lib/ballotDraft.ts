@@ -188,17 +188,17 @@ export function useBallotDraft(): {
   /** Move marks on re-filed races to the races as they're filed now (`refiledRows`). */
   refile: (subjects: readonly Subject[]) => void;
 } {
-  const [rows, setRows] = useLocalStore(ballotDraftStore);
+  const [rows] = useLocalStore(ballotDraftStore);
 
   const patch = useCallback(
     (electionId: string, subject: Subject, choice: string | undefined, fields: RowFields) => {
-      setRows((current) => applyPatch(current, electionId, subject, choice, fields));
+      ballotDraftStore.set((current) => applyPatch(current, electionId, subject, choice, fields));
     },
     [],
   );
 
   const patchMany = useCallback((electionId: string, patches: RowPatch[]) => {
-    setRows((current) =>
+    ballotDraftStore.set((current) =>
       patches.reduce(
         (acc, { subject, choice, fields }) => applyPatch(acc, electionId, subject, choice, fields),
         current,
@@ -207,7 +207,7 @@ export function useBallotDraft(): {
   }, []);
 
   const restore = useCallback((previous: Record<string, DraftRow | undefined>) => {
-    setRows((current) => {
+    ballotDraftStore.set((current) => {
       const next = { ...current };
       for (const [id, row] of Object.entries(previous)) {
         if (row) next[id] = row;
@@ -218,7 +218,7 @@ export function useBallotDraft(): {
   }, []);
 
   const clearRow = useCallback((id: string) => {
-    setRows((current) => {
+    ballotDraftStore.set((current) => {
       if (!current[id]) return current;
       const next = { ...current };
       delete next[id];
@@ -227,7 +227,7 @@ export function useBallotDraft(): {
   }, []);
 
   const clearElection = useCallback((electionId: string) => {
-    setRows((current) => {
+    ballotDraftStore.set((current) => {
       const next: DraftMap = {};
       for (const [k, v] of Object.entries(current)) {
         if (v.electionId !== electionId) next[k] = v;
@@ -236,10 +236,10 @@ export function useBallotDraft(): {
     });
   }, []);
 
-  const clearAll = useCallback(() => setRows({}), []);
+  const clearAll = useCallback(() => ballotDraftStore.set({}), []);
 
   const refile = useCallback((subjects: readonly Subject[]) => {
-    setRows((current) => refiledRows(current, subjects) ?? current);
+    ballotDraftStore.set((current) => refiledRows(current, subjects) ?? current);
   }, []);
 
   return { rows, patch, patchMany, restore, clearRow, clearElection, clearAll, refile };
@@ -251,14 +251,14 @@ export function useBallotRanking(): {
   setRanking: (electionId: string, subject: Subject, order: string[]) => void;
   clearRanking: (electionId: string, subject: Subject) => void;
 } {
-  const [rankings, setRankings] = useLocalStore(rankingStore);
+  const [rankings] = useLocalStore(rankingStore);
 
   const setRanking = useCallback((electionId: string, subject: Subject, order: string[]) => {
-    setRankings((current) => ({ ...current, [rankingKeyFor(electionId, subject)]: order }));
+    rankingStore.set((current) => ({ ...current, [rankingKeyFor(electionId, subject)]: order }));
   }, []);
 
   const clearRanking = useCallback((electionId: string, subject: Subject) => {
-    setRankings((current) => {
+    rankingStore.set((current) => {
       const key = rankingKeyFor(electionId, subject);
       if (!current[key]) return current;
       const next = { ...current };
