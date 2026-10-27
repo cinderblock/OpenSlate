@@ -16,21 +16,6 @@ the zone (a Cloudflare setting: needs the owner's authorization, through the
 ops repo), or decide to allow it in the CSP (which the `_headers` comment rules
 out on purpose).
 
-## Some catalog measure titles misdescribe the measure
-
-**In progress — master (ISSUES.md burn-down).**
-
-Seen 2026-10-27 while linking official measure documents
-(`plans/local-measure-text.md`): Chino Measure F and Upland Measure M are
-titled "Municipal Code Amendment" but are business license tax measures;
-Allan Hancock Joint Community College District Measure H is titled
-"Education and Economic Development Bond" but its official title is
-"Affordable Higher Education" (Santa Barbara County prints its letter as
-H2026). Titles are subject identity, so changing one means re-signing every
-slate that uses it and moving guide items with it (endorsements repo, and
-the ballot repo's `linked/*.json`). Matters because a voter reads the title
-as what the measure does.
-
 ## Some cities' council districts have no usable map
 
 Seen 2026-10-27: the council lookup (`OTHER_SOURCES` in

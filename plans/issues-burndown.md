@@ -51,6 +51,8 @@ commit, push master.
 - [x] 5b. Citywide council seats tagged as districts: only Newport Beach is (endorsements `795617d`, `CITYWIDE_COUNCILS`); Huntington Park's and San Leandro's District 2 seats are by district (LA's sample ballot data; San Leandro's City Clerk), so both cities joined the council lookup (444 districts)
 - [x] 6. Local measure text: linked-document guides for 17 more counties (113 items, 320 documents), ballot repo `scripts/link-measures.ts` + `linked/<county>.json`, `guides.json` entries (`plans/local-measure-text.md`). New issues: Newport Beach P/Q/R called off but in the catalog; misdescriptive measure titles
 - [x] 6b. Newport Beach P/Q/R called off: endorsements `644dad9` re-issued the `newport-beach-city-clerk` listing (now Measure H only, under the OC registrar's subject and ids) and dropped SCNG's "No" on P/Q/R
+- [x] 6c. Misdescribed measure titles: Chino F and Upland M → "(Business License Tax)", Colton O → "(Appointed City Treasurer)" (also a "Municipal Code Amendment"), Allan Hancock JCCD H → "(Affordable Higher Education Bond)". Endorsements `df1ea2e` (7 bundles), ballot repo `5f4f0b6` (linked tables, 4 guide items), app `b4cc926` (marks follow a retitled measure)
+- [ ] 6d. Council cities with no usable map (Campbell, Los Altos, Morgan Hill, Santa Clarita): check whether it needs the user before starting
 - [ ] 7. Cloudflare beacon
 
 ## Findings / gotchas
@@ -166,6 +168,22 @@ commit, push master.
   id set would make positions look stale). The endorsements CI fails any
   position on a race the covering listing doesn't name, so SCNG's P/Q/R
   positions had to go too (its re-sign also replaces stored copies).
+
+- Misdescribed titles (2026-10-27, ~3 AM PDT): a title is subject identity
+  (SPEC §3.3: `id`, else title + jurisdiction + election), and so is the
+  key of every voter mark (`ballotDraft.ts` `rowIdFor` → `subjectKey`). A
+  rename would orphan marks, so `refiledRows` now also moves a measure's
+  mark that matches no race by title to the one measure of its election and
+  jurisdiction with the same designation (the title before its trailing
+  "(…)": "Chino — Measure F"). So: change only a measure's description,
+  never its designation or jurisdiction, in the same push to every bundle
+  naming it. Marks are the only stored per-subject state (rankings are
+  candidate races). The SB County table itself labels F/M/O "Municipal Code
+  Amendment"; the new descriptions follow each city attorney's impartial
+  analysis. Hancock H keeps "Measure H" (Ventura and SLO use H; only Santa
+  Barbara prints H2026). Order of pushes: endorsements first (the ballot
+  repo's `link-measures` checks titles against the live catalog), then the
+  ballot repo. Checked live: no published slate has the old titles.
 
 ## Open questions for the user
 
