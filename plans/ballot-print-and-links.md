@@ -209,7 +209,7 @@ The app stores a catalog slate's token once and never looks again
    match a catalog entry).
 3. D3 then C5 (remove the text fallbacks), once D1 and D2 are live.
 
-### Part E — ranking is the primary interface (2026-10-26) ← current
+### Part E — ranking is the primary interface (2026-10-26)
 
 1. E1 spec: `Position.rank` (integer ≥ 1, 1 = first choice, requires
    `choice`, only with `endorse` / `lean_for`): ranked endorsements are in
@@ -231,7 +231,7 @@ The app stores a catalog slate's token once and never looks again
    how sources rank a choice ("ranked 1st by 3").
 5. Later (user, not now): strategic ranking.
 
-### Part F — articles from publishers (2026-10-26)
+### Part F — articles from publishers (2026-10-26) ← current
 
 1. F1 research (background agent, endorsements worktree `feat-articles`):
    per publisher, an `orgs/<slug>/2026-11-03/positions.json` with
@@ -326,8 +326,41 @@ The app stores a catalog slate's token once and never looks again
   55 → 54 positions replaced, "Updated 1 source"), then the live catalog:
   this dev profile's 5 slates from Oct 20–23 became the Oct 26 ones with
   `ballot` fields ("Updated 5 sources").
-- [ ] E1–E4 ranking
-- [ ] F1–F3 articles
+- [x] E1 spec `8b96a04`: `Position.rank` (§3.16), only with endorse /
+  lean_for, needs a choice; vectors ranked / rank-on-oppose / rank-zero.
+- [x] E2/E3 UI `457974a`: `lib/ranking.ts` (pure, tested),
+  `RankedChoices.tsx` (React Aria GridList + useDragAndDrop; one list with
+  a draggable "not ranked" line), `ChoiceRow.tsx` split out of
+  MyBallotPanel. Decisions made while building (not asked):
+  - the order is kept per race in `rankingStore`; marks stay in draft rows
+    and are re-derived on every ranking change (top `marksFor` = endorse,
+    the rest = lean_for "backups");
+  - unknown vote-for count: every ranked name is marked (no guess of one);
+  - the bubble moves a name into the last marked place (first in a vote-for-
+    one race), so the displaced pick becomes the first backup; a filled
+    bubble unranks;
+  - Maybe / Against stay as marks on unranked names; on a ranked name they
+    unrank it;
+  - a race-wide stance ("Overall") and yes/no questions stay plain rows.
+  Verified in the preview: bubble tap, backups line, keyboard drag
+  (Enter on the handle, arrows, Enter: "Insert before Not ranked"),
+  iPhone 12 Pro layout. **Not verified: a real mouse/touch drag** —
+  Playwright's synthetic drag doesn't fire HTML5 drag events.
+- [x] E3b `d47fe80`: print numbers a ranked-choice contest's bubbles and
+  labels backups; Compose publishes `rank`; collation passes sources'
+  `rank` to chips ("1st") and the race page.
+- [ ] E4 data: endorsements repo — ranked endorsements still in
+  `statement` ("Ranked-choice first choice: …", 34 files) → `rank`.
+  Needs `.openslate-version` at a commit with `rank`.
+- [x] F1 research (agent, endorsements `feat/articles`, 4 commits, not
+  pushed): 9 newsroom slates, ~150 articles, all 14 propositions and SF
+  B, D–I and RTM. Its plan: `plans/articles-2026-11-03.md` there.
+- [x] F2/F3 `4d977bd`: catalog jurisdictions count article subjects;
+  articles-only entries are "news coverage" (setup and updater add them for
+  your area without a follow; catalog browser Add button; removed sources
+  stay removed).
+- [ ] F2b endorsements repo: verify-positions checks `articles` subjects
+  against the listings; pin OpenSlate; publish.
 
 ## Open questions for the user
 

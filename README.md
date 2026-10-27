@@ -33,14 +33,23 @@ for it. Its two sides:
 
 - **My vote** (everything up front): *My ballot* shows the races for your election and
   area laid out like the real ballot: the official candidate list in ballot
-  order where one is imported, how many to vote for, a bubble per choice to
-  mark your pick, and beside it how many of your followed sources back that
-  choice. It also keeps your private notes, shows what you've already signed,
-  and links each race to the official voter guide, Ballotpedia, CalMatters and
-  a news search, plus any articles a slate attaches to it (news and analysis
-  that anyone can sign and link to a race, shown as reading, never counted as
-  endorsements). *Print* makes a paper copy of your ballot, endorsement counts
-  beside the bubbles, shrunk to fit one page. Work through it like an inbox: filter races by
+  order where one is imported, how many to vote for (or rank), a bubble per
+  choice, and beside it how many of your followed sources back that choice.
+  You decide a candidate race by ranking it: drag names into your order (by
+  mouse, touch, keyboard or screen reader), or tap a bubble to move a name
+  into the marked places. The ballot marks your first choices: the first
+  N of a ranked-choice contest, else as many as you vote for; anyone you
+  rank after that is a backup. Your sources' own ranks show on their chips,
+  and what you publish carries yours. It also keeps your private notes, shows
+  what you've already signed, and links each race to the official voter
+  guide, Ballotpedia, CalMatters and a news search, plus any articles a slate
+  attaches to it (news and analysis that anyone can sign and link to a race,
+  shown as reading, never counted as endorsements; news coverage from the
+  public catalog comes along on its own). *Print* makes a paper copy of your
+  ballot, endorsement counts beside the bubbles and ranks in a ranked-choice
+  contest's bubbles, shrunk to fit one page. Sources imported from the public
+  catalog stay current: when the catalog has a newer version, it replaces
+  yours. Work through it like an inbox: filter races by
   To do, Maybe, Picked or Against all, watch the "decided" count climb, and
   reach *ballot zero*. The search box at the top finds races by seat or
   measure, candidate, party, place, or a source that took a position on it
