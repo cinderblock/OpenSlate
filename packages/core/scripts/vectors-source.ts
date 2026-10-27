@@ -366,6 +366,46 @@ export const POSITIVES: PositiveDef[] = [
     },
   },
   {
+    name: "labels",
+    description:
+      "The issuer's own words (SPEC §3.17): two tiers of support, each with what it means, on positions whose stances say how they count.",
+    signer: "alice",
+    payload: {
+      v: 1,
+      issuer: { name: "Springfield Neighbors Club", kind: "organization" },
+      issued_at: "2026-10-01T00:00:00Z",
+      labels: [
+        { label: "Endorsed", description: "Approved by a 75% vote of the membership." },
+        { label: "Recommended", description: "Approved by a majority of the membership." },
+        { label: "No recommendation" },
+      ],
+      positions: [
+        {
+          subject: { title: "Springfield Measure A", kind: "measure", election: "2026-11-03" },
+          stance: "endorse",
+          choice: "Yes",
+          label: "Endorsed",
+        },
+        {
+          subject: { title: "Mayor of Springfield", kind: "race", election: "2026-11-03" },
+          stance: "lean_for",
+          choice: "A. Candidate",
+          label: "Recommended",
+          statement: "We recommend A. Candidate.",
+        },
+        {
+          subject: {
+            title: "Springfield Council, District 4",
+            kind: "race",
+            election: "2026-11-03",
+          },
+          stance: "abstain",
+          label: "No recommendation",
+        },
+      ],
+    },
+  },
+  {
     name: "adopts-reference",
     description:
       "Slate adopting two positions of another (secondhand) slate by reference instead of " +
@@ -683,6 +723,48 @@ export const NEGATIVES: NegativeDef[] = [
       );
     },
     expect: { error_contains: ["rank"] },
+  },
+  {
+    name: "label-not-in-labels",
+    description:
+      "Validly signed token that lists its labels but uses one it doesn't list. MUST be rejected (SPEC §3.17).",
+    build: (h) => {
+      const key = h.pubkey("alice");
+      return h.sign(
+        { alg: "EdDSA", typ: "openslate+jws", kid: key },
+        {
+          v: 1,
+          issuer: { key },
+          issued_at: "2026-01-01T00:00:00Z",
+          labels: [{ label: "Endorsed" }],
+          positions: [
+            { subject: { title: "Mayor" }, stance: "lean_for", choice: "A", label: "Recomended" },
+          ],
+        },
+        h.seed("alice"),
+      );
+    },
+    expect: { error_contains: ["label"] },
+  },
+  {
+    name: "labels-duplicate",
+    description:
+      "Validly signed token that defines the same label twice. Labels are unique; MUST be rejected (SPEC §3.17).",
+    build: (h) => {
+      const key = h.pubkey("alice");
+      return h.sign(
+        { alg: "EdDSA", typ: "openslate+jws", kid: key },
+        {
+          v: 1,
+          issuer: { key },
+          issued_at: "2026-01-01T00:00:00Z",
+          labels: [{ label: "Endorsed" }, { label: "Endorsed", description: "Again." }],
+          positions: [],
+        },
+        h.seed("alice"),
+      );
+    },
+    expect: { error_contains: ["labels"] },
   },
   {
     name: "voted-in-empty",

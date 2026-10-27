@@ -14,6 +14,7 @@ import {
   guideItemSchema,
   guideManifestSchema,
   identityToIssuer,
+  type LabelDefinition,
   type Position,
   parseSlate,
   type Reference,
@@ -52,7 +53,7 @@ Usage:
 
 A <positions.json> is either a JSON array of Position objects, or an object
 { "positions": [...], "endorsed_by": [...], "attribution": {...}, "adopts": [...],
-  "articles": [...], "context": {...} }.
+  "articles": [...], "labels": [...], "context": {...} }.
 Use "-" for stdin.
 
 adopt takes on another slate's positions, three ways (SPEC §3.10):
@@ -155,6 +156,7 @@ interface SignInput {
   attribution?: Attribution;
   adopts?: Adoption[];
   articles?: Article[];
+  labels?: LabelDefinition[];
   context?: SlatePayload["context"];
 }
 
@@ -205,6 +207,7 @@ async function cmdSign(rest: string[]): Promise<void> {
   let attribution: Attribution | undefined;
   let adopts: Adoption[] | undefined;
   let articles: Article[] | undefined;
+  let labels: LabelDefinition[] | undefined;
   let context: SlatePayload["context"];
   if (Array.isArray(raw)) {
     positions = raw as Position[];
@@ -215,6 +218,7 @@ async function cmdSign(rest: string[]): Promise<void> {
     attribution = obj.attribution;
     adopts = obj.adopts;
     articles = obj.articles;
+    labels = obj.labels;
     context = obj.context;
   }
 
@@ -237,6 +241,7 @@ async function cmdSign(rest: string[]): Promise<void> {
       attribution,
       adopts,
       articles,
+      labels,
       context,
     });
     token = signSlate(payload, identity.keyPair.secretKey);
@@ -328,6 +333,7 @@ async function cmdSignBatch(
           attribution: raw.attribution,
           adopts: raw.adopts,
           articles: raw.articles,
+          labels: raw.labels,
           context: raw.context,
         });
         const token = signSlate(payload, identity.keyPair.secretKey);
@@ -493,6 +499,9 @@ async function cmdVerify(rest: string[]): Promise<void> {
       console.log(`  retrieved_at:    ${attr.retrieved_at}`);
     }
     console.log(`positions: ${result.payload?.positions.length ?? 0}`);
+    if (result.payload?.labels?.length) {
+      console.log(`labels:    ${result.payload.labels.map((l) => l.label).join(", ")}`);
+    }
     if (result.payload?.articles?.length) {
       console.log(`articles:  ${result.payload.articles.length}`);
     }

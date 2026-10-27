@@ -1,0 +1,69 @@
+{
+  "name": "labels",
+  "description": "The issuer's own words (SPEC §3.17): two tiers of support, each with what it means, on positions whose stances say how they count.",
+  "signer": "alice",
+  "payload": {
+    "v": 1,
+    "issuer": {
+      "key": "ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9",
+      "name": "Springfield Neighbors Club",
+      "kind": "organization"
+    },
+    "issued_at": "2026-10-01T00:00:00Z",
+    "positions": [
+      {
+        "subject": {
+          "title": "Springfield Measure A",
+          "kind": "measure",
+          "election": "2026-11-03"
+        },
+        "stance": "endorse",
+        "choice": "Yes",
+        "label": "Endorsed"
+      },
+      {
+        "subject": {
+          "title": "Mayor of Springfield",
+          "kind": "race",
+          "election": "2026-11-03"
+        },
+        "stance": "lean_for",
+        "choice": "A. Candidate",
+        "label": "Recommended",
+        "statement": "We recommend A. Candidate."
+      },
+      {
+        "subject": {
+          "title": "Springfield Council, District 4",
+          "kind": "race",
+          "election": "2026-11-03"
+        },
+        "stance": "abstain",
+        "label": "No recommendation"
+      }
+    ],
+    "labels": [
+      {
+        "label": "Endorsed",
+        "description": "Approved by a 75% vote of the membership."
+      },
+      {
+        "label": "Recommended",
+        "description": "Approved by a majority of the membership."
+      },
+      {
+        "label": "No recommendation"
+      }
+    ]
+  },
+  "header": {
+    "alg": "EdDSA",
+    "typ": "openslate+jws",
+    "kid": "ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9"
+  },
+  "canonical_header": "{\"alg\":\"EdDSA\",\"kid\":\"ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9\",\"typ\":\"openslate+jws\"}",
+  "canonical_payload": "{\"issued_at\":\"2026-10-01T00:00:00Z\",\"issuer\":{\"key\":\"ed25519:AKnL4NNf3DGWZJS6cPknBuEGnVsV4A4m5tgebLHaRSZ9\",\"kind\":\"organization\",\"name\":\"Springfield Neighbors Club\"},\"labels\":[{\"description\":\"Approved by a 75% vote of the membership.\",\"label\":\"Endorsed\"},{\"description\":\"Approved by a majority of the membership.\",\"label\":\"Recommended\"},{\"label\":\"No recommendation\"}],\"positions\":[{\"choice\":\"Yes\",\"label\":\"Endorsed\",\"stance\":\"endorse\",\"subject\":{\"election\":\"2026-11-03\",\"kind\":\"measure\",\"title\":\"Springfield Measure A\"}},{\"choice\":\"A. Candidate\",\"label\":\"Recommended\",\"stance\":\"lean_for\",\"statement\":\"We recommend A. Candidate.\",\"subject\":{\"election\":\"2026-11-03\",\"kind\":\"race\",\"title\":\"Mayor of Springfield\"}},{\"label\":\"No recommendation\",\"stance\":\"abstain\",\"subject\":{\"election\":\"2026-11-03\",\"kind\":\"race\",\"title\":\"Springfield Council, District 4\"}}],\"v\":1}",
+  "signing_input": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTEwLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5Iiwia2luZCI6Im9yZ2FuaXphdGlvbiIsIm5hbWUiOiJTcHJpbmdmaWVsZCBOZWlnaGJvcnMgQ2x1YiJ9LCJsYWJlbHMiOlt7ImRlc2NyaXB0aW9uIjoiQXBwcm92ZWQgYnkgYSA3NSUgdm90ZSBvZiB0aGUgbWVtYmVyc2hpcC4iLCJsYWJlbCI6IkVuZG9yc2VkIn0seyJkZXNjcmlwdGlvbiI6IkFwcHJvdmVkIGJ5IGEgbWFqb3JpdHkgb2YgdGhlIG1lbWJlcnNoaXAuIiwibGFiZWwiOiJSZWNvbW1lbmRlZCJ9LHsibGFiZWwiOiJObyByZWNvbW1lbmRhdGlvbiJ9XSwicG9zaXRpb25zIjpbeyJjaG9pY2UiOiJZZXMiLCJsYWJlbCI6IkVuZG9yc2VkIiwic3RhbmNlIjoiZW5kb3JzZSIsInN1YmplY3QiOnsiZWxlY3Rpb24iOiIyMDI2LTExLTAzIiwia2luZCI6Im1lYXN1cmUiLCJ0aXRsZSI6IlNwcmluZ2ZpZWxkIE1lYXN1cmUgQSJ9fSx7ImNob2ljZSI6IkEuIENhbmRpZGF0ZSIsImxhYmVsIjoiUmVjb21tZW5kZWQiLCJzdGFuY2UiOiJsZWFuX2ZvciIsInN0YXRlbWVudCI6IldlIHJlY29tbWVuZCBBLiBDYW5kaWRhdGUuIiwic3ViamVjdCI6eyJlbGVjdGlvbiI6IjIwMjYtMTEtMDMiLCJraW5kIjoicmFjZSIsInRpdGxlIjoiTWF5b3Igb2YgU3ByaW5nZmllbGQifX0seyJsYWJlbCI6Ik5vIHJlY29tbWVuZGF0aW9uIiwic3RhbmNlIjoiYWJzdGFpbiIsInN1YmplY3QiOnsiZWxlY3Rpb24iOiIyMDI2LTExLTAzIiwia2luZCI6InJhY2UiLCJ0aXRsZSI6IlNwcmluZ2ZpZWxkIENvdW5jaWwsIERpc3RyaWN0IDQifX1dLCJ2IjoxfQ",
+  "signature": "BqPpxQm9LosnMWyhzC1yaJkCgI_7-4235N5GERPV9-JnCtaUkcNKZNsxxvLXEe9HO2rHz4kLT4xaq1QJai0-Dw",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTEwLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5Iiwia2luZCI6Im9yZ2FuaXphdGlvbiIsIm5hbWUiOiJTcHJpbmdmaWVsZCBOZWlnaGJvcnMgQ2x1YiJ9LCJsYWJlbHMiOlt7ImRlc2NyaXB0aW9uIjoiQXBwcm92ZWQgYnkgYSA3NSUgdm90ZSBvZiB0aGUgbWVtYmVyc2hpcC4iLCJsYWJlbCI6IkVuZG9yc2VkIn0seyJkZXNjcmlwdGlvbiI6IkFwcHJvdmVkIGJ5IGEgbWFqb3JpdHkgb2YgdGhlIG1lbWJlcnNoaXAuIiwibGFiZWwiOiJSZWNvbW1lbmRlZCJ9LHsibGFiZWwiOiJObyByZWNvbW1lbmRhdGlvbiJ9XSwicG9zaXRpb25zIjpbeyJjaG9pY2UiOiJZZXMiLCJsYWJlbCI6IkVuZG9yc2VkIiwic3RhbmNlIjoiZW5kb3JzZSIsInN1YmplY3QiOnsiZWxlY3Rpb24iOiIyMDI2LTExLTAzIiwia2luZCI6Im1lYXN1cmUiLCJ0aXRsZSI6IlNwcmluZ2ZpZWxkIE1lYXN1cmUgQSJ9fSx7ImNob2ljZSI6IkEuIENhbmRpZGF0ZSIsImxhYmVsIjoiUmVjb21tZW5kZWQiLCJzdGFuY2UiOiJsZWFuX2ZvciIsInN0YXRlbWVudCI6IldlIHJlY29tbWVuZCBBLiBDYW5kaWRhdGUuIiwic3ViamVjdCI6eyJlbGVjdGlvbiI6IjIwMjYtMTEtMDMiLCJraW5kIjoicmFjZSIsInRpdGxlIjoiTWF5b3Igb2YgU3ByaW5nZmllbGQifX0seyJsYWJlbCI6Ik5vIHJlY29tbWVuZGF0aW9uIiwic3RhbmNlIjoiYWJzdGFpbiIsInN1YmplY3QiOnsiZWxlY3Rpb24iOiIyMDI2LTExLTAzIiwia2luZCI6InJhY2UiLCJ0aXRsZSI6IlNwcmluZ2ZpZWxkIENvdW5jaWwsIERpc3RyaWN0IDQifX1dLCJ2IjoxfQ.BqPpxQm9LosnMWyhzC1yaJkCgI_7-4235N5GERPV9-JnCtaUkcNKZNsxxvLXEe9HO2rHz4kLT4xaq1QJai0-Dw"
+}

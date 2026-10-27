@@ -6,6 +6,7 @@ import {
   type Attribution,
   type Issuer,
   type JwsHeader,
+  type LabelDefinition,
   type Position,
   type Reference,
   type SlatePayload,
@@ -19,6 +20,7 @@ export interface BuildSlateInput {
   attribution?: Attribution;
   adopts?: Adoption[];
   articles?: Article[];
+  labels?: LabelDefinition[];
   context?: SlatePayload["context"];
   issuedAt?: Date | string;
   expiresAt?: Date | string;
@@ -43,6 +45,7 @@ export function buildSlate(input: BuildSlateInput): SlatePayload {
     attribution: input.attribution,
     adopts: input.adopts,
     articles: input.articles,
+    labels: input.labels,
     nonce: input.nonce,
   });
 }

@@ -75,6 +75,7 @@ Secret keys, when serialized (e.g. for backup), use the same scheme over the
 | `attribution` | `Attribution` | no | Marks this slate as a **secondhand report** by `issuer` about another entity. See §3.9. |
 | `adopts` | `Adoption[]` | no | Positions this slate takes on from other slates by reference, instead of copying them. See §3.10. |
 | `articles` | `Article[]` | no | Links attached to ballot items: news, analysis, explainers. Never positions. See §3.15. |
+| `labels` | `LabelDefinition[]` | no | What the issuer's own position labels mean, in display order. See §3.17. |
 | `nonce` | string | no | Disambiguates otherwise-identical slates. |
 
 ### 3.2 `Issuer`
@@ -168,6 +169,7 @@ every jurisdiction that votes on it, so that slates agree.
 | `ballot` | `BallotChoice` | no | How the ballot prints the choice: party, ballot designation, incumbency (§3.14). Requires `choice`. |
 | `rank` | integer | no | Where the issuer ranks `choice` among the subject's choices: `1` is their first choice (§3.16). Requires `choice`; only with `endorse` or `lean_for`. |
 | `weight` | number | no | Strength/confidence in `[0, 1]`. |
+| `label` | string | no | The issuer's own term for this position, as it writes it ("Endorsed", "Recommended"). Shown in place of a stance word (§3.17). |
 | `statement` | string | no | Free-text endorsement / rationale. |
 | `source` | string | no | URL backing the position. |
 
@@ -199,6 +201,12 @@ One of: `endorse`, `oppose`, `lean_for`, `lean_against`, `neutral`, `abstain`.
 | `lean_against` | "Leaning against, not committed." |
 | `neutral` | Explicitly no preference. |
 | `abstain` | Deliberately declining to weigh in. |
+
+A stance is a coarse common scale, so positions from many issuers can be
+counted and compared. It is not the issuer's vocabulary: an issuer whose own
+terms don't map one-to-one onto these (two tiers of support, a "cautious"
+recommendation) picks the nearest stance and puts its own term in `label`
+(§3.17).
 
 ### 3.7 `Context`
 
@@ -294,7 +302,8 @@ position, copy its subject as it appears in the adopted slate.
 **Semantics.** The adopting slate's entity (its `attribution.of` if the slate
 is secondhand, otherwise its `issuer`) is claimed to hold the selected
 positions of the adopted slate: their `stance`, `choice` and `weight`. Each
-adopted position keeps its own `statement` and `source`.
+adopted position keeps its own `statement`, `source` and `label`; the label's
+definition is the adopted slate's (§3.17).
 
 Consumers resolving an adoption:
 
@@ -463,6 +472,40 @@ say which of several acceptable choices the issuer prefers.
 
 `statement` is free text (§3.14): consumers MUST NOT read a rank out of it
 ("first choice", "#2").
+
+### 3.17 The issuer's own words — `label`, `LabelDefinition`
+
+Issuers describe their positions in their own terms: a chapter that
+"endorses" by a 75% vote and "recommends" by a simple majority, a paper's
+"Recommended" and "No recommendation", a union's "Priority endorsement". The
+six stances (§3.6) can't hold that vocabulary, and a consumer that shows only
+the stance puts its own words in the issuer's mouth. `Position.label` carries
+the issuer's term; `stance` still says how the position counts.
+
+- `label` is a short phrase, written as the issuer writes it. It MAY go with
+  any stance. Positions with the same label in one slate SHOULD share a
+  stance.
+- `labels` on the slate says what each label means. Its entries:
+
+  | Field | Type | Req | Notes |
+  | --- | --- | --- | --- |
+  | `label` | string | yes | The term, exactly as positions use it. |
+  | `description` | string | no | What it means, ideally in the issuer's words ("Approved by a 75% vote of the chapter"). |
+
+  Labels in `labels` MUST be unique. When `labels` is present, every
+  position's `label` in `positions` MUST be one of them. The list order is the
+  order consumers SHOULD show labels in a legend; it does not rank positions.
+- A slate MAY use `label` without `labels`.
+
+Consumers:
+
+- SHOULD show a position's `label`, where present, in place of their own
+  wording for its stance, and SHOULD make its `description` available beside
+  it.
+- MUST still count, compare and collate by `stance`, never by `label`, and
+  MUST NOT read a stance out of a label or a statement.
+- When showing an adopted position (§3.10), take the label's definition from
+  the slate it was adopted from.
 
 ---
 
@@ -682,6 +725,14 @@ version by adding OPTIONAL fields (verifiers must already reject unknown fields,
 such additions ship with a coordinated spec revision). Incompatible changes bump `v`.
 
 ### 10.1 Changelog (within v1)
+
+- **2026-10-26** — Added optional `label` to `Position` and `labels` to
+  `SlatePayload` (§3.17): the issuer's own term for a position, and what each
+  term means, where issuers' vocabularies had been forced into the stance
+  enum. `stance` keeps its meaning and still decides how a position counts.
+  Amended in place; verifiers built before this revision reject slates that
+  use them (closed schema, §3.8), so consumers should upgrade before
+  publishers use them.
 
 - **2026-10-26** — Added optional `voted_in` to `Subject` (§3.3): the
   jurisdictions whose voters decide a contest together, when its

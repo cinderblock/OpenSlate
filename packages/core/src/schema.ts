@@ -103,6 +103,8 @@ export const positionSchema = z
     /** The issuer's order of preference: 1 is their first choice (SPEC §3.16). */
     rank: z.number().int().min(1).optional(),
     weight: z.number().min(0).max(1).optional(),
+    /** The issuer's own term for the position, shown in place of a stance word (SPEC §3.17). */
+    label: z.string().min(1).optional(),
     statement: z.string().optional(),
     source: httpUrl.optional(),
   })
@@ -226,6 +228,15 @@ export const articleSchema = z
   });
 export type Article = z.infer<typeof articleSchema>;
 
+/** What one of the issuer's own position labels means (SPEC §3.17). */
+export const labelDefinitionSchema = z
+  .object({
+    label: z.string().min(1),
+    description: z.string().min(1).optional(),
+  })
+  .strict();
+export type LabelDefinition = z.infer<typeof labelDefinitionSchema>;
+
 export const slatePayloadSchema = z
   .object({
     v: z.literal(1),
@@ -238,9 +249,34 @@ export const slatePayloadSchema = z
     attribution: attributionSchema.optional(),
     adopts: z.array(adoptionSchema).optional(),
     articles: z.array(articleSchema).optional(),
+    labels: z.array(labelDefinitionSchema).optional(),
     nonce: z.string().optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((payload, ctx) => {
+    if (!payload.labels) return;
+    // Labels are unique, and when listed, every position's label is one of them (SPEC §3.17).
+    const defined = new Set<string>();
+    payload.labels.forEach((definition, i) => {
+      if (defined.has(definition.label)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `labels lists "${definition.label}" twice`,
+          path: ["labels", i, "label"],
+        });
+      }
+      defined.add(definition.label);
+    });
+    payload.positions.forEach((position, i) => {
+      if (position.label !== undefined && !defined.has(position.label)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `label "${position.label}" isn't in labels`,
+          path: ["positions", i, "label"],
+        });
+      }
+    });
+  });
 export type SlatePayload = z.infer<typeof slatePayloadSchema>;
 
 export const jwsHeaderSchema = z

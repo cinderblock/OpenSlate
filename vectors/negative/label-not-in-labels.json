@@ -1,0 +1,10 @@
+{
+  "name": "label-not-in-labels",
+  "description": "Validly signed token that lists its labels but uses one it doesn't list. MUST be rejected (SPEC §3.17).",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5In0sImxhYmVscyI6W3sibGFiZWwiOiJFbmRvcnNlZCJ9XSwicG9zaXRpb25zIjpbeyJjaG9pY2UiOiJBIiwibGFiZWwiOiJSZWNvbWVuZGVkIiwic3RhbmNlIjoibGVhbl9mb3IiLCJzdWJqZWN0Ijp7InRpdGxlIjoiTWF5b3IifX1dLCJ2IjoxfQ.P5E75QCvvCNYO371sJ-YEoiw4EKsiHm2Vv1iD14tFuF04hUAsk9J2UBENaZXl47BVLad5sF45A1-hvme_VYVBg",
+  "expect": {
+    "error_contains": [
+      "label"
+    ]
+  }
+}

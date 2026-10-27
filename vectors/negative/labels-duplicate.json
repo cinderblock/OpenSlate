@@ -1,0 +1,10 @@
+{
+  "name": "labels-duplicate",
+  "description": "Validly signed token that defines the same label twice. Labels are unique; MUST be rejected (SPEC §3.17).",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6QUtuTDROTmYzREdXWkpTNmNQa25CdUVHblZzVjRBNG01dGdlYkxIYVJTWjkiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJpc3N1ZWRfYXQiOiIyMDI2LTAxLTAxVDAwOjAwOjAwWiIsImlzc3VlciI6eyJrZXkiOiJlZDI1NTE5OkFLbkw0Tk5mM0RHV1pKUzZjUGtuQnVFR25Wc1Y0QTRtNXRnZWJMSGFSU1o5In0sImxhYmVscyI6W3sibGFiZWwiOiJFbmRvcnNlZCJ9LHsiZGVzY3JpcHRpb24iOiJBZ2Fpbi4iLCJsYWJlbCI6IkVuZG9yc2VkIn1dLCJwb3NpdGlvbnMiOltdLCJ2IjoxfQ.P6m6h1gF2DRaWiQq2UQ71WPrHrq5pXeU1wUwBGWkO-7LbT0vk_XfnROYS8k1-NCNlHlw1_1hASV6M05P0pvWBg",
+  "expect": {
+    "error_contains": [
+      "labels"
+    ]
+  }
+}
