@@ -99,13 +99,12 @@ User relayed a friend's report (2026-10-26), a Sunnyvale voter:
 - [x] 2. Maybe buttons (`MyBallotPanel.tsx`)
 - [x] 3. Official guide link (`guides.ts` `useGuideListed`, `RacePanel`, `GuideContent`)
 - [x] 4. Browser check, typecheck, 620 tests, Biome (CRLF) on touched files, README
-- [x] 5. Commit `43c5f2c` on `fix/ballot-feedback`
-- [ ] 6. Push to `origin/master` (deploys openslate.us): waits on the user
+- [x] 5. Commit on `fix/ballot-feedback`
+- [x] 6. Rebased onto origin/master (645 tests, typecheck green) and pushed as a fast-forward, `e0d9add..348d258`; live on openslate.us (`MyBallotPanel-DDqcxbOb.js` has "Not on my ballot"), checked from the served chunk, not clicked through
 
 ## Open questions for the user
 
-1. Push `fix/ballot-feedback` to master so it deploys? Recommendation: yes;
-   it's a fast-forward of `origin/master` `5cc657c` by one commit.
+- (none)
 
 ## Things not to do
 
