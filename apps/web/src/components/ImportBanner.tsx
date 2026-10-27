@@ -11,23 +11,15 @@ const DONE_SHOWN_MS = 6000;
 /**
  * Over every page while setup's import carries on in the
  * background: a bar, and a note that the ballot is still filling in. Says when
- * it's done, and lists what didn't import. Also shows sources being updated
- * from the catalog (CatalogUpdater), more quietly: nothing is lost if the tab
- * closes mid-update, since the next visit picks it up again.
+ * it's done, and lists what didn't import. Nothing is lost if the tab closes
+ * part way: the next visit picks it up again (pendingSetup.ts). Also shows
+ * sources being updated from the catalog (CatalogUpdater), more quietly.
  */
 export function ImportBanner() {
   const status = useImportStatus(backgroundImports);
   const running = status?.state === "running";
   const clean = status?.state === "done" && status.errors.length === 0;
   const update = status?.kind === "update";
-
-  // Closing or reloading the tab mid-import drops what hasn't downloaded yet.
-  useEffect(() => {
-    if (!running || update) return;
-    const onLeave = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", onLeave);
-    return () => window.removeEventListener("beforeunload", onLeave);
-  }, [running, update]);
 
   useEffect(() => {
     if (!clean) return;
@@ -56,7 +48,8 @@ export function ImportBanner() {
           ) : running ? (
             <>
               <strong>Still loading your sources.</strong> Your ballot fills in as they arrive, so
-              some races may be missing endorsements for now. Keep this tab open until it's done.
+              some races may be missing endorsements for now. Close the tab and it carries on next
+              time.
               {status.queued > 0 && " More you picked are queued after these."}
             </>
           ) : clean ? (

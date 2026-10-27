@@ -4,6 +4,14 @@ import { type StoredSlate, staleImports, updateProblem } from "./catalogUpdates"
 import { slatesCollection, upsertKnownIdentity } from "./collections";
 import { readTextWithProgress } from "./fetchProgress";
 import { createImportQueue } from "./importQueue";
+import { removedSourcesStore, setStanding } from "./myVote";
+import {
+  addPending,
+  type PendingSetup,
+  pendingEntries,
+  pendingSetupStore,
+  settlePending,
+} from "./pendingSetup";
 import {
   type Catalog,
   type CatalogBundleEntry,
@@ -11,6 +19,7 @@ import {
   queryClient,
   slateFromUrlOptions,
 } from "./query";
+import { sourceIdOf } from "./sources";
 import { track } from "./usage";
 
 /**
@@ -158,6 +167,82 @@ export function updateFromCatalog(
       return update ? updateProblem(update, parseSlate(token).payload) : undefined;
     },
     replaces: (entry) => byPath.get(entry.path)?.replaces ?? [],
+  });
+  return entries.length;
+}
+
+/**
+ * Setup's download: `entries` into the background queue, each pick's standing
+ * set once its slate is in (so a source that failed isn't left followed).
+ * Recorded as pending until each entry is settled, so a download cut short
+ * resumes on the next visit (`resumeSetupImport`).
+ */
+export function startSetupImport({
+  catalog,
+  catalogUrl,
+  entries,
+  picks,
+  label,
+  bundle = false,
+}: {
+  catalog: Catalog;
+  catalogUrl: string;
+  entries: CatalogEntry[];
+  picks: PendingSetup["picks"];
+  label: string;
+  bundle?: boolean;
+}): Promise<void> {
+  const paths = entries.map((entry) => entry.path);
+  pendingSetupStore.set((current) =>
+    addPending(current, { catalogUrl, paths, picks, ...(bundle ? { bundle } : {}) }),
+  );
+  return backgroundImports
+    .start({
+      catalog,
+      catalogUrl,
+      entries,
+      label,
+      bundle,
+      onImported: (entry) => {
+        const standing = picks[entry.path];
+        if (standing) setStanding(sourceIdOf(entry), standing);
+        pendingSetupStore.set((current) => settlePending(current, [entry.path]));
+      },
+    })
+    .then(() => {
+      // What's left failed (the banner lists why): try again from Sources,
+      // not on every visit. A download the page dropped never gets here.
+      pendingSetupStore.set((current) => settlePending(current, paths));
+    });
+}
+
+/**
+ * Carry on with a setup download an earlier visit didn't finish. Returns how
+ * many entries it fetches.
+ */
+export function resumeSetupImport(catalog: Catalog, catalogUrl: string): number {
+  const pending = pendingSetupStore.get();
+  if (!pending || pending.catalogUrl !== catalogUrl) return 0;
+  const entries = pendingEntries(pending, catalog.entries, new Set(removedSourcesStore.get()));
+  // Gone from the catalog, or removed by the voter since: nothing to fetch.
+  const fetching = new Set(entries.map((entry) => entry.path));
+  pendingSetupStore.set((current) =>
+    settlePending(
+      current,
+      pending.paths.filter((path) => !fetching.has(path)),
+    ),
+  );
+  if (entries.length === 0) return 0;
+  const picks = Object.fromEntries(
+    Object.entries(pending.picks).filter(([path]) => fetching.has(path)),
+  );
+  void startSetupImport({
+    catalog,
+    catalogUrl,
+    entries,
+    picks,
+    label: "Finishing the download you started",
+    bundle: Boolean(pending.bundle) && entries.length > catalog.entries.length / 2,
   });
   return entries.length;
 }

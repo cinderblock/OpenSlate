@@ -136,7 +136,9 @@ Setup works from the catalog's list alone: each entry says where its races
 are, so the area and source steps are there at once, and only the lists you
 pick are downloaded at the end (with the official ballot lists). That download
 carries on in the background: the ballot opens straight away, and a banner with
-a progress bar says your ballot is still filling in until it's done. Tick
+a progress bar says your ballot is still filling in until it's done. Close the
+tab (or reload it) part way and the next visit finishes the download, picks
+and all. Tick
 *Download all* to fetch every organization's list instead, in one request, so
 the server can't tell whose recommendations you use; the ones you didn't pick
 are kept unfollowed, for comparison. With an older catalog that doesn't list

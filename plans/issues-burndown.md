@@ -41,8 +41,8 @@ commit, push master.
 
 ## Progress log
 
-- [ ] 1. Setup follow — **current**
-- [ ] 2. Regional outlets
+- [x] 1. Setup follow: interrupted setup downloads now resume (`pendingSetup.ts`)
+- [ ] 2. Regional outlets (next thread: process changed to a chain, one issue per thread)
 - [ ] 3. validate
 - [ ] 4. Dark theme contrast
 - [ ] 5. Council districts
@@ -51,7 +51,22 @@ commit, push master.
 
 ## Findings / gotchas
 
-(none yet)
+- Setup follow (2026-10-26, ~11 PM PDT): on the dev server with a fast
+  network the follow and import land within ~1 s; no bug. With slate fetches
+  slowed (a fetch wrapper in the page: ballot lists 1.8 s, the rest 20 s),
+  the ballot shows "0 of 0 sources followed" and `openslate.follows.v2` stays
+  unwritten until the picked slate arrives: the report's symptom, an interim
+  state. The real bug: closing/reloading mid-download lost the rest and the
+  follow for good, and setup never came back once the ballot lists were in.
+  The "Leave site?" guard (ImportBanner) didn't help CDP reloads or mobile tab
+  discards. Fixed by `lib/pendingSetup.ts` + `startSetupImport` /
+  `resumeSetupImport` (catalogImport.ts), resumed by CatalogUpdater; the
+  guard is gone.
+- News-coverage (articles-only) slates count in "N of M sources followed"
+  (12 of 12 with one pick). Separate simple fix.
+- Port 5291 is another worktree's dev server (`feat-ballot-print`); use 5377.
+- Claude-in-Chrome tab groups vanished mid-session; T3's preview browser
+  (`preview_open`/`preview_evaluate`) worked instead.
 
 ## Open questions for the user
 

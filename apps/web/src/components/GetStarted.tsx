@@ -5,7 +5,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Code, FlaskConical, Lock, MapPin, Pencil, Server } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isPublicSite } from "../lib/alpha";
-import { backgroundImports, catalogEntryUrl } from "../lib/catalogImport";
+import { catalogEntryUrl, startSetupImport } from "../lib/catalogImport";
 import {
   type EntrySummary,
   isSummarized,
@@ -25,13 +25,7 @@ import {
   jurisdictionRank,
   parseJurisdiction,
 } from "../lib/jurisdictions";
-import {
-  areaStore,
-  defaultToUnfollowed,
-  localToday,
-  myElectionStore,
-  setStanding,
-} from "../lib/myVote";
+import { areaStore, defaultToUnfollowed, localToday, myElectionStore } from "../lib/myVote";
 import { useSearchBox } from "../lib/pageSearch";
 import { DESKTOP_DOWNLOADS_URL, IS_DESKTOP_APP, THIS_DEVICE } from "../lib/platform";
 import {
@@ -149,16 +143,15 @@ export function GetStarted({ again }: { again: boolean }) {
     }
 
     if (catalog.data && chosen.length > 0) {
-      void backgroundImports.start({
+      void startSetupImport({
         catalog: catalog.data,
         catalogUrl: CATALOG_URL,
         entries: chosen,
+        picks: Object.fromEntries(
+          chosen.filter(picked).map((e) => [e.path, selected.get(e.path) ?? "follow"]),
+        ),
         label: downloadAll ? `Adding all ${chosen.length} lists` : importLabel(chosen, picked),
         bundle: downloadAll,
-        // Only once its slate is in, so a source that failed isn't left followed.
-        onImported: (entry) => {
-          if (picked(entry)) setStanding(sourceIdOf(entry), selected.get(entry.path) ?? "follow");
-        },
       });
     }
     track({ name: "setup.finish" });
