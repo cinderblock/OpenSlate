@@ -112,7 +112,13 @@ warning) and `set_race_note`. The tools run in the page, on this browser's
 own data, and write through the same store as the buttons, so an open My
 ballot updates as the agent works. Nothing is sent anywhere, and the agent
 can't publish or sign. Slates' text is marked untrusted, since anyone can
-publish one. See `apps/web/src/lib/webmcp.ts`.
+publish one. If you've turned on anonymous usage statistics, a tool call
+counts as which tool and whether it worked, never what it read or marked.
+Chrome offers WebMCP to real visitors only on sites in its
+[origin trial](https://developer.chrome.com/blog/ai-webmcp-origin-trial)
+(Chrome 149 on), with a token for that exact origin. A copy you host
+yourself needs its own token, or use `chrome://flags/#enable-webmcp-testing`
+locally. See `apps/web/src/lib/webmcp.ts`.
 
 Setup works from the catalog's list alone: each entry says where its races
 are, so the area and source steps are there at once, and only the lists you

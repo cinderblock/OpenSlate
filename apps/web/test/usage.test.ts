@@ -9,7 +9,7 @@ import {
   usageEnabled,
 } from "../src/lib/usage";
 
-/** Every event the schema allows, one per allowed dim value. */
+/** Every event the schema allows: each combination of its dims' values. */
 function allAllowedEvents(): Array<{ name: string; dims?: Record<string, string> }> {
   const out: Array<{ name: string; dims?: Record<string, string> }> = [];
   for (const [name, dims] of Object.entries(USAGE_SCHEMA)) {
@@ -18,10 +18,11 @@ function allAllowedEvents(): Array<{ name: string; dims?: Record<string, string>
       out.push({ name });
       continue;
     }
-    // Each schema event has at most one dim today; cover each of its values.
+    let combos: Array<Record<string, string>> = [{}];
     for (const [key, values] of entries) {
-      for (const value of values) out.push({ name, dims: { [key]: value } });
+      combos = combos.flatMap((combo) => values.map((value) => ({ ...combo, [key]: value })));
     }
+    for (const combo of combos) out.push({ name, dims: combo });
   }
   return out;
 }

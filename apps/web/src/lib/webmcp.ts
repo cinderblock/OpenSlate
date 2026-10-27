@@ -22,6 +22,7 @@ import {
   myElectionStore,
   withNicknames,
 } from "./myVote";
+import { type AgentTool, track } from "./usage";
 
 /**
  * WebMCP (https://webmachinelearning.github.io/webmcp/): tools a browser agent
@@ -39,7 +40,7 @@ interface ModelContext {
 }
 
 interface Tool {
-  name: string;
+  name: AgentTool;
   title: string;
   description: string;
   inputSchema: object;
@@ -125,12 +126,17 @@ const markInput = z.object({
   write_in: z.boolean().optional(),
 });
 
-/** Run a tool body; its result, or the reason it refused, as JSON. */
+/**
+ * Run a tool body; its result, or the reason it refused, as JSON. Counted in
+ * the opt-in usage statistics by tool and outcome only (`agent.tool`).
+ */
 function respond<T>(
+  tool: AgentTool,
   input: z.ZodType<T>,
   body: (input: T) => Promise<unknown>,
 ): (raw: unknown) => Promise<string> {
   return async (raw) => {
+    let outcome: "ok" | "refused" = "refused";
     try {
       const parsed = input.safeParse(raw ?? {});
       if (!parsed.success) {
@@ -139,10 +145,14 @@ function respond<T>(
         );
         throw new Refusal(issues.join("; "));
       }
-      return JSON.stringify(await body(parsed.data));
+      const result = JSON.stringify(await body(parsed.data));
+      outcome = "ok";
+      return result;
     } catch (error) {
       if (!(error instanceof Refusal)) console.error("WebMCP tool failed", error);
       return JSON.stringify({ error: error instanceof Error ? error.message : String(error) });
+    } finally {
+      track({ name: "agent.tool", dims: { tool, outcome } });
     }
   };
 }
@@ -161,7 +171,7 @@ const TOOLS: Tool[] = [
       "The elections the user's imported endorsements cover, and which one My ballot shows. Also whether the user has set where they vote (without it, races from every area are listed).",
     inputSchema: { type: "object", properties: {} },
     annotations: { readOnlyHint: true },
-    execute: respond(z.object({}), async () => {
+    execute: respond("list_elections", z.object({}), async () => {
       const slates = await currentSlates();
       const follows = followsStore.get();
       const elections = electionsOf(slates, follows);
@@ -204,6 +214,7 @@ const TOOLS: Tool[] = [
     },
     annotations: { readOnlyHint: true, untrustedContentHint: true },
     execute: respond(
+      "get_ballot",
       z.object({
         election: electionInput,
         search: z.string().optional(),
@@ -237,6 +248,7 @@ const TOOLS: Tool[] = [
     },
     annotations: { readOnlyHint: true, untrustedContentHint: true },
     execute: respond(
+      "get_race",
       z.object({ race: z.string().min(1), election: electionInput }),
       async (input) => {
         const ballot = await currentBallot(input.election);
@@ -277,6 +289,7 @@ const TOOLS: Tool[] = [
     },
     annotations: {},
     execute: respond(
+      "mark_choices",
       z.object({ election: electionInput, marks: z.array(markInput).min(1) }),
       async (input) => {
         const ballot = await currentBallot(input.election);
@@ -334,6 +347,7 @@ const TOOLS: Tool[] = [
     },
     annotations: {},
     execute: respond(
+      "set_race_note",
       z.object({ race: z.string().min(1), note: z.string(), election: electionInput }),
       async (input) => {
         const ballot = await currentBallot(input.election);

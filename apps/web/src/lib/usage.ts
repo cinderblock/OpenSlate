@@ -51,6 +51,15 @@ export const ROUTE_TEMPLATES = [
 
 export const SLATE_IMPORT_SOURCES = ["catalog", "url", "file", "qr", "paste"] as const;
 
+/** The WebMCP tools a browser agent can call (`webmcp.ts`). */
+export const AGENT_TOOLS = [
+  "list_elections",
+  "get_ballot",
+  "get_race",
+  "mark_choices",
+  "set_race_note",
+] as const;
+
 /**
  * Every event that may be sent, and for each, its dims and their only allowed
  * values. Every value is a fixed, non-political string written here.
@@ -70,6 +79,8 @@ export const USAGE_SCHEMA = {
   "ballot.print": { scope: ["ballot", "marked"] },
   "slate.sign": {},
   "setup.finish": {},
+  // Which tool, and whether it did what was asked; never what it read or marked.
+  "agent.tool": { tool: AGENT_TOOLS, outcome: ["ok", "refused"] },
 } as const satisfies Record<string, Record<string, readonly string[]>>;
 
 type Schema = typeof USAGE_SCHEMA;
@@ -77,6 +88,7 @@ type EventName = keyof Schema;
 
 export type RouteTemplate = (typeof ROUTE_TEMPLATES)[number];
 export type SlateImportSource = (typeof SLATE_IMPORT_SOURCES)[number];
+export type AgentTool = (typeof AGENT_TOOLS)[number];
 
 export type UsageEvent = {
   [N in EventName]: keyof Schema[N] extends never
@@ -102,6 +114,8 @@ export const USAGE_EVENT_DESCRIPTIONS: Record<EventName, string> = {
     "That My ballot was printed, and whether the whole ballot or only the races marked",
   "slate.sign": "That a slate was signed",
   "setup.finish": "That setup (where you vote, whose endorsements you trust) was finished",
+  "agent.tool":
+    "That an AI agent in your browser used one of My ballot's tools, which one (e.g. “mark choices”), and whether it worked; never what it read or marked",
 };
 
 export interface SanitizedUsageEvent {

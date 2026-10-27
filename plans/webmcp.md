@@ -39,6 +39,11 @@ live.
 
 ## Decisions already made (don't re-ask)
 
+- **Usage stats count tool use** (user, 2026-10-26): only when the user has
+  opted in, and only as `agent.tool` with `tool` (one of the five names) and
+  `outcome` (`ok` or `refused`). *Never* what was passed or returned. No
+  direction either, following `ballot.quick_fill`'s "never which way".
+
 - **Prerequisite: one shared ballot store.** `useBallotDraft` was a per-hook
   `useState`, so each panel held its own copy. A write from outside (a tool,
   another panel, another tab) wasn't seen, and the stale copy's next save
@@ -127,16 +132,41 @@ live.
 - [x] `74f939b`, `eee8948`: shared ballot store
 - [x] `fa2d974`: write-ins count toward picks
 - [x] the WebMCP tools, README, this plan (the commit after `fa2d974`)
+- [x] `agent.tool` usage event: tool and outcome, opt-in only
+- [ ] origin-trial token in `public/_headers` (needs open question 1)
 - [ ] a real-browser check in Chrome with WebMCP
 
 ## Open questions for the user
 
-1. Try it in Chrome with WebMCP enabled (search `chrome://flags` for
-   "WebMCP") and an agent extension? I can't do that from here. Recommended
-   before telling anyone it exists.
-2. Should tool calls count in the opt-in usage stats (just "a tool was used",
-   never its input)? My recommendation is no for now: it is the user's agent
-   and the user's data.
+1. **The Chrome origin-trial token for https://openslate.us.** Registering
+   needs the user's Google account at
+   https://developer.chrome.com/origintrials/#/register_trial/4163014905550602241
+   with origin `https://openslate.us`, no subdomains, and no third-party
+   matching. Either the user registers and pastes the token (it isn't
+   secret: every visitor's browser receives it), or the user authorizes me
+   to fill that form in their Chrome. The token goes in `public/_headers` as
+   `Origin-Trial: <token>` and deploys on push to master.
+2. **The same for Edge?** Edge runs its own trial with a separate token
+   (Microsoft's origin-trials site). Lower priority.
+3. **Try it end to end** once the token is live, in Chrome 149+ with an
+   agent that speaks WebMCP. Chrome's post says Gemini in Chrome support is
+   "coming soon"; otherwise use an agent extension.
+
+## Origin trial (Chrome)
+
+- Chrome's announcement, 2026-06-09:
+  https://developer.chrome.com/blog/ai-webmcp-origin-trial. The trial runs
+  from Chrome 149. Without a token for the page's origin, real visitors'
+  Chrome exposes no `modelContext`. The flag
+  `chrome://flags/#enable-webmcp-testing` is for local testing only.
+- Expiry: Edge's trial page gives 2026-11-17, and one guide says Chrome
+  149–156. Chrome's own post gives no date. Either way it covers the
+  2026-11-03 election. Expect to renew, or to drop the token once Chrome
+  ships WebMCP.
+- Tokens can arrive in an `Origin-Trial` response header or in
+  `<meta http-equiv="origin-trial">`. The header in `public/_headers` sits
+  with the rest of the response policy, and self-hosted copies (other
+  origins) don't carry a token that's useless to them.
 
 ## Things not to do
 
