@@ -49,6 +49,17 @@ describe("outcomeLine — endorse / lean_for", () => {
     expect(f?.label).toBe("Jane (Sierra Club's pick) won.");
   });
 
+  test("a name ending in s takes only an apostrophe", () => {
+    const f = outcomeLine(
+      { kind: "attributed", name: "Young Democrats" },
+      "endorse",
+      "Jane",
+      "Jane",
+      true,
+    );
+    expect(f?.label).toBe("Jane (Young Democrats' pick) won.");
+  });
+
   test("lean_for behaves like endorse", () => {
     const f = outcomeLine(SELF, "lean_for", "Jane", "Jane", true);
     expect(f?.success).toBe(true);

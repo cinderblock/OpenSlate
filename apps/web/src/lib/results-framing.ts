@@ -28,9 +28,14 @@ export function actorVerbSubject(actor: Actor): string {
   return actor.kind === "self" ? "you" : actor.name;
 }
 
+/** A name's possessive: "Sierra Club's", but "Monterey County Elections'". */
+export function possessive(name: string): string {
+  return /s$/i.test(name) ? `${name}'` : `${name}'s`;
+}
+
 /** Possessive form: "your" for self, "<Name>'s" for attributed. */
 export function actorPossessive(actor: Actor): string {
-  return actor.kind === "self" ? "your" : `${actor.name}'s`;
+  return actor.kind === "self" ? "your" : possessive(actor.name);
 }
 
 const STANCE_PAST: Record<Stance, string | null> = {

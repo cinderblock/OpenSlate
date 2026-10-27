@@ -9,6 +9,7 @@ import type {
 import { Fragment, type ReactNode } from "react";
 import { formatLocalDate } from "../lib/dates";
 import { type GuideForSubject, useGuideFileUrl } from "../lib/guides";
+import { possessive } from "../lib/results-framing";
 
 /**
  * A voter guide's material on the race page: what the office or measure is,
@@ -158,18 +159,21 @@ function GuideImage({
 /** Where the material came from, who mirrored and signed it, and when. */
 export function GuideAttribution({ guide }: { guide: Guide }) {
   const { manifest, entry } = guide;
+  const { name } = manifest.attribution.of;
+  // The publisher's name is the link; its apostrophe follows it.
+  const apostrophe = possessive(name).slice(name.length);
   return (
     <p className="hint guide-attribution">
       From{" "}
       {manifest.attribution.of.uri ? (
         <a href={manifest.attribution.of.uri} target="_blank" rel="noreferrer">
-          {manifest.attribution.of.name}
+          {name}
         </a>
       ) : (
-        manifest.attribution.of.name
+        name
       )}
-      's {manifest.context?.title ? <cite>{manifest.context.title}</cite> : "voter guide"}, as of{" "}
-      {formatLocalDate(manifest.attribution.retrieved_at)}. Mirrored and signed by{" "}
+      {apostrophe} {manifest.context?.title ? <cite>{manifest.context.title}</cite> : "voter guide"}
+      , as of {formatLocalDate(manifest.attribution.retrieved_at)}. Mirrored and signed by{" "}
       <span title={manifest.issuer.key}>{manifest.issuer.name ?? "a researcher"}</span>
       {entry.repo && (
         <>
