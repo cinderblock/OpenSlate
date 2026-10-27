@@ -68,7 +68,8 @@ reads Candidates · 12, Judges · 2, Measures · 14.
 - The endorsements repo's main checkout had 7 unpushed commits from another
   thread (SV DSA), so this work went through a separate worktree off
   `origin/master`, pushed as a fast-forward. That checkout is now further
-  behind origin and needs a rebase from whoever owns it.
+  behind origin and needs a rebase. That rebase was handed to its own
+  thread on 2026-10-27, which asks before pushing.
 - Biome in the endorsements repo fails on a Windows checkout over CRLF
   alone. `biome check --line-ending=crlf <file>` is clean. CI doesn't lint.
 
