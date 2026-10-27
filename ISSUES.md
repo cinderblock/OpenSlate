@@ -34,6 +34,8 @@ known failures; take them off the list when fixed.
 
 ## `openslate validate` rejects the positions.json the scraper skill tells you to validate
 
+**In progress — master (ISSUES.md burn-down).**
+
 `.claude/skills/endorsement-scraper/SKILL.md` step 4 says to run
 `bun run packages/cli/src/index.ts validate research-bot/orgs/<slug>/<election>/positions.json`,
 but `validate` checks a full `SlatePayload`, so a sign-input bundle fails with
