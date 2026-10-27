@@ -67,6 +67,12 @@ export interface Area {
    * them (`upgradeArea`): My ballot asks.
    */
   recheck?: string[];
+  /**
+   * The user's own word on races the area couldn't place, by `district` path:
+   * on their ballot or not (`answerPlacement`). Yes to
+   * `us/ca/sunnyvale/council-3` also says which council district they're in.
+   */
+  answers?: Record<string, boolean>;
 }
 
 /** A family's id for "in none of its districts" (most of the state has no unified school district). */
@@ -142,6 +148,7 @@ export function upgradeArea(area: Area): Area {
   const out: Area = { localities, districts };
   if (Object.keys(labels).length > 0) out.labels = labels;
   if (recheck.size > 0) out.recheck = [...recheck];
+  if (area.answers) out.answers = area.answers;
   return out;
 }
 
@@ -221,7 +228,82 @@ export function placeRace(
     ? votedIn.some((path) => inArea(path, area))
     : inArea(jurisdiction, area);
   if (!district?.trim()) return here ? "in" : "out";
-  const parts = district.trim().toLowerCase().split("/");
+  const path = districtPath(district);
+  const placement = placeDistrict(path, here, withAnswers(area));
+  if (placement !== "unknown" || !area.answers) return placement;
+  // What the user said settles what the area can't: "no" to the district or
+  // any part of it, "yes" to the district itself.
+  const parts = path.split("/");
+  for (let end = 3; end <= parts.length; end++) {
+    if (area.answers[parts.slice(0, end).join("/")] === false) return "out";
+  }
+  return area.answers[path] === true ? "in" : "unknown";
+}
+
+/** A `district` as answers key it. */
+function districtPath(district: string): string {
+  return district.trim().toLowerCase();
+}
+
+/** What the user said about a race's `district`, if anything (`answerPlacement`). */
+export function answerFor(area: Area, district: string | undefined): boolean | undefined {
+  return district?.trim() ? area.answers?.[districtPath(district)] : undefined;
+}
+
+/**
+ * The area with what its "yes" answers imply where it doesn't already know:
+ * each family segment's district (`council-3` → council district 3) and each
+ * place segment as a locality. A lookup's own district always wins.
+ */
+function withAnswers(area: Area): Area {
+  const yes = Object.entries(area.answers ?? {}).filter(([, onBallot]) => onBallot);
+  if (yes.length === 0) return area;
+  const districts = { ...area.districts };
+  const localities = [...area.localities];
+  for (const [path] of yes) {
+    const parts = path.split("/");
+    let prefix = parts.slice(0, 2).join("/");
+    for (const segment of parts.slice(2)) {
+      const family = DISTRICT_SEGMENT.exec(segment);
+      if (family?.[1] && family[2]) {
+        districts[`${prefix}/${family[1]}`] ??= districtId(family[2]);
+      } else if (!localities.includes(`${prefix}/${segment}`)) {
+        localities.push(`${prefix}/${segment}`);
+      }
+      prefix = `${prefix}/${segment}`;
+    }
+  }
+  return { ...area, districts, localities };
+}
+
+/**
+ * The area with the user's answer for a race's `district`: on their ballot
+ * (`true`), not (`false`), or no answer (`undefined`, back to what the area
+ * alone can tell).
+ */
+export function answerPlacement(area: Area, district: string, onBallot: boolean | undefined): Area {
+  const {
+    answers: { [districtPath(district)]: _, ...rest } = {},
+    ...base
+  } = area;
+  const answers = onBallot === undefined ? rest : { ...rest, [districtPath(district)]: onBallot };
+  return Object.keys(answers).length > 0 ? { ...base, answers } : base;
+}
+
+/** The area without its "not on my ballot" answers. */
+export function clearNoAnswers(area: Area): Area {
+  const yes = Object.entries(area.answers ?? {}).filter(([, onBallot]) => onBallot);
+  const { answers: _, ...base } = area;
+  return yes.length > 0 ? { ...base, answers: Object.fromEntries(yes) } : base;
+}
+
+/** How many districts the user said aren't on their ballot. */
+export function noAnswerCount(area: Area): number {
+  return Object.values(area.answers ?? {}).filter((onBallot) => !onBallot).length;
+}
+
+function placeDistrict(path: string, here: boolean, area: Area): Placement {
+  const parts = path.split("/");
   let prefix = parts.slice(0, 2).join("/");
   if (!areaStates(area).has(prefix)) return "out";
   let placement: Placement = "in";

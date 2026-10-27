@@ -94,13 +94,14 @@ export function setRemoved(sourceId: string, removed: boolean): void {
 /** Where the user votes. */
 export const areaStore = createLocalStore<Area>("openslate.area.v1", EMPTY_AREA, (raw) => {
   if (typeof raw !== "object" || raw === null) return undefined;
-  const { localities, districts, labels, found, recheck } = raw as Partial<Area>;
+  const { localities, districts, labels, found, recheck, answers } = raw as Partial<Area>;
   if (!Array.isArray(localities) || !localities.every(isString)) return undefined;
   if (!isRecordOf(districts, isString)) return undefined;
   const area: Area = { localities, districts };
   if (isRecordOf(labels, isString)) area.labels = labels;
   if (Array.isArray(found) && found.every(isString)) area.found = found;
   if (Array.isArray(recheck) && recheck.every(isString)) area.recheck = recheck;
+  if (isRecordOf(answers, (v): v is boolean => typeof v === "boolean")) area.answers = answers;
   return upgradeArea(area);
 });
 

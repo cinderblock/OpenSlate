@@ -6,6 +6,7 @@ import {
   Check,
   CircleCheck,
   CircleHelp,
+  CircleX,
   Download,
   Focus,
   List,
@@ -71,16 +72,20 @@ import {
 } from "../lib/collate";
 import { formatLocalDate } from "../lib/dates";
 import { downloadText } from "../lib/download";
+import { useGuideListed } from "../lib/guides";
 import { useImportRunning } from "../lib/importQueue";
 import {
   type Area,
   DISTRICT_COUNTS,
   EMPTY_AREA,
   NO_DISTRICT,
+  answerPlacement,
+  clearNoAnswers,
   districtFamilyLabel,
   isAreaSet,
   jurisdictionLabel,
   jurisdictionRank,
+  noAnswerCount,
   noRaceReason,
   parseJurisdiction,
   withFoundLocalities,
@@ -274,6 +279,28 @@ export function MyBallotPanel() {
   // county's every school board doesn't pad the ballot.
   const races = useMemo(() => collated.filter((race) => !race.maybe), [collated]);
   const maybeRaces = useMemo(() => collated.filter((race) => race.maybe), [collated]);
+
+  // The user's answer to "is this on your ballot?" for a race the area can't
+  // place, with one step of undo.
+  const [placed, setPlaced] = useState<{ message: string; previous: Area } | null>(null);
+  const place = useCallback(
+    (race: Race, onBallot: boolean | undefined) => {
+      if (!race.district) return;
+      setArea(answerPlacement(area, race.district, onBallot));
+      const title = `“${race.subject.title}”`;
+      setPlaced({
+        previous: area,
+        message:
+          onBallot === true
+            ? `${title} is on your ballot now.`
+            : onBallot === false
+              ? `${title} is off your ballot.`
+              : `${title} is back under Might be on your ballot.`,
+      });
+    },
+    [area, setArea],
+  );
+  const noAnswers = noAnswerCount(area);
 
   // The search box: narrows what's listed, never what's counted or exported.
   const search = usePageSearch("/");
@@ -938,13 +965,36 @@ export function MyBallotPanel() {
                 // Under a filter, races you've dealt with shrink to a summary.
                 statuses={filter === "all" ? undefined : statuses}
                 filter={filter}
+                onPlace={place}
               />
             ),
           )}
         </div>
       )}
 
-      {!focusing && filter === "all" && maybeSections.length > 0 && (
+      {/* Always mounted, so screen readers announce an answer. */}
+      <output className="quick-fill-notice no-print">
+        {placed && (
+          <>
+            {placed.message}{" "}
+            <button
+              type="button"
+              className="link"
+              onClick={() => {
+                setArea(placed.previous);
+                setPlaced(null);
+              }}
+            >
+              Undo
+            </button>{" "}
+            <button type="button" className="link" onClick={() => setPlaced(null)}>
+              dismiss
+            </button>
+          </>
+        )}
+      </output>
+
+      {!focusing && filter === "all" && (maybeSections.length > 0 || noAnswers > 0) && (
         <div className="ballot-maybe">
           <h3>
             Might be on your ballot <span className="hint">· {maybeShown.length}</span>
@@ -960,6 +1010,27 @@ export function MyBallotPanel() {
                   Find your districts
                 </button>{" "}
                 from your address or the map to place more of them.
+              </>
+            )}{" "}
+            If you know, say so on each race: On my ballot, or Not on my ballot.
+            {noAnswers > 0 && (
+              <>
+                {" "}
+                {noAnswers === 1 ? "One you said isn't" : `${noAnswers} you said aren't`} on your
+                ballot {noAnswers === 1 ? "is" : "are"} hidden.{" "}
+                <button
+                  type="button"
+                  className="link"
+                  onClick={() => {
+                    setPlaced({
+                      previous: area,
+                      message: "Showing every race you said isn't on your ballot again.",
+                    });
+                    setArea(clearNoAnswers(area));
+                  }}
+                >
+                  Show {noAnswers === 1 ? "it" : "them"} again
+                </button>
               </>
             )}
           </p>
@@ -977,6 +1048,7 @@ export function MyBallotPanel() {
               articles={articleCounts}
               statuses={undefined}
               filter={filter}
+              onPlace={place}
             />
           ))}
         </div>
@@ -998,6 +1070,8 @@ export function MyBallotPanel() {
 }
 
 type Patch = ReturnType<typeof useBallotDraft>["patch"];
+/** Answer whether a race is on the user's ballot (`answerPlacement`); `undefined` takes the answer back. */
+type OnPlace = (race: Race, onBallot: boolean | undefined) => void;
 
 /** School district families (Census TIGER's unified, elementary and secondary). */
 const SCHOOL_FAMILY = /\/(?:unsd|elsd|scsd)$/;
@@ -1028,6 +1102,7 @@ function BallotSection({
   articles,
   statuses,
   filter,
+  onPlace,
 }: {
   label: string;
   races: Race[];
@@ -1041,6 +1116,7 @@ function BallotSection({
   articles: Map<string, number>;
   statuses: Map<string, RaceStatus> | undefined;
   filter: StatusFilter;
+  onPlace: OnPlace;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -1063,6 +1139,7 @@ function BallotSection({
                 applyRank={applyRank}
                 mine={mine.get(race.key)}
                 articles={articles.get(race.key)}
+                onPlace={onPlace}
               />
             );
             return status && status !== filter ? (
@@ -1295,6 +1372,7 @@ const RaceCard = memo(
     prev.mine === next.mine &&
     prev.articles === next.articles &&
     prev.numbered === next.numbered &&
+    prev.onPlace === next.onPlace &&
     raceRowIds(next.race, next.election).every((id) => prev.rows[id] === next.rows[id]) &&
     sameRows(
       writeInRows(prev.rows, prev.race, prev.election),
@@ -1315,6 +1393,7 @@ function RaceCardInner({
   mine,
   articles,
   numbered,
+  onPlace,
 }: {
   race: Race;
   election: string;
@@ -1327,6 +1406,8 @@ function RaceCardInner({
   articles?: number;
   /** Show each choice's key (focus mode). */
   numbered?: boolean;
+  /** Offered on races the area can't place, and on ones the user placed. */
+  onPlace?: OnPlace;
 }) {
   const noteRow = rows[rowIdFor(election, race.subject, NOTE_CHOICE)];
   const [note, setNote] = useState(noteRow?.privateNote ?? "");
@@ -1337,6 +1418,8 @@ function RaceCardInner({
   const ranked = isRanked(race);
   const plain = ranked ? choices.filter((c) => c.choice === "") : choices;
   const links = useMemo(() => raceLinks(race, localToday()), [race]);
+  // The official voter guide's text (a measure's, or candidates' statements), on the race's own page.
+  const inGuide = useGuideListed(race.subject);
   const seats = voteFor(race);
   const picked = picksIn(race, election, rows);
   const top = race.choices[0];
@@ -1363,6 +1446,25 @@ function RaceCardInner({
           </div>
         )}
       </div>
+      {onPlace && race.maybe && (
+        <div className="race-placement no-print">
+          <span className="hint">Is this on your ballot?</span>
+          <button type="button" onClick={() => onPlace(race, true)}>
+            <CircleCheck className="icon" aria-hidden /> On my ballot
+          </button>
+          <button type="button" onClick={() => onPlace(race, false)}>
+            <CircleX className="icon" aria-hidden /> Not on my ballot
+          </button>
+        </div>
+      )}
+      {onPlace && race.answered && (
+        <p className="hint no-print">
+          On your ballot because you said so.{" "}
+          <button type="button" className="link" onClick={() => onPlace(race, undefined)}>
+            Not sure after all
+          </button>
+        </p>
+      )}
       {(verdict || field) && (
         <p className="race-summary hint">
           {verdict}
@@ -1419,6 +1521,14 @@ function RaceCardInner({
       {ranked && <WriteInField race={race} election={election} rows={rows} applyRank={applyRank} />}
       <p className="research-links no-print">
         <span className="hint">Read up:</span>{" "}
+        {inGuide && (
+          <>
+            <Link to="/race/$key" params={{ key: race.key }} hash="official">
+              {race.subject.kind === "measure" ? "Full text and arguments" : "Candidate statements"}
+            </Link>
+            {links.length > 0 && " · "}
+          </>
+        )}
         {links.map((link, i) => (
           <span key={link.label}>
             {i > 0 && " · "}

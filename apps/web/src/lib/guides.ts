@@ -169,6 +169,22 @@ export interface GuideForSubject {
 }
 
 /**
+ * Whether a voter guide in the default catalog lists the subject. Reads only
+ * the guides' manifests, which every race shares, so a ballot of cards can ask
+ * without fetching each item.
+ */
+export function useGuideListed(subject: Subject): boolean {
+  const list = useQuery(guideListQueryOptions(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG));
+  const entries = useMemo(
+    () => (list.data ? guidesFor(list.data, subject) : []),
+    [list.data, subject],
+  );
+  const manifests = useQueries({ queries: entries.map((e) => guideManifestQueryOptions(e)) });
+  const key = subjectKey(subject);
+  return manifests.some((m) => m.data?.items.some((it) => subjectKey(it.subject) === key));
+}
+
+/**
  * The voter guide's item for a subject, from the first guide in the default
  * catalog that lists it (a district can appear in several county guides).
  * `status` separates "nothing to show" from "couldn't load".

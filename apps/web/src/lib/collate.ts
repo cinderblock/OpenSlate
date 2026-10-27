@@ -9,6 +9,7 @@ import {
 import type { ChoiceCheck } from "./ballotCheck";
 import {
   type Area,
+  answerFor,
   jurisdictionLabel,
   jurisdictionRank,
   parseJurisdiction,
@@ -176,6 +177,8 @@ export interface Race {
    * "unknown"): a district it has no boundaries for. Absent: it is.
    */
   maybe?: true;
+  /** On the ballot because the user said so, where the area alone couldn't tell (`answerPlacement`). */
+  answered?: true;
   /** Ballot order when a ballot source lists the race, else most-backed first. */
   choices: ChoiceGroup[];
   /** A ballot source lists this race, so `choices` is the whole field. */
@@ -302,6 +305,9 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
           ...(district ? { district } : {}),
           ...(votedIn ? { votedIn } : {}),
           ...(placement === "unknown" ? { maybe: true as const } : {}),
+          ...(placement === "in" && options.area && answerFor(options.area, district)
+            ? { answered: true as const }
+            : {}),
           choices: [],
           onBallot: false,
           unlisted: false,

@@ -562,5 +562,7 @@ export function mergeFoundArea(previous: Area, found: Area, geo: StateGeo): Area
   const area: Area = { localities, districts };
   if (Object.keys(labels).length > 0) area.labels = labels;
   if (found.found) area.found = found.found;
+  // The user's own answers outlast a lookup; a district it finds outranks them (`placeRace`).
+  if (previous.answers) area.answers = previous.answers;
   return area;
 }

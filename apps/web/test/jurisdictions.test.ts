@@ -2,9 +2,13 @@ import { describe, expect, test } from "bun:test";
 import {
   EMPTY_AREA,
   allDistricts,
+  answerFor,
+  answerPlacement,
+  clearNoAnswers,
   inArea,
   jurisdictionLabel,
   jurisdictionRank,
+  noAnswerCount,
   noRaceReason,
   parseJurisdiction,
   placeRace,
@@ -116,6 +120,60 @@ describe("placeRace", () => {
     expect(placeRace(bayArea, "us/ca/ward-3", ward, counties)).toBe("out");
     // With no area set, everything is in.
     expect(placeRace(bayArea, undefined, EMPTY_AREA, counties)).toBe("in");
+  });
+});
+
+describe("answers: the user says whether a race is on their ballot", () => {
+  const sv = "us/ca/sunnyvale";
+  const sunnyvale = { localities: [sv, "us/ca/santa-clara-county"], districts: {} };
+  const council = (n: number) => `${sv}/council-${n}`;
+
+  test("without an answer, a council district the area can't place is unknown", () => {
+    for (const n of [1, 3, 5]) expect(placeRace(sv, council(n), sunnyvale)).toBe("unknown");
+  });
+
+  test("yes puts it on the ballot and places the user in that district", () => {
+    const area = answerPlacement(sunnyvale, council(3), true);
+    expect(placeRace(sv, council(3), area)).toBe("in");
+    expect(placeRace(sv, council(1), area)).toBe("out");
+    expect(placeRace(sv, council(5), area)).toBe("out");
+    expect(answerFor(area, " US/CA/Sunnyvale/Council-3 ")).toBe(true);
+    // Another city's council stays out: the answer doesn't move the user.
+    expect(placeRace("us/ca/cupertino", "us/ca/cupertino/council-3", area)).toBe("out");
+  });
+
+  test("no takes only that district off", () => {
+    const area = answerPlacement(sunnyvale, council(1), false);
+    expect(placeRace(sv, council(1), area)).toBe("out");
+    expect(placeRace(sv, council(3), area)).toBe("unknown");
+    expect(noAnswerCount(area)).toBe(1);
+  });
+
+  test("no to a place rules out every district within it", () => {
+    const water = "us/ca/santa-clara-county/valley-water";
+    const area = answerPlacement(sunnyvale, water, false);
+    expect(placeRace("us/ca/santa-clara-county", `${water}/div-2`, area)).toBe("out");
+  });
+
+  test("yes to a place segment adds it as a locality for the rest of the path", () => {
+    const ta = "us/ca/sunnyvale-school-district/ta-3";
+    const area = answerPlacement(sunnyvale, ta, true);
+    expect(placeRace(sv, ta, area)).toBe("in");
+    expect(placeRace(sv, "us/ca/sunnyvale-school-district/ta-1", area)).toBe("out");
+  });
+
+  test("a lookup's district outranks an answer", () => {
+    const looked = { ...sunnyvale, districts: { [`${sv}/council`]: "2" } };
+    const area = answerPlacement(looked, council(3), true);
+    expect(placeRace(sv, council(3), area)).toBe("out");
+  });
+
+  test("answers can be taken back", () => {
+    let area = answerPlacement(sunnyvale, council(3), true);
+    area = answerPlacement(area, council(1), false);
+    expect(clearNoAnswers(area).answers).toEqual({ [council(3)]: true });
+    expect(answerPlacement(clearNoAnswers(area), council(3), undefined)).toEqual(sunnyvale);
+    expect(placeRace(sv, council(1), clearNoAnswers(area))).toBe("out");
   });
 });
 

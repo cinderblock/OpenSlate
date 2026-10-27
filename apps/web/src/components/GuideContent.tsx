@@ -181,13 +181,27 @@ export function GuideAttribution({ guide }: { guide: Guide }) {
   );
 }
 
+/**
+ * Whether a passage came from a data file (Santa Clara's guide is OmniBallot
+ * JSON) rather than a page or document a person can read.
+ */
+function isDataFile(url: string): boolean {
+  try {
+    return /\.(?:json|xml)$/i.test(new URL(url).pathname);
+  } catch {
+    return false;
+  }
+}
+
 function Source({
   passage,
   label = "Source",
 }: { passage: Pick<Passage, "source">; label?: string }) {
+  // Raw data is still the provenance, but say so before someone opens it.
+  const data = isDataFile(passage.source);
   return (
     <a className="guide-source" href={passage.source} target="_blank" rel="noreferrer">
-      {label}
+      {data ? "Source data" : label}
     </a>
   );
 }
@@ -244,13 +258,14 @@ export function GuideMeans({ passage, guide }: { passage: Passage; guide: Guide 
 export function GuideOverview({ guide }: { guide: GuideForSubject }) {
   const { item } = guide;
   return (
-    <div className="card guide-overview">
+    <div className="card guide-overview" id="official">
       <div className="card-title">
         <strong>Official voter guide</strong>
         {item.about?.by && <span className="hint">{item.about.by}</span>}
       </div>
       {item.about && <GuideBlocks blocks={item.about.blocks} guide={guide} />}
-      {item.about && (
+      {/* A data file isn't "the guide" to read: the attribution below names who publishes it. */}
+      {item.about && !isDataFile(item.about.source) && (
         <p className="hint">
           <Source passage={item.about} label="Read it in the guide" />
         </p>

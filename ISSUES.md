@@ -1,5 +1,26 @@
 # Issues
 
+## No lookup places a voter in a city council district
+
+Seen 2026-10-26 (a Sunnyvale voter's report): the Santa Clara listing files
+Sunnyvale's council races with `district: us/ca/sunnyvale/council-{1,3,5}`,
+but no lookup layer (`LOOKUP_LAYERS` in `apps/web/src/lib/geo.ts`: school,
+BOE, college, supervisorial) has council districts, so every district race in
+the voter's city lands in *Might be on your ballot*, their own included. The
+voter can now answer *On my ballot* per race (`plans/ballot-feedback-sunnyvale.md`),
+but an address lookup should place them. Wants city council boundaries per
+city (no statewide source like TIGER), at least for the cities whose listings
+carry `council-N` districts.
+
+## Local measures outside the covered counties have no official text
+
+Seen 2026-10-26: My ballot links a measure's official text only when a voter
+guide in `guides.json` lists it (state, SF, LA, OC, Alameda, San Diego, Santa
+Clara, San Mateo). A local measure in any other county gets only Ballotpedia,
+CalMatters and news searches, which often have nothing on small city
+measures. Matters because a voter asked for "a link to the measure text for
+all the measures, especially the local ones".
+
 ## Setup lists a region's own outlets as "based elsewhere"
 
 Seen 2026-10-26 7:58 PM PDT (02:58Z), in setup with the area set to San

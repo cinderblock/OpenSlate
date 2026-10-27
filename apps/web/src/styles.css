@@ -1946,6 +1946,19 @@ button.source-chip {
   margin: 0 0 0.5rem;
   max-width: 60rem;
 }
+/* "Is this on your ballot?" on a race the area can't place. */
+.race-placement {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+}
+.race-placement button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
 
 /* Race page: on a wide screen polls, forecast and results sit beside the
    endorsements. The last row is the only flexible one, so a tall sidebar

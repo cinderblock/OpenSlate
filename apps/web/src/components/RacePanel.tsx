@@ -1,6 +1,6 @@
 import type { CandidateInfo, Passage, Stance, Subject } from "@openslate/core";
-import { Link, useParams } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { Link, useLocation, useParams } from "@tanstack/react-router";
+import { useEffect, useMemo } from "react";
 import { type AttachedArticle, articleDate, articlesByRace } from "../lib/articles";
 import { useBallotDraft } from "../lib/ballotDraft";
 import { designation, ordinal } from "../lib/ballotView";
@@ -64,6 +64,13 @@ export function RacePanel() {
 
   // The official voter guide's material on this race, when a guide covers it.
   const guide = useGuideItem(knownSubject);
+  // My ballot's "Official guide" link lands here: the guide loads after the
+  // page does, so scroll to it once it's there.
+  const hash = useLocation({ select: (l) => l.hash });
+  const guideReady = guide.guide !== undefined;
+  useEffect(() => {
+    if (hash === "official" && guideReady) document.getElementById("official")?.scrollIntoView();
+  }, [hash, guideReady]);
 
   // The guide's subject has what a parsed key lacks (kind, id).
   const subject = race || myRows[0] ? knownSubject : (guide.guide?.item.subject ?? knownSubject);

@@ -176,6 +176,12 @@ Equalization and county supervisorial districts, so a county's school board,
 college board and supervisor races show only where you vote on them; races
 only part of a county votes on that the app can't place (a water district, a
 school board's trustee area) are listed apart, as *Might be on your ballot*.
+Each asks *On my ballot* or *Not on my ballot*; saying yes to one city council
+district (or trustee area) also takes that family's other districts off,
+and the answers stay with your area (*Undo*, *Not sure after all* and *Show
+them again* take them back).
+A race or measure a voter guide covers links its official text, arguments or
+candidate statements from its card on My ballot.
 A regional measure (the Bay Area's transit measure, RTM) shows in each county
 that votes on it, as its slates list them.
 The lookup remembers which city and county it found, so if races for your
