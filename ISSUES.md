@@ -23,6 +23,8 @@ all the measures, especially the local ones".
 
 ## Setup lists a region's own outlets as "based elsewhere"
 
+**In progress — master (ISSUES.md burn-down).**
+
 Seen 2026-10-26 7:58 PM PDT (02:58Z), in setup with the area set to San
 Francisco: Bay Area News Group (the Mercury News and East Bay Times) is
 under "▸ 162 more based elsewhere", though it weighs in on races on an SF
