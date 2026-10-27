@@ -177,9 +177,10 @@ so and can switch the background off. A district with no race
 this election (e.g. an odd-numbered State Senate seat in 2026) says so on My
 ballot. The lookups also find your school, community college, Board of
 Equalization and county supervisorial districts, and your city council
-district in the 80-odd cities that elect by district and publish a current
-map, so a county's school board, college board and supervisor races, and a
-city's council races, show only where you vote on them; races
+district in the 90 cities that elect by district (from each city's current
+map, or its registrar's precincts), so a county's school board, college
+board and supervisor races, and a city's council races, show only where you
+vote on them; races
 only part of a county votes on that the app can't place (a water district, a
 school board's trustee area) are listed apart, as *Might be on your ballot*.
 Each asks *On my ballot* or *Not on my ballot*; saying yes to one city council
@@ -258,7 +259,8 @@ Census doesn't map (Board of Equalization, community college, supervisorial
 and city council districts) from the state's, the community colleges', each
 county's (or its registrar's) and each city's GIS (`OTHER_SOURCES` in
 `apps/web/scripts/build-geo.ts`; how each council map was checked is in
-[plans/council-districts-lookup.md](./plans/council-districts-lookup.md));
+[plans/council-districts-lookup.md](./plans/council-districts-lookup.md) and
+[plans/council-maps-missing-cities.md](./plans/council-maps-missing-cities.md));
 rerun it after redistricting.
 
 To serve the public catalog from your own copy too (for a site that works

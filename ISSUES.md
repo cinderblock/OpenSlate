@@ -15,18 +15,3 @@ console shows an error. Either turn off the automatic beacon injection for
 the zone (a Cloudflare setting: needs the owner's authorization, through the
 ops repo), or decide to allow it in the CSP (which the `_headers` comment rules
 out on purpose).
-
-## Some cities' council districts have no usable map
-
-**In progress — master (ISSUES.md burn-down).**
-
-Seen 2026-10-27: the council lookup (`OTHER_SOURCES` in
-`apps/web/scripts/build-geo.ts`) leaves out cities whose listings carry
-`council-N` races but that publish no usable current map, so those races stay
-*Might be on your ballot*: Campbell (no public layer; the 2019 map, re-adopted
-2022, only in its consultant's web map, numbering unchecked), Los Altos
-(parcel layer without geometry; Map F2a, 2024), Morgan Hill (consultant's
-"Adopted 2022" layer is block pieces with gaps; PDF only otherwise), Santa
-Clarita (only "Map_113" in a consultant web map, final version unconfirmed;
-PDF `filecenter.santa-clarita.com/GIS/citycouncildistricts.pdf`). Details in
-`plans/council-districts-lookup.md`.

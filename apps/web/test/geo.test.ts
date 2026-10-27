@@ -145,6 +145,27 @@ describe("locate (shipped California boundaries)", () => {
     expect(council(-118.21934, 33.98713)).toBe("Huntington Park|5"); // 6001 Miles Ave
     expect(council(-118.22243, 33.9777)).toBe("Huntington Park|2"); // 6800 Seville Ave
     expect(council(-118.22657, 33.98431)).toBe("Huntington Park|4"); // 6201 Rugby Ave
+    expect(council(-118.51132, 34.37483)).toBe("Santa Clarita|1"); // 24148 Valle del Oro
+    expect(council(-118.55607, 34.4067)).toBe("Santa Clarita|2"); // 26135 McBean Pkwy
+    expect(council(-118.53379, 34.44053)).toBe("Santa Clarita|3"); // 27066 Seco Canyon Rd
+    expect(council(-118.49485, 34.44903)).toBe("Santa Clarita|4"); // 20549 Plum Canyon Rd
+    expect(council(-118.4207, 34.40926)).toBe("Santa Clarita|5"); // 16218 Valley Ranch Rd
+    // County address points, each in the district the Santa Clara County
+    // Registrar's district lookup gives for that address (2026-10-27).
+    expect(council(-121.95104, 37.25898)).toBe("Campbell|1"); // 1172 Emerson Ave
+    expect(council(-121.93275, 37.28959)).toBe("Campbell|2"); // 1875 Bascom Ave
+    expect(council(-121.94935, 37.28826)).toBe("Campbell|3"); // 23 Heritage Village Ln
+    expect(council(-121.95759, 37.28678)).toBe("Campbell|4"); // 448 Campbell Ave
+    expect(council(-121.9711, 37.2721)).toBe("Campbell|5"); // 1218 Lovell Ave
+    expect(council(-122.08251, 37.34572)).toBe("Los Altos|1"); // 1420 Montclaire Pl
+    expect(council(-122.07289, 37.35381)).toBe("Los Altos|2"); // 1524 Kathy Ln
+    expect(council(-122.10077, 37.37026)).toBe("Los Altos|3"); // 715 Casa Bonita Ct
+    expect(council(-122.11458, 37.37515)).toBe("Los Altos|4"); // 416 2nd St
+    expect(council(-122.12172, 37.3966)).toBe("Los Altos|5"); // 340 Portola Ave
+    expect(council(-121.64848, 37.10369)).toBe("Morgan Hill|A"); // 770 La Crosse Dr
+    expect(council(-121.64267, 37.13157)).toBe("Morgan Hill|B"); // 540 Diana Ave
+    expect(council(-121.66499, 37.13497)).toBe("Morgan Hill|C"); // 18016 Hillwood Ln
+    expect(council(-121.58967, 37.13797)).toBe("Morgan Hill|D"); // 3435 Oakwood Ct
     // Newport Beach votes citywide on every district seat: no lookup.
     expect(geo.lookups.council.some((s) => s.id.startsWith("Newport Beach|"))).toBe(false);
     expect(council(-117.9298, 33.6189)).toBeUndefined();

@@ -52,7 +52,7 @@ commit, push master.
 - [x] 6. Local measure text: linked-document guides for 17 more counties (113 items, 320 documents), ballot repo `scripts/link-measures.ts` + `linked/<county>.json`, `guides.json` entries (`plans/local-measure-text.md`). New issues: Newport Beach P/Q/R called off but in the catalog; misdescriptive measure titles
 - [x] 6b. Newport Beach P/Q/R called off: endorsements `644dad9` re-issued the `newport-beach-city-clerk` listing (now Measure H only, under the OC registrar's subject and ids) and dropped SCNG's "No" on P/Q/R
 - [x] 6c. Misdescribed measure titles: Chino F and Upland M → "(Business License Tax)", Colton O → "(Appointed City Treasurer)" (also a "Municipal Code Amendment"), Allan Hancock JCCD H → "(Affordable Higher Education Bond)". Endorsements `df1ea2e` (7 bundles), ballot repo `5f4f0b6` (linked tables, 4 guide items), app `b4cc926` (marks follow a retitled measure)
-- [ ] 6d. Council cities with no usable map (Campbell, Los Altos, Morgan Hill, Santa Clarita): check whether it needs the user before starting
+- [x] 6d. Council cities with no usable map: all four in the lookup (444 → 463 districts in 90 cities). Santa Clarita from its own GIS (checked against LA's sample ballot data); Campbell, Los Altos and Morgan Hill as unions of the Santa Clara County Registrar's precincts, each precinct's district read from the registrar's own address lookup (`plans/council-maps-missing-cities.md`). `dissolve` now drops seam rings
 - [ ] 7. Cloudflare beacon
 
 ## Findings / gotchas
@@ -184,6 +184,15 @@ commit, push master.
   Barbara prints H2026). Order of pushes: endorsements first (the ballot
   repo's `link-measures` checks titles against the live catalog), then the
   ballot repo. Checked live: no published slate has the old titles.
+
+- Missing council maps (2026-10-27, ~3:30 AM PDT): didn't need the user.
+  The Santa Clara County Registrar's "Look Up Your Districts" page
+  (rovservices.sccgov.org, election 148) scripts from T3's preview browser
+  via its own `SearchAddress(...)` and gives precinct + council district per
+  address; with the registrar's `Precinct_Boundaries_` layer that builds any
+  SCC city's districts from the registrar's own lines. LA's isb.lavote.gov
+  data does the same job in LA County. Details and gotchas in
+  `plans/council-maps-missing-cities.md`.
 
 ## Open questions for the user
 

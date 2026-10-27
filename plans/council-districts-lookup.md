@@ -78,7 +78,9 @@ lookup should place them.
   Solana Beach has a NULL offshore strip). San José `OPN_OpenDataService/MapServer/120`,
   Santa Clara `DistrictElectionZone/MapServer/0`, Gilroy layer 1 (not 0).
   Campbell (no public layer; 2019 map re-adopted 2022) and Los Altos (parcel
-  layer without geometry) left out.
+  layer without geometry) left out at first; since 2026-10-27 both, with
+  Morgan Hill, come from the registrar's precincts and Santa Clarita from its
+  own GIS: `plans/council-maps-missing-cities.md`.
 - Adopted maps published only in NDC's (the cities' demographer's) web maps,
   beside dozens of drafts: Sunnyvale ("101 V2 C Adopted Map"), Pacifica,
   Woodside. `build-geo.ts` reads a web map layer by exact title

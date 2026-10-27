@@ -280,6 +280,12 @@ const OTHER_SOURCES: {
         "DISTRICT",
       ],
       [
+        // Checked against LA's sample ballot data (plans/council-maps-missing-cities.md).
+        "Santa Clarita",
+        "https://maps.santa-clarita.com/arcgis/rest/services/Boundary/MapServer/17",
+        "District",
+      ],
+      [
         "West Covina",
         "https://services8.arcgis.com/WV8ogNubjFL2BKPt/arcgis/rest/services/Council_Districts_20220405_c/FeatureServer/6",
         "DISTRICT",
@@ -363,6 +369,59 @@ const OTHER_SOURCES: {
     webMapLayer: title,
     id: (a: Attributes) => `${city}|${a.DISTRICT ?? a.District}`,
   })),
+  ...(
+    [
+      // The Santa Clara County Registrar of Voters' precincts, each wholly in
+      // one council district, by the district its own lookup gave an address
+      // inside each one (election 148, Nov 3, 2026; read 2026-10-27). For
+      // cities whose maps don't serve: Campbell's and Morgan Hill's are the
+      // consultant's census-block maps (Morgan Hill's with gaps throughout and
+      // a wrong line on Dunne Avenue), Los Altos publishes only a parcel list.
+      // Precincts with no addresses (Campbell 3866, Morgan Hill 4865, Los
+      // Altos 2315, 2350) are left out.
+      [
+        "Campbell",
+        {
+          1: "3810 3818 3830 3840 3843 3845 3846 3847 3848 3849 3850 3869",
+          2: "3801 3806 3807 3808 3813 3816 3825 3826 3844 3851 3852 3863 3867 3868",
+          3: "3802 3804 3805 3809 3817 3821 3822 3829 3836 3853 3857 3858 3861 3862 3864 3865",
+          4: "3811 3812 3819 3820 3823 3824 3838 3841 3842 3854 3856",
+          5: "3814 3815 3827 3828 3831 3832 3833 3834 3835 3837 3839 3859 3860",
+        },
+      ],
+      [
+        "Los Altos",
+        {
+          1: "2329 2334 2337 2338 2351 2352 2353 2354 2355 2356 2357 2359",
+          2: "2317 2332 2333 2336 2339 2343 2344 2345 2347 2358",
+          3: "2313 2314 2316 2319 2325 2326 2328 2330 2331 2342 2348 2362",
+          4: "2306 2307 2309 2310 2312 2318 2321 2322 2323 2324 2341 2346 2349 2361",
+          5: "2301 2302 2303 2304 2305 2308 2311 2320 2327 2335 2340 2360",
+        },
+      ],
+      [
+        "Morgan Hill",
+        {
+          A: "4801 4802 4803 4804 4805 4806 4807 4808 4809 4810 4811 4812 4813 4814 4815 4816 4817",
+          B: "4825 4826 4827 4828 4829 4830 4831 4832 4833 4834 4835 4836 4841 4843 4876 4877 4878 4887 4888",
+          C: "4851 4852 4853 4854 4855 4856 4857 4858 4859 4860 4861 4862 4863 4866 4893",
+          D: "4837 4838 4839 4840 4842 4879 4880 4881 4882 4883 4884 4885 4886 4889 4890 4891 4892",
+        },
+      ],
+    ] as const
+  ).map(([city, byDistrict]) => {
+    const districtOf = new Map(
+      Object.entries(byDistrict).flatMap(([district, precincts]) =>
+        precincts.split(" ").map((precinct) => [precinct, district] as const),
+      ),
+    );
+    return {
+      layer: "council" as const,
+      url: "https://services2.arcgis.com/nJEmhZphYC5TKA7K/arcgis/rest/services/Precinct_Boundaries_/FeatureServer/0",
+      where: `Precinct IN (${[...districtOf.keys()].map((p) => `'${p}'`).join(",")})`,
+      id: (a: Attributes) => `${city}|${districtOf.get(String(a.Precinct))}`,
+    };
+  }),
 ];
 type OtherLayer = (typeof OTHER_SOURCES)[number]["layer"];
 type LayerName = keyof typeof LAYERS | OtherLayer;
@@ -591,9 +650,37 @@ async function fetchOther(
 /**
  * Polygons that share borders joined into one (a district a source splits
  * into several features), so no line runs through a district to be near.
+ * Pieces whose borders almost meet (precincts a server generalized one at a
+ * time) leave hairline rings along the seams: dropped, or the lookup would
+ * call every point within NEAR_LINE_METERS of one "near a line".
  */
 function dissolve(polygons: Position[][][]): Position[][][] {
   if (polygons.length < 2) return polygons;
+  return mergePieces(polygons)
+    .filter(([outer = []]) => !isSeam(outer))
+    .map(([outer = [], ...holes]) => [outer, ...holes.filter((hole) => !isSeam(hole))]);
+}
+
+/**
+ * A ring whose mean width (twice its area over its perimeter) is under 2 m.
+ * Measured 2026-10-27 over every dissolved council district: the seams are
+ * all under 0.4 m wide; the narrowest real hole (a county pocket) is 11 m.
+ */
+function isSeam(ring: Position[]): boolean {
+  let twiceArea = 0;
+  let perimeter = 0;
+  const kx = 111_320 * Math.cos(((ring[0]?.[1] ?? 0) * Math.PI) / 180);
+  const ky = 110_574;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi = 0, yi = 0] = ring[i] ?? [];
+    const [xj = 0, yj = 0] = ring[j] ?? [];
+    twiceArea += (xj - xi) * kx * (yj + yi) * ky;
+    perimeter += Math.hypot((xj - xi) * kx, (yj - yi) * ky);
+  }
+  return Math.abs(twiceArea) / perimeter < 2;
+}
+
+function mergePieces(polygons: Position[][][]): Position[][][] {
   const pieces = topology({
     pieces: {
       type: "FeatureCollection",
