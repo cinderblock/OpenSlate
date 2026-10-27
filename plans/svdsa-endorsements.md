@@ -55,7 +55,9 @@ SVDSA's picks. The user is a member of the chapter and asked for it.
    says "pin OpenSlate with them"; it no longer changes the pin). The new gate
    wanted `voted_in` on Regional Measure RTM: `assign-voted-in.ts --apply`
    (`43c8bcd`).
-10. [ ] **Current:** user OKs the push (push → CI signs + publishes).
+10. [x] Published. Another thread's push carried all 7 commits; the publish run for
+    `64d66cb` succeeded 2026-10-27 1:22 PM PDT (20:22Z). The live catalog lists SVDSA
+    (158 positions, 8 labels) and its evidence page answers 200.
 
 ## Findings / gotchas
 

@@ -69,8 +69,7 @@ User feedback that set this up (2026-10-26):
    chips, popover and race page show labels and definitions.
 7. [x] Scraper skill teaches labels — `f1e3a66`; README — `feba3ae`.
 8. [x] SVDSA bundle labelled and pin bumped (endorsements repo `d45d6e2`).
-9. [ ] **Current:** user OKs pushing the endorsements repo (publishes SVDSA)
-   and OpenSlate's 4 local follow-ups (docs/issues only).
+9. [x] Everything published 2026-10-27 1:22 PM PDT (20:22Z); SVDSA is live with labels.
 
 ## Findings / gotchas
 
