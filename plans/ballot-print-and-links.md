@@ -379,12 +379,14 @@ The app stores a catalog slate's token once and never looks again
 2. ~~Seats as a real field~~: answered 2026-10-25 (Part C, structure in the
    spec, no parsed strings).
 3. ~~Who publishes the first `articles`~~: answered 2026-10-26 (Part F).
-4. From the article research (endorsements `plans/articles-2026-11-03.md`):
-   add KQED's undated voter-guide pages? Try sacbee.com, apnews.com,
-   ppic.org and politico.com (which refused scripted requests) through a
-   real browser? Recommendation: skip KQED's undated pages (dated
-   explainers already cover each prop); yes to a browser pass for Sac Bee
-   and AP, which cover every proposition.
+4. ~~Article follow-ups~~: answered 2026-10-26. KQED's undated guide pages
+   not needed (its dated explainers already cover all 14 props). Sac Bee
+   and AP via a real browser: done, endorsements `e670649` (Sac Bee 25
+   attachments on all 14 props; AP 3, all Prop 40, the only props it
+   reported on itself), published 2026-10-26 (keep-unchanged: 385
+   unchanged, 2 new). Politico and PPIC not attempted.
+6. Regional measures (ISSUES.md entry): user leans to a separate thread;
+   waiting on a yes to start one.
 5. Strategic ranking (keep a favourite first, mark others): the user said
    later; not started.
 
