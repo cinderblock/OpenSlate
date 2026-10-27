@@ -46,6 +46,13 @@ Ask the user for whatever you don't already have:
    - `subject.id` — leave unset if you don't have a `vip:<id>` mapping.
    - `stance` — `endorse` / `oppose` / `lean_for` / `lean_against` /
      `neutral` / `abstain`. Pick the one that matches the language used.
+     It's only how the position counts; the entity's own words go in `label`.
+   - `label` — the entity's own term for the position, exactly as it writes
+     it: "Endorsed", "Recommended", "No recommendation", "Cautious
+     recommendation" (SPEC §3.17). Set it whenever the page uses its own
+     terms, so voters read the entity's words instead of the app's stance
+     wording ("leans for"). Never invent one: a page that just lists names
+     gets no label.
    - `choice` — the named candidate or "Yes"/"No" for measures, spelled
      **exactly as the official ballot prints it** when an election authority
      bundle lists the race (see step 4b), e.g. `Donald P. (Don) Wagner`, not
@@ -62,7 +69,8 @@ Ask the user for whatever you don't already have:
      position; this is the audit trail.
 
    When the language is ambiguous (e.g. "we encourage support of" vs. "we
-   endorse"), pick `lean_for` over `endorse`. When in doubt, ask the user
+   endorse"), pick `lean_for` over `endorse`, and keep the page's term in
+   `label`. When in doubt, ask the user
    or omit the position entirely and note it in `evidence/NOTES.md`.
 
    **Republished picks.** If the page merely republishes another entity's
@@ -96,9 +104,19 @@ Ask the user for whatever you don't already have:
        "mode": "scraped",
        "retrieved_at": "<RFC 3339 UTC timestamp of the LATEST fetch>",
        "sources": [ "<top-level endorsements page URL>" ]
-     }
+     },
+     "labels": [
+       { "label": "Endorsed", "description": "<the page's own definition, quoted>" },
+       { "label": "Recommended" }
+     ]
    }
    ```
+
+   `labels` lists every `label` the positions use, in the order the page
+   presents them (SPEC §3.17); a position's label must be one of them.
+   Give a `description` only when the page defines the term (a foreword
+   saying how endorsements are decided), and quote it. Omit `labels`
+   entirely when no position has a label.
 
    `mode` should be `transcribed` instead of `scraped` if any positions
    came from a PDF, video, or human transcription rather than HTML.
