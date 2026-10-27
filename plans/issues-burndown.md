@@ -50,6 +50,7 @@ commit, push master.
 - [x] 5. Council districts: `council` lookup layer (`<City>|<n>`, filed as `us/ca/<city>/council`), 433 districts in 84 cities from registrars' (OC, Alameda, LA), SANDAG's and cities' GIS (`plans/council-districts-lookup.md`). Follow-ups in ISSUES.md: citywide seats tagged as districts (Newport Beach; HP and San Leandro left out until checked), cities with no usable map
 - [x] 5b. Citywide council seats tagged as districts: only Newport Beach is (endorsements `795617d`, `CITYWIDE_COUNCILS`); Huntington Park's and San Leandro's District 2 seats are by district (LA's sample ballot data; San Leandro's City Clerk), so both cities joined the council lookup (444 districts)
 - [x] 6. Local measure text: linked-document guides for 17 more counties (113 items, 320 documents), ballot repo `scripts/link-measures.ts` + `linked/<county>.json`, `guides.json` entries (`plans/local-measure-text.md`). New issues: Newport Beach P/Q/R called off but in the catalog; misdescriptive measure titles
+- [x] 6b. Newport Beach P/Q/R called off: endorsements `644dad9` re-issued the `newport-beach-city-clerk` listing (now Measure H only, under the OC registrar's subject and ids) and dropped SCNG's "No" on P/Q/R
 - [ ] 7. Cloudflare beacon
 
 ## Findings / gotchas
@@ -151,6 +152,20 @@ commit, push master.
   notices dropped, titles trimmed). Some hosts refuse HTTP/1.1: PowerShell
   `Invoke-WebRequest -HttpVersion 2.0` gets through; tables record such
   retrievals as `manual`. Race pages are `https://openslate.us/#/race/<key>`.
+
+- Newport Beach P/Q/R (2026-10-27, ~2 AM PDT): the city page confirms
+  the special election "will not take place on November 3, 2026". A bundle
+  dropped from the catalog is *not* dropped from voters who imported it:
+  the app (`catalogUpdates.ts` `staleImports`) only replaces a stored slate
+  with a newer one of the same stream (signer, source, election, scope),
+  and never removes one the catalog stops listing (SPEC: no revocation in
+  v1, re-issue instead). So a withdrawn listing has to be re-issued, not
+  deleted: the clerk's now lists only Measure H, with the OC registrar's
+  exact subject and choice ids (two listings naming one race merge by
+  title; the first loaded, alphabetical by slug, sets the ids, so a second
+  id set would make positions look stale). The endorsements CI fails any
+  position on a race the covering listing doesn't name, so SCNG's P/Q/R
+  positions had to go too (its re-sign also replaces stored copies).
 
 ## Open questions for the user
 

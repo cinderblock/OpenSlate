@@ -16,20 +16,6 @@ the zone (a Cloudflare setting: needs the owner's authorization, through the
 ops repo), or decide to allow it in the CSP (which the `_headers` comment rules
 out on purpose).
 
-## Newport Beach's Measures P, Q and R are called off but still in the catalog
-
-**In progress — master (ISSUES.md burn-down).**
-
-Seen 2026-10-27: the City of Newport Beach's Nov 3 election page says its
-special municipal election on Measures P, Q and R "will not take place on
-November 3, 2026" (the ballot printer never got the Secretary of State's
-authorization, and the Registrar never supplied protected-address voter
-data). The catalog still lists all three as Nov 3 measures: the
-`newport-beach-city-clerk` slate and the Southern California News Group's
-positions on them (endorsements repo). Matters because voters in Newport
-Beach see three measures that aren't on their ballot. Newport Beach's
-Measure H *is* on the ballot (the OC guide has it).
-
 ## Some catalog measure titles misdescribe the measure
 
 Seen 2026-10-27 while linking official measure documents
