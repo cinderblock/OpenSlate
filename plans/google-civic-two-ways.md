@@ -185,7 +185,7 @@ the hosted app never offers Google.
   - `polls.openslate.us/api/health` says `civic: true`.
   - `/api/civic/elections`: 200, `Cache-Control: public, max-age=3600`, CORS
     for `https://openslate.us`, none for `https://evil.example`.
-  - `/api/civic/voterinfo`: Richmond, VA gives its contests (US Senate…). SF
+  - `/api/civic/voterinfo`: Richmond, VA gives its contests (US Senateâ€¦). SF
     City Hall gives 422 "Google answered 400: Election unknown — invalid",
     which the app shows as no ballot yet.
   - 13 quick requests: ten 200s, then 429s; 200 again after 10 s.
