@@ -27,6 +27,8 @@ out on purpose).
 
 ## Council seats voted citywide may be tagged as districts
 
+**In progress — master (ISSUES.md burn-down).**
+
 Seen 2026-10-27 (`plans/council-districts-lookup.md`): the OC listing files
 Newport Beach's council races as `district: us/ca/newport-beach/council-N`,
 but its districts are residency districts every voter in the city votes on
