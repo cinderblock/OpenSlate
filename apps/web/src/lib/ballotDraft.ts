@@ -1,5 +1,6 @@
 import type { Stance, Subject } from "@openslate/core";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { createLocalStore, useLocalStore } from "./localStore";
 import { subjectKey } from "./subjects";
 
 export interface DraftRow {
@@ -24,7 +25,6 @@ type DraftMap = Record<string, DraftRow>;
 type RankingMap = Record<string, string[]>;
 
 const KEY = "openslate.ballotDraft.v1";
-const RANK_KEY = "openslate.ballotRanking.v1";
 
 function load(): DraftMap {
   try {
@@ -44,24 +44,6 @@ function persist(map: DraftMap): void {
   }
 }
 
-function loadRankings(): RankingMap {
-  try {
-    const raw = localStorage.getItem(RANK_KEY);
-    return raw ? (JSON.parse(raw) as RankingMap) : {};
-  } catch {
-    return {};
-  }
-}
-
-function persistRankings(map: RankingMap): void {
-  try {
-    if (Object.keys(map).length === 0) localStorage.removeItem(RANK_KEY);
-    else localStorage.setItem(RANK_KEY, JSON.stringify(map));
-  } catch {
-    // private mode etc.
-  }
-}
-
 /** The `choice` of a race's private-note row; no candidate can be named this. */
 export const NOTE_CHOICE = "\u0000note";
 
@@ -69,29 +51,42 @@ export function rowIdFor(electionId: string, subject: Subject, choice: string | 
   return `${electionId}|${subjectKey(subject)}|${choice ?? ""}`;
 }
 
-function rankingKeyFor(electionId: string, subject: Subject): string {
+export function rankingKeyFor(electionId: string, subject: Subject): string {
   return `${electionId}|${subjectKey(subject)}`;
 }
 
 /**
- * Reconcile a saved ranking with the live candidate list: keep saved order for
- * candidates that still exist, then append any new candidates in their natural
- * order. Drops names that no longer exist.
+ * Each race's ranking (lib/ranking.ts): the names the user ranked, first
+ * choice first, by `rankingKeyFor`. Which of them are marked lives in the
+ * draft rows; this is only the order.
  */
-export function effectiveOrder(saved: string[] | undefined, current: string[]): string[] {
-  if (!saved || saved.length === 0) return current;
-  const seen = new Set<string>();
-  const ordered: string[] = [];
-  for (const name of saved) {
-    if (current.includes(name) && !seen.has(name)) {
-      ordered.push(name);
-      seen.add(name);
-    }
-  }
-  for (const name of current) {
-    if (!seen.has(name)) ordered.push(name);
-  }
-  return ordered;
+export const rankingStore = createLocalStore<RankingMap>("openslate.ballotRanking.v1", {}, (raw) =>
+  typeof raw === "object" &&
+  raw !== null &&
+  !Array.isArray(raw) &&
+  Object.values(raw).every((v) => Array.isArray(v) && v.every((n) => typeof n === "string"))
+    ? (raw as RankingMap)
+    : undefined,
+);
+
+export const useRankings = () => useLocalStore(rankingStore)[0];
+
+/** One race's saved ranking; re-renders only when that one changes. */
+export function useRanking(electionId: string, subject: Subject): string[] | undefined {
+  const key = rankingKeyFor(electionId, subject);
+  const get = () => rankingStore.get()[key];
+  return useSyncExternalStore(rankingStore.subscribe, get, get);
+}
+
+/** Save a race's ranking; an empty one is forgotten. */
+export function setRanking(electionId: string, subject: Subject, order: readonly string[]): void {
+  const key = rankingKeyFor(electionId, subject);
+  rankingStore.set((current) => {
+    const next = { ...current };
+    if (order.length > 0) next[key] = [...order];
+    else delete next[key];
+    return next;
+  });
 }
 
 /**
@@ -256,34 +251,3 @@ export function useBallotDraft(): {
 
   return { rows, patch, patchMany, restore, clearRow, clearElection, clearAll, refile };
 }
-
-/** Per-contest ranking: ordered list of candidate names (most preferred first). */
-export function useBallotRanking(): {
-  rankings: RankingMap;
-  setRanking: (electionId: string, subject: Subject, order: string[]) => void;
-  clearRanking: (electionId: string, subject: Subject) => void;
-} {
-  const [rankings, setRankings] = useState<RankingMap>(loadRankings);
-
-  useEffect(() => {
-    persistRankings(rankings);
-  }, [rankings]);
-
-  const setRanking = useCallback((electionId: string, subject: Subject, order: string[]) => {
-    setRankings((current) => ({ ...current, [rankingKeyFor(electionId, subject)]: order }));
-  }, []);
-
-  const clearRanking = useCallback((electionId: string, subject: Subject) => {
-    setRankings((current) => {
-      const key = rankingKeyFor(electionId, subject);
-      if (!current[key]) return current;
-      const next = { ...current };
-      delete next[key];
-      return next;
-    });
-  }, []);
-
-  return { rankings, setRanking, clearRanking };
-}
-
-export { rankingKeyFor };

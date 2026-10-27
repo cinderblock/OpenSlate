@@ -982,6 +982,80 @@ a.button-link.primary {
   text-decoration: line-through;
 }
 
+/* A candidate race is the user's ranking (RankedChoices.tsx): each row gets a
+   drag handle and its rank; a line splits the ranked from the rest, and a
+   dashed one the marked from the backups. */
+.ranked-list {
+  outline: none;
+}
+.ranked-list [role="row"] {
+  outline: none;
+}
+.ranked-list [role="row"][data-focus-visible] {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+.ranked-list [role="row"][data-dragging] {
+  opacity: 0.5;
+}
+.ranked-list .react-aria-DropIndicator[data-drop-target] {
+  outline: 2px solid var(--accent);
+}
+.drag-handle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: -0.1rem;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none;
+}
+.drag-handle:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.drag-handle[data-focus-visible] {
+  outline: 2px solid var(--accent);
+}
+.rank-number {
+  flex-shrink: 0;
+  min-width: 1.2rem;
+  margin-top: 0.05rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.choice-row.first-backup {
+  position: relative;
+  border-top: 2px dashed var(--border);
+  padding-top: 1.1rem;
+}
+.choice-row.first-backup::before {
+  content: "Backups: ranked, not marked on your ballot";
+  position: absolute;
+  top: 0.15rem;
+  left: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.rank-line {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0;
+  border-top: 2px solid var(--text);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 /* Working through the ballot: progress, status filter, done races. */
 .triage-progress {
   display: inline-flex;
@@ -1331,6 +1405,10 @@ button.source-chip {
     flex-basis: 100%;
     /* Bubble + gap + count + gap, so the buttons line up under the name. */
     padding-left: 5.9rem;
+  }
+  /* Plus the drag handle and the rank. */
+  .ranked-list .choice-row .pick-buttons {
+    padding-left: 9.7rem;
   }
 }
 

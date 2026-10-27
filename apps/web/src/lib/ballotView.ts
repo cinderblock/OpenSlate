@@ -241,3 +241,8 @@ export function picksIn(race: Race, election: string, rows: Record<string, Draft
     (c) => rows[rowIdFor(election, race.subject, c.choice || undefined)]?.stance === "endorse",
   ).length;
 }
+
+/** The class a choice's row takes: picked, ruled out, a backup. */
+export function choiceRowClass(stance: Stance | undefined, backup = false): string {
+  return `choice-row${stance === "endorse" ? " picked" : ""}${stance === "oppose" ? " ruled-out" : ""}${backup ? " backup" : ""}`;
+}
