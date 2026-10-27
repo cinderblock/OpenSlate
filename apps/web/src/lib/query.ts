@@ -70,12 +70,28 @@ export interface CatalogEntry {
    * (`right`) side, counted by the catalog with core's `leanOf`.
    */
   lean?: { left: number; right: number };
+  /**
+   * What the slate was built from: a page listing the captured pages and
+   * notes, relative to the catalog URL. Older catalogs leave it out.
+   */
+  evidence?: string;
 }
 
 export function catalogEntryLogoUrl(entry: CatalogEntry, catalogUrl: string): string | undefined {
-  if (!entry.logo) return undefined;
+  return entry.logo ? catalogPathUrl(entry.logo, catalogUrl) : undefined;
+}
+
+export function catalogEntryEvidenceUrl(
+  entry: CatalogEntry,
+  catalogUrl: string,
+): string | undefined {
+  return entry.evidence ? catalogPathUrl(entry.evidence, catalogUrl) : undefined;
+}
+
+/** A path the catalog gives, as a URL, when it's one the app may load or link. */
+function catalogPathUrl(path: string, catalogUrl: string): string | undefined {
   try {
-    const url = new URL(entry.logo, catalogUrl);
+    const url = new URL(path, catalogUrl);
     // http(s), or the catalog's own scheme: a copy built into the desktop app
     // lives at views://.
     const ok =

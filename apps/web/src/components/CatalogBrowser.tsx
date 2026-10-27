@@ -18,6 +18,7 @@ import {
 import {
   CATALOG_BUILT_IN,
   type CatalogEntry,
+  catalogEntryEvidenceUrl,
   catalogEntryLogoUrl,
   catalogQueryOptions,
   DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
@@ -270,6 +271,18 @@ export function CatalogBrowser() {
                       · reported by {entry.issuer.name ?? "a researcher"}
                       {entry.attribution &&
                         ` · ${entry.attribution.mode} ${formatLocalDate(entry.attribution.retrieved_at)}`}
+                      {catalogEntryEvidenceUrl(entry, catalogUrl) && (
+                        <>
+                          {" · "}
+                          <a
+                            href={catalogEntryEvidenceUrl(entry, catalogUrl)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            what was captured
+                          </a>
+                        </>
+                      )}
                     </div>
                     {!reference && entry.lean && (
                       <LeanMeter
