@@ -96,16 +96,28 @@ export function setRanking(electionId: string, subject: Subject, order: readonly
  * every mark on them was left on a race that no longer exists. A row moves when
  * its race is none of `subjects` (every imported race) and exactly one of them
  * has its election, title and kind; a mark already on that race wins.
+ *
+ * A measure's title is part of its identity too, and the catalog corrects one
+ * that misdescribes the measure ("Chino — Measure F (Municipal Code
+ * Amendment)" is a business license tax). So a measure's row that matches no
+ * race by title also moves to the one measure of its election and
+ * jurisdiction named the same way before the description
+ * (`measureDesignation`): one city can't put two Measure Fs on one ballot.
  * Undefined when no row moves.
  */
 export function refiledRows(rows: DraftMap, subjects: readonly Subject[]): DraftMap | undefined {
   const keys = new Set(subjects.map(subjectKey));
   const byTitle = new Map<string, Map<string, Subject>>();
-  for (const subject of subjects) {
-    const at = `${subject.election ?? ""}|${subject.title}`;
-    const same = byTitle.get(at) ?? new Map<string, Subject>();
+  const byDesignation = new Map<string, Map<string, Subject>>();
+  const add = (index: Map<string, Map<string, Subject>>, at: string, subject: Subject) => {
+    const same = index.get(at) ?? new Map<string, Subject>();
     same.set(subjectKey(subject), subject);
-    byTitle.set(at, same);
+    index.set(at, same);
+  };
+  for (const subject of subjects) {
+    add(byTitle, `${subject.election ?? ""}|${subject.title}`, subject);
+    const at = designationAt(subject);
+    if (at) add(byDesignation, at, subject);
   }
   let next: DraftMap | undefined;
   for (const row of Object.values(rows)) {
@@ -113,7 +125,14 @@ export function refiledRows(rows: DraftMap, subjects: readonly Subject[]): Draft
     const same = [
       ...(byTitle.get(`${row.subject.election ?? ""}|${row.subject.title}`)?.values() ?? []),
     ].filter((s) => !row.subject.kind || !s.kind || s.kind === row.subject.kind);
-    const subject = same.length === 1 ? same[0] : undefined;
+    const at = designationAt(row.subject);
+    const renamed = at ? [...(byDesignation.get(at)?.values() ?? [])] : [];
+    const subject =
+      same.length === 1
+        ? same[0]
+        : same.length === 0 && renamed.length === 1
+          ? renamed[0]
+          : undefined;
     if (!subject) continue;
     const id = rowIdFor(row.electionId, subject, row.choice);
     next ??= { ...rows };
@@ -121,6 +140,25 @@ export function refiledRows(rows: DraftMap, subjects: readonly Subject[]): Draft
     next[id] ??= { ...row, id, subject };
   }
   return next;
+}
+
+/**
+ * What a measure's title names it by, without the description in brackets at
+ * the end: "Chino — Measure F" for "Chino — Measure F (Business License Tax)".
+ * Undefined for a title with no description, which has nothing to correct.
+ */
+function measureDesignation(title: string): string | undefined {
+  const m = /^(.+?)\s+\([^()]+\)$/s.exec(title.trim());
+  return m?.[1];
+}
+
+/** Where `refiledRows` looks a measure up by its designation; undefined for anything else. */
+function designationAt(subject: Subject): string | undefined {
+  if (subject.kind !== "measure") return undefined;
+  const designation = measureDesignation(subject.title);
+  return designation === undefined
+    ? undefined
+    : `${subject.election ?? ""}|${subject.jurisdiction ?? ""}|${designation}`;
 }
 
 function isEmpty(row: DraftRow): boolean {
