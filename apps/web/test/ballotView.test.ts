@@ -287,4 +287,23 @@ describe("picksIn", () => {
     }
     expect(picksIn(r, E, rows)).toBe(2);
   });
+  test("counts a name the user wrote in", () => {
+    const r = race("race", [group("A", [])], true);
+    const rows: Record<string, DraftRow> = {};
+    for (const [choice, writeIn] of [
+      ["A", false],
+      ["Write In", true],
+    ] as const) {
+      const id = rowIdFor(E, r.subject, choice);
+      rows[id] = {
+        id,
+        electionId: E,
+        subject: r.subject,
+        choice,
+        stance: "endorse",
+        ...(writeIn ? { writeIn } : {}),
+      } as DraftRow;
+    }
+    expect(picksIn(r, E, rows)).toBe(2);
+  });
 });

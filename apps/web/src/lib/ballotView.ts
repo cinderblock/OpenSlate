@@ -290,9 +290,29 @@ export function designation(choice: ChoiceGroup): string | undefined {
   return choice.ballotNote?.replace(SEATS, "").trim() || undefined;
 }
 
-/** How many choices on this race the user picked (filled bubbles). */
+/** Names the user wrote in on this race that no source or listing names. */
+export function writeInRows(
+  rows: Record<string, DraftRow>,
+  race: Race,
+  election: string,
+): DraftRow[] {
+  const prefix = rowIdFor(election, race.subject, "");
+  const named = new Set(race.choices.map((c) => c.choice));
+  return Object.values(rows).filter(
+    (row) => row.writeIn && row.choice && row.id.startsWith(prefix) && !named.has(row.choice),
+  );
+}
+
+/** A choice row for a name only the user wrote in. */
+export function writeInGroup(name: string): ChoiceGroup {
+  return { choice: name, positions: [], support: 0, opposition: 0, onBallot: false, writeIn: true };
+}
+
+/** How many choices on this race the user picked (filled bubbles), names they wrote in included. */
 export function picksIn(race: Race, election: string, rows: Record<string, DraftRow>): number {
-  return ballotChoices(race).filter(
+  const listed = ballotChoices(race).filter(
     (c) => rows[rowIdFor(election, race.subject, c.choice || undefined)]?.stance === "endorse",
   ).length;
+  const written = writeInRows(rows, race, election).filter((row) => row.stance === "endorse");
+  return listed + written.length;
 }

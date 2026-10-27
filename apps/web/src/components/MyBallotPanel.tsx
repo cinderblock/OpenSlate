@@ -48,6 +48,8 @@ import {
   raceHeading,
   voteFor,
   voteForLine,
+  writeInGroup,
+  writeInRows,
 } from "../lib/ballotView";
 import { backgroundImports } from "../lib/catalogImport";
 import {
@@ -1276,22 +1278,8 @@ const RaceCard = memo(
     ),
 );
 
-/** Names the user wrote in on this race that no source or listing names. */
-function writeInRows(rows: Record<string, DraftRow>, race: Race, election: string): DraftRow[] {
-  const prefix = `${election}|${race.key}|`;
-  const named = new Set(race.choices.map((c) => c.choice));
-  return Object.values(rows).filter(
-    (row) => row.writeIn && row.choice && row.id.startsWith(prefix) && !named.has(row.choice),
-  );
-}
-
 function sameRows(a: DraftRow[], b: DraftRow[]): boolean {
   return a.length === b.length && a.every((row, i) => row === b[i]);
-}
-
-/** A choice row for a name only the user wrote in. */
-function writeInGroup(name: string): ChoiceGroup {
-  return { choice: name, positions: [], support: 0, opposition: 0, onBallot: false, writeIn: true };
 }
 
 function RaceCardInner({
