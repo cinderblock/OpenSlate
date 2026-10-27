@@ -135,6 +135,7 @@ live.
 - [x] `agent.tool` usage event: tool and outcome, opt-in only
 - [x] origin-trial token in `public/_headers`
 - [x] merged master's ranking; `rank_choices`; marks through `lib/ranking.ts`
+- [x] deployed: pushed `eab7453`. openslate.us sent `Origin-Trial` from 2026-10-26 10:20 PM PDT (05:20Z), and the live bundle has the tools
 - [ ] a real-browser check in Chrome with WebMCP
 
 ## Open questions for the user
