@@ -13,6 +13,19 @@ articles-only "Local News Matters" slate, whose one article is on RTM,
 isn't added for SF voters either. Matters because a measure on the real
 ballot is missing from My ballot and from the printout.
 
+## Setup lists a region's own outlets as "based elsewhere"
+
+Seen 2026-10-26 7:58 PM PDT (02:58Z), in setup with the area set to San
+Francisco: Bay Area News Group (the Mercury News and East Bay Times) is
+under "▸ 162 more based elsewhere", though it weighs in on races on an SF
+ballot. Its slate's `context.jurisdiction` is `us/ca/bay-area`, and
+`GetStarted.tsx`'s `elsewhere` test calls any local scope that isn't one of
+the area's localities "elsewhere". A region has no `voted_in` to say which
+places it covers (that's per contest, SPEC §3.3), so the fix needs a call on
+what "your area's" means for a regional outlet (e.g. by where its races are
+rather than its scope). Matters because a voter's own regional paper is
+tucked away with out-of-area ones.
+
 ## `bun run lint` fails on every file in a Windows checkout
 
 With `core.autocrlf=true` the working tree is CRLF, but `biome.json` leaves
