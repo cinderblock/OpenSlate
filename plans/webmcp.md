@@ -140,9 +140,7 @@ live.
 
 ## Open questions for the user
 
-1. **The same for Edge?** Edge runs its own trial with a separate token
-   (Microsoft's origin-trials site). Lower priority.
-2. **Try it end to end** on openslate.us, in Chrome 149+ with an agent that
+1. **Try it end to end** on openslate.us, in Chrome 149+ with an agent that
    speaks WebMCP. Chrome's post says Gemini in Chrome support is "coming
    soon"; otherwise use an agent extension. Check that
    `document.modelContext` (or `navigator.modelContext`) exists on the live
@@ -189,6 +187,14 @@ live.
   `<meta http-equiv="origin-trial">`. The header in `public/_headers` sits
   with the rest of the response policy, and self-hosted copies (other
   origins) don't carry a token that's useless to them.
+
+## Origin trial (Edge)
+
+- **The user registered an Edge token on 2026-10-26.** It is for
+  `https://openslate.us:443` only (no subdomains), feature `WebMCP`, and
+  expires 2026-12-11 05:23Z (Dec 10, 9:23 PM PST). It shares the one
+  `Origin-Trial` line in `public/_headers`, comma-separated: each browser
+  checks only tokens signed by its own key.
 
 ## Things not to do
 

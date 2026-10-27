@@ -126,9 +126,9 @@ ballot updates as the agent works. Nothing is sent anywhere, and the agent
 can't publish or sign. Slates' text is marked untrusted, since anyone can
 publish one. If you've turned on anonymous usage statistics, a tool call
 counts as which tool and whether it worked, never what it read or marked.
-Chrome offers WebMCP to real visitors only on sites in its
-[origin trial](https://developer.chrome.com/blog/ai-webmcp-origin-trial)
-(Chrome 149 on), with a token for that exact origin. A copy you host
+Chrome and Edge offer WebMCP to real visitors only on sites in their
+origin trials ([Chrome's](https://developer.chrome.com/blog/ai-webmcp-origin-trial),
+Chrome 149 on), with a token for that exact origin; openslate.us sends both. A copy you host
 yourself needs its own token, or use `chrome://flags/#enable-webmcp-testing`
 locally. See `apps/web/src/lib/webmcp.ts`.
 
