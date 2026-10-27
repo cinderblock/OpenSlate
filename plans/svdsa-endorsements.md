@@ -43,7 +43,19 @@ SVDSA's picks. The user is a member of the chapter and asked for it.
 6. [x] Committed (now `6859af3` after rebasing onto origin).
 7. [x] Labels + OpenSlate pin `53ad9c5` (`d45d6e2`); San Mateo County's new
    listing matched every San Mateo title and name, 21 ids added (`6176d6d`).
-8. [ ] **Current:** user OKs the push (push → CI signs + publishes).
+8. [x] Evidence made findable (user picked "publish evidence", 2026-10-26).
+   It turned out `build-site.ts` already copied all of `orgs/` (evidence
+   included) to Pages; nothing linked it. Now each bundle gets
+   `evidence/index.html` (retrieval time local + UTC, sources, files with
+   GitHub rendered/history links), `index.json` entries carry `evidence`, the
+   catalog page links it (endorsements `5820819`), and the app's Sources
+   list links "what was captured" (OpenSlate `c728ff6`).
+9. [x] Rebased again: origin's `1def270` already pinned OpenSlate past the
+   labels commit, so origin's pin was kept (the labels commit's message still
+   says "pin OpenSlate with them"; it no longer changes the pin). The new gate
+   wanted `voted_in` on Regional Measure RTM: `assign-voted-in.ts --apply`
+   (`43c8bcd`).
+10. [ ] **Current:** user OKs the push (push → CI signs + publishes).
 
 ## Findings / gotchas
 
@@ -58,6 +70,10 @@ SVDSA's picks. The user is a member of the chapter and asked for it.
   does the schema check instead.
 - San Mateo County has no authority bundle. Its Roster of Candidates PDF
   (smcacre.gov `52_candidateroster0903.pdf`) confirmed the San Mateo names.
+- Regenerating the bundle: `bun build.ts <guide.txt> <bundle dir> <retrieved_at>`,
+  then `normalize-choices.ts 2026-11-03 --apply` and
+  `assign-voted-in.ts 2026-11-03 --apply`; the generator alone leaves out ids
+  and `voted_in`.
 - `verify-positions.ts` exits 1 because of another thread's untracked
   `orgs/sd-green-party/` (missing choice_ids), not ours. Left alone.
 - The catalog's East Palo Alto Measure O title says "(Bond Measure)", but SVDSA
@@ -75,8 +91,8 @@ SVDSA's picks. The user is a member of the chapter and asked for it.
 
 ## Open questions for the user
 
-1. OK to push? Local master is 3 ahead of origin, all SVDSA: `6859af3`
-   bundle, `d45d6e2` labels + pin, `6176d6d` San Mateo ids.
+1. OK to push? Local master is 7 ahead of origin: SVDSA bundle, labels,
+   San Mateo ids, Oak Grove note, RTM voted_in, evidence pages, README.
 2. Do the NOTES.md judgment calls look right (tiers, soft picks, blanket school measures)?
    **Resolved 2026-10-26:** all good; the user confirmed Oak Grove's "District 1" is a typo.
 3. User feedback (2026-10-26): "every endorser needs to be able to use their own
@@ -93,6 +109,10 @@ SVDSA's picks. The user is a member of the chapter and asked for it.
    `evidence/` isn't published on Pages, and nothing pins *which version* of a
    live-updating Google Doc was captured (proposed: a sha256 of the captured text,
    and/or a Wayback snapshot URL). Waiting on which of these the user wants.
+
+   **Resolved 2026-10-26:** publish evidence. Earlier claim that `evidence/`
+   wasn't on Pages was wrong (the live site served DSA SF's capture); the gap
+   was discoverability, now fixed (step 8).
 
 ## Things not to do
 

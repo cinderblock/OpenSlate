@@ -97,8 +97,8 @@ User feedback that set this up (2026-10-26):
 
 ## Open questions for the user
 
-1. OK to push the endorsements repo (3 commits: SVDSA bundle, labels + pin,
-   San Mateo ids)? Pushing signs and publishes SVDSA.
+1. OK to push the endorsements repo (7 commits, see svdsa-endorsements.md)?
+   Pushing signs and publishes SVDSA. Origin's pin already includes labels.
 2. OK to push OpenSlate's 4 local commits (ISSUES fix and entry, scraper
    skill, README)?
 3. Should the app's Compose panel let voters/orgs set labels on slates they
