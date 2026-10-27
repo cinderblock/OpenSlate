@@ -5,6 +5,7 @@ import {
   createSlate,
   generateKeyPair,
   type KeyPair,
+  type LabelDefinition,
   type Stance,
 } from "@openslate/core";
 import {
@@ -38,8 +39,15 @@ function slate(input: {
   keyPair?: KeyPair;
   election?: string;
   issuedAt?: string;
+  labels?: LabelDefinition[];
   positions: Array<
-    P & { statement?: string; contest?: BallotContest; ballot?: BallotChoice; rank?: number }
+    P & {
+      statement?: string;
+      contest?: BallotContest;
+      ballot?: BallotChoice;
+      rank?: number;
+      label?: string;
+    }
   >;
 }): { token: string; importedAt: string } {
   const token = createSlate({
@@ -47,6 +55,7 @@ function slate(input: {
     issuer: { name: input.of ? "Researcher" : (input.name ?? "Someone") },
     ...(input.election ? { context: { election: input.election } } : {}),
     ...(input.issuedAt ? { issuedAt: input.issuedAt } : {}),
+    ...(input.labels ? { labels: input.labels } : {}),
     positions: input.positions.map((p) => ({
       subject: {
         title: p.title,
@@ -62,6 +71,7 @@ function slate(input: {
       ...(p.statement ? { statement: p.statement } : {}),
       ...(p.ballot ? { ballot: p.ballot } : {}),
       ...(p.rank ? { rank: p.rank } : {}),
+      ...(p.label ? { label: p.label } : {}),
     })),
     ...(input.of
       ? {
@@ -288,6 +298,35 @@ describe("collateRaces", () => {
     const rankOf = (name: string) =>
       mayor?.choices.find((c) => c.choice === name)?.positions[0]?.rank;
     expect([rankOf("Ann"), rankOf("Bo")]).toEqual([1, 2]);
+  });
+
+  test("a source's own labels come through, with what they mean (SPEC §3.17)", () => {
+    const labelled = slate({
+      name: "Chapter",
+      labels: [
+        { label: "Recommended", description: "Approved by a majority." },
+        { label: "Watch" },
+      ],
+      positions: [
+        { title: "Mayor", choice: "Ann", stance: "lean_for", label: "Recommended" },
+        { title: "Mayor", choice: "Bo", stance: "neutral", label: "Watch" },
+        { title: "Mayor", choice: "Cy", stance: "lean_for" },
+      ],
+    });
+    const [mayor] = collateRaces(decodeSlates([labelled]), {
+      follows: {},
+      includeUnfollowed: true,
+    });
+    const positionOf = (name: string) =>
+      mayor?.choices.find((c) => c.choice === name)?.positions[0];
+    expect(positionOf("Ann")).toMatchObject({
+      stance: "lean_for",
+      label: "Recommended",
+      labelDescription: "Approved by a majority.",
+    });
+    expect(positionOf("Bo")?.label).toBe("Watch");
+    expect(positionOf("Bo")?.labelDescription).toBeUndefined();
+    expect(positionOf("Cy")?.label).toBeUndefined();
   });
 
   test("a ballot source supplies the field in ballot order, without being a source", () => {

@@ -2,7 +2,7 @@ import type { Stance } from "@openslate/core";
 import { CircleHelp, type LucideIcon, ThumbsDown, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { choiceRowClass, designation, isYesNo, ordinal } from "../lib/ballotView";
-import { type ChoiceGroup, positionTone, type Race } from "../lib/collate";
+import { type ChoiceGroup, positionTone, type Race, type RacePosition } from "../lib/collate";
 import { ChoiceBallotTags } from "./BallotTags";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { LeanSummary } from "./LeanMeter";
@@ -25,6 +25,19 @@ const STANCE_WORD: Record<Stance, string> = {
   neutral: "is neutral on",
   abstain: "abstains on",
 };
+
+/**
+ * How a source's position reads: in its own words when it labels it (SPEC
+ * §3.17), otherwise ours for its stance.
+ */
+function positionWords(
+  position: Pick<RacePosition, "source" | "stance" | "label">,
+  target: string,
+): string {
+  return position.label
+    ? `${position.source.name}: “${position.label}”, ${target}`
+    : `${position.source.name} ${STANCE_WORD[position.stance]} ${target}`;
+}
 
 /** How a mark other than a pick reads beside the name. */
 const MARK_LABEL: Record<Stance, string> = {
@@ -134,11 +147,14 @@ export function ChoiceRowContent({
             {followed.map((position) => {
               // `named`: listed on the other side of a two-way race from the
               // one the source named (Settings → My ballot).
-              const what = `${position.source.name} ${STANCE_WORD[position.stance]} ${position.named ?? (group.choice || race.subject.title)}${position.rank ? `, ranked ${ordinal(position.rank)}` : ""}`;
+              const what = `${positionWords(position, position.named ?? (group.choice || race.subject.title))}${position.rank ? `, ranked ${ordinal(position.rank)}` : ""}`;
               // Coloured and marked by how it counts for you: a source you
               // disagree with counts the other way. ✗ = counts against.
               const counted = positionTone(position);
-              const leaning = position.stance === "lean_for" || position.stance === "lean_against";
+              // The source's own label says how strongly, in its words: no "~" of ours.
+              const leaning =
+                !position.label &&
+                (position.stance === "lean_for" || position.stance === "lean_against");
               const disagree = position.standing === "disagree";
               const countsAs = `you disagree with ${position.source.name}, so this counts ${counted === "for" ? "for" : "against"} ${group.choice || race.subject.title}`;
               return (
@@ -174,6 +190,11 @@ export function ChoiceRowContent({
                     />
                     <strong>{what}</strong>
                   </div>
+                  {position.labelDescription && (
+                    <p className="hint">
+                      “{position.label}”: {position.labelDescription}
+                    </p>
+                  )}
                   {disagree && counted !== "neutral" && (
                     <p className="hint">
                       <ThumbsDown className="icon" aria-hidden="true" />{" "}
@@ -214,7 +235,7 @@ export function ChoiceRowContent({
                   {others.map((p) => (
                     <li key={p.source.id}>
                       <EndorserAvatar sourceId={p.source.id} name={p.source.name} />
-                      {p.source.name} {STANCE_WORD[p.stance]} {group.choice || race.subject.title}
+                      {positionWords(p, group.choice || race.subject.title)}
                     </li>
                   ))}
                 </ul>

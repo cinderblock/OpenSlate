@@ -216,6 +216,9 @@ export function raceDetail(race: Race, election: string, draft: Draft) {
         // Reported by someone else, not signed by the source itself.
         ...(p.source.secondhand ? { secondhand: true as const } : {}),
         stance: p.stance,
+        // The source's own term for it, and what that means (SPEC §3.17).
+        ...(p.label ? { label: p.label } : {}),
+        ...(p.labelDescription ? { label_description: p.labelDescription } : {}),
         // How the user takes this source (see the get_race description).
         standing: p.standing,
         ...(p.valid ? {} : { signature_invalid: true as const }),

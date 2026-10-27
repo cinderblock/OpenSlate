@@ -124,6 +124,10 @@ export interface RacePosition {
   source: Source;
   stance: Stance;
   statement?: string;
+  /** The source's own term for the position, shown in place of a stance word (SPEC §3.17). */
+  label?: string;
+  /** What the label means, from the slate's `labels`. */
+  labelDescription?: string;
   /** Where the source ranks this choice, 1 being its first (SPEC §3.16). */
   rank?: number;
   valid: boolean;
@@ -281,6 +285,9 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
     const ballot = isBallotSource(slate.source);
     const standing = standingOf(options.follows, slate.source.id);
     const followed = ballot || standing !== "off";
+    const labelDescriptions = new Map(
+      slate.payload.labels?.map((definition) => [definition.label, definition.description]),
+    );
     for (const [index, position] of slate.payload.positions.entries()) {
       const check = slate.checks?.[index];
       const key = subjectKey(position.subject);
@@ -360,6 +367,10 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
         source: slate.source,
         stance: position.stance,
         ...(position.statement ? { statement: position.statement } : {}),
+        ...(position.label ? { label: position.label } : {}),
+        ...(position.label && labelDescriptions.get(position.label)
+          ? { labelDescription: labelDescriptions.get(position.label) }
+          : {}),
         ...(position.rank !== undefined ? { rank: position.rank } : {}),
         valid: slate.valid,
         standing,

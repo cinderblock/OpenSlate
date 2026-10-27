@@ -355,8 +355,9 @@ function ChoiceCard({
         <ul className="position-list">
           {group.positions.map((position) => (
             <li key={position.source.id}>
+              {/* The source's own words when it labels the position (SPEC §3.17). */}
               <span className={`stance stance-${position.stance}`}>
-                {STANCE_LABEL[position.stance]}
+                {position.label ?? STANCE_LABEL[position.stance]}
                 {position.rank !== undefined && `, ranked ${ordinal(position.rank)}`}
               </span>
               <EndorserAvatar sourceId={position.source.id} name={position.source.name} size="md" />
@@ -385,6 +386,11 @@ function ChoiceCard({
                 <LeanMeter sourceId={position.source.id} name={position.source.name} withWord />
                 {!position.valid && <span className="warning"> (unverified)</span>}
                 {position.written && <div className="hint">Named as “{position.written}”.</div>}
+                {position.labelDescription && (
+                  <div className="hint">
+                    {position.label}: {position.labelDescription}
+                  </div>
+                )}
                 {position.statement && <div className="hint">“{position.statement}”</div>}
               </span>
             </li>
