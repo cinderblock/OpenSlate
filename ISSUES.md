@@ -23,6 +23,8 @@ all the measures, especially the local ones".
 
 ## Dark theme: some text and white-on-colour fills fall below 4.5:1
 
+**In progress — master (ISSUES.md burn-down).**
+
 Dark `--bad` (`#e74c3c`) as text measures 4.41:1 on `--surface` and 4.02:1 on
 `--surface-2` (error text, Oppose stance, `button.danger`). White text on dark
 `--ok` (`#2ecc71`) is 2.10:1 (`.filter-chip.active.ok`) and on dark `--accent`
