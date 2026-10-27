@@ -21,19 +21,6 @@ CalMatters and news searches, which often have nothing on small city
 measures. Matters because a voter asked for "a link to the measure text for
 all the measures, especially the local ones".
 
-## Dark theme: some text and white-on-colour fills fall below 4.5:1
-
-**In progress — master (ISSUES.md burn-down).**
-
-Dark `--bad` (`#e74c3c`) as text measures 4.41:1 on `--surface` and 4.02:1 on
-`--surface-2` (error text, Oppose stance, `button.danger`). White text on dark
-`--ok` (`#2ecc71`) is 2.10:1 (`.filter-chip.active.ok`) and on dark `--accent`
-3.22:1 (primary buttons, selected segments and tags). The light theme clears
-4.5:1 for all of these. Lightening `--bad` to fix the text makes the
-white-on-red fills worse, so the fix probably wants "on-colour" tokens for text
-on filled backgrounds. `apps/web/test/theme.test.ts` lists the `--bad` pairs as
-known failures; take them off the list when fixed.
-
 ## Cloudflare's analytics beacon is injected and then blocked by our CSP
 
 Every page on https://openslate.us logs a console error (seen 2026-10-23,

@@ -45,7 +45,7 @@ commit, push master.
 - [x] 2. Regional outlets: catalog `regions` (core `regionsOf`, `sign --batch`), setup's `basedInArea` (`plans/regional-outlets-setup.md`). Live: endorsements `b3ba2e9` re-signed the catalog, checked on openslate.us
 - [x] 3. validate: accepts sign input; core `signInputSchema` (closed) shared by `validate`, `sign`, `sign --batch` and `adopt --into`
 - [x] 3b. Doubled quote marks on statements: the app no longer adds quotes; a statement is a ruled block (`.statement`) shown as written
-- [ ] 4. Dark theme contrast
+- [x] 4. Dark theme contrast: `--on-accent/ok/bad/warn` tokens for text on fills (dark text on dark theme's bright fills), dark `--bad` lightened to `#f26b5f`, lean fills as tokens; `theme.test.ts` checks each fill/text pair and that every filled rule uses its partner
 - [x] 4b. Endorsements CI gate: `verify-positions.ts` parses with `signInputSchema`; endorsements `1def270` (pin `5300971`), README `0beb2a3`
 - [ ] 5. Council districts
 - [ ] 6. Local measure text
@@ -105,6 +105,21 @@ commit, push master.
   new pin signed all 387. In the endorsements repo on Windows, `bun run lint`
   fails on every file (Biome 1.9 wants LF; logged in its ISSUES.md) and
   `tsc` fails on old scripts (already logged there): neither is run by its CI.
+
+- Dark theme contrast (2026-10-27, ~12:10 AM PDT): on-colour tokens, not
+  darker dark fills: darkening dark `--accent`/`--ok` for white text would
+  break them as text colours on the dark surfaces. Dark fills now carry
+  `#0f1115` text (accent 5.87, ok 8.99, bad 6.34, warn 11.38); dark `--bad`
+  `#e74c3c` → `#f26b5f` (5.15 on `--surface-2`). The lean stance fills
+  (`#4d8a63`/`#a76b4d`, white text 4.09/4.33 in both themes) also failed:
+  now `--fill-lean-for` `#467f5a` / `--fill-lean-against` `#9e6447`. The
+  switch thumb and checkbox tick use the on-colours too. A new test fails
+  any rule with a solid `--accent/--ok/--bad/--warn/--fill-lean-*`
+  background that doesn't set its partner text colour (textless fills are
+  listed). Checked in the preview browser, dark scheme.
+- One full `bun test` run reported `1 fail, 1 error` right after
+  `bun run format`; four reruns all passed. Unidentified flake, not
+  reproduced.
 
 ## Open questions for the user
 

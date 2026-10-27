@@ -2,7 +2,9 @@
    Light) or the user picked Dark — Settings → Appearance stamps data-theme on
    <html> (lib/theme.ts, public/theme.js). The two dark blocks must match, and
    index.html's critical CSS repeats --bg and --text: test/theme.test.ts checks
-   both, plus text contrast. Text colours clear 4.5:1 on --bg and both surfaces. */
+   both, plus text contrast. Text colours clear 4.5:1 on --bg and both surfaces;
+   text on a filled --accent/--ok/--bad/--warn uses its --on-* partner, which
+   clears 4.5:1 on that fill (dark fills are bright, so their text is dark). */
 :root {
   color-scheme: light;
   --bg: #f3f4f6;
@@ -15,6 +17,13 @@
   --ok: #18794a;
   --bad: #c52a2a;
   --warn: #8a5a00;
+  --on-accent: #ffffff;
+  --on-ok: #ffffff;
+  --on-bad: #ffffff;
+  --on-warn: #ffffff;
+  /* Lean stances' fills (white text on both themes). */
+  --fill-lean-for: #467f5a;
+  --fill-lean-against: #9e6447;
   --lean-for: #3b7a52;
   --lean-against: #9a5430;
   /* Left-right spectrum poles (Democratic, Republican) and its neutral middle;
@@ -46,8 +55,14 @@
     --muted: #9aa3b2;
     --accent: #4f8cff;
     --ok: #2ecc71;
-    --bad: #e74c3c;
+    --bad: #f26b5f;
     --warn: #f1c40f;
+    --on-accent: #0f1115;
+    --on-ok: #0f1115;
+    --on-bad: #0f1115;
+    --on-warn: #0f1115;
+    --fill-lean-for: #467f5a;
+    --fill-lean-against: #9e6447;
     --lean-for: #7fd8a0;
     --lean-against: #e8a87c;
     --pole-left: #5b8def;
@@ -76,8 +91,14 @@
   --muted: #9aa3b2;
   --accent: #4f8cff;
   --ok: #2ecc71;
-  --bad: #e74c3c;
+  --bad: #f26b5f;
   --warn: #f1c40f;
+  --on-accent: #0f1115;
+  --on-ok: #0f1115;
+  --on-bad: #0f1115;
+  --on-warn: #0f1115;
+  --fill-lean-for: #467f5a;
+  --fill-lean-against: #9e6447;
   --lean-for: #7fd8a0;
   --lean-against: #e8a87c;
   --pole-left: #5b8def;
@@ -192,7 +213,7 @@ a {
 }
 .alpha-badge[aria-expanded="true"] {
   background: var(--warn);
-  color: var(--surface);
+  color: var(--on-warn);
 }
 .alpha-banner {
   display: grid;
@@ -416,7 +437,7 @@ button:disabled {
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 /* Outline only: a way past the usual step, beside the primary that is the usual step. */
 button.hollow {
@@ -652,7 +673,7 @@ a.button-link:hover {
 a.button-link.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 /* QR dialog */
@@ -731,24 +752,27 @@ a.button-link.primary {
   color: var(--text);
 }
 .stance-btn.active {
-  color: #fff;
   font-weight: 600;
 }
 .stance-btn.active.stance-endorse {
   background: var(--ok);
   border-color: var(--ok);
+  color: var(--on-ok);
 }
 .stance-btn.active.stance-oppose {
   background: var(--bad);
   border-color: var(--bad);
+  color: var(--on-bad);
 }
 .stance-btn.active.stance-lean_for {
-  background: #4d8a63;
-  border-color: #4d8a63;
+  background: var(--fill-lean-for);
+  border-color: var(--fill-lean-for);
+  color: #fff;
 }
 .stance-btn.active.stance-lean_against {
-  background: #a76b4d;
-  border-color: #a76b4d;
+  background: var(--fill-lean-against);
+  border-color: var(--fill-lean-against);
+  color: #fff;
 }
 .stance-btn.active.stance-neutral,
 .stance-btn.active.stance-abstain {
@@ -1268,8 +1292,8 @@ a.button-link.primary {
   background: color-mix(in srgb, var(--ok) 75%, transparent);
 }
 .bubble-lean_for {
-  border-color: #4d8a63;
-  background: linear-gradient(90deg, #4d8a63 50%, transparent 50%);
+  border-color: var(--fill-lean-for);
+  background: linear-gradient(90deg, var(--fill-lean-for) 50%, transparent 50%);
 }
 .bubble-oppose {
   border-color: var(--bad);
@@ -2277,7 +2301,7 @@ details.card > summary {
   height: 1.75rem;
   border-radius: 50%;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-size: 0.95rem;
 }
 /* A finished step folds to one line, with the way back into it. */
@@ -2680,15 +2704,17 @@ details.card > summary {
 }
 .filter-chip.active {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 .filter-chip.active.ok {
   background: var(--ok);
+  color: var(--on-ok);
   border-color: var(--ok);
 }
 .filter-chip.active.bad {
   background: var(--bad);
+  color: var(--on-bad);
   border-color: var(--bad);
 }
 
@@ -2704,7 +2730,7 @@ button.tag:disabled {
 button.tag.active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 /* What the ballot source says about a candidate: party, ballot designation. */
@@ -2804,7 +2830,7 @@ button.tag.active {
   border-color: var(--ok);
 }
 .ui-switch[data-selected] .ui-switch-thumb {
-  background: #fff;
+  background: var(--on-ok);
   transform: translateX(1rem);
 }
 .ui-switch[data-pressed] .ui-switch-thumb {
@@ -2847,7 +2873,7 @@ button.tag.active {
   width: 0.85rem;
   height: 0.85rem;
   fill: none;
-  stroke: #fff;
+  stroke: var(--on-accent);
   stroke-width: 2.4;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -3200,7 +3226,7 @@ button.tag.active {
 }
 .ui-segment[data-selected] {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 .ui-segment[data-focus-visible] {
   box-shadow: inset 0 0 0 2px var(--accent);
@@ -3238,7 +3264,7 @@ button.tag.active {
 }
 .ui-toggle[data-selected] {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 .ui-toggle[data-focus-visible] {
   box-shadow: inset 0 0 0 2px var(--accent);

@@ -51,6 +51,19 @@ const critical = themeBlocks(
 );
 const themes = { light: tokens.light, dark: tokens.pickedDark } as const;
 
+/** Everything after the theme blocks. */
+const rules = styles.slice(styles.indexOf("}", styles.indexOf(':root[data-theme="dark"]')) + 1);
+
+/** Each filled background and the text colour (a token or a literal) that goes on it. */
+const fillText: Record<string, string> = {
+  "--accent": "--on-accent",
+  "--ok": "--on-ok",
+  "--bad": "--on-bad",
+  "--warn": "--on-warn",
+  "--fill-lean-for": "#fff",
+  "--fill-lean-against": "#fff",
+};
+
 const customProperties = (block: Map<string, string>) =>
   [...block.keys()].filter((k) => k.startsWith("--")).sort();
 
@@ -68,15 +81,12 @@ describe("styles.css theme tokens", () => {
   test("shadows and backdrops outside the theme blocks use the tokens", () => {
     // A dark-only rgb(0 0 0 / 0.5) is too heavy on the light page: use
     // var(--shadow) or var(--backdrop, <fallback>) (::backdrop needs the fallback).
-    const rules = styles.slice(styles.indexOf("}", styles.indexOf(':root[data-theme="dark"]')));
     const raw = [...rules.matchAll(/(var\(--[\w-]+,\s*)?rgba?\([^)]*\)/g)]
       .filter((m) => !m[1])
       .map((m) => m[0]);
     expect(raw).toEqual([]);
   });
 
-  // Dark --bad text sits below 4.5:1 on the surfaces; see ISSUES.md.
-  const knownFailures = new Set(["dark --bad on --surface", "dark --bad on --surface-2"]);
   const textTokens = [
     "--text",
     "--muted",
@@ -93,21 +103,47 @@ describe("styles.css theme tokens", () => {
   for (const [mode, block] of Object.entries(themes)) {
     test(`${mode} text colours clear 4.5:1 on the backgrounds`, () => {
       const failures: string[] = [];
-      const stillKnown: string[] = [];
       for (const text of textTokens) {
         for (const ground of ["--bg", "--surface", "--surface-2"]) {
-          const label = `${mode} ${text} on ${ground}`;
           const ratio = contrast(token(block, text), token(block, ground));
-          if (ratio >= 4.5) continue;
-          if (knownFailures.has(label)) stillKnown.push(label);
-          else failures.push(`${label}: ${ratio.toFixed(2)}`);
+          if (ratio < 4.5) failures.push(`${text} on ${ground}: ${ratio.toFixed(2)}`);
         }
       }
       expect(failures).toEqual([]);
-      // Fixed one? Take it off the list.
-      expect(stillKnown).toEqual([...knownFailures].filter((k) => k.startsWith(`${mode} `)));
+    });
+
+    test(`${mode} text on a filled colour clears 4.5:1`, () => {
+      const failures: string[] = [];
+      for (const [fill, text] of Object.entries(fillText)) {
+        const ratio = contrast(colour(block, text), token(block, fill));
+        if (ratio < 4.5) failures.push(`${text} on ${fill}: ${ratio.toFixed(2)}`);
+      }
+      expect(failures).toEqual([]);
     });
   }
+
+  test("a filled colour's text is its partner", () => {
+    // Every rule that fills with one of these sets that fill's text colour,
+    // except the few fills that never hold text.
+    const textless = new Set([
+      ".triage-fill",
+      ".bubble-endorse",
+      ".ui-switch[data-selected] .ui-switch-track",
+      ".ui-checkbox[data-selected] .ui-checkbox-box",
+      ".ui-progress-fill",
+    ]);
+    const wrong: string[] = [];
+    for (const [, selector = "", body = ""] of rules.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      const fill = body.match(/(?:^|;)\s*background:\s*var\((--[\w-]+)\)\s*(?:;|$)/)?.[1];
+      if (fill === undefined || !(fill in fillText)) continue;
+      const name = selector.trim();
+      if (textless.has(name)) continue;
+      const text = body.match(/(?:^|;)\s*color:\s*([^;]+?)\s*(?:;|$)/)?.[1];
+      const expected = fillText[fill]?.startsWith("--") ? `var(${fillText[fill]})` : fillText[fill];
+      if (text?.toLowerCase() !== expected) wrong.push(`${name}: ${text ?? "no color"}`);
+    }
+    expect(wrong).toEqual([]);
+  });
 });
 
 describe("index.html paints the right theme before the stylesheet loads", () => {
@@ -200,6 +236,12 @@ function token(block: Map<string, string>, name: string): string {
   const value = block.get(name);
   if (value === undefined) throw new Error(`missing ${name}`);
   return value;
+}
+
+/** A token's value, or a literal #rgb / #rrggbb colour as #rrggbb. */
+function colour(block: Map<string, string>, value: string): string {
+  if (value.startsWith("--")) return token(block, value);
+  return value.length === 4 ? `#${[...value.slice(1)].map((c) => c + c).join("")}` : value;
 }
 
 function themeColorMetas(): Array<Record<string, string>> {
