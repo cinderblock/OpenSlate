@@ -49,12 +49,25 @@ paper ballot prints them (judicial block before state measures).
 
 - Measures with a ballot listing but no `number`: all 66 are retention questions
   except the Bay Area RTM, in the Santa Clara and San Mateo registrar listings.
+- **Don't rerun `ca-sos-ballot.ts --apply` over the committed listing.** Its
+  output drops the 480 `choice_id`s, 8 `district` tags and `retrieved_at` that
+  later commits added to the file by hand. The flags were added with a one-off
+  JSON edit instead, touching only the 128 retention positions.
+- The endorsements repo's main checkout had 7 unpushed commits from another
+  thread (SV DSA), so this work went through a separate worktree off
+  `origin/master`, pushed as a fast-forward. That checkout is now further
+  behind origin and needs a rebase from whoever owns it.
+- Biome in the endorsements repo fails on a Windows checkout over CRLF
+  alone. `biome check --line-ending=crlf <file>` is clean. CI doesn't lint.
 
 ## Progress log
 
-- [ ] Step 1: OpenSlate schema/SPEC/collate/tests
-- [ ] Step 1: deployed
-- [ ] Step 2: endorsements repo data + pin bump
+- [x] Step 1: OpenSlate schema/SPEC/collate/tests (`2416fe3`). Tests,
+  typecheck, lint and vectors pass.
+- [x] Step 1: pushed. The live bundle at openslate.us contains `retention`.
+- [x] Step 2: endorsements `b4b81e4`, 128 positions flagged, pinned at
+  `2416fe3`. CI signed and published it (run 40569755753, success), and the
+  Pages copy has 128 `"retention": true`.
 
 ## Things not to do
 
