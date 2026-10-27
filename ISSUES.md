@@ -1,5 +1,18 @@
 # Issues
 
+## Regional measures (`us/ca/bay-area`) never reach a voter's ballot
+
+Seen 2026-10-26 7:05 PM PDT (02:05Z): with the area set to San Francisco,
+My ballot has no "Bay Area — Regional Measure RTM (Regional Transit
+Measure)", though 62 imported orgs take a position on it and it's on San
+Francisco's ballot. Its subject is filed under `us/ca/bay-area`, which the
+app's area matching (`apps/web/src/lib/jurisdictions.ts`) doesn't know
+contains San Francisco (or Alameda, Contra Costa, San Mateo, Santa Clara).
+Setup's catalog matching (`racesInArea`) has the same gap, so the
+articles-only "Local News Matters" slate, whose one article is on RTM,
+isn't added for SF voters either. Matters because a measure on the real
+ballot is missing from My ballot and from the printout.
+
 ## `bun run lint` fails on every file in a Windows checkout
 
 With `core.autocrlf=true` the working tree is CRLF, but `biome.json` leaves

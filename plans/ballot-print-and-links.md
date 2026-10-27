@@ -231,7 +231,7 @@ The app stores a catalog slate's token once and never looks again
    how sources rank a choice ("ranked 1st by 3").
 5. Later (user, not now): strategic ranking.
 
-### Part F — articles from publishers (2026-10-26) ← current
+### Part F — articles from publishers (2026-10-26) — done
 
 1. F1 research (background agent, endorsements worktree `feat-articles`):
    per publisher, an `orgs/<slug>/2026-11-03/positions.json` with
@@ -349,9 +349,9 @@ The app stores a catalog slate's token once and never looks again
 - [x] E3b `d47fe80`: print numbers a ranked-choice contest's bubbles and
   labels backups; Compose publishes `rank`; collation passes sources'
   `rank` to chips ("1st") and the race page.
-- [ ] E4 data: endorsements repo — ranked endorsements still in
-  `statement` ("Ranked-choice first choice: …", 34 files) → `rank`.
-  Needs `.openslate-version` at a commit with `rank`.
+- [x] E4 data, endorsements `3e15315`: 26 ranked positions in 9 orgs carry
+  `rank` (the earlier "34 files" count included "rank both" dual
+  endorsements, which get no rank). Statements kept as evidence.
 - [x] F1 research (agent, endorsements `feat/articles`, 4 commits, not
   pushed): 9 newsroom slates, ~150 articles, all 14 propositions and SF
   B, D–I and RTM. Its plan: `plans/articles-2026-11-03.md` there.
@@ -359,8 +359,19 @@ The app stores a catalog slate's token once and never looks again
   articles-only entries are "news coverage" (setup and updater add them for
   your area without a follow; catalog browser Add button; removed sources
   stay removed).
-- [ ] F2b endorsements repo: verify-positions checks `articles` subjects
-  against the listings; pin OpenSlate; publish.
+- [x] F2b endorsements `785407e`: verify-positions schema-checks articles
+  and checks their races / choices against the listings (141 pass; a
+  broken subject fails as `articles[0]: race … isn't on the ballot`);
+  `.openslate-version` → `998eb8e`. Publish run 40433332637 (2026-10-26
+  ~7:00 PM PDT) succeeded: "367 slate(s) unchanged since the last publish,
+  18 new or changed". Live: 9 news-coverage entries with jurisdictions;
+  Harvey Milk Club's ranks in the published token.
+- [x] End to end in the dev app against the live catalog: the updater added
+  8 newsroom slates to an SF profile on its own; Prop 1's card links "7
+  articles"; the race page's "In the news" lists them.
+- [ ] Logged, not fixed: ISSUES.md "Regional measures (`us/ca/bay-area`)
+  never reach a voter's ballot" (RTM missing for SF voters; same gap keeps
+  Local News Matters from SF voters).
 
 ## Open questions for the user
 
@@ -368,6 +379,14 @@ The app stores a catalog slate's token once and never looks again
 2. ~~Seats as a real field~~: answered 2026-10-25 (Part C, structure in the
    spec, no parsed strings).
 3. ~~Who publishes the first `articles`~~: answered 2026-10-26 (Part F).
+4. From the article research (endorsements `plans/articles-2026-11-03.md`):
+   add KQED's undated voter-guide pages? Try sacbee.com, apnews.com,
+   ppic.org and politico.com (which refused scripted requests) through a
+   real browser? Recommendation: skip KQED's undated pages (dated
+   explainers already cover each prop); yes to a browser pass for Sac Bee
+   and AP, which cover every proposition.
+5. Strategic ranking (keep a favourite first, mark others): the user said
+   later; not started.
 
 ## Findings added during the build
 
