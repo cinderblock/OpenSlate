@@ -2,6 +2,8 @@
 
 ## Quoted statements show doubled quote marks
 
+**In progress — master (ISSUES.md burn-down).**
+
 Seen 2026-10-26: scraped bundles in openslate-public-endorsements write each
 statement as one or more quoted excerpts (`"\"We recommend …\"; \"…\""`, in
 over a hundred bundles), and the web app wraps `statement` in curly quotes too
