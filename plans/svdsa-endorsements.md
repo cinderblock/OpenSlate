@@ -78,6 +78,7 @@ SVDSA's picks. The user is a member of the chapter and asked for it.
 1. OK to push? Local master is 3 ahead of origin, all SVDSA: `6859af3`
    bundle, `d45d6e2` labels + pin, `6176d6d` San Mateo ids.
 2. Do the NOTES.md judgment calls look right (tiers, soft picks, blanket school measures)?
+   **Resolved 2026-10-26:** all good; the user confirmed Oak Grove's "District 1" is a typo.
 3. User feedback (2026-10-26): "every endorser needs to be able to use their own
    language. we cannot 'coax' a recommendation to a full yes/reject." The SPEC §3.6
    stance enum is fixed and Position (§3.4) has no field for the endorser's own
