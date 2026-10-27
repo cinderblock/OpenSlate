@@ -134,6 +134,7 @@ live.
 - [x] the WebMCP tools, README, this plan (the commit after `fa2d974`)
 - [x] `agent.tool` usage event: tool and outcome, opt-in only
 - [x] origin-trial token in `public/_headers`
+- [x] merged master's ranking; `rank_choices`; marks through `lib/ranking.ts`
 - [ ] a real-browser check in Chrome with WebMCP
 
 ## Open questions for the user
@@ -145,6 +146,30 @@ live.
    soon"; otherwise use an agent extension. Check that
    `document.modelContext` (or `navigator.modelContext`) exists on the live
    site.
+
+## Ranking (merged from master on 2026-10-26)
+
+- Master's ranking work (`457974a` and the commits after it) makes every
+  race except a yes/no question a *ranked* race. The bubble toggles a name
+  into the saved order (`rankingStore`). The first `marksFor(race)` names
+  are `endorse`, and the rest are backups (`lean_for`). The order and the
+  marks must change together, as `ApplyRank` does in My ballot.
+- **The agent's marks go through `lib/ranking.ts`** (`pickChange`,
+  `markChange`, `orderPatches`, `reorderChange`), and `webmcp.ts` saves rows
+  and rankings together. Writing plain marks would desync them.
+- **No toggling for agents.** The UI's bubble toggles, but an agent's retry
+  would then undo its own pick. "pick" on a picked name, or "maybe" or
+  "against" on a name already so, is a no-op (`resolveMark`).
+- Summaries show `ranked`, each choice's `rank`, and `backup`: a ranked
+  `lean_for`, which isn't a maybe.
+- Merge conflict: `ballotDraft.ts` keeps `ballotDraftStore` and takes
+  master's `rankingStore`/`setRanking` whole. `writeInGroup` lives in
+  `ranking.ts`.
+- Verified live at about 9:40 PM PDT (04:40Z):
+  - two picks in "Vote for one" give 1 pick and 1 backup, and the UI reads
+    "ranked 2, a backup not marked on the ballot"
+  - a repeated pick changes 0 rows
+  - `rank_choices` on a "Vote for no more than three" race picks 3 in order
 
 ## Origin trial (Chrome)
 

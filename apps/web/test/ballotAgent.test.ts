@@ -1,23 +1,22 @@
 import { describe, expect, test } from "bun:test";
 import type { Stance } from "@openslate/core";
 import {
+  type ChangeResult,
+  type Draft,
+  type MarkRequest,
   ballotPage,
   findRace,
   raceDetail,
   raceSummary,
   resolveMark,
+  resolveRanking,
   shownElection,
 } from "../src/lib/ballotAgent";
-import {
-  type DraftRow,
-  NOTE_CHOICE,
-  type RowPatch,
-  applyPatch,
-  rowIdFor,
-} from "../src/lib/ballotDraft";
+import { NOTE_CHOICE, applyPatch, rankingKeyFor } from "../src/lib/ballotDraft";
 import type { ChoiceGroup, Race, RacePosition } from "../src/lib/collate";
 
 const E = "2026-11-03";
+const EMPTY: Draft = { rows: {}, rankings: {} };
 
 function position(name: string, stance: Stance, statement?: string): RacePosition {
   return {
@@ -74,15 +73,33 @@ const council = race(
   ],
   { ballot: { vote_for: 1 } as Race["ballot"] },
 );
+const board = race(
+  "board",
+  "School Board",
+  "race",
+  ["Ann", "Bo", "Cy", "Di"].map((name, i) => group(name, { ballotIndex: i })),
+  { ballot: { vote_for: 2 } as Race["ballot"] },
+);
 const measure = race("m-a", "Measure A", "measure", [group("Yes"), group("No")]);
 
-function apply(rows: Record<string, DraftRow>, patch: RowPatch) {
-  return applyPatch(rows, E, patch.subject, patch.choice, patch.fields);
+/** Apply a resolved change as `webmcp.ts` does: rows, then the ranking. */
+function apply(draft: Draft, r: Race, result: ChangeResult): Draft {
+  if ("error" in result) throw new Error(result.error);
+  const rows = result.patches.reduce(
+    (acc, { subject, choice, fields }) => applyPatch(acc, E, subject, choice, fields),
+    draft.rows,
+  );
+  if (!result.order) return { rows, rankings: draft.rankings };
+  return { rows, rankings: { ...draft.rankings, [rankingKeyFor(E, r.subject)]: result.order } };
 }
 
-function patchOf(result: ReturnType<typeof resolveMark>): RowPatch {
-  if ("error" in result) throw new Error(result.error);
-  return result.patch;
+function mark(draft: Draft, r: Race, request: MarkRequest): Draft {
+  return apply(draft, r, resolveMark(r, E, draft, request));
+}
+
+/** Each choice's mark and rank, as an agent reads them. */
+function marks(r: Race, draft: Draft) {
+  return raceSummary(r, E, draft).choices.map((c) => [c.choice, c.mark ?? "-", c.rank ?? "-"]);
 }
 
 describe("shownElection", () => {
@@ -100,40 +117,51 @@ describe("shownElection", () => {
 });
 
 describe("raceSummary", () => {
-  test("choices in ballot order, with counts and the user's marks", () => {
-    const rows = apply(
-      {},
-      patchOf(resolveMark(council, E, {}, { choice: "Ana Ortiz", mark: "pick" })),
+  test("choices in ballot order, with counts, the user's marks and ranks", () => {
+    const summary = raceSummary(
+      council,
+      E,
+      mark(EMPTY, council, { choice: "Ana Ortiz", mark: "pick" }),
     );
-    const summary = raceSummary(council, E, rows);
     expect(summary.race).toBe("council");
     expect(summary.instruction).toBe("Vote for one");
+    expect(summary.ranked).toBe(true);
     expect(summary.choices).toEqual([
-      { choice: "Ana Ortiz", sources_for: 2, sources_against: 0, mark: "pick" },
+      { choice: "Ana Ortiz", sources_for: 2, sources_against: 0, mark: "pick", rank: 1 },
       { choice: "Ben Lee", sources_for: 0, sources_against: 1 },
     ]);
     expect(summary.warning).toBeUndefined();
   });
 
-  test("warns of more picks than the ballot allows", () => {
-    let rows = apply(
-      {},
-      patchOf(resolveMark(council, E, {}, { choice: "Ana Ortiz", mark: "pick" })),
+  test("warns of more picks than the ballot allows, as an older draft can hold", () => {
+    let rows = applyPatch({}, E, council.subject, "Ana Ortiz", { stance: "endorse" });
+    rows = applyPatch(rows, E, council.subject, "Ben Lee", { stance: "endorse" });
+    expect(raceSummary(council, E, { rows, rankings: {} }).warning).toContain(
+      "2 picks, but the ballot allows 1",
     );
-    rows = apply(rows, patchOf(resolveMark(council, E, {}, { choice: "Ben Lee", mark: "pick" })));
-    expect(raceSummary(council, E, rows).warning).toContain("2 picks, but the ballot allows 1");
   });
 
   test("carries the private note, which isn't a choice", () => {
     const rows = applyPatch({}, E, council.subject, NOTE_CHOICE, { privateNote: "Ask Sam" });
-    const summary = raceSummary(council, E, rows);
+    const summary = raceSummary(council, E, { rows, rankings: {} });
     expect(summary.note).toBe("Ask Sam");
     expect(summary.choices.every((c) => !c.mark)).toBe(true);
+  });
+
+  test("a yes/no question isn't ranked", () => {
+    const summary = raceSummary(measure, E, mark(EMPTY, measure, { choice: "Yes", mark: "pick" }));
+    expect(summary.ranked).toBeUndefined();
+    expect(summary.choices[0]).toEqual({
+      choice: "Yes",
+      sources_for: 0,
+      sources_against: 0,
+      mark: "pick",
+    });
   });
 });
 
 test("raceDetail lists every source's position and statement", () => {
-  const detail = raceDetail(council, E, {});
+  const detail = raceDetail(council, E, EMPTY);
   expect(detail.choices[0]?.positions).toEqual([
     { source: "Sierra Club", stance: "endorse", standing: "follow", statement: "Parks." },
   ]);
@@ -157,109 +185,160 @@ describe("findRace", () => {
 });
 
 describe("resolveMark", () => {
-  test("marks as My ballot's buttons do, matching case loosely", () => {
-    expect(patchOf(resolveMark(council, E, {}, { choice: "ben lee", mark: "against" }))).toEqual({
-      subject: council.subject,
-      choice: "Ben Lee",
-      fields: { stance: "oppose" },
+  test("a pick in a vote-for-one race makes the earlier pick a backup, as the bubble does", () => {
+    let draft = mark(EMPTY, council, { choice: "Ana Ortiz", mark: "pick" });
+    draft = mark(draft, council, { choice: "ben lee", mark: "pick" });
+    expect(marks(council, draft)).toEqual([
+      ["Ana Ortiz", "backup", 2],
+      ["Ben Lee", "pick", 1],
+    ]);
+    expect(raceSummary(council, E, draft).warning).toBeUndefined();
+  });
+
+  test("never toggles: a repeated pick or mark changes nothing", () => {
+    const once = mark(EMPTY, board, { choice: "Bo", mark: "pick" });
+    const again = resolveMark(board, E, once, { choice: "Bo", mark: "pick" });
+    expect(again).toEqual({ patches: [], order: ["Bo"] });
+    const maybe = mark(once, board, { choice: "Cy", mark: "maybe" });
+    expect(resolveMark(board, E, maybe, { choice: "Cy", mark: "maybe" })).toEqual({
+      patches: [],
+      order: ["Bo"],
     });
-    expect(
-      patchOf(resolveMark(council, E, {}, { choice: "Ana Ortiz", mark: "maybe" })).fields,
-    ).toEqual({
-      stance: "lean_for",
-    });
-    expect(
-      patchOf(resolveMark(council, E, {}, { choice: "Ana Ortiz", mark: "none" })).fields,
-    ).toEqual({
-      stance: undefined,
-    });
+    const yes = mark(EMPTY, measure, { choice: "Yes", mark: "pick" });
+    expect(marks(measure, mark(yes, measure, { choice: "Yes", mark: "pick" }))[0]).toEqual([
+      "Yes",
+      "pick",
+      "-",
+    ]);
+  });
+
+  test("against and none take a name out of the ranking and close the gap", () => {
+    let draft = resolveAndApply(board, ["Ann", "Bo", "Cy"]);
+    expect(marks(board, draft).map((m) => m[1])).toEqual(["pick", "pick", "backup", "-"]);
+    draft = mark(draft, board, { choice: "Ann", mark: "against" });
+    expect(marks(board, draft)).toEqual([
+      ["Ann", "against", "-"],
+      ["Bo", "pick", 1],
+      ["Cy", "pick", 2],
+      ["Di", "-", "-"],
+    ]);
+    draft = mark(draft, board, { choice: "Bo", mark: "none" });
+    expect(marks(board, draft).map((m) => m[1])).toEqual(["against", "-", "pick", "-"]);
+    draft = mark(draft, board, { choice: "Ann", mark: "none" });
+    expect(marks(board, draft)[0]).toEqual(["Ann", "-", "-"]);
   });
 
   test("a yes/no question has no against and takes no write-ins", () => {
-    expect(resolveMark(measure, E, {}, { choice: "Yes", mark: "against" })).toHaveProperty("error");
+    expect(resolveMark(measure, E, EMPTY, { choice: "Yes", mark: "against" })).toHaveProperty(
+      "error",
+    );
     expect(
-      resolveMark(measure, E, {}, { choice: "Maybe so", mark: "pick", writeIn: true }),
+      resolveMark(measure, E, EMPTY, { choice: "Maybe so", mark: "pick", writeIn: true }),
     ).toHaveProperty("error");
-    expect(patchOf(resolveMark(measure, E, {}, { choice: "no", mark: "pick" })).choice).toBe("No");
+    expect(marks(measure, mark(EMPTY, measure, { choice: "no", mark: "pick" }))[1]).toEqual([
+      "No",
+      "pick",
+      "-",
+    ]);
   });
 
   test("an unlisted name is refused unless it's a write-in, with the choices to pick from", () => {
-    const refused = resolveMark(council, E, {}, { choice: "Cara Diaz", mark: "pick" });
+    const refused = resolveMark(council, E, EMPTY, { choice: "Cara Diaz", mark: "pick" });
     expect("error" in refused && refused.error).toContain("Ana Ortiz; Ben Lee");
     expect(
-      patchOf(resolveMark(council, E, {}, { choice: "Cara Diaz", mark: "pick", writeIn: true })),
-    ).toEqual({
-      subject: council.subject,
-      choice: "Cara Diaz",
-      fields: { stance: "endorse", writeIn: true },
-    });
-    expect(
-      resolveMark(council, E, {}, { choice: "Cara Diaz", mark: "maybe", writeIn: true }),
+      resolveMark(council, E, EMPTY, { choice: "Cara Diaz", mark: "maybe", writeIn: true }),
     ).toHaveProperty("error");
   });
 
+  test("a write-in is listed, ranked, and can be cleared", () => {
+    let draft = mark(EMPTY, board, { choice: "Ann", mark: "pick" });
+    draft = mark(draft, board, { choice: "Cara Diaz", mark: "pick", writeIn: true });
+    const summary = raceSummary(board, E, draft);
+    expect(summary.choices.at(-1)).toEqual({
+      choice: "Cara Diaz",
+      not_on_ballot: true,
+      write_in: true,
+      sources_for: 0,
+      sources_against: 0,
+      mark: "pick",
+      rank: 2,
+    });
+    draft = mark(draft, board, { choice: "cara diaz", mark: "none" });
+    expect(raceSummary(board, E, draft).choices.map((c) => c.choice)).toEqual([
+      "Ann",
+      "Bo",
+      "Cy",
+      "Di",
+    ]);
+  });
+
   test("a write-in that's plainly a listed candidate picks them instead", () => {
-    const result = resolveMark(
-      council,
-      E,
-      {},
-      { choice: "Ana  ORTIZ", mark: "pick", writeIn: true },
-    );
-    expect(patchOf(result)).toEqual({
-      subject: council.subject,
-      choice: "Ana Ortiz",
-      fields: { stance: "endorse" },
+    const result = resolveMark(council, E, EMPTY, {
+      choice: "Ana  ORTIZ",
+      mark: "pick",
+      writeIn: true,
+    });
+    expect(result).toMatchObject({
+      patches: [{ choice: "Ana Ortiz", fields: { stance: "endorse" } }],
+      order: ["Ana Ortiz"],
     });
   });
 
   test("an unknown mark is refused", () => {
     expect(
-      resolveMark(council, E, {}, { choice: "Ana Ortiz", mark: "veto" as "pick" }),
+      resolveMark(council, E, EMPTY, { choice: "Ana Ortiz", mark: "veto" as "pick" }),
     ).toHaveProperty("error");
+  });
+});
+
+function resolveAndApply(r: Race, names: string[], draft: Draft = EMPTY): Draft {
+  return apply(draft, r, resolveRanking(r, E, draft, names));
+}
+
+describe("resolveRanking", () => {
+  test("the first as many as the ballot takes are picked, the rest backups", () => {
+    const draft = resolveAndApply(board, ["di", "Bo", "Ann"]);
+    expect(marks(board, draft)).toEqual([
+      ["Ann", "backup", 3],
+      ["Bo", "pick", 2],
+      ["Cy", "-", "-"],
+      ["Di", "pick", 1],
+    ]);
+  });
+
+  test("names left out are unranked and unmarked; an empty list clears the race", () => {
+    let draft = resolveAndApply(board, ["Ann", "Bo", "Cy"]);
+    draft = resolveAndApply(board, ["Cy"], draft);
+    expect(marks(board, draft).map((m) => m[1])).toEqual(["-", "-", "pick", "-"]);
+    draft = resolveAndApply(board, [], draft);
+    expect(marks(board, draft).every((m) => m[1] === "-")).toBe(true);
+  });
+
+  test("refuses unknown and repeated names, and yes/no questions", () => {
+    expect(resolveRanking(board, E, EMPTY, ["Ann", "Zed"])).toHaveProperty("error");
+    expect(resolveRanking(board, E, EMPTY, ["Ann", "ann"])).toHaveProperty("error");
+    expect(resolveRanking(measure, E, EMPTY, ["Yes"])).toHaveProperty("error");
   });
 });
 
 describe("ballotPage", () => {
   const races = [council, measure, race("water", "Water District", "race", [], { maybe: true })];
   test("a page at a time, places it can't tell last", () => {
-    const first = ballotPage([races[2] as Race, council, measure], E, {}, { limit: 2 });
+    const first = ballotPage([races[2] as Race, council, measure], E, EMPTY, { limit: 2 });
     expect(first.races.map((r) => r.race)).toEqual(["council", "m-a"]);
     expect(first.total).toBe(3);
     expect(first.next_offset).toBe(2);
-    const rest = ballotPage(races, E, {}, { offset: 2, limit: 2 });
+    const rest = ballotPage(races, E, EMPTY, { offset: 2, limit: 2 });
     expect(rest.races.map((r) => [r.race, r.maybe_on_ballot])).toEqual([["water", true]]);
     expect(rest.next_offset).toBeUndefined();
   });
   test("narrowed by search, and to marked races", () => {
-    expect(ballotPage(races, E, {}, { search: "ortiz" }).races.map((r) => r.race)).toEqual([
+    expect(ballotPage(races, E, EMPTY, { search: "ortiz" }).races.map((r) => r.race)).toEqual([
       "council",
     ]);
-    const rows = apply({}, patchOf(resolveMark(measure, E, {}, { choice: "Yes", mark: "pick" })));
-    expect(ballotPage(races, E, rows, { markedOnly: true }).races.map((r) => r.race)).toEqual([
+    const draft = mark(EMPTY, measure, { choice: "Yes", mark: "pick" });
+    expect(ballotPage(races, E, draft, { markedOnly: true }).races.map((r) => r.race)).toEqual([
       "m-a",
     ]);
   });
-});
-
-test("a name the user wrote in is listed, counted and can be cleared", () => {
-  let rows = apply({}, patchOf(resolveMark(council, E, {}, { choice: "Ana Ortiz", mark: "pick" })));
-  rows = apply(
-    rows,
-    patchOf(resolveMark(council, E, rows, { choice: "Cara Diaz", mark: "pick", writeIn: true })),
-  );
-  const summary = raceSummary(council, E, rows);
-  expect(summary.choices.at(-1)).toEqual({
-    choice: "Cara Diaz",
-    not_on_ballot: true,
-    write_in: true,
-    sources_for: 0,
-    sources_against: 0,
-    mark: "pick",
-  });
-  expect(summary.warning).toContain("2 picks");
-  rows = apply(rows, patchOf(resolveMark(council, E, rows, { choice: "cara diaz", mark: "none" })));
-  expect(raceSummary(council, E, rows).choices.map((c) => c.choice)).toEqual([
-    "Ana Ortiz",
-    "Ben Lee",
-  ]);
 });

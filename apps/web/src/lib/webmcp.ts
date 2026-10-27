@@ -1,5 +1,8 @@
 import { z } from "zod";
 import {
+  type AgentChange,
+  type ChangeResult,
+  type Draft,
   MARKS,
   PAGE_SIZE,
   ballotPage,
@@ -7,10 +10,17 @@ import {
   raceDetail,
   raceSummary,
   resolveMark,
+  resolveRanking,
   shownElection,
 } from "./ballotAgent";
 import { translateSlates } from "./ballotCheck";
-import { NOTE_CHOICE, type RowPatch, applyPatch, ballotDraftStore } from "./ballotDraft";
+import {
+  NOTE_CHOICE,
+  applyPatch,
+  ballotDraftStore,
+  rankingKeyFor,
+  rankingStore,
+} from "./ballotDraft";
 import { type DecodedSlate, type Race, collateRaces, decodeSlates, electionsOf } from "./collate";
 import { knownIdentitiesCollection, slatesCollection } from "./collections";
 import { isAreaSet } from "./jurisdictions";
@@ -157,6 +167,66 @@ function respond<T>(
   };
 }
 
+/** The user's marks and rankings as they are now. */
+function currentDraft(): Draft {
+  return { rows: ballotDraftStore.get(), rankings: rankingStore.get() };
+}
+
+/** `change` applied to `draft`, as `ApplyRank` applies one in My ballot. */
+function applyChange(draft: Draft, race: Race, election: string, change: AgentChange): Draft {
+  const rows = change.patches.reduce(
+    (acc, { subject, choice, fields }) => applyPatch(acc, election, subject, choice, fields),
+    draft.rows,
+  );
+  if (!change.order) return { rows, rankings: draft.rankings };
+  // As `setRanking` saves one: an empty ranking is forgotten.
+  const key = rankingKeyFor(election, race.subject);
+  const rankings = { ...draft.rankings };
+  if (change.order.length > 0) rankings[key] = [...change.order];
+  else delete rankings[key];
+  return { rows, rankings };
+}
+
+/**
+ * Work out every change against the draft as the earlier ones leave it, then
+ * save them together: all of them, or (on any refusal) none.
+ */
+async function changeBallot(
+  asked: string | undefined,
+  steps: Array<{
+    race: string;
+    resolve: (race: Race, election: string, draft: Draft) => ChangeResult;
+  }>,
+) {
+  const ballot = await currentBallot(asked);
+  let draft = currentDraft();
+  const said: string[] = [];
+  const touched = new Map<string, Race>();
+  let changed = 0;
+  for (const [i, step] of steps.entries()) {
+    const where = steps.length > 1 ? `[${i}] ` : "";
+    let race: Race;
+    try {
+      race = raceIn(ballot, step.race);
+    } catch (error) {
+      throw new Refusal(`${where}${(error as Error).message} Nothing was changed.`);
+    }
+    const result = step.resolve(race, ballot.election, draft);
+    if ("error" in result) throw new Refusal(`${where}${result.error} Nothing was changed.`);
+    draft = applyChange(draft, race, ballot.election, result);
+    changed += result.patches.length;
+    if (result.said) said.push(result.said);
+    touched.set(race.key, race);
+  }
+  ballotDraftStore.set(draft.rows);
+  rankingStore.set(draft.rankings);
+  return {
+    changed,
+    ...(said.length > 0 ? { notes: said } : {}),
+    races: [...touched.values()].map((race) => raceSummary(race, ballot.election, currentDraft())),
+  };
+}
+
 const STANDINGS =
   'Each position\'s "standing" is how the user takes that source: "follow" (counts toward the choice it backs), "disagree" (the user disagrees with it, so it counts against what it backs), "off" (shown, not counted).';
 
@@ -227,7 +297,7 @@ const TOOLS: Tool[] = [
         return {
           election: ballot.election,
           area_set: isAreaSet(ballot.area),
-          ...ballotPage(ballot.collated, ballot.election, ballotDraftStore.get(), {
+          ...ballotPage(ballot.collated, ballot.election, currentDraft(), {
             ...(input.search ? { search: input.search } : {}),
             ...(input.marked_only ? { markedOnly: true } : {}),
             ...(input.offset !== undefined ? { offset: input.offset } : {}),
@@ -253,7 +323,7 @@ const TOOLS: Tool[] = [
       async (input) => {
         const ballot = await currentBallot(input.election);
         const race = raceIn(ballot, input.race);
-        return raceDetail(race, ballot.election, ballotDraftStore.get());
+        return raceDetail(race, ballot.election, currentDraft());
       },
     ),
   },
@@ -261,7 +331,7 @@ const TOOLS: Tool[] = [
     name: "mark_choices",
     title: "Mark my ballot",
     description:
-      'Mark choices on the user\'s ballot, as they would in My ballot: "pick" fills the choice\'s bubble, "maybe" and "against" are private notes to self, "none" clears the mark. A yes/no question\'s choices are "Yes" and "No" (no "against": pick the other answer). Several picks in a race only count up to its "Vote for" limit; the result warns of more. To write in a name that isn\'t listed, pick it with "write_in": true. All marks apply together, or none do. Marks stay in this browser; nothing is published. Only mark what the user asked for.',
+      'Mark choices on the user\'s ballot, as they would in My ballot. "pick" fills the choice\'s bubble; "maybe" and "against" are private notes to self; "none" clears the mark. Marking is idempotent: a pick on a picked choice leaves it picked. A yes/no question\'s choices are "Yes" and "No" (no "against": pick the other answer). A candidate race ("ranked": true) is decided by ranking: a pick joins the user\'s ranking in the last place the ballot marks, and a pick it displaces becomes the first "backup"; to set the whole order at once, use rank_choices. To write in a name that isn\'t listed, pick it with "write_in": true. All marks apply together, or none do. Marks stay in this browser; nothing is published. Only mark what the user asked for.',
     inputSchema: {
       type: "object",
       properties: {
@@ -291,44 +361,51 @@ const TOOLS: Tool[] = [
     execute: respond(
       "mark_choices",
       z.object({ election: electionInput, marks: z.array(markInput).min(1) }),
-      async (input) => {
-        const ballot = await currentBallot(input.election);
-        const rows = ballotDraftStore.get();
-        const patches: RowPatch[] = [];
-        const said: string[] = [];
-        const touched = new Map<string, Race>();
-        for (const [i, request] of input.marks.entries()) {
-          const where = `marks[${i}]`;
-          let race: Race;
-          try {
-            race = raceIn(ballot, request.race);
-          } catch (error) {
-            throw new Refusal(`${where}: ${(error as Error).message} Nothing was marked.`);
-          }
-          const result = resolveMark(race, ballot.election, rows, {
-            choice: request.choice,
-            mark: request.mark,
-            ...(request.write_in ? { writeIn: true } : {}),
-          });
-          if ("error" in result) throw new Refusal(`${where}: ${result.error} Nothing was marked.`);
-          patches.push(result.patch);
-          if (result.said) said.push(result.said);
-          touched.set(race.key, race);
-        }
-        ballotDraftStore.set((current) =>
-          patches.reduce(
-            (acc, { subject, choice, fields }) =>
-              applyPatch(acc, ballot.election, subject, choice, fields),
-            current,
-          ),
-        );
-        const after = ballotDraftStore.get();
-        return {
-          marked: patches.length,
-          ...(said.length > 0 ? { notes: said } : {}),
-          races: [...touched.values()].map((race) => raceSummary(race, ballot.election, after)),
-        };
+      (input) =>
+        changeBallot(
+          input.election,
+          input.marks.map((m) => ({
+            race: m.race,
+            resolve: (race, election, draft) =>
+              resolveMark(race, election, draft, {
+                choice: m.choice,
+                mark: m.mark,
+                ...(m.write_in ? { writeIn: true } : {}),
+              }),
+          })),
+        ),
+    ),
+  },
+  {
+    name: "rank_choices",
+    title: "Rank a race",
+    description:
+      'Set the user\'s ranking of one candidate race ("ranked": true in get_ballot), first choice first. The first as many as the ballot takes ("Vote for one": the first; a ranked-choice contest: its ranks) are picked; the rest are backups, in order. Choices left out are taken out of the ranking and unmarked. An empty list clears the race\'s ranking. Yes/no questions aren\'t ranked: use mark_choices. Only rank what the user asked for.',
+    inputSchema: {
+      type: "object",
+      properties: {
+        race: RACE_SCHEMA,
+        order: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Choices as get_ballot names them, most preferred first. A write-in must be picked with mark_choices first.",
+        },
+        election: ELECTION_SCHEMA,
       },
+      required: ["race", "order"],
+    },
+    annotations: {},
+    execute: respond(
+      "rank_choices",
+      z.object({ race: z.string().min(1), order: z.array(z.string()), election: electionInput }),
+      (input) =>
+        changeBallot(input.election, [
+          {
+            race: input.race,
+            resolve: (race, election, draft) => resolveRanking(race, election, draft, input.order),
+          },
+        ]),
     ),
   },
   {
@@ -356,7 +433,7 @@ const TOOLS: Tool[] = [
         ballotDraftStore.set((rows) =>
           applyPatch(rows, ballot.election, race.subject, NOTE_CHOICE, { privateNote: note }),
         );
-        return raceSummary(race, ballot.election, ballotDraftStore.get());
+        return raceSummary(race, ballot.election, currentDraft());
       },
     ),
   },

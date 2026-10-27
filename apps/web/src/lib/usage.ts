@@ -57,6 +57,7 @@ export const AGENT_TOOLS = [
   "get_ballot",
   "get_race",
   "mark_choices",
+  "rank_choices",
   "set_race_note",
 ] as const;
 

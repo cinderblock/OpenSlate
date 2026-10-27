@@ -116,8 +116,11 @@ for you in that browser can use My ballot through tools the page offers:
 `list_elections`, `get_ballot` (a page of races at a time, searchable, with
 your marks and your followed sources' counts), `get_race` (every source's
 position and statement), `mark_choices` (pick, maybe, against, clear, or
-write in, applied together or not at all; overvotes come back with a
-warning) and `set_race_note`. The tools run in the page, on this browser's
+write in, applied together or not at all, and never toggling, so a retried
+call can't undo itself), `rank_choices` (a candidate race's whole ranking:
+the first as many as the ballot takes are picked, the rest backups) and
+`set_race_note`. In a candidate race a pick joins your ranking as the bubble
+does. The tools run in the page, on this browser's
 own data, and write through the same store as the buttons, so an open My
 ballot updates as the agent works. Nothing is sent anywhere, and the agent
 can't publish or sign. Slates' text is marked untrusted, since anyone can
