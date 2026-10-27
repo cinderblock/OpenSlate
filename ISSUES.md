@@ -25,24 +25,6 @@ the zone (a Cloudflare setting: needs the owner's authorization, through the
 ops repo), or decide to allow it in the CSP (which the `_headers` comment rules
 out on purpose).
 
-## Council seats voted citywide may be tagged as districts
-
-**In progress — master (ISSUES.md burn-down).**
-
-Seen 2026-10-27 (`plans/council-districts-lookup.md`): the OC listing files
-Newport Beach's council races as `district: us/ca/newport-beach/council-N`,
-but its districts are residency districts every voter in the city votes on
-(the Registrar's own layer says so). Registrars title such seats "District N"
-too, so `scripts/lib/districts.ts` in the endorsements repo can't tell from
-the title. Two more to check before their cities' council maps join the
-lookup (both are left out of `build-geo.ts` until then): Huntington Park
-"City Council, District 2" (the city says 2026 elects only 4 and 5) and San
-Leandro "City Council, District 2 (Short Term)" (Measure F, June 2026, moved
-1, 3 and 5 to district elections). A district tag on a seat voted citywide
-hides it from every voter outside that district once the lookup knows the
-city's districts; for Newport Beach, today, its seats are *Might be on your
-ballot* when they're on everyone's.
-
 ## Some cities' council districts have no usable map
 
 Seen 2026-10-27: the council lookup (`OTHER_SOURCES` in

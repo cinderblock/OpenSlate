@@ -48,6 +48,7 @@ commit, push master.
 - [x] 4. Dark theme contrast: `--on-accent/ok/bad/warn` tokens for text on fills (dark text on dark theme's bright fills), dark `--bad` lightened to `#f26b5f`, lean fills as tokens; `theme.test.ts` checks each fill/text pair and that every filled rule uses its partner
 - [x] 4b. Endorsements CI gate: `verify-positions.ts` parses with `signInputSchema`; endorsements `1def270` (pin `5300971`), README `0beb2a3`
 - [x] 5. Council districts: `council` lookup layer (`<City>|<n>`, filed as `us/ca/<city>/council`), 433 districts in 84 cities from registrars' (OC, Alameda, LA), SANDAG's and cities' GIS (`plans/council-districts-lookup.md`). Follow-ups in ISSUES.md: citywide seats tagged as districts (Newport Beach; HP and San Leandro left out until checked), cities with no usable map
+- [x] 5b. Citywide council seats tagged as districts: only Newport Beach is (endorsements `795617d`, `CITYWIDE_COUNCILS`); Huntington Park's and San Leandro's District 2 seats are by district (LA's sample ballot data; San Leandro's City Clerk), so both cities joined the council lookup (444 districts)
 - [ ] 6. Local measure text
 - [ ] 7. Cloudflare beacon
 
@@ -133,6 +134,15 @@ commit, push master.
 - `bun run format` reflowed the long source lists in `build-geo.ts`; the
   boundary build (`bun run --filter '@openslate/web' geo`) takes ~2 min warm
   and its cache is now keyed by source, not index.
+
+- Citywide council seats (2026-10-27, ~1 AM PDT): of the 89 cities with
+  `council-N` tags, only Newport Beach elects district members citywide
+  (its council page). Huntington Park's ordinance phases districts 1-3 in
+  for 2028, yet its 2026 District 2 special is by district: LA's interactive
+  sample ballot data (`isb.lavote.gov/parsed/4348/…`, static JSON, curl-able)
+  gives each block one council race. That data can verify any LA County
+  contest's electorate. Newport Beach stays out of the council lookup (no
+  district-tagged races to place).
 
 ## Open questions for the user
 

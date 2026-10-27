@@ -65,9 +65,11 @@ lookup should place them.
   (edited 2026-10-07), `DIST_NAME LIKE 'CITY OF <NAME>,%'`, number after the
   `#` in `DIST_NAME`. Its sibling `City_Council_District_Boundaries`
   (2023) lacks Hayward's 2024 districts: don't use it.
-- San Leandro: Measure F (June 2, 2026) moved it to district elections; 1, 3,
-  5 vote by district this November. Whether "District 2 (Short Term)" is
-  voted citywide is unconfirmed.
+- San Leandro: Measure F (June 2, 2026) moved it to district elections, on
+  its 2022 map. The City Clerk's elections page: "the offices of City Council
+  Districts 1, 2, 3, and 5 transitioned from at large elections to district
+  elections", so District 2's short term is by district too. In the lookup
+  since 2026-10-27 (registrar layer, six districts).
 - San Mateo County has no county-wide council layer: each city's own GIS.
   Pacifica and Woodside publish their adopted maps only as PDFs or inside a
   consultant's web map.
@@ -105,10 +107,23 @@ lookup should place them.
   (matches the county's), not `Alhambra_Districts`. Inglewood splits
   District 2 into two features (joined by id). Santa Clarita (only a
   consultant's "Map_113", final unconfirmed) left out.
-- Huntington Park (districts new this November, "Adopted (Magenta) Map" in
-  NDC's web map) and San Leandro (Measure F) left out for now: each has a
-  District 2 seat on the listing that may still be voted citywide, and a
-  wrong district tag would hide it once the city's map is in. ISSUES.md.
+- Huntington Park (Ordinance 2026-04; "Adopted (Magenta) Map" in NDC's web
+  map `64deba52…`, the same web map the city's own district locator uses):
+  in the lookup since 2026-10-27. Its ordinance phases districts 1-3 in for
+  2028, so the District 2 special (unexpired term) looked citywide, but LA's
+  interactive sample ballot data settles it: every ballot type in the city
+  carries exactly one council race (2nd, 4th or 5th District) or none.
+- How to check who votes on a seat in LA County: `isb.lavote.gov/parsed/<election
+  id>/street-segments/<first 3 letters of street>.json` maps address ranges
+  to a ballot type (`partyBallotMap.NP`), `/ballots/<type>.json` lists its
+  contest ids, `/contests/<id>.json` names them (election 4348 is
+  2026-11-03). Plain `curl` with a browser user agent works.
+- Newport Beach: the city's council page says members are "elected by the
+  voters at large to represent their respective districts"; the endorsements
+  repo's `CITYWIDE_COUNCILS` (scripts/lib/districts.ts) now leaves its seats
+  untagged (endorsements `795617d`).
+- 2026-10-27 rebuild with San Leandro and Huntington Park: 444 districts in
+  86 cities; `--check` council 0 wrong of 3,383 placed, 547 unknown.
 - Final build: 433 districts in 84 cities, 4,111 KB (brotli 931 → ~1,019 KB,
   +9%); decode time unchanged (~260 ms in Bun). `--check`, 20,000 random city
   points: council 0 wrong of 3,360 placed, 535 unknown. Of the unknowns, most

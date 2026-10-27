@@ -138,6 +138,13 @@ describe("locate (shipped California boundaries)", () => {
     expect(council(-117.1297, 32.7479)).toBe("San Diego|3"); // North Park
     expect(council(-117.79, 33.677)).toBe("Irvine|5"); // Woodbridge
     expect(council(-122.487, 37.594)).toBe("Pacifica|4"); // Linda Mar
+    expect(council(-122.137, 37.692)).toBe("San Leandro|2"); // Washington Manor
+    expect(council(-122.17, 37.705)).toBe("San Leandro|3");
+    // Census-geocoded addresses, each in the district of LA County's sample
+    // ballot for that block (its street segments, 2026-10-27).
+    expect(council(-118.21934, 33.98713)).toBe("Huntington Park|5"); // 6001 Miles Ave
+    expect(council(-118.22243, 33.9777)).toBe("Huntington Park|2"); // 6800 Seville Ave
+    expect(council(-118.22657, 33.98431)).toBe("Huntington Park|4"); // 6201 Rugby Ave
     // Newport Beach votes citywide on every district seat: no lookup.
     expect(geo.lookups.council.some((s) => s.id.startsWith("Newport Beach|"))).toBe(false);
     expect(council(-117.9298, 33.6189)).toBeUndefined();

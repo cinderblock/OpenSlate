@@ -133,11 +133,10 @@ const OTHER_SOURCES: {
   },
   {
     // Alameda County Registrar of Voters: "CITY OF HAYWARD, DISTRICT #1".
-    // Not San Leandro yet: its first district elections are this November,
-    // and its District 2 (Short Term) seat may still be voted citywide.
+    // San Leandro's are its 2022 districts, voted by district from this
+    // November (Measure F, June 2026), its District 2 short term included.
     layer: "council",
     url: "https://services5.arcgis.com/ROBnTHSNjoZ2Wm1P/arcgis/rest/services/City_Council_Districts/FeatureServer/0",
-    where: "DIST_NAME NOT LIKE 'CITY OF SAN LEANDRO,%'",
     id: (a) => {
       const m = /^CITY OF (.+?), DIST(?:RICT)? ?#\s*(\w+)$/.exec(String(a.DIST_NAME));
       return m ? `${m[1]}|${m[2]}` : "";
@@ -347,9 +346,9 @@ const OTHER_SOURCES: {
       // Adopted maps published only in the city's consultant's (NDC's) web
       // map, beside the draft plans: the layer named as the adopted one.
       // Not Morgan Hill's: its pieces don't meet, leaving gaps throughout.
-      // Not yet Huntington Park's ("Adopted (Magenta) Map", web map
-      // 64deba52c346416894c9a2997d56d10a): districts are new this November
-      // and its District 2 seat may still be voted citywide.
+      // Huntington Park's is the web map behind the city's own district
+      // locator (Ordinance 2026-04; districts new this November).
+      ["Huntington Park", "64deba52c346416894c9a2997d56d10a", "Adopted (Magenta) Map"],
       ["Sunnyvale", "640698809096492c9202c2ef2a4ca631", "101 V2 C Adopted Map"],
       [
         "Pacifica",
