@@ -37,7 +37,9 @@ function slate(input: {
   keyPair?: KeyPair;
   election?: string;
   issuedAt?: string;
-  positions: Array<P & { statement?: string; contest?: BallotContest; ballot?: BallotChoice }>;
+  positions: Array<
+    P & { statement?: string; contest?: BallotContest; ballot?: BallotChoice; rank?: number }
+  >;
 }): { token: string; importedAt: string } {
   const token = createSlate({
     keyPair: input.keyPair ?? (input.of ? researcher : generateKeyPair()),
@@ -57,6 +59,7 @@ function slate(input: {
       ...(p.choice ? { choice: p.choice } : {}),
       ...(p.statement ? { statement: p.statement } : {}),
       ...(p.ballot ? { ballot: p.ballot } : {}),
+      ...(p.rank ? { rank: p.rank } : {}),
     })),
     ...(input.of
       ? {
@@ -269,6 +272,20 @@ describe("collateRaces", () => {
       expect(board?.ballot).toEqual({ heading: "Board Member", vote_for: 3 });
       expect(board?.choices[0]?.ballot).toEqual({ party: "Green", incumbent: true });
     }
+  });
+
+  test("a source's ranks come through on its positions (SPEC §3.16)", () => {
+    const ranked = slate({
+      of: "Rank Club",
+      positions: [
+        { title: "Mayor", choice: "Ann", rank: 1 },
+        { title: "Mayor", choice: "Bo", stance: "lean_for", rank: 2 },
+      ],
+    });
+    const [mayor] = collateRaces(decodeSlates([ranked]), { follows: {} });
+    const rankOf = (name: string) =>
+      mayor?.choices.find((c) => c.choice === name)?.positions[0]?.rank;
+    expect([rankOf("Ann"), rankOf("Bo")]).toEqual([1, 2]);
   });
 
   test("a ballot source supplies the field in ballot order, without being a source", () => {

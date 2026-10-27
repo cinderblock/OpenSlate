@@ -1033,6 +1033,16 @@ a.button-link.primary {
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
+/* Where a source ranks the choice ("1st"), on its chip. */
+.chip-rank {
+  margin-left: 0.3rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--surface);
+  border: 1px solid currentColor;
+}
 .choice-row.first-backup {
   position: relative;
   border-top: 2px dashed var(--border);
@@ -1514,6 +1524,12 @@ button.source-chip {
 }
 .pb-endorse {
   background: #000;
+  /* A ranked-choice contest's rank, white in the filled bubble. */
+  color: #fff;
+  font-size: 6pt;
+  font-weight: 700;
+  line-height: 7pt;
+  text-align: center;
 }
 .pb-lean_for {
   background: linear-gradient(90deg, #000 50%, transparent 50%);

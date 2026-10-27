@@ -3,7 +3,7 @@ import { Link, useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { type AttachedArticle, articleDate, articlesByRace } from "../lib/articles";
 import { useBallotDraft } from "../lib/ballotDraft";
-import { designation } from "../lib/ballotView";
+import { designation, ordinal } from "../lib/ballotView";
 import { type ChoiceGroup, type Race, collateRaces, stanceTone } from "../lib/collate";
 import { type GuideForSubject, useGuideItem } from "../lib/guides";
 import { localToday, useDecodedSlates, useFollows } from "../lib/myVote";
@@ -350,6 +350,7 @@ function ChoiceCard({
             <li key={position.source.id}>
               <span className={`stance stance-${position.stance}`}>
                 {STANCE_LABEL[position.stance]}
+                {position.rank !== undefined && `, ranked ${ordinal(position.rank)}`}
               </span>
               <EndorserAvatar sourceId={position.source.id} name={position.source.name} size="md" />
               <span className="position-subject">

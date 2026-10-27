@@ -249,3 +249,30 @@ export type ApplyRank = (election: string, subject: Subject, change: RankChange)
 export function writeInGroup(name: string): ChoiceGroup {
   return { choice: name, positions: [], support: 0, opposition: 0, onBallot: false, writeIn: true };
 }
+
+/**
+ * The ranks to publish (SPEC §3.16) on one race's marks: its saved ranking,
+ * kept to names still marked for, then picks the ranking doesn't have yet.
+ * None when the user never ranked the race: a pick alone says nothing about
+ * order.
+ */
+export function publishedRanks(
+  saved: readonly string[] | undefined,
+  marks: ReadonlyArray<{ choice?: string; stance?: Stance }>,
+): Map<string, number> {
+  const ranks = new Map<string, number>();
+  if (!saved || saved.length === 0) return ranks;
+  const forIt = new Set(
+    marks
+      .filter((m) => m.choice && (m.stance === "endorse" || m.stance === "lean_for"))
+      .map((m) => m.choice as string),
+  );
+  for (const name of saved)
+    if (forIt.has(name) && !ranks.has(name)) ranks.set(name, ranks.size + 1);
+  for (const m of marks) {
+    if (m.choice && m.stance === "endorse" && !ranks.has(m.choice)) {
+      ranks.set(m.choice, ranks.size + 1);
+    }
+  }
+  return ranks;
+}

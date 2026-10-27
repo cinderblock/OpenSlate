@@ -1,7 +1,7 @@
 import type { Stance } from "@openslate/core";
 import { CircleHelp, type LucideIcon, ThumbsDown, X } from "lucide-react";
 import type { ReactNode } from "react";
-import { choiceRowClass, designation, isYesNo } from "../lib/ballotView";
+import { choiceRowClass, designation, isYesNo, ordinal } from "../lib/ballotView";
 import { type ChoiceGroup, type Race, positionTone } from "../lib/collate";
 import { ChoiceBallotTags } from "./BallotTags";
 import { EndorserAvatar } from "./EndorserAvatar";
@@ -134,7 +134,7 @@ export function ChoiceRowContent({
             {followed.map((position) => {
               // `named`: listed on the other side of a two-way race from the
               // one the source named (Settings → My ballot).
-              const what = `${position.source.name} ${STANCE_WORD[position.stance]} ${position.named ?? (group.choice || race.subject.title)}`;
+              const what = `${position.source.name} ${STANCE_WORD[position.stance]} ${position.named ?? (group.choice || race.subject.title)}${position.rank ? `, ranked ${ordinal(position.rank)}` : ""}`;
               // Coloured and marked by how it counts for you: a source you
               // disagree with counts the other way. ✗ = counts against.
               const counted = positionTone(position);
@@ -159,6 +159,9 @@ export function ChoiceRowContent({
                           <span className="chip-named"> (said {position.named})</span>
                         )}
                       </span>
+                      {position.rank !== undefined && (
+                        <span className="chip-rank">{ordinal(position.rank)}</span>
+                      )}
                       {!position.valid && " ⚠"}
                     </>
                   }

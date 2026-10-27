@@ -7,6 +7,7 @@ import {
   marksFor,
   moveNames,
   orderPatches,
+  publishedRanks,
   rankingOf,
   togglePick,
   unrankedNames,
@@ -165,5 +166,25 @@ describe("moveNames", () => {
 
   test("dropped on itself, nothing moves", () => {
     expect(moveNames(["Ann", "Bo"], ["Bo"], "Bo", "before")).toEqual(["Ann", "Bo"]);
+  });
+});
+
+describe("publishedRanks", () => {
+  test("the saved order among what's marked for, then picks it lacks", () => {
+    const marks = [
+      { choice: "Ann", stance: "lean_for" as const },
+      { choice: "Bo", stance: "endorse" as const },
+      { choice: "Cy", stance: "oppose" as const },
+      { choice: "Di", stance: "endorse" as const },
+    ];
+    expect([...publishedRanks(["Bo", "Cy", "Ann"], marks)]).toEqual([
+      ["Bo", 1],
+      ["Ann", 2],
+      ["Di", 3],
+    ]);
+  });
+
+  test("no ranks for a race the user never ranked", () => {
+    expect(publishedRanks(undefined, [{ choice: "Yes", stance: "endorse" }]).size).toBe(0);
   });
 });

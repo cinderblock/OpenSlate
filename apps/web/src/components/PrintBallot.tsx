@@ -1,16 +1,24 @@
 import type { Stance } from "@openslate/core";
 import { forwardRef } from "react";
-import { type DraftRow, NOTE_CHOICE, rowIdFor } from "../lib/ballotDraft";
+import {
+  type DraftRow,
+  NOTE_CHOICE,
+  rankingKeyFor,
+  rowIdFor,
+  useRankings,
+} from "../lib/ballotDraft";
 import {
   ballotChoices,
   designation,
   instructionLine,
   picksIn,
   raceHeading,
+  ranksFor,
   voteFor,
 } from "../lib/ballotView";
 import type { Race } from "../lib/collate";
 import { formatElectionDate, formatLocalDate } from "../lib/dates";
+import { isRanked, marksFor, rankingOf } from "../lib/ranking";
 
 /**
  * My ballot on paper: every race as the ballot prints it, a bubble per
@@ -42,6 +50,7 @@ export const PrintBallot = forwardRef<
     notes: boolean;
   }
 >(function PrintBallot({ election, area, sections, rows, followedCount, notes }, ref) {
+  const rankings = useRankings();
   return (
     <div ref={ref} className="print-ballot">
       <header className="pb-header">
@@ -63,7 +72,14 @@ export const PrintBallot = forwardRef<
           <section key={section.label} className="pb-section">
             <h2>{section.label}</h2>
             {section.races.map((race) => (
-              <PrintRace key={race.key} race={race} election={election} rows={rows} notes={notes} />
+              <PrintRace
+                key={race.key}
+                race={race}
+                election={election}
+                rows={rows}
+                notes={notes}
+                saved={rankings[rankingKeyFor(election, race.subject)]}
+              />
             ))}
           </section>
         ))}
@@ -77,12 +93,19 @@ function PrintRace({
   election,
   rows,
   notes,
+  saved,
 }: {
   race: Race;
   election: string;
   rows: Record<string, DraftRow>;
   notes: boolean;
+  /** The race's saved ranking (lib/ranking.ts). */
+  saved: string[] | undefined;
 }) {
+  const order = isRanked(race) ? rankingOf(race, election, rows, saved) : [];
+  const marks = marksFor(race);
+  // A ranked-choice contest numbers its bubbles, as its ballot does.
+  const numbered = ranksFor(race) !== undefined;
   const title = raceHeading(race);
   const instruction = instructionLine(race);
   const note = notes ? rows[rowIdFor(election, race.subject, NOTE_CHOICE)]?.privateNote : undefined;
@@ -102,9 +125,13 @@ function PrintRace({
       <ul>
         {ballotChoices(race).map((group) => {
           const stance = rows[rowIdFor(election, race.subject, group.choice || undefined)]?.stance;
+          const at = group.choice ? order.indexOf(group.choice) : -1;
+          const backup = at >= marks;
           return (
             <li key={group.choice} className={stance === "endorse" ? "pb-picked" : undefined}>
-              <span className={`pb-bubble pb-${stance ?? "none"}`} />
+              <span className={`pb-bubble pb-${backup ? "none" : (stance ?? "none")}`}>
+                {numbered && at !== -1 && !backup && at + 1}
+              </span>
               <span
                 className={`pb-count${group.support + group.opposition === 0 ? " pb-zero" : ""}`}
               >
@@ -113,8 +140,12 @@ function PrintRace({
               </span>
               <span className="pb-name">
                 {group.choice || "Overall"}
-                {stance && BUBBLE_LABEL[stance] && stance !== "endorse" && (
-                  <em> ({BUBBLE_LABEL[stance]})</em>
+                {backup ? (
+                  <em> (backup, ranked {at + 1})</em>
+                ) : (
+                  stance &&
+                  BUBBLE_LABEL[stance] &&
+                  stance !== "endorse" && <em> ({BUBBLE_LABEL[stance]})</em>
                 )}
                 {designation(group) && <span className="pb-designation">{designation(group)}</span>}
               </span>

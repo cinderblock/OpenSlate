@@ -123,6 +123,8 @@ export interface RacePosition {
   source: Source;
   stance: Stance;
   statement?: string;
+  /** Where the source ranks this choice, 1 being its first (SPEC §3.16). */
+  rank?: number;
   valid: boolean;
   /** How the user takes the source; `off` positions don't count on My ballot. */
   standing: Standing;
@@ -345,6 +347,7 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
         source: slate.source,
         stance: position.stance,
         ...(position.statement ? { statement: position.statement } : {}),
+        ...(position.rank !== undefined ? { rank: position.rank } : {}),
         valid: slate.valid,
         standing,
         ...(check?.written ? { written: check.written } : {}),

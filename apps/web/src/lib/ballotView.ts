@@ -246,3 +246,10 @@ export function picksIn(race: Race, election: string, rows: Record<string, Draft
 export function choiceRowClass(stance: Stance | undefined, backup = false): string {
   return `choice-row${stance === "endorse" ? " picked" : ""}${stance === "oppose" ? " ruled-out" : ""}${backup ? " backup" : ""}`;
 }
+
+/** "1st", "2nd", "3rd", "11th": a rank as it's read. */
+export function ordinal(n: number): string {
+  const teen = n % 100 >= 11 && n % 100 <= 13;
+  const suffix = teen ? "th" : (["th", "st", "nd", "rd"][n % 10] ?? "th");
+  return `${n}${suffix}`;
+}

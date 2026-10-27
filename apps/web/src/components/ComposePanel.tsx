@@ -11,7 +11,13 @@ import {
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { listingOf, withBallotIds } from "../lib/ballotCheck";
-import { type DraftRow, NOTE_CHOICE, useBallotDraft } from "../lib/ballotDraft";
+import {
+  type DraftRow,
+  NOTE_CHOICE,
+  rankingKeyFor,
+  useBallotDraft,
+  useRankings,
+} from "../lib/ballotDraft";
 import { type ElectionSummary, defaultElection, electionsOf } from "../lib/collate";
 import { rememberPublished } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
@@ -19,6 +25,7 @@ import { useActiveIdentity } from "../lib/identities";
 import { jurisdictionLabel, jurisdictionRank } from "../lib/jurisdictions";
 import { localToday, useDecodedSlates, useFollows, useMyElection } from "../lib/myVote";
 import { usePageSearch } from "../lib/pageSearch";
+import { publishedRanks } from "../lib/ranking";
 import { matchesSearch, positionSearchText } from "../lib/search";
 import { subjectKey, useImportedSubjects } from "../lib/subjects";
 import { track } from "../lib/usage";
@@ -108,6 +115,19 @@ export function ComposePanel() {
     [draft.rows, election],
   );
   const [leftOut, setLeftOut] = useState<ReadonlySet<string>>(new Set());
+  // Where the user ranked each pick (lib/ranking.ts), by race.
+  const rankings = useRankings();
+  const ranks = useMemo(() => {
+    const byRace = new Map<string, DraftRow[]>();
+    // Ranked among what's published, so leaving a pick out leaves no gap.
+    for (const row of picks.filter((r) => !leftOut.has(r.id))) {
+      const key = rankingKeyFor(row.electionId, row.subject);
+      byRace.set(key, [...(byRace.get(key) ?? []), row]);
+    }
+    return new Map(
+      [...byRace].map(([key, rows]) => [key, publishedRanks(rankings[key], rows)] as const),
+    );
+  }, [picks, leftOut, rankings]);
 
   // The search box only narrows the list: a pick it hides is still signed.
   const search = usePageSearch("/publish");
@@ -142,6 +162,7 @@ export function ComposePanel() {
             stance: row.stance,
             ...(row.choice ? { choice: row.choice } : {}),
             ...(row.choice && row.writeIn ? { write_in: true as const } : {}),
+            ...rankOf(row),
             ...(row.statement?.trim() ? { statement: row.statement.trim() } : {}),
           },
           listing,
@@ -155,7 +176,14 @@ export function ComposePanel() {
       ...(entry.statement?.trim() ? { statement: entry.statement.trim() } : {}),
     }));
     return [...fromPicks, ...fromOthers];
-  }, [picks, leftOut, others, listing]);
+
+    function rankOf(row: DraftRow): { rank?: number } {
+      const rank = row.choice
+        ? ranks.get(rankingKeyFor(row.electionId, row.subject))?.get(row.choice)
+        : undefined;
+      return rank === undefined ? {} : { rank };
+    }
+  }, [picks, leftOut, others, listing, ranks]);
 
   function toggleLeftOut(id: string) {
     setLeftOut((current) => {
