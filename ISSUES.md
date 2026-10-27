@@ -2,6 +2,8 @@
 
 ## No lookup places a voter in a city council district
 
+**In progress — master (ISSUES.md burn-down).**
+
 Seen 2026-10-26 (a Sunnyvale voter's report): the Santa Clara listing files
 Sunnyvale's council races with `district: us/ca/sunnyvale/council-{1,3,5}`,
 but no lookup layer (`LOOKUP_LAYERS` in `apps/web/src/lib/geo.ts`: school,
