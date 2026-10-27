@@ -53,7 +53,7 @@ commit, push master.
 - [x] 6b. Newport Beach P/Q/R called off: endorsements `644dad9` re-issued the `newport-beach-city-clerk` listing (now Measure H only, under the OC registrar's subject and ids) and dropped SCNG's "No" on P/Q/R
 - [x] 6c. Misdescribed measure titles: Chino F and Upland M → "(Business License Tax)", Colton O → "(Appointed City Treasurer)" (also a "Municipal Code Amendment"), Allan Hancock JCCD H → "(Affordable Higher Education Bond)". Endorsements `df1ea2e` (7 bundles), ballot repo `5f4f0b6` (linked tables, 4 guide items), app `b4cc926` (marks follow a retitled measure)
 - [x] 6d. Council cities with no usable map: all four in the lookup (444 → 463 districts in 90 cities). Santa Clarita from its own GIS (checked against LA's sample ballot data); Campbell, Los Altos and Morgan Hill as unions of the Santa Clara County Registrar's precincts, each precinct's district read from the registrar's own address lookup (`plans/council-maps-missing-cities.md`). `dissolve` now drops seam rings
-- [ ] 7. Cloudflare beacon
+- [x] 7. Cloudflare beacon: already gone, no change needed. Ops `3db3300` (`web_analytics: false`) took effect with ops `1ea1ef5` (2026-10-25 4:23 PM PDT (23:23Z)), after the issue was seen. Checked 2026-10-27: openslate.us's HTML and a loaded page carry no beacon, and the CSP stays `script-src 'self'` (`e76d1fc`)
 
 ## Findings / gotchas
 
