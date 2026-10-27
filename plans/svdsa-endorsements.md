@@ -72,6 +72,20 @@ SVDSA's picks. The user is a member of the chapter and asked for it.
 1. OK to push? Local master is 4 ahead of origin: this commit plus 3 earlier ones
    (cde383b logo_background, 25955d8 bundle.json in index.json, e90825e logos).
 2. Do the NOTES.md judgment calls look right (tiers, soft picks, blanket school measures)?
+3. User feedback (2026-10-26): "every endorser needs to be able to use their own
+   language. we cannot 'coax' a recommendation to a full yes/reject." The SPEC §3.6
+   stance enum is fixed and Position (§3.4) has no field for the endorser's own
+   term. Proposed: an optional `Position.label` (the endorser's wording, e.g.
+   "Recommended", "Cautious recommendation") plus optional slate-level definitions
+   of each label (e.g. "Endorsed: 75% chapter vote"). `stance` stays as the
+   machine bucket for collating. This is a schema change; waiting on the user's
+   go-ahead on the shape. Hold the SVDSA push until then?
+4. User: "we need to timestamp our scrapes and include the provenance URL." Already
+   in place: `attribution.retrieved_at`, `attribution.sources`, per-position
+   `source`, and the evidence header; the app shows the retrieval date. Gaps:
+   `evidence/` isn't published on Pages, and nothing pins *which version* of a
+   live-updating Google Doc was captured (proposed: a sha256 of the captured text,
+   and/or a Wayback snapshot URL). Waiting on which of these the user wants.
 
 ## Things not to do
 
