@@ -18,6 +18,8 @@ out on purpose).
 
 ## Some cities' council districts have no usable map
 
+**In progress — master (ISSUES.md burn-down).**
+
 Seen 2026-10-27: the council lookup (`OTHER_SOURCES` in
 `apps/web/scripts/build-geo.ts`) leaves out cities whose listings carry
 `council-N` races but that publish no usable current map, so those races stay
