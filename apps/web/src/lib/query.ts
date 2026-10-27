@@ -53,6 +53,13 @@ export interface CatalogEntry {
    * to an area without fetching the slate. Older catalogs leave it out.
    */
   jurisdictions?: Record<string, number>;
+  /**
+   * Each region the slate's contests are filed under, with where they're
+   * voted (core's `regionsOf`), so setup can tell whether a source based in a
+   * region is local to a voter. Left out when there are none, and by older
+   * catalogs.
+   */
+  regions?: Record<string, string[]>;
   issued_at: string;
   /** The endorser's logo, relative to the catalog URL. */
   logo?: string;

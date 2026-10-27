@@ -28,3 +28,28 @@ export function racesByJurisdiction(payload: SlatePayload): Record<string, numbe
       .map(([jurisdiction, set]) => [jurisdiction, set.size]),
   );
 }
+
+/**
+ * Where each region a slate's contests are filed under is voted: the region's
+ * path (a subject's `jurisdiction`, SPEC §3.3) with every jurisdiction any of
+ * its contests lists in `voted_in`. A region's path doesn't say what it
+ * contains, so a catalog lists this per entry, and an app can tell whether an
+ * outlet based in a region (`context.jurisdiction` `us/ca/bay-area`) is local
+ * to a voter without downloading anything. Contests without `voted_in` add
+ * nothing: they're voted where they're filed.
+ */
+export function regionsOf(payload: SlatePayload): Record<string, string[]> {
+  const regions = new Map<string, Set<string>>();
+  for (const { subject } of [...payload.positions, ...(payload.articles ?? [])]) {
+    const region = subject.jurisdiction ?? payload.context?.jurisdiction;
+    if (!region || !subject.voted_in?.length) continue;
+    const members = regions.get(region) ?? new Set();
+    for (const where of subject.voted_in) members.add(where);
+    regions.set(region, members);
+  }
+  return Object.fromEntries(
+    [...regions.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([region, members]) => [region, [...members].sort()]),
+  );
+}

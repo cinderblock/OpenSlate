@@ -391,8 +391,10 @@ The web app's **Sources** page (and setup) additionally imports pre-signed slate
 sibling repo, [openslate-public-endorsements][ope] — published as static files
 on GitHub Pages, fetched directly with no server in between. Its catalog also
 carries each org's logo and left-right counts, so the app never contacts the
-orgs' own sites, and where each slate's races are (`scope`, `jurisdictions`,
-written by `openslate sign --batch`), plus a `bundle` of every slate in one file.
+orgs' own sites, and where each slate's races are (`scope`, `jurisdictions`, and
+`regions`: where the contests filed under a region like `us/ca/bay-area` are voted,
+so setup lists a regional paper with its readers' local sources; all written by
+`openslate sign --batch`), plus a `bundle` of every slate in one file.
 
 [ope]: https://github.com/cinderblock/openslate-public-endorsements
 

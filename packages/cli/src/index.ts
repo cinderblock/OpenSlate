@@ -18,6 +18,7 @@ import {
   parseSlate,
   type Reference,
   racesByJurisdiction,
+  regionsOf,
   resolveAdoptions,
   type SlatePayload,
   type StoredIdentity,
@@ -268,6 +269,11 @@ interface IndexEntry {
    * can match the slate to a voter's area without downloading it.
    */
   jurisdictions: Record<string, number>;
+  /**
+   * Each region the slate's contests are filed under, with where they're voted (core's
+   * `regionsOf`), so an app can tell whether an outlet based in a region is local to a voter.
+   */
+  regions?: Record<string, string[]>;
   /** Adoptions by reference (SPEC §3.10): which entities' positions this slate takes on. */
   adopts?: { issuer: string; of?: string; election?: string; uri?: string; subjects?: number }[];
   issued_at: string;
@@ -346,6 +352,7 @@ async function cmdSignBatch(
       try {
         const token = (await Bun.file(slatePath).text()).trim();
         const { payload } = parseSlate(token);
+        const regions = regionsOf(payload);
         entries.push({
           slug,
           election,
@@ -360,6 +367,7 @@ async function cmdSignBatch(
           ...(payload.articles?.length ? { articles: payload.articles.length } : {}),
           ...(payload.context?.jurisdiction ? { scope: payload.context.jurisdiction } : {}),
           jurisdictions: racesByJurisdiction(payload),
+          ...(Object.keys(regions).length ? { regions } : {}),
           ...(payload.adopts?.length
             ? {
                 adopts: payload.adopts.map((a) => ({

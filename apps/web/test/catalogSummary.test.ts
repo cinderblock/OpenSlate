@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import type { SlatePayload } from "@openslate/core";
 import {
+  basedInArea,
   isSummarized,
   racesInArea,
+  regionsOfSummaries,
   summaryJurisdictions,
   summaryOf,
 } from "../src/lib/catalogSummary";
@@ -74,6 +76,14 @@ describe("summaryOf", () => {
     expect(summary.jurisdictions).toEqual({ "us/ca/alameda-county": 1, "us/ca/sf": 1 });
     expect(racesInArea(summary, { localities: ["us/ca/sf"], districts: {} })).toBe(1);
     expect(racesInArea(summary, { localities: ["us/ca/fresno-county"], districts: {} })).toBe(0);
+    // And it says what the region it's filed under contains.
+    expect(summary.regions).toEqual({ "us/ca/bay-area": ["us/ca/alameda-county", "us/ca/sf"] });
+  });
+
+  test("passes the catalog's regions along", () => {
+    const regions = { "us/ca/bay-area": ["us/ca/sf"] };
+    const e = entry({ jurisdictions: { "us/ca/sf": 1 }, regions });
+    expect(summaryOf(e).regions).toEqual(regions);
   });
 
   test("an entry whose slate didn't load has no races", () => {
@@ -109,5 +119,62 @@ describe("summaryJurisdictions", () => {
       { jurisdiction: "us/ca/sf", count: 2 },
       { jurisdiction: "us/ca/sf", count: 3 },
     ]);
+  });
+});
+
+describe("basedInArea", () => {
+  // Bay Area News Group is based in the region; RTM, filed under it, is voted
+  // in five counties (SPEC §3.3). Another slate files RM4 under it too.
+  const regions = regionsOfSummaries([
+    summaryOf(
+      entry({
+        scope: "us/ca/bay-area",
+        jurisdictions: { "us/ca": 18, "us/ca/sf": 1, "us/ca/alameda-county": 1 },
+        regions: { "us/ca/bay-area": ["us/ca/alameda-county", "us/ca/sf"] },
+      }),
+    ),
+    summaryOf(
+      entry({
+        jurisdictions: { "us/ca/marin-county": 1 },
+        regions: { "us/ca/bay-area": ["us/ca/marin-county"] },
+      }),
+    ),
+    summaryOf(entry({ scope: "us/ca/oakland", jurisdictions: { "us/ca/oakland": 2 } })),
+  ]);
+  const sf = { localities: ["us/ca/sf"], districts: {} };
+
+  test("unions every entry's regions", () => {
+    expect(regionsOfSummaries([])).toEqual(new Map());
+    expect([...(regions.get("us/ca/bay-area") ?? [])].sort()).toEqual([
+      "us/ca/alameda-county",
+      "us/ca/marin-county",
+      "us/ca/sf",
+    ]);
+  });
+
+  test("a region is yours when its contests are voted where you are", () => {
+    expect(basedInArea("us/ca/bay-area", sf, regions)).toBe(true);
+    expect(
+      basedInArea("us/ca/bay-area", { localities: ["us/ca/marin-county"], districts: {} }, regions),
+    ).toBe(true);
+    expect(
+      basedInArea(
+        "us/ca/bay-area",
+        { localities: ["us/ca/fresno-county"], districts: {} },
+        regions,
+      ),
+    ).toBe(false);
+  });
+
+  test("another place is elsewhere, and so is a region nothing places", () => {
+    expect(basedInArea("us/ca/oakland", sf, regions)).toBe(false);
+    expect(basedInArea("us/ca/sf", sf, regions)).toBe(true);
+    expect(basedInArea("us/ca/inland-empire", sf, regions)).toBe(false);
+  });
+
+  test("a statewide source, or one with no scope, is everyone's; so is everything with no area", () => {
+    expect(basedInArea("us/ca", sf, regions)).toBe(true);
+    expect(basedInArea(undefined, sf, regions)).toBe(true);
+    expect(basedInArea("us/ca/oakland", EMPTY_AREA, regions)).toBe(true);
   });
 });

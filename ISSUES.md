@@ -21,23 +21,6 @@ CalMatters and news searches, which often have nothing on small city
 measures. Matters because a voter asked for "a link to the measure text for
 all the measures, especially the local ones".
 
-## Setup lists a region's own outlets as "based elsewhere"
-
-**In progress — master (ISSUES.md burn-down).**
-
-Seen 2026-10-26 7:58 PM PDT (02:58Z), in setup with the area set to San
-Francisco: Bay Area News Group (the Mercury News and East Bay Times) is
-under "▸ 162 more based elsewhere", though it weighs in on races on an SF
-ballot. Its slate's `context.jurisdiction` is `us/ca/bay-area`, and
-`GetStarted.tsx`'s `elsewhere` test calls any local scope that isn't one of
-the area's localities "elsewhere". A region has no `voted_in` to say which
-places it covers (that's per contest, SPEC §3.3), so the fix needs a call on
-what "your area's" means for a regional outlet (e.g. by where its races are
-rather than its scope). Matters because a voter's own regional paper is
-tucked away with out-of-area ones.
-
-Decided (user, 2026-10-26): do whichever rule is *best*, even if it's more work; don't re-ask.
-
 ## Dark theme: some text and white-on-colour fills fall below 4.5:1
 
 Dark `--bad` (`#e74c3c`) as text measures 4.41:1 on `--surface` and 4.02:1 on

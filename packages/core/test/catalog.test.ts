@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { racesByJurisdiction } from "../src/catalog";
+import { racesByJurisdiction, regionsOf } from "../src/catalog";
 import type { SlatePayload } from "../src/schema";
 
 const E = "2026-11-03";
@@ -83,5 +83,49 @@ describe("racesByJurisdiction", () => {
     } as SlatePayload;
     // Once per county however often it's named; SF has it and Measure A.
     expect(racesByJurisdiction(withArticles)).toEqual({ "us/ca/alameda-county": 1, "us/ca/sf": 2 });
+  });
+});
+
+describe("regionsOf", () => {
+  const rtm = {
+    title: "Bay Area — Regional Measure RTM",
+    kind: "measure",
+    jurisdiction: "us/ca/bay-area",
+    voted_in: ["us/ca/sf", "us/ca/alameda-county", "us/ca/sf"],
+    election: E,
+  };
+
+  test("lists each region with where its contests are voted (SPEC §3.3)", () => {
+    const rm4 = {
+      title: "Bay Area — Regional Measure 4",
+      kind: "measure",
+      jurisdiction: "us/ca/bay-area",
+      voted_in: ["us/ca/marin-county", "us/ca/sf"],
+      election: E,
+    };
+    const measure = { title: "Measure A", kind: "measure", jurisdiction: "us/ca/sf", election: E };
+    expect(
+      regionsOf(
+        payload([
+          { subject: rtm, stance: "endorse", choice: "Yes" },
+          { subject: rm4, stance: "oppose", choice: "Yes" },
+          { subject: measure, stance: "endorse", choice: "Yes" },
+        ]),
+      ),
+    ).toEqual({ "us/ca/bay-area": ["us/ca/alameda-county", "us/ca/marin-county", "us/ca/sf"] });
+  });
+
+  test("an article's contest counts; one filed under the slate's context names that region", () => {
+    const { jurisdiction: _, ...unfiled } = rtm;
+    const articles = {
+      ...payload([], { election: E, jurisdiction: "us/ca/bay-area" }),
+      articles: [{ subject: unfiled, uri: "https://news.example/rtm", title: "RTM, explained" }],
+    } as SlatePayload;
+    expect(regionsOf(articles)).toEqual({ "us/ca/bay-area": ["us/ca/alameda-county", "us/ca/sf"] });
+  });
+
+  test("nothing without voted_in", () => {
+    const { voted_in: _, ...plain } = rtm;
+    expect(regionsOf(payload([{ subject: plain, stance: "endorse", choice: "Yes" }]))).toEqual({});
   });
 });

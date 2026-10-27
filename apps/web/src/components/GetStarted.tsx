@@ -7,9 +7,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { isPublicSite } from "../lib/alpha";
 import { catalogEntryUrl, startSetupImport } from "../lib/catalogImport";
 import {
+  basedInArea,
   type EntrySummary,
   isSummarized,
   racesInArea,
+  regionsOfSummaries,
   summaryJurisdictions,
   summaryOf,
 } from "../lib/catalogSummary";
@@ -18,13 +20,7 @@ import { slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
 import { REPO_URL } from "../lib/feedback";
 import { httpHref } from "../lib/httpHref";
-import {
-  type Area,
-  isAreaSet,
-  jurisdictionLabel,
-  jurisdictionRank,
-  parseJurisdiction,
-} from "../lib/jurisdictions";
+import { type Area, isAreaSet, jurisdictionLabel, jurisdictionRank } from "../lib/jurisdictions";
 import { areaStore, defaultToUnfollowed, localToday, myElectionStore } from "../lib/myVote";
 import { useSearchBox } from "../lib/pageSearch";
 import { DESKTOP_DOWNLOADS_URL, IS_DESKTOP_APP, THIS_DEVICE } from "../lib/platform";
@@ -579,12 +575,11 @@ function SourcesStep({
         ]),
       }));
     // A group that publishes for another city still weighs in on statewide
-    // races, but it isn't "yours": list it under "based elsewhere".
-    const elsewhere = (s: (typeof scored)[number]) => {
-      if (!isAreaSet(area)) return false;
-      const scope = parseJurisdiction(s.scope);
-      return s.races === 0 || (scope.kind === "local" && !area.localities.includes(scope.path));
-    };
+    // races, but it isn't "yours": list it under "based elsewhere". One based
+    // in a region is yours when the region's contests are voted where you are.
+    const regions = regionsOfSummaries(summaries.entries);
+    const elsewhere = (s: (typeof scored)[number]) =>
+      isAreaSet(area) && (s.races === 0 || !basedInArea(s.scope, area, regions));
     const relevant = scored.filter((s) => !elsewhere(s));
     const byScope = new Map<string, typeof scored>();
     for (const s of relevant) {

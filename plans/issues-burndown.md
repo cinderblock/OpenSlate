@@ -42,7 +42,7 @@ commit, push master.
 ## Progress log
 
 - [x] 1. Setup follow: interrupted setup downloads now resume (`pendingSetup.ts`)
-- [ ] 2. Regional outlets (next thread: process changed to a chain, one issue per thread)
+- [x] 2. Regional outlets: catalog `regions` (core `regionsOf`, `sign --batch`), setup's `basedInArea` (`plans/regional-outlets-setup.md`). Live once the endorsements repo re-signs with the new CLI (step 6 there)
 - [ ] 3. validate
 - [ ] 4. Dark theme contrast
 - [ ] 5. Council districts
@@ -67,6 +67,13 @@ commit, push master.
 - Port 5291 is another worktree's dev server (`feat-ballot-print`); use 5377.
 - Claude-in-Chrome tab groups vanished mid-session; T3's preview browser
   (`preview_open`/`preview_evaluate`) worked instead.
+
+- Regional outlets (2026-10-26): "local when any of its positions is on a
+  race in your area" can't work alone. BANG's only SF contest is RTM, the same
+  as the Alameda County Democratic Party's, so by races they're identical for
+  an SF voter; only the scope tells them apart. Chosen: a region scope is
+  yours when a contest filed under it is voted in your area (`voted_in`), via
+  a new per-entry catalog field `regions`.
 
 ## Open questions for the user
 
