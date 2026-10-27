@@ -101,6 +101,19 @@ opens the same warning at the top of the page. On the public site
 (openslate.us) that warning starts open, on every page, until you dismiss it;
 a copy you run yourself keeps it to the badge.
 
+**Browser agents (WebMCP).** In a browser that supports
+[WebMCP](https://webmachinelearning.github.io/webmcp/), an AI agent working
+for you in that browser can use My ballot through tools the page offers:
+`list_elections`, `get_ballot` (a page of races at a time, searchable, with
+your marks and your followed sources' counts), `get_race` (every source's
+position and statement), `mark_choices` (pick, maybe, against, clear, or
+write in, applied together or not at all; overvotes come back with a
+warning) and `set_race_note`. The tools run in the page, on this browser's
+own data, and write through the same store as the buttons, so an open My
+ballot updates as the agent works. Nothing is sent anywhere, and the agent
+can't publish or sign. Slates' text is marked untrusted, since anyone can
+publish one. See `apps/web/src/lib/webmcp.ts`.
+
 Setup works from the catalog's list alone: each entry says where its races
 are, so the area and source steps are there at once, and only the lists you
 pick are downloaded at the end (with the official ballot lists). That download

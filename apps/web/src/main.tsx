@@ -5,11 +5,13 @@ import { createRoot } from "react-dom/client";
 import { persister, queryClient } from "./lib/query";
 import { installUsageSink } from "./lib/telemetry";
 import { syncTheme } from "./lib/theme";
+import { installWebMcp } from "./lib/webmcp";
 import { router } from "./router";
 import "./styles.css";
 
 syncTheme();
 installUsageSink();
+installWebMcp();
 
 // crypto.randomUUID is only exposed in secure contexts (HTTPS or localhost). On a
 // plain-HTTP LAN hostname the browser hides it, which breaks TanStack DB's mutation
