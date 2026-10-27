@@ -3,8 +3,6 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import {
   type Adoption,
-  type Article,
-  type Attribution,
   buildSlate,
   createIdentity,
   decodeToken,
@@ -14,19 +12,18 @@ import {
   guideItemSchema,
   guideManifestSchema,
   identityToIssuer,
-  type LabelDefinition,
-  type Position,
   parseSlate,
-  type Reference,
   racesByJurisdiction,
   regionsOf,
   resolveAdoptions,
+  type SignInput,
   type SlatePayload,
   type StoredIdentity,
   type Subject,
   serializeIdentity,
   sha256,
   signGuide,
+  signInputSchema,
   signSlate,
   slateEntity,
   slatePayloadSchema,
@@ -42,7 +39,7 @@ Usage:
   openslate pubkey <identity.json>
   openslate sign <positions.json|-> --key <identity.json> [--election E] [--jurisdiction J] [-o out.txt]
   openslate sign --batch <dir> --key <identity.json> [--force]
-  openslate validate <payload.json|->
+  openslate validate <positions.json|payload.json|->
   openslate verify <token|file|url|-> [--resolve]
   openslate inspect <token|file|->
   openslate adopt <token|file|url> --mode copy|reference|embed [--uri U] [--subjects file.json]
@@ -75,8 +72,10 @@ sign --batch walks <dir>/orgs/<slug>/<election>/positions.json, writes
 signed.slate next to each, and emits <dir>/index.json. Bundles whose
 signed.slate already exists are skipped unless --force.
 
-validate is a schema-only check (no crypto) of a complete SlatePayload JSON
-file — useful for CI on hand-authored research data before signing.
+validate is a schema-only check (no crypto) of a <positions.json> (what sign
+takes) or of a complete SlatePayload (one with "v", "issuer" and "issued_at"),
+useful on hand-authored research data before signing. Both are closed: a key
+the schema doesn't know is an error, not silently dropped.
 
 guide publishes an election authority's voter guide (candidate statements and
 photos, a measure's summary, analysis, arguments and full text) as reference
@@ -149,15 +148,35 @@ async function fetchToken(url: string): Promise<string> {
   return (await response.text()).trim();
 }
 
-/** The parts of a positions.json input `sign` understands. */
-interface SignInput {
-  positions?: Position[];
-  endorsed_by?: Reference[];
-  attribution?: Attribution;
-  adopts?: Adoption[];
-  articles?: Article[];
-  labels?: LabelDefinition[];
-  context?: SlatePayload["context"];
+function describeIssues(error: { issues: { path: (string | number)[]; message: string }[] }) {
+  return error.issues.map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`);
+}
+
+/** Parse a positions.json, the input `sign` takes (core's `signInputSchema`), or say why not. */
+function parseSignInput(text: string): { input: SignInput } | { errors: string[] } {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch (err) {
+    return {
+      errors: [`could not parse JSON: ${err instanceof Error ? err.message : String(err)}`],
+    };
+  }
+  const result = signInputSchema.safeParse(raw);
+  return result.success ? { input: result.data } : { errors: describeIssues(result.error) };
+}
+
+function slateFromInput(issuer: SlatePayload["issuer"], input: SignInput): SlatePayload {
+  return buildSlate({
+    issuer,
+    positions: input.positions,
+    endorsedBy: input.endorsed_by,
+    attribution: input.attribution,
+    adopts: input.adopts,
+    articles: input.articles,
+    labels: input.labels,
+    context: input.context,
+  });
 }
 
 async function cmdKeygen(rest: string[]): Promise<void> {
@@ -201,32 +220,15 @@ async function cmdSign(rest: string[]): Promise<void> {
   const identity = deserializeIdentity(stored);
   const issuer = identityToIssuer(identity);
 
-  const raw = JSON.parse(await readText(positional[0] ?? "-")) as unknown;
-  let positions: Position[] = [];
-  let endorsedBy: Reference[] | undefined;
-  let attribution: Attribution | undefined;
-  let adopts: Adoption[] | undefined;
-  let articles: Article[] | undefined;
-  let labels: LabelDefinition[] | undefined;
-  let context: SlatePayload["context"];
-  if (Array.isArray(raw)) {
-    positions = raw as Position[];
-  } else if (raw && typeof raw === "object") {
-    const obj = raw as SignInput;
-    positions = obj.positions ?? [];
-    endorsedBy = obj.endorsed_by;
-    attribution = obj.attribution;
-    adopts = obj.adopts;
-    articles = obj.articles;
-    labels = obj.labels;
-    context = obj.context;
-  }
+  const parsed = parseSignInput(await readText(positional[0] ?? "-"));
+  if ("errors" in parsed) fail(`could not build slate:\n  ${parsed.errors.join("\n  ")}`);
+  const input = parsed.input;
 
   const election = strFlag(flags, "election");
   const jurisdiction = strFlag(flags, "jurisdiction");
   if (election || jurisdiction) {
-    context = {
-      ...context,
+    input.context = {
+      ...input.context,
       ...(election ? { election } : {}),
       ...(jurisdiction ? { jurisdiction } : {}),
     };
@@ -234,17 +236,7 @@ async function cmdSign(rest: string[]): Promise<void> {
 
   let token: string;
   try {
-    const payload = buildSlate({
-      issuer,
-      positions,
-      endorsedBy,
-      attribution,
-      adopts,
-      articles,
-      labels,
-      context,
-    });
-    token = signSlate(payload, identity.keyPair.secretKey);
+    token = signSlate(slateFromInput(issuer, input), identity.keyPair.secretKey);
   } catch (err) {
     fail(`could not build slate: ${err instanceof Error ? err.message : String(err)}`);
   }
@@ -324,19 +316,13 @@ async function cmdSignBatch(
         continue;
       }
 
-      const raw = JSON.parse(await Bun.file(inputPath).text()) as SignInput;
+      const parsed = parseSignInput(await Bun.file(inputPath).text());
+      if ("errors" in parsed) {
+        console.error(`FAIL   ${slug}/${election}:\n  ${parsed.errors.join("\n  ")}`);
+        process.exit(1);
+      }
       try {
-        const payload = buildSlate({
-          issuer,
-          positions: raw.positions ?? [],
-          endorsedBy: raw.endorsed_by,
-          attribution: raw.attribution,
-          adopts: raw.adopts,
-          articles: raw.articles,
-          labels: raw.labels,
-          context: raw.context,
-        });
-        const token = signSlate(payload, identity.keyPair.secretKey);
+        const token = signSlate(slateFromInput(issuer, parsed.input), identity.keyPair.secretKey);
         await Bun.write(outputPath, `${token}\n`);
         console.error(`sign   ${slug}/${election}`);
         signed++;
@@ -420,7 +406,16 @@ async function cmdValidate(rest: string[]): Promise<void> {
   } catch (err) {
     fail(`could not parse JSON: ${err instanceof Error ? err.message : String(err)}`);
   }
-  const result = slatePayloadSchema.safeParse(parsed);
+  // A payload carries the parts the signer fills in, none of which sign input may have; anything
+  // else is checked as sign input, so a bundle validates by the rules `sign` applies to it.
+  const isPayload =
+    !!parsed &&
+    typeof parsed === "object" &&
+    ["v", "issuer", "issued_at"].some((key) => key in parsed);
+  const result = isPayload
+    ? slatePayloadSchema.safeParse(parsed)
+    : signInputSchema.safeParse(parsed);
+  console.log(`kind:      ${isPayload ? "SlatePayload" : "sign input"}`);
   if (result.success) {
     console.log("VALID");
     console.log(`positions: ${result.data.positions.length}`);
@@ -431,9 +426,7 @@ async function cmdValidate(rest: string[]): Promise<void> {
     if (result.data.adopts?.length) console.log(`adopts:    ${result.data.adopts.length}`);
   } else {
     console.log("INVALID");
-    for (const issue of result.error.issues) {
-      console.log(`error:     ${issue.path.join(".") || "(root)"}: ${issue.message}`);
-    }
+    for (const issue of describeIssues(result.error)) console.log(`error:     ${issue}`);
     process.exit(1);
   }
 }
@@ -569,13 +562,16 @@ async function cmdAdopt(rest: string[]): Promise<void> {
   const source = strFlag(flags, "source");
 
   const into = strFlag(flags, "into");
-  const input: SignInput =
-    into && (await Bun.file(into).exists())
-      ? (JSON.parse(await Bun.file(into).text()) as SignInput)
-      : {};
+  let input: SignInput = { positions: [] };
+  if (into && (await Bun.file(into).exists())) {
+    const parsed = parseSignInput(await Bun.file(into).text());
+    if ("errors" in parsed)
+      fail(`${into} is not valid sign input:\n  ${parsed.errors.join("\n  ")}`);
+    input = parsed.input;
+  }
   const entity = slateEntity(adopted);
   if (mode === "copy") {
-    input.positions = [...(input.positions ?? []), ...positions];
+    input.positions = [...input.positions, ...positions];
   } else {
     const subjects = [
       ...new Map(positions.map((p) => [subjectIdentity(p.subject), p.subject])).values(),
@@ -592,14 +588,8 @@ async function cmdAdopt(rest: string[]): Promise<void> {
     input.adopts = [...(input.adopts ?? []), adoption];
   }
 
-  const check = slatePayloadSchema.safeParse({
-    v: 1,
-    issuer: { key: "ed25519:check" },
-    issued_at: new Date().toISOString(),
-    positions: input.positions ?? [],
-    ...(input.adopts ? { adopts: input.adopts } : {}),
-  });
-  if (!check.success) fail(`result does not validate: ${check.error.issues[0]?.message}`);
+  const check = signInputSchema.safeParse(input);
+  if (!check.success) fail(`result does not validate: ${describeIssues(check.error)[0]}`);
 
   const text = `${JSON.stringify(into ? input : mode === "copy" ? positions : input.adopts?.at(-1), null, 2)}\n`;
   const label = entity.name ?? entity.issuerKey;

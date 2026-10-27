@@ -43,8 +43,9 @@ commit, push master.
 
 - [x] 1. Setup follow: interrupted setup downloads now resume (`pendingSetup.ts`)
 - [x] 2. Regional outlets: catalog `regions` (core `regionsOf`, `sign --batch`), setup's `basedInArea` (`plans/regional-outlets-setup.md`). Live: endorsements `b3ba2e9` re-signed the catalog, checked on openslate.us
-- [ ] 3. validate
+- [x] 3. validate: accepts sign input; core `signInputSchema` (closed) shared by `validate`, `sign`, `sign --batch` and `adopt --into`
 - [ ] 4. Dark theme contrast
+- [ ] 4b. Endorsements CI gate: use `signInputSchema` (new, found by 3)
 - [ ] 5. Council districts
 - [ ] 6. Local measure text
 - [ ] 7. Cloudflare beacon
@@ -74,6 +75,17 @@ commit, push master.
   an SF voter; only the scope tells them apart. Chosen: a region scope is
   yours when a contest filed under it is voted in your area (`voted_in`), via
   a new per-entry catalog field `regions`.
+
+- validate vs sign input (2026-10-26): chose to make `validate` accept sign
+  input (the user's lean), not to point the skill elsewhere. `validate` is the
+  check that ships with the tool that signs, so it should answer "will this
+  sign?"; `verify-positions.ts` lives in the endorsements repo and adds
+  ballot-name checks a scraper bundle in `research-bot/` can't run yet. The
+  shape is detected: any of `v`/`issuer`/`issued_at` means a SlatePayload,
+  else sign input (output says which). `sign` used to drop unknown top-level
+  keys silently; it now rejects them like `validate`. All 387 published
+  bundles pass. Found: `verify-positions.ts` drops `adopts`/`labels` before
+  its check (new ISSUES.md entry, endorsements repo).
 
 ## Open questions for the user
 

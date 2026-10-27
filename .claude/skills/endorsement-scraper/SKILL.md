@@ -131,6 +131,8 @@ Ask the user for whatever you don't already have:
 
    Fix any issues. The closed schema rejects unknown fields, malformed
    URLs, and missing required fields — this is a free correctness pass.
+   It is the same check `sign` applies to the file, so a bundle that
+   validates here signs.
 
 4b. **Check races and names against the ballot.** Copy the bundle into the
    [`openslate-public-endorsements`](../../../../openslate-public-endorsements)

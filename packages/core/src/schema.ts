@@ -253,31 +253,59 @@ export const slatePayloadSchema = z
     nonce: z.string().optional(),
   })
   .strict()
-  .superRefine((payload, ctx) => {
-    if (!payload.labels) return;
-    // Labels are unique, and when listed, every position's label is one of them (SPEC §3.17).
-    const defined = new Set<string>();
-    payload.labels.forEach((definition, i) => {
-      if (defined.has(definition.label)) {
-        ctx.addIssue({
-          code: "custom",
-          message: `labels lists "${definition.label}" twice`,
-          path: ["labels", i, "label"],
-        });
-      }
-      defined.add(definition.label);
-    });
-    payload.positions.forEach((position, i) => {
-      if (position.label !== undefined && !defined.has(position.label)) {
-        ctx.addIssue({
-          code: "custom",
-          message: `label "${position.label}" isn't in labels`,
-          path: ["positions", i, "label"],
-        });
-      }
-    });
-  });
+  .superRefine(checkLabels);
 export type SlatePayload = z.infer<typeof slatePayloadSchema>;
+
+/**
+ * What `openslate sign` takes, a bundle's positions.json: the payload's content without the parts
+ * the signer fills in (`v`, `issuer`, `issued_at`, `expires_at`, `nonce`), or a bare array of
+ * positions. Closed like the payload, so a misspelt key fails here rather than being dropped when
+ * the bundle is signed.
+ */
+export const signInputSchema = z.preprocess(
+  (raw) => (Array.isArray(raw) ? { positions: raw } : raw),
+  z
+    .object({
+      context: contextSchema.optional(),
+      positions: z.array(positionSchema).default([]),
+      endorsed_by: z.array(referenceSchema).optional(),
+      attribution: attributionSchema.optional(),
+      adopts: z.array(adoptionSchema).optional(),
+      articles: z.array(articleSchema).optional(),
+      labels: z.array(labelDefinitionSchema).optional(),
+    })
+    .strict()
+    .superRefine(checkLabels),
+);
+export type SignInput = z.output<typeof signInputSchema>;
+
+/** Labels are unique, and when listed, every position's label is one of them (SPEC §3.17). */
+function checkLabels(
+  payload: { positions: Position[]; labels?: LabelDefinition[] },
+  ctx: z.RefinementCtx,
+): void {
+  if (!payload.labels) return;
+  const defined = new Set<string>();
+  payload.labels.forEach((definition, i) => {
+    if (defined.has(definition.label)) {
+      ctx.addIssue({
+        code: "custom",
+        message: `labels lists "${definition.label}" twice`,
+        path: ["labels", i, "label"],
+      });
+    }
+    defined.add(definition.label);
+  });
+  payload.positions.forEach((position, i) => {
+    if (position.label !== undefined && !defined.has(position.label)) {
+      ctx.addIssue({
+        code: "custom",
+        message: `label "${position.label}" isn't in labels`,
+        path: ["positions", i, "label"],
+      });
+    }
+  });
+}
 
 export const jwsHeaderSchema = z
   .object({

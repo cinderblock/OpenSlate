@@ -42,20 +42,17 @@ white-on-red fills worse, so the fix probably wants "on-colour" tokens for text
 on filled backgrounds. `apps/web/test/theme.test.ts` lists the `--bad` pairs as
 known failures; take them off the list when fixed.
 
-## `openslate validate` rejects the positions.json the scraper skill tells you to validate
+## The endorsements CI gate never schema-checks a bundle's `adopts` or `labels`
 
-**In progress — master (ISSUES.md burn-down).**
-
-`.claude/skills/endorsement-scraper/SKILL.md` step 4 says to run
-`bun run packages/cli/src/index.ts validate research-bot/orgs/<slug>/<election>/positions.json`,
-but `validate` checks a full `SlatePayload`, so a sign-input bundle fails with
-`v: Invalid literal value, expected 1`, `issuer: Required`, `issued_at:
-Required` (seen 2026-10-23 on `orgs/ca-republican-party/2026-11-03/positions.json`).
-`sign` accepts the same file. Either `validate` should accept sign input, or the
-skill should validate another way (the endorsements repo's
-`verify-positions.ts` already does the schema check).
-
-Leaning (user, 2026-10-26): `validate` accepts sign input, but the user wasn't sure; weigh it and say which you chose and why.
+Seen 2026-10-26: `scripts/verify-positions.ts` in `openslate-public-endorsements`
+copies `positions`, `endorsed_by`, `attribution`, `context` and `articles` out
+of each positions.json into a placeholder payload and drops everything else,
+so the 10 bundles with `adopts` pass the gate without their adoptions being
+checked, a `labels` list would be dropped too (and its positions' labels then
+fail as undefined), and a misspelt top-level key passes silently. OpenSlate
+core now exports `signInputSchema` (what `openslate sign` and `validate`
+check); the gate should use it, after bumping `.openslate-version` past the
+commit that added it.
 
 ## Cloudflare's analytics beacon is injected and then blocked by our CSP
 
