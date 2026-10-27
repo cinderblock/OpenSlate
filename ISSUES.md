@@ -18,6 +18,8 @@ out on purpose).
 
 ## Newport Beach's Measures P, Q and R are called off but still in the catalog
 
+**In progress — master (ISSUES.md burn-down).**
+
 Seen 2026-10-27: the City of Newport Beach's Nov 3 election page says its
 special municipal election on Measures P, Q and R "will not take place on
 November 3, 2026" (the ballot printer never got the Secretary of State's
