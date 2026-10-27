@@ -1432,7 +1432,12 @@ button.source-chip {
   page: ballot;
   background: #fff;
   color: #000;
-  font: 8pt / 1.25 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font:
+    8pt / 1.25 system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
 }
@@ -2325,7 +2330,9 @@ details.card > summary {
   border-radius: 8px;
   background: var(--surface-2);
   font-size: 0.95rem;
-  transition: background 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
 }
 .setup-source > .avatar {
   grid-area: avatar;
@@ -2412,6 +2419,7 @@ details.card > summary {
   gap: 0.5rem;
 }
 
+/* biome-ignore-start lint/complexity/noImportantStyles: print has to beat every screen rule */
 @media print {
   body {
     background: #fff !important;
@@ -2478,6 +2486,7 @@ details.card > summary {
     display: none !important;
   }
 }
+/* biome-ignore-end lint/complexity/noImportantStyles: print has to beat every screen rule */
 
 /* civicAPI results panels (ResultsPanel, ResultsTimeline) */
 .ok {
@@ -2762,7 +2771,9 @@ button.tag.active {
   border-radius: 999px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 .ui-switch-thumb {
   position: absolute;
@@ -2773,7 +2784,9 @@ button.tag.active {
   margin-top: -0.45rem;
   border-radius: 50%;
   background: var(--muted);
-  transition: transform 0.15s, background 0.15s;
+  transition:
+    transform 0.15s,
+    background 0.15s;
 }
 .ui-switch[data-hovered] .ui-switch-track {
   border-color: var(--accent);
@@ -2818,7 +2831,9 @@ button.tag.active {
   border-radius: 5px;
   border: 1.5px solid var(--muted);
   background: var(--surface-2);
-  transition: background 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
 }
 .ui-checkbox-mark {
   width: 0.85rem;
@@ -2859,7 +2874,9 @@ button.tag.active {
   border-radius: 8px;
   background: var(--surface-2);
   font-size: 0.95rem;
-  transition: background 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
 }
 .ui-option-card[data-hovered] {
   border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
@@ -2905,7 +2922,9 @@ button.tag.active {
   border-radius: 50%;
   border: 1.5px solid var(--muted);
   background: var(--surface-2);
-  transition: border-width 0.12s, border-color 0.12s;
+  transition:
+    border-width 0.12s,
+    border-color 0.12s;
 }
 .ui-radio[data-hovered] .ui-radio-dot {
   border-color: var(--accent);
@@ -2963,7 +2982,9 @@ button.tag.active {
   border-radius: 8px;
   background: var(--surface-2);
   padding: 0 0.6rem;
-  transition: border-color 0.12s, box-shadow 0.12s;
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
 }
 .ui-input-group:hover {
   border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
@@ -3377,7 +3398,9 @@ button.tag.active {
   width: 100%;
   resize: none;
   line-height: 1.45;
-  transition: border-color 0.12s, box-shadow 0.12s;
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
 }
 .ui-textarea::placeholder {
   color: var(--muted);
@@ -3410,7 +3433,9 @@ button.tag.active {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-2);
-  transition: border-color 0.12s, box-shadow 0.12s;
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
 }
 .ui-tokenfield .ui-token-frame {
   max-height: 22rem;
@@ -3430,7 +3455,11 @@ button.tag.active {
 .ui-token-input {
   grid-area: 1 / 1;
   /* Identical text metrics, or the colours drift from the caret. */
-  font: 0.8rem / 1.5 ui-monospace, "SF Mono", Menlo, monospace;
+  font:
+    0.8rem / 1.5 ui-monospace,
+    "SF Mono",
+    Menlo,
+    monospace;
   letter-spacing: normal;
   margin: 0;
   padding: 0.5rem 0.6rem;
@@ -3498,7 +3527,9 @@ button.tag.active {
   padding: 0.25rem 0.75rem 0.25rem 0.25rem;
   border: 1px dashed var(--border);
   border-radius: 10px;
-  transition: border-color 0.12s, background 0.12s;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
 }
 .ui-dropzone[data-drop-target] {
   border-color: var(--accent);
@@ -3813,7 +3844,9 @@ button.tag.active {
   box-shadow: 0 0 0 2px var(--surface);
 }
 .spectrum-marker .avatar-logo {
-  box-shadow: inset 0 0 0 1px var(--border), 0 0 0 2px var(--surface);
+  box-shadow:
+    inset 0 0 0 1px var(--border),
+    0 0 0 2px var(--surface);
 }
 .spectrum-labels {
   display: flex;

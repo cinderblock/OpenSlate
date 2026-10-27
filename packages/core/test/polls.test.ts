@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
-  US_STATE_NAMES,
   inferMeasureNumber,
   inferOfficeFromTitle,
   inferUsHouseDistrict,
   inferUsStateCode,
   inferYear,
   isUsStatewide,
+  US_STATE_NAMES,
 } from "../src/polls";
 import type { Subject } from "../src/schema";
 

@@ -1,4 +1,4 @@
-import { type Stance, matchBallotName } from "@openslate/core";
+import { matchBallotName, type Stance } from "@openslate/core";
 import { type DraftRow, NOTE_CHOICE, type RowPatch, rankingKeyFor, rowIdFor } from "./ballotDraft";
 import {
   ballotChoices,
@@ -10,7 +10,7 @@ import {
   voteFor,
   writeInRows,
 } from "./ballotView";
-import { type ChoiceGroup, type ElectionSummary, type Race, defaultElection } from "./collate";
+import { type ChoiceGroup, defaultElection, type ElectionSummary, type Race } from "./collate";
 import {
   isRanked,
   markChange,

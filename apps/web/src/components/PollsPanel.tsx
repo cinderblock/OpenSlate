@@ -79,6 +79,7 @@ export function PollsPanel({ subject }: PollsPanelProps) {
                 )}
                 <div className="hint">
                   {poll.answers.map((a, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: a static list that never reorders
                     <span key={`${poll.id}-${a.choice}-${i}`}>
                       {i > 0 && " · "}
                       <strong>{a.choice}</strong> {a.pct.toFixed(1)}%
@@ -119,13 +120,7 @@ export function PollsPanel({ subject }: PollsPanelProps) {
   );
 }
 
-function EmptyPolls({
-  subjectKeys,
-  officeLabel,
-}: {
-  subjectKeys: string[];
-  officeLabel?: string;
-}) {
+function EmptyPolls({ subjectKeys, officeLabel }: { subjectKeys: string[]; officeLabel?: string }) {
   if (subjectKeys.length === 0) {
     return (
       <p className="hint">

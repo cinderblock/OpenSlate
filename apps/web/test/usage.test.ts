@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
-  USAGE_SCHEMA,
-  type UsageEvent,
   sanitizeUsageEvent,
   setUsageEnabled,
   setUsageSink,
   track,
+  USAGE_SCHEMA,
+  type UsageEvent,
   usageEnabled,
 } from "../src/lib/usage";
 

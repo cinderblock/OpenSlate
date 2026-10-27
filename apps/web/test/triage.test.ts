@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { type BallotChoice, type Stance, createSlate, generateKeyPair } from "@openslate/core";
+import { type BallotChoice, createSlate, generateKeyPair, type Stance } from "@openslate/core";
 import { type DraftRow, rowIdFor } from "../src/lib/ballotDraft";
-import { type Race, collateRaces, decodeSlates } from "../src/lib/collate";
+import { collateRaces, decodeSlates, type Race } from "../src/lib/collate";
 import {
   type FillEdit,
   partiesOn,

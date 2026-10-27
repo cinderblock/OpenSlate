@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { BASEMAPS, tileUrl, tileZoom, tilesFor, tilesToDraw } from "../src/lib/basemap";
+import { BASEMAPS, tilesFor, tilesToDraw, tileUrl, tileZoom } from "../src/lib/basemap";
 import { webMercator } from "../src/lib/projection";
 
 test("tile URLs put the row before the column", () => {

@@ -72,7 +72,11 @@ describe("matchBallotName", () => {
     ["Gerald Bourisquot", ["Gerald C. Boursiquot", "Carl DeMaio"], "Gerald C. Boursiquot"],
     ["Mano Raju", ["Manohar Raju"], "Manohar Raju"],
     ["David Liu", ["Mike Fong", "Long David Liu"], "Long David Liu"],
-    ["Mesahl “Kash” Kashifalghita", ["Meshal Kashifalghita", "Richard Bowen"], "Meshal Kashifalghita"],
+    [
+      "Mesahl “Kash” Kashifalghita",
+      ["Meshal Kashifalghita", "Richard Bowen"],
+      "Meshal Kashifalghita",
+    ],
     ["Chris Turnkey", ["Cindy Larae Hallman", "Christopher Trunkey"], "Christopher Trunkey"],
     ["Frederick Sykes", ["Fredrick Fred Sykes", "Tony Wu"], "Fredrick Fred Sykes"],
   ])("%s only resembles a ballot name: a suggestion, not sure", (choice, ballot, name) => {

@@ -1,13 +1,13 @@
-import { LEAN_MIN_EVIDENCE, type Position, contrastsFromBallot, leanOf } from "@openslate/core";
+import { contrastsFromBallot, LEAN_MIN_EVIDENCE, leanOf, type Position } from "@openslate/core";
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, useMemo } from "react";
 import type { DecodedSlate } from "./collate";
 import { useDecodedSlates } from "./myVote";
 import {
   type Catalog,
-  DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
   catalogEntryLogoUrl,
   catalogQueryOptions,
+  DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
 } from "./query";
 import { isBallotSource, sourceIdOf } from "./sources";
 
@@ -111,7 +111,7 @@ export function useEndorserDirectory(): (sourceId: string) => EndorserInfo {
   const { slates } = useDecodedSlates();
   const directory = useMemo(
     () => (catalog ? directoryFromCatalog(catalog, catalogUrl) : new Map<string, EndorserInfo>()),
-    [catalog, catalogUrl],
+    [catalog],
   );
   const local = useMemo(() => localLeans(slates), [slates]);
   return useMemo(() => {

@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { neighbors } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import {
-  COURT_OF_APPEAL_BY_COUNTY,
   areaFromHit,
+  COURT_OF_APPEAL_BY_COUNTY,
   cityPaths,
   decodeStateGeo,
   fourColor,

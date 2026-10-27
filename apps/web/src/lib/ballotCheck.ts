@@ -1,11 +1,11 @@
 import {
   type BallotListing,
-  type ChoiceResolution,
-  type Position,
-  type Subject,
   ballotListing,
+  type ChoiceResolution,
   isBallotListing,
+  type Position,
   resolveChoice,
+  type Subject,
 } from "@openslate/core";
 import { type DecodedSlate, electionOf } from "./collate";
 

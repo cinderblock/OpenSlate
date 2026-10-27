@@ -1,8 +1,6 @@
 import { createCollection } from "@tanstack/react-db";
 import { z } from "zod";
 import {
-  type KnownIdentity,
-  type PublishedSlate,
   allIdentities,
   allKnownIdentities,
   allPublished,
@@ -11,6 +9,8 @@ import {
   deleteKnownIdentity,
   deletePublished,
   deleteSlate,
+  type KnownIdentity,
+  type PublishedSlate,
   putIdentity,
   putKnownIdentity,
   putPublished,

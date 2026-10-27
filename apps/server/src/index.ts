@@ -10,7 +10,7 @@ import {
 import { GEOCODE_PATH, handleGeocode } from "@openslate/poll-cache/geocode";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { type ForecastsProxySource, createForecastsSource } from "./forecasts";
+import { createForecastsSource, type ForecastsProxySource } from "./forecasts";
 import { createPollsSource } from "./polls";
 import { createResultsSource } from "./results";
 

@@ -1,4 +1,4 @@
-import { type SlatePayload, racesByJurisdiction } from "@openslate/core";
+import { racesByJurisdiction, type SlatePayload } from "@openslate/core";
 import { type Area, inArea } from "./jurisdictions";
 import type { CatalogEntry } from "./query";
 

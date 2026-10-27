@@ -1,13 +1,13 @@
 import { useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  FEEDBACK_KINDS,
-  type FeedbackKind,
-  MAX_MESSAGE_LENGTH,
   buildFeedbackReport,
   closeFeedback,
+  FEEDBACK_KINDS,
+  type FeedbackKind,
   feedbackPrefill,
   githubIssueUrl,
+  MAX_MESSAGE_LENGTH,
   privateFeedbackConfig,
   sendPrivateFeedback,
 } from "../lib/feedback";

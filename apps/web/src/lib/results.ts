@@ -9,7 +9,7 @@ import {
   subjectToRaceQuery,
 } from "@openslate/core";
 import { useQueries } from "@tanstack/react-query";
-import { type SubjectRaceMapping, getSubjectRace, putSubjectRace } from "./db";
+import { getSubjectRace, putSubjectRace, type SubjectRaceMapping } from "./db";
 import { electionPhase } from "./election-phase";
 import { baseUrlFor } from "./routing";
 import { subjectKey } from "./subjects";

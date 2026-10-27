@@ -1,4 +1,4 @@
-import { type SlatePayload, parseSlate } from "@openslate/core";
+import { parseSlate, type SlatePayload } from "@openslate/core";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -37,9 +37,9 @@ import { DESKTOP_DOWNLOADS_URL, IS_DESKTOP_APP, THIS_DEVICE } from "../lib/platf
 import {
   CATALOG_BUILT_IN,
   type CatalogEntry,
-  DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
   catalogEntryLogoUrl,
   catalogQueryOptions,
+  DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
   isArticlesEntry,
   slateFromUrlOptions,
 } from "../lib/query";
@@ -49,10 +49,10 @@ import { track } from "../lib/usage";
 import { AreaPicker, describeArea } from "./AreaPicker";
 import { isBallotEntry } from "./CatalogBrowser";
 import { EndorserAvatar } from "./EndorserAvatar";
-import { LeanSummary } from "./LeanMeter";
-import { PageSearch, matchCount } from "./PageSearch";
-import { StandingToggle } from "./StandingToggle";
 import { electionOptions } from "./electionOptions";
+import { LeanSummary } from "./LeanMeter";
+import { matchCount, PageSearch } from "./PageSearch";
+import { StandingToggle } from "./StandingToggle";
 import { Checkbox } from "./ui/Checkbox";
 import { ProgressBar } from "./ui/ProgressBar";
 import { Select } from "./ui/Select";

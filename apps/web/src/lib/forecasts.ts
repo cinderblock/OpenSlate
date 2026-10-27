@@ -2,8 +2,8 @@ import {
   type Forecast,
   type ForecastCandidate,
   type ForecastSource,
-  type Subject,
   inferKalshiEventTickers,
+  type Subject,
 } from "@openslate/core";
 import { apiBase } from "./routing";
 

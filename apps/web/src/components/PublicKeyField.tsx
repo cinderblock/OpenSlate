@@ -1,4 +1,4 @@
-import { KEY_PREFIX, decodePublicKey } from "@openslate/core";
+import { decodePublicKey, KEY_PREFIX } from "@openslate/core";
 import { type ReactNode, useState } from "react";
 import { TextField } from "./ui/TextField";
 

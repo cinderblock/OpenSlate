@@ -4,7 +4,9 @@
   "type": "module",
   "description": "Command-line tool to generate, sign, verify, and inspect OpenSlate endorsements.",
   "license": "MIT",
-  "bin": { "openslate": "./src/index.ts" },
+  "bin": {
+    "openslate": "./src/index.ts"
+  },
   "scripts": {
     "start": "bun run src/index.ts",
     "typecheck": "tsc --noEmit"

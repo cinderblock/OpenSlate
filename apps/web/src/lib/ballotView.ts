@@ -2,10 +2,10 @@ import type { Stance } from "@openslate/core";
 import { type DraftRow, rowIdFor } from "./ballotDraft";
 import {
   type ChoiceGroup,
+  positionTone,
   type Race,
   type RacePosition,
   STANDING_ORDER,
-  positionTone,
   stanceTone,
 } from "./collate";
 

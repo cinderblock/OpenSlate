@@ -2,9 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { utf8 } from "../src/canonical";
 import { encodePublicKey, generateKeyPair } from "../src/crypto";
 import {
+  checkGuideFile,
   type GuideItem,
   type GuideManifest,
-  checkGuideFile,
   guideItemFiles,
   guideItemSchema,
   parseGuideItem,

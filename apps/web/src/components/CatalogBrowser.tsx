@@ -18,19 +18,19 @@ import {
 import {
   CATALOG_BUILT_IN,
   type CatalogEntry,
-  DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
-  PUBLIC_ENDORSEMENTS_CATALOG,
   catalogEntryLogoUrl,
   catalogQueryOptions,
+  DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
   isArticlesEntry,
+  PUBLIC_ENDORSEMENTS_CATALOG,
 } from "../lib/query";
 import { matchesSearch, searchTerms, searchTextOf } from "../lib/search";
 import { ELECTION_AUTHORITY, type Standing, sourceIdOf, standingOf } from "../lib/sources";
 import { track } from "../lib/usage";
 import { EndorserAvatar } from "./EndorserAvatar";
+import { electionOptions } from "./electionOptions";
 import { LeanMeter } from "./LeanMeter";
 import { StandingToggle } from "./StandingToggle";
-import { electionOptions } from "./electionOptions";
 import { Select } from "./ui/Select";
 import { SearchField, UrlField } from "./ui/TextField";
 

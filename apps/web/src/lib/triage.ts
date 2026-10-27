@@ -1,7 +1,7 @@
 import type { Stance, Subject } from "@openslate/core";
 import { type DraftRow, rowIdFor } from "./ballotDraft";
 import { ballotChoices } from "./ballotView";
-import { type ChoiceGroup, type Race, optionsOf, stanceTone, twoWayOptions } from "./collate";
+import { type ChoiceGroup, optionsOf, type Race, stanceTone, twoWayOptions } from "./collate";
 import type { Standing } from "./sources";
 
 /**

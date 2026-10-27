@@ -1,9 +1,9 @@
 import {
+  checkGuideFile,
   type GuideItem,
   type GuideManifest,
-  type Subject,
-  checkGuideFile,
   parseGuideItem,
+  type Subject,
   verifyGuide,
 } from "@openslate/core";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";

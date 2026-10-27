@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { type GuideManifest, sha256 } from "@openslate/core";
 import {
+  fetchGuideFile,
   type GuideEntry,
   GuideFileMismatch,
-  fetchGuideFile,
   guideListUrl,
   guidesFor,
   parseGuideList,

@@ -1,18 +1,18 @@
 import { describe, expect, test } from "bun:test";
 import type { Stance } from "@openslate/core";
 import {
+  ballotPage,
   type ChangeResult,
   type Draft,
-  type MarkRequest,
-  ballotPage,
   findRace,
+  type MarkRequest,
   raceDetail,
   raceSummary,
   resolveMark,
   resolveRanking,
   shownElection,
 } from "../src/lib/ballotAgent";
-import { NOTE_CHOICE, applyPatch, rankingKeyFor } from "../src/lib/ballotDraft";
+import { applyPatch, NOTE_CHOICE, rankingKeyFor } from "../src/lib/ballotDraft";
 import type { ChoiceGroup, Race, RacePosition } from "../src/lib/collate";
 
 const E = "2026-11-03";

@@ -16,10 +16,10 @@ import {
   placeRace,
 } from "./jurisdictions";
 import {
-  type Source,
-  type Standing,
   isBallotSource,
   isFollowed,
+  type Source,
+  type Standing,
   sourceOf,
   standingOf,
 } from "./sources";

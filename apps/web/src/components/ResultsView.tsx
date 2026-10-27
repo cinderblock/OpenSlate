@@ -9,7 +9,7 @@ import { usePageSearch } from "../lib/pageSearch";
 import { matchesSearch, searchTextOf } from "../lib/search";
 import { firsthandSubjectKeys, payloadsFromTokens, supersessionFor } from "../lib/supersession";
 import { Leaderboard } from "./Leaderboard";
-import { PageSearch, matchCount } from "./PageSearch";
+import { matchCount, PageSearch } from "./PageSearch";
 import { TokenField } from "./ui/Token";
 
 // Listing page for /results. The user picks an imported slate (or pastes a

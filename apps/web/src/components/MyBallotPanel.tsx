@@ -1,31 +1,26 @@
-import { type Stance, matchBallotName } from "@openslate/core";
+import { matchBallotName, type Stance } from "@openslate/core";
 import { Link, useSearch } from "@tanstack/react-router";
 import {
   ArrowLeft,
   ArrowRight,
-  Check,
   CircleCheck,
-  CircleHelp,
   CircleX,
   Download,
   Focus,
   List,
-  type LucideIcon,
   MapPin,
   PartyPopper,
-  PenLine,
   Pencil,
+  PenLine,
   Printer,
-  ThumbsDown,
   UserPlus,
   WandSparkles,
-  X,
 } from "lucide-react";
 import {
-  type ReactNode,
-  Suspense,
   lazy,
   memo,
+  type ReactNode,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -47,12 +42,11 @@ import {
 } from "../lib/ballotDraft";
 import { ballotFileName, ballotToCsv, ballotToJson } from "../lib/ballotExport";
 import {
-  type PrintScope,
   ballotChoices,
-  designation,
   instructionLine,
   isMarked,
   isYesNo,
+  type PrintScope,
   picksIn,
   raceHeading,
   voteFor,
@@ -61,14 +55,12 @@ import {
 } from "../lib/ballotView";
 import { backgroundImports } from "../lib/catalogImport";
 import {
-  type ChoiceGroup,
-  type Race,
   areaOptionsOf,
   collateRaces,
   defaultElection,
   electionsOf,
   positionJurisdictions,
-  positionTone,
+  type Race,
 } from "../lib/collate";
 import { formatLocalDate } from "../lib/dates";
 import { downloadText } from "../lib/download";
@@ -76,15 +68,15 @@ import { useGuideListed } from "../lib/guides";
 import { useImportRunning } from "../lib/importQueue";
 import {
   type Area,
-  DISTRICT_COUNTS,
-  EMPTY_AREA,
-  NO_DISTRICT,
   answerPlacement,
   clearNoAnswers,
+  DISTRICT_COUNTS,
   districtFamilyLabel,
+  EMPTY_AREA,
   isAreaSet,
   jurisdictionLabel,
   jurisdictionRank,
+  NO_DISTRICT,
   noAnswerCount,
   noRaceReason,
   parseJurisdiction,
@@ -99,34 +91,24 @@ import {
   useMyElection,
 } from "../lib/myVote";
 import { usePageSearch } from "../lib/pageSearch";
-import { MIN_PRINT_SCALE, type PrintFit, fitToPage } from "../lib/printFit";
+import { fitToPage, MIN_PRINT_SCALE, type PrintFit } from "../lib/printFit";
 import { type MyPosition, useMyPositionsByRace } from "../lib/published";
-import {
-  type ApplyRank,
-  isRanked,
-  markChange,
-  pickChange,
-  shownNames,
-  writeInGroup,
-} from "../lib/ranking";
-import { VOTE411, raceLinks } from "../lib/researchLinks";
+import { type ApplyRank, isRanked, markChange, pickChange, shownNames } from "../lib/ranking";
+import { raceLinks, VOTE411 } from "../lib/researchLinks";
 import { matchesSearch, raceSearchText } from "../lib/search";
 import { isBallotSource, isFollowed, standingOf } from "../lib/sources";
 import { subjectKey } from "../lib/subjects";
-import { type RaceStatus, isDecided, marksOn, raceStatus, stepThrough } from "../lib/triage";
+import { isDecided, marksOn, type RaceStatus, raceStatus, stepThrough } from "../lib/triage";
 import { track } from "../lib/usage";
 import { AreaPicker, describeArea } from "./AreaPicker";
 import { BallotProblemsNotice, RaceUnlistedNote } from "./BallotTags";
 import { ChoiceRow } from "./ChoiceRow";
-import { EndorserAvatar } from "./EndorserAvatar";
-import { LeanSummary } from "./LeanMeter";
+import { electionOptions } from "./electionOptions";
 import { PageSearch } from "./PageSearch";
 import { PrintBallot, type PrintSection } from "./PrintBallot";
 import { QuickFill } from "./QuickFill";
 import { RankedChoices } from "./RankedChoices";
-import { electionOptions } from "./electionOptions";
 import { Checkbox } from "./ui/Checkbox";
-import { InfoPopover } from "./ui/InfoPopover";
 import { Segmented } from "./ui/Segmented";
 import { Select } from "./ui/Select";
 import { Switch } from "./ui/Switch";
@@ -1246,7 +1228,7 @@ function FocusRace({
   onStep: (direction: 1 | -1) => void;
   onExit: () => void;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLElement>(null);
 
   // Each new race takes keyboard focus, so the keys (and a screen reader)
   // follow along, and a click that moved us on doesn't strand focus.
@@ -1323,7 +1305,7 @@ function FocusRace({
           Next <ArrowRight className="icon" />
         </button>
       </div>
-      <div
+      <section
         ref={cardRef}
         className="focus-card"
         tabIndex={-1}
@@ -1340,7 +1322,7 @@ function FocusRace({
           articles={articles}
           numbered
         />
-      </div>
+      </section>
       <p className="hint focus-keys">
         <kbd>1</kbd>–<kbd>9</kbd> pick · <kbd>Shift</kbd>+number against (not on yes/no questions) ·{" "}
         <kbd>←</kbd> <kbd>→</kbd> previous / next · <kbd>Esc</kbd> whole list. Once a race is

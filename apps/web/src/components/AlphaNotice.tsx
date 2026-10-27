@@ -1,6 +1,6 @@
 import { FlaskConical } from "lucide-react";
 import { forwardRef } from "react";
-import { REPO_URL, openFeedback } from "../lib/feedback";
+import { openFeedback, REPO_URL } from "../lib/feedback";
 
 const BANNER_ID = "alpha-banner";
 

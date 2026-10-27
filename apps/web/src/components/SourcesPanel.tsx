@@ -24,14 +24,14 @@ import {
 } from "../lib/myVote";
 import { usePageSearch } from "../lib/pageSearch";
 import { matchesSearch, sourceSearchText } from "../lib/search";
-import { type Source, type Standing, isBallotSource, standingOf } from "../lib/sources";
+import { isBallotSource, type Source, type Standing, standingOf } from "../lib/sources";
 import { CatalogBrowser } from "./CatalogBrowser";
 import { ContactsCard } from "./ContactsCard";
 import { DisagreeModeSetting } from "./DisagreeModeSetting";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { ImportVerifyPanel } from "./ImportVerifyPanel";
 import { LeanMeter } from "./LeanMeter";
-import { PageSearch, matchCount } from "./PageSearch";
+import { matchCount, PageSearch } from "./PageSearch";
 import { SlatesList } from "./SlatesList";
 import { SpectrumStrip } from "./SpectrumStrip";
 import { StandingToggle } from "./StandingToggle";

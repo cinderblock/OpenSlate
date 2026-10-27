@@ -1,4 +1,4 @@
-import { type StoredIdentity, createIdentity, serializeIdentity } from "@openslate/core";
+import { createIdentity, type StoredIdentity, serializeIdentity } from "@openslate/core";
 import { useState } from "react";
 import { addIdentity, forgetIdentity, forgetPublished } from "../lib/collections";
 import { formatElectionDate, formatLocalDate } from "../lib/dates";

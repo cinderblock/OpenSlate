@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import {
-  EMPTY_AREA,
   allDistricts,
   answerFor,
   answerPlacement,
   clearNoAnswers,
+  EMPTY_AREA,
   inArea,
   jurisdictionLabel,
   jurisdictionRank,

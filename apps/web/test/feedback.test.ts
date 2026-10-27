@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
-  FEEDBACK_KINDS,
-  MAX_MESSAGE_LENGTH,
-  REPO_URL,
   buildFeedbackReport,
+  FEEDBACK_KINDS,
   githubIssueUrl,
   issueTitle,
+  MAX_MESSAGE_LENGTH,
   privateFeedbackConfig,
+  REPO_URL,
   sendPrivateFeedback,
 } from "../src/lib/feedback";
 

@@ -23,7 +23,7 @@
  *
  * Uses the gh CLI, with GH_TOKEN and GH_REPO (or the current repo).
  */
-import { mkdtempSync, readFileSync, readdirSync, renameSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, renameSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 

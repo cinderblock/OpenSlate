@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { lazy, Suspense } from "react";
 import { useFeedbackOpen } from "../lib/feedback";
 
 // The dialog (and, through it, the screenshot renderer) is fetched the first

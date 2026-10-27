@@ -2,7 +2,7 @@ import type { Feature, MultiPolygon, Polygon, Position } from "geojson";
 import { feature, neighbors } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import type { AreaOptions } from "./collate";
-import { type Area, NO_DISTRICT, districtId, localityPathFor } from "./jurisdictions";
+import { type Area, districtId, localityPathFor, NO_DISTRICT } from "./jurisdictions";
 
 /**
  * Finding someone's districts on their own device: boundary data shipped with
@@ -173,7 +173,9 @@ export function touching(topology: Topology, object: GeometryCollection): number
       for (const a of arcs) visit(a, shape);
     }
   };
-  object.geometries.forEach((g, i) => visit("arcs" in g ? g.arcs : undefined, i));
+  object.geometries.forEach((g, i) => {
+    visit("arcs" in g ? g.arcs : undefined, i);
+  });
   const adjacency = object.geometries.map(() => new Set<number>());
   for (const shapes of owners.values()) {
     for (const a of shapes) for (const b of shapes) if (a !== b) adjacency[a]?.add(b);

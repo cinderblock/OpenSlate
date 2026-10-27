@@ -33,7 +33,7 @@ import { feature, quantize } from "topojson-client";
 import { topology } from "topojson-server";
 import { presimplify, simplify } from "topojson-simplify";
 import type { GeometryCollection, Topology } from "topojson-specification";
-import { LOOKUP_LAYERS, decodeStateGeo, lookupsAt } from "../src/lib/geo";
+import { decodeStateGeo, LOOKUP_LAYERS, lookupsAt } from "../src/lib/geo";
 
 const SERVICE =
   "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer";

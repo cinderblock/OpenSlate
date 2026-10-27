@@ -8,7 +8,7 @@ import { type ElectionEntry, electionEntries } from "../lib/electionList";
 import { localToday, useDecodedSlates, useMyElection } from "../lib/myVote";
 import { usePageSearch } from "../lib/pageSearch";
 import { matchesSearch, searchTextOf } from "../lib/search";
-import { PageSearch, matchCount } from "./PageSearch";
+import { matchCount, PageSearch } from "./PageSearch";
 import { ReportCivicProblem } from "./ReportCivicProblem";
 import { Switch } from "./ui/Switch";
 

@@ -18,7 +18,7 @@
  * Exits non-zero on any failure. Returns a CheckReport for programmatic use.
  */
 
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { canonicalize, utf8 } from "../src/canonical";

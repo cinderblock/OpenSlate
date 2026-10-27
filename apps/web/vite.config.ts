@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import optimizeLocales from "@react-aria/optimize-locales-plugin";
 import react from "@vitejs/plugin-react";
 import { deriveIngestKey } from "telemetry-collector-core";
-import { type Plugin, defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import { type ManifestOptions, VitePWA } from "vite-plugin-pwa";
 
 // Which build this is, for feedback reports and issue links (src/lib/feedback.ts).

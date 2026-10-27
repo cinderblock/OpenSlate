@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { Client } from "telemetry-collector";
-import { type UsageTransport, batchingSink } from "../src/lib/telemetry";
+import { batchingSink, type UsageTransport } from "../src/lib/telemetry";
 import { setUsageEnabled, setUsageSink, track } from "../src/lib/usage";
 
 function recorder() {

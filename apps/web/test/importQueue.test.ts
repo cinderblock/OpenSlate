@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { VerifiedSlate } from "../src/lib/catalogImport";
-import { type ImportDeps, type ImportStatus, createImportQueue } from "../src/lib/importQueue";
+import { createImportQueue, type ImportDeps, type ImportStatus } from "../src/lib/importQueue";
 import type { Catalog, CatalogEntry } from "../src/lib/query";
 
 function entry(slug: string): CatalogEntry {

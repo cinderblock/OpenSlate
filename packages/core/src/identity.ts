@@ -1,10 +1,10 @@
 import {
-  type KeyPair,
   decodePublicKey,
   decodeSecretKey,
   encodePublicKey,
   encodeSecretKey,
   generateKeyPair,
+  type KeyPair,
   publicKeyFromSecret,
 } from "./crypto";
 import type { Issuer } from "./schema";

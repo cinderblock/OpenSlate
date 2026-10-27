@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import type { SlatePayload } from "@openslate/core";
 import {
-  type StoredSlate,
   missingNews,
+  type StoredSlate,
   staleImports,
   updateProblem,
 } from "../src/lib/catalogUpdates";

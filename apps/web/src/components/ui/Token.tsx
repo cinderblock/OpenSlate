@@ -142,9 +142,9 @@ export function TokenBox({
       <div className="ui-token-frame">
         {/* A read-only textbox, as the old <textarea readonly> was; a textarea
             can't colour the segments. Focusable so keyboard users can scroll it. */}
+        {/* biome-ignore lint/a11y/useSemanticElements: a <textarea> can't hold coloured spans */}
         <div
           className="ui-token-display token"
-          // biome-ignore lint/a11y/useSemanticElements: a <textarea> can't hold coloured spans
           role="textbox"
           aria-readonly="true"
           aria-multiline="true"

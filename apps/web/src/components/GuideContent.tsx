@@ -143,7 +143,12 @@ function GuideImage({
   file,
   alt,
   className,
-}: { guide: Guide; file: string; alt: string; className?: string }) {
+}: {
+  guide: Guide;
+  file: string;
+  alt: string;
+  className?: string;
+}) {
   const { url, error } = useGuideFileUrl(guide, file);
   if (error) return <p className="hint warning">Image not shown: {error.message}</p>;
   if (!url) return <div className={`${className ?? ""} guide-image-pending`} aria-hidden="true" />;
@@ -196,7 +201,10 @@ function isDataFile(url: string): boolean {
 function Source({
   passage,
   label = "Source",
-}: { passage: Pick<Passage, "source">; label?: string }) {
+}: {
+  passage: Pick<Passage, "source">;
+  label?: string;
+}) {
   // Raw data is still the provenance, but say so before someone opens it.
   const data = isDataFile(passage.source);
   return (
@@ -469,7 +477,13 @@ function GuideDocumentLink({
   title,
   mediaType,
   source,
-}: { guide: Guide; file: string; title: string; mediaType: string; source: string }) {
+}: {
+  guide: Guide;
+  file: string;
+  title: string;
+  mediaType: string;
+  source: string;
+}) {
   const { url, error } = useGuideFileUrl(guide, file, mediaType);
   return (
     <>

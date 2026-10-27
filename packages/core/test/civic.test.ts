@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
   CivicError,
-  type VipVoterInfo,
   civicErrorMessage,
   civicUrl,
   normalizeVoterInfo,
   parseCivicElections,
   readCivic,
+  type VipVoterInfo,
 } from "../src/civic";
 
 // A trimmed voterInfoQuery response, the shape the Civic Information API

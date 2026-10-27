@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { LIVE_TTL_MS, SETTLED_TTL_MS, deriveTtl } from "../src/results";
+import { deriveTtl, LIVE_TTL_MS, SETTLED_TTL_MS } from "../src/results";
 
 describe("deriveTtl", () => {
   test("/race/{id} with percent_reporting < 100 → live", () => {

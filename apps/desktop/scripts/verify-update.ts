@@ -10,7 +10,7 @@
  * The files go by their live names, as Electrobun built them or as a feed
  * serves them.
  */
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { TRUSTED_UPDATE_KEYS } from "../src/bun/update-keys";
 import { verifyUpdate } from "../src/bun/update-signature";

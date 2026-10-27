@@ -1,5 +1,5 @@
 import { describe, expect, setSystemTime, test } from "bun:test";
-import { FORECAST_TTL_MS, LAST_GOOD_MS, createForecastsSource } from "../src/forecasts";
+import { createForecastsSource, FORECAST_TTL_MS, LAST_GOOD_MS } from "../src/forecasts";
 
 /** A fetch that answers each request with the next response, counting calls. */
 function scripted(...responses: Array<Response | Error>) {

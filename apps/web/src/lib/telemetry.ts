@@ -18,7 +18,7 @@
 
 import { Client } from "telemetry-collector";
 import { APP_VERSION, privateFeedbackConfig } from "./feedback";
-import { type UsageSink, setUsageSink, usageEnabled } from "./usage";
+import { setUsageSink, type UsageSink, usageEnabled } from "./usage";
 
 /** How long events wait to share one request. */
 export const USAGE_BATCH_MS = 5_000;

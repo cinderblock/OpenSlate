@@ -36,35 +36,6 @@ tucked away with out-of-area ones.
 
 Decided (user, 2026-10-26): do whichever rule is *best*, even if it's more work; don't re-ask.
 
-## `bun run lint` fails on every file in a Windows checkout
-
-**In progress — master (issues thread, lint).** Decided: upgrade to Biome 2 with `formatter.lineEnding: "auto"`.
-
-With `core.autocrlf=true` the working tree is CRLF, but `biome.json` leaves
-`formatter.lineEnding` at its default (`lf`), so `bun run lint` reports ~104
-format errors (`Found 104 errors.`) on untouched files, e.g. `apps/web/src/App.tsx`
-and `biome.json` itself. With `"lineEnding": "crlf"` in a copy of the config
-(`biome check --config-path=<dir>`), `apps/web/src` checks clean. Matters
-because lint can't be used as a gate on Windows, where the user works. Fix
-needs a choice that works on both OSes (e.g. a `.gitattributes` policy, or
-Biome 2's `lineEnding: "auto"`).
-
-## Biome errors on master, beyond the line endings
-
-**In progress — master (issues thread, lint), with the Biome 2 upgrade above.**
-
-With line endings set aside (Biome with `"lineEnding": "crlf"`), `bunx biome
-check apps packages` still fails on master `612c12a` (2026-10-24):
-
-- `apps/web/src/components/BallotTags.tsx:123`, `lint/a11y/useSemanticElements`
-  (from `4eac74d`)
-- `apps/web/src/lib/ballotCheck.ts:60` and `:161`, `lint/performance/noDelete`
-  (from `e8064d6`)
-- `packages/core/test/names.test.ts`, format (from `1b68fd4`)
-
-Why it matters: lint can't gate anything while it's red, and the a11y one may
-be a real accessibility problem.
-
 ## Dark theme: some text and white-on-colour fills fall below 4.5:1
 
 Dark `--bad` (`#e74c3c`) as text measures 4.41:1 on `--surface` and 4.02:1 on

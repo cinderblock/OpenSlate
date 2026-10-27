@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { type Position, buildSlate } from "@openslate/core";
+import { buildSlate, type Position } from "@openslate/core";
 import { type MyPublishedSlate, myPositionsByRace } from "../src/lib/published";
 
 const ME = "ed25519:7MAyr61uQe1HksFFqJAxGsjH1kksQ1FEVx7iC27sf6dB";

@@ -1,4 +1,4 @@
-import { type Subject, confidenceBucket } from "@openslate/core";
+import { confidenceBucket, type Subject } from "@openslate/core";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { raceQueryOptions, raceSearchQueryOptions, resolveSubjectRace } from "../lib/results";

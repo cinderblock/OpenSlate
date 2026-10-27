@@ -1,11 +1,11 @@
 import {
+  buildSlate,
+  deserializeIdentity,
+  identityToIssuer,
   type Position,
   STANCES,
   type Stance,
   type Subject,
-  buildSlate,
-  deserializeIdentity,
-  identityToIssuer,
   signSlate,
 } from "@openslate/core";
 import { Link } from "@tanstack/react-router";
@@ -18,7 +18,7 @@ import {
   useBallotDraft,
   useRankings,
 } from "../lib/ballotDraft";
-import { type ElectionSummary, defaultElection, electionsOf } from "../lib/collate";
+import { defaultElection, type ElectionSummary, electionsOf } from "../lib/collate";
 import { rememberPublished } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
 import { useActiveIdentity } from "../lib/identities";
@@ -30,11 +30,11 @@ import { matchesSearch, positionSearchText } from "../lib/search";
 import { subjectKey, useImportedSubjects } from "../lib/subjects";
 import { track } from "../lib/usage";
 import { CreateIdentity } from "./CreateIdentity";
+import { electionOptions } from "./electionOptions";
 import { RawInspector } from "./ImportVerifyPanel";
-import { PageSearch, matchCount } from "./PageSearch";
+import { matchCount, PageSearch } from "./PageSearch";
 import { QrDialog } from "./Qr";
 import { SubjectPicker } from "./SubjectPicker";
-import { electionOptions } from "./electionOptions";
 import { Checkbox } from "./ui/Checkbox";
 import { Select, type SelectOption } from "./ui/Select";
 import { TextArea, TextField } from "./ui/TextField";

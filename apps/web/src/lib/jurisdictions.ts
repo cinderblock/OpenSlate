@@ -282,10 +282,7 @@ function withAnswers(area: Area): Area {
  * alone can tell).
  */
 export function answerPlacement(area: Area, district: string, onBallot: boolean | undefined): Area {
-  const {
-    answers: { [districtPath(district)]: _, ...rest } = {},
-    ...base
-  } = area;
+  const { answers: { [districtPath(district)]: _, ...rest } = {}, ...base } = area;
   const answers = onBallot === undefined ? rest : { ...rest, [districtPath(district)]: onBallot };
   return Object.keys(answers).length > 0 ? { ...base, answers } : base;
 }

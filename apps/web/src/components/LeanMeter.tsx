@@ -1,7 +1,7 @@
 import { LEAN_MIN_EVIDENCE } from "@openslate/core";
 import { type EndorserLean, leanScore, leanWord, useEndorser } from "../lib/endorsers";
-import { InfoPopover } from "./ui/InfoPopover";
 import { cx } from "./ui/cx";
+import { InfoPopover } from "./ui/InfoPopover";
 
 /** What a lean is counted from, and the counts, for the tap-to-expand detail. */
 export function LeanDetail({ name, lean }: { name: string; lean: EndorserLean | undefined }) {

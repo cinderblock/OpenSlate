@@ -8,7 +8,7 @@
  *
  *   bun scripts/collect.ts
  */
-import { copyFileSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
+import { copyFileSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 

@@ -1,12 +1,12 @@
 import { z } from "zod";
 import {
   type AgentChange,
+  ballotPage,
   type ChangeResult,
   type Draft,
+  findRace,
   MARKS,
   PAGE_SIZE,
-  ballotPage,
-  findRace,
   raceDetail,
   raceSummary,
   resolveMark,
@@ -15,13 +15,13 @@ import {
 } from "./ballotAgent";
 import { translateSlates } from "./ballotCheck";
 import {
-  NOTE_CHOICE,
   applyPatch,
   ballotDraftStore,
+  NOTE_CHOICE,
   rankingKeyFor,
   rankingStore,
 } from "./ballotDraft";
-import { type DecodedSlate, type Race, collateRaces, decodeSlates, electionsOf } from "./collate";
+import { collateRaces, type DecodedSlate, decodeSlates, electionsOf, type Race } from "./collate";
 import { knownIdentitiesCollection, slatesCollection } from "./collections";
 import { isAreaSet } from "./jurisdictions";
 import {

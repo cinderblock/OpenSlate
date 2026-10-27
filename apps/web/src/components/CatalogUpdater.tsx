@@ -6,7 +6,7 @@ import { missingNews } from "../lib/catalogUpdates";
 import { decodeSlates } from "../lib/collate";
 import { slatesCollection } from "../lib/collections";
 import { areaStore, removedSourcesStore } from "../lib/myVote";
-import { DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG, catalogQueryOptions } from "../lib/query";
+import { catalogQueryOptions, DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG } from "../lib/query";
 
 const CATALOG_URL = DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG;
 

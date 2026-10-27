@@ -11,14 +11,14 @@
  * each signs. Lines starting with # are ignored, so a key file can be used
  * as is.
  */
-import { readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { decodeSecretKey, encodePublicKey, publicKeyFromSecret } from "@openslate/core";
 import {
   STATEMENT_TYPE,
-  type UpdateStatement,
-  signUpdate,
   signatureFileName,
+  signUpdate,
+  type UpdateStatement,
 } from "../src/bun/update-signature";
 
 const dir = process.argv[2];

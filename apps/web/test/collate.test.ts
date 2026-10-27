@@ -2,10 +2,10 @@ import { describe, expect, test } from "bun:test";
 import {
   type BallotChoice,
   type BallotContest,
-  type KeyPair,
-  type Stance,
   createSlate,
   generateKeyPair,
+  type KeyPair,
+  type Stance,
 } from "@openslate/core";
 import {
   areaOptionsOf,

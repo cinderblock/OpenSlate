@@ -1,6 +1,6 @@
 import { Download } from "lucide-react";
 import { useEffect, useState } from "react";
-import { IS_DESKTOP_APP, desktopReleaseUrl } from "../lib/platform";
+import { desktopReleaseUrl, IS_DESKTOP_APP } from "../lib/platform";
 
 interface ReadyUpdate {
   version: string;

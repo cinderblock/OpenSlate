@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import {
-  THEME_STORAGE_KEY,
-  type ThemePreference,
   applyTheme,
   parseThemePreference,
+  THEME_STORAGE_KEY,
+  type ThemePreference,
 } from "../src/lib/theme";
 
 // The theme lives in three places that must agree: the token blocks at the top

@@ -1,4 +1,4 @@
-import { type Race, type Stance, type Subject, confidenceBucket } from "@openslate/core";
+import { confidenceBucket, type Race, type Stance, type Subject } from "@openslate/core";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { electionPhase, upcomingChipLabel } from "../lib/election-phase";
@@ -232,6 +232,7 @@ function RaceBody({ race, stance, choice, attributedTo }: RaceBodyProps) {
 
       <ul className="position-list results-candidates">
         {race.candidates.map((c, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: a static list that never reorders; names can repeat
           <li key={`${race.id}-${i}-${c.name}`}>
             <span
               className="result-swatch"

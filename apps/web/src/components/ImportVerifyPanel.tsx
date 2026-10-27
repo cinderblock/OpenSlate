@@ -1,4 +1,4 @@
-import { type VerifyResult, decodeToken, verifySlate } from "@openslate/core";
+import { decodeToken, type VerifyResult, verifySlate } from "@openslate/core";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -176,6 +176,7 @@ function VerifyResultView({ result, token }: { result: VerifyResult; token: stri
       {result.payload && (
         <ul className="position-list">
           {result.payload.positions.map((position, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: a static list that never reorders; titles can repeat
             <li key={`${position.subject.title}-${index}`}>
               <span className={`stance stance-${position.stance}`}>{position.stance}</span>
               <span className="position-subject">

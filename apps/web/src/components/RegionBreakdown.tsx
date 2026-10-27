@@ -1,9 +1,9 @@
 import type { Race } from "@openslate/core";
 import { useMemo, useState } from "react";
 import {
-  type RegionSort,
   aggregateRegions,
   normalizeRegions,
+  type RegionSort,
   sortRegions,
 } from "../lib/region-summary";
 import { Select } from "./ui/Select";

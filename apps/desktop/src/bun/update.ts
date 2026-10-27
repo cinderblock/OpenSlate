@@ -15,7 +15,7 @@ import { appendFileSync, createReadStream, readFileSync, rmSync, statSync } from
 import { join, resolve } from "node:path";
 import Electrobun, { type BrowserWindow, Updater } from "electrobun/main";
 import { TRUSTED_UPDATE_KEYS } from "./update-keys";
-import { type UpdateStatement, signatureFileName, verifyUpdate } from "./update-signature";
+import { signatureFileName, type UpdateStatement, verifyUpdate } from "./update-signature";
 
 const FIRST_CHECK_MS = 10_000;
 const CHECK_EVERY_MS = 6 * 60 * 60_000;

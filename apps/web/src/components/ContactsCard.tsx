@@ -3,7 +3,7 @@ import { removeKnownIdentity, upsertKnownIdentity } from "../lib/collections";
 import type { KnownIdentity } from "../lib/db";
 import { shortKey, useKnownIdentities } from "../lib/identities";
 import { parseScanned } from "../lib/qr";
-import { PublicKeyField, isPublicKey } from "./PublicKeyField";
+import { isPublicKey, PublicKeyField } from "./PublicKeyField";
 import { ScanQrButton } from "./Qr";
 import { SearchField, TextField } from "./ui/TextField";
 

@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test";
 import type { Subject } from "@openslate/core";
 import {
-  type DraftRow,
   applyPatch,
   ballotDraftStore,
+  type DraftRow,
   refiledRows,
   rowIdFor,
 } from "../src/lib/ballotDraft";

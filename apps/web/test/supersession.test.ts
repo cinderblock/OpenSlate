@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { type SlatePayload, createSlate, generateKeyPair } from "@openslate/core";
+import { createSlate, generateKeyPair, type SlatePayload } from "@openslate/core";
 import { firsthandSubjectKeys, payloadsFromTokens, supersessionFor } from "../src/lib/supersession";
 
 function makeToken(input: {

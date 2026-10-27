@@ -2,7 +2,7 @@ import type { Stance } from "@openslate/core";
 import { CircleHelp, type LucideIcon, ThumbsDown, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { choiceRowClass, designation, isYesNo, ordinal } from "../lib/ballotView";
-import { type ChoiceGroup, type Race, positionTone } from "../lib/collate";
+import { type ChoiceGroup, positionTone, type Race } from "../lib/collate";
 import { ChoiceBallotTags } from "./BallotTags";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { LeanSummary } from "./LeanMeter";

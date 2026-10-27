@@ -1,11 +1,11 @@
 import {
   type CivicBallot,
   type CivicElection,
-  type VipVoterInfo,
   civicUrl,
   normalizeVoterInfo,
   parseCivicElections,
   readCivic,
+  type VipVoterInfo,
 } from "@openslate/core";
 import { useQuery } from "@tanstack/react-query";
 import { createLocalStore, useLocalStore } from "./localStore";

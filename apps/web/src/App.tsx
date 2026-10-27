@@ -24,7 +24,7 @@ import { Switch } from "./components/ui/Switch";
 import { useAlphaBannerOpen } from "./lib/alpha";
 import { useDbStatus } from "./lib/dbStatus";
 import { EndorsersContext, useEndorserDirectory } from "./lib/endorsers";
-import { REPO_URL, openFeedback } from "./lib/feedback";
+import { openFeedback, REPO_URL } from "./lib/feedback";
 import { useUsageEnabled } from "./lib/usage";
 
 type Mode = "vote" | "publish";

@@ -1,13 +1,13 @@
 import polylabel from "polylabel";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  BASEMAPS,
   BASEMAP_SOURCE,
+  BASEMAPS,
   type Basemap,
   type BasemapInfo,
+  tilesToDraw,
   tileUrl,
   tileZoom,
-  tilesToDraw,
 } from "../lib/basemap";
 import type { GeoLayer, GeoShape, StateGeo } from "../lib/geo";
 import { shapeAt } from "../lib/geo";

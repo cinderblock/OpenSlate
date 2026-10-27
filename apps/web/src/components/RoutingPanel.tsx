@@ -1,10 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import {
-  type ProviderInfo,
-  type RoutingMode,
   allProviders,
   getRoutingMode,
+  type ProviderInfo,
+  type RoutingMode,
   setRoutingMode,
 } from "../lib/routing";
 

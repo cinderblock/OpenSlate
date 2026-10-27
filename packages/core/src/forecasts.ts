@@ -73,8 +73,13 @@ export interface ForecastSource {
 
 // ---- Reusable helpers for Kalshi-style ticker derivation -------------------
 
-import { inferUsHouseDistrict, inferUsStateCode, inferYear, isUsStatewide } from "./polls";
-import { inferOfficeFromTitle } from "./polls";
+import {
+  inferOfficeFromTitle,
+  inferUsHouseDistrict,
+  inferUsStateCode,
+  inferYear,
+  isUsStatewide,
+} from "./polls";
 
 /**
  * Derive candidate Kalshi event tickers from a Subject. Kalshi tickers don't

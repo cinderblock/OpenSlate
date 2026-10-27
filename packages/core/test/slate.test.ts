@@ -8,7 +8,7 @@ import {
   identityToIssuer,
   serializeIdentity,
 } from "../src/identity";
-import { createSlate, parseSlate, signSlate, verifySlate } from "../src/slate";
+import { createSlate, parseSlate, verifySlate } from "../src/slate";
 
 describe("canonicalize", () => {
   test("sorts object keys", () => {

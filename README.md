@@ -285,7 +285,9 @@ bun run --filter '@openslate/cli' start -- adopt https://example.org/party.slate
 ```
 
 Other useful scripts: `bun test`, `bun run typecheck`, `bun run schema`
-(emits `packages/core/schema/openslate.schema.json`), `bun run lint`.
+(emits `packages/core/schema/openslate.schema.json`), `bun run lint` (Biome:
+format, imports and lint; line endings follow the OS, so CRLF checkouts on
+Windows pass) and `bun run format`, which fixes what lint can.
 
 ### Desktop
 

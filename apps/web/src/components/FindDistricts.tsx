@@ -5,24 +5,24 @@ import { type CivicRoute, civicBallot, useCivicRoutes } from "../lib/civic";
 import { areaFromLookup } from "../lib/civicArea";
 import type { AreaOptions } from "../lib/collate";
 import {
+  areaFromHit,
+  cityPaths,
   type GeoHit,
   type GeoLayer,
   type LookupLayer,
-  NEAR_LINE_METERS,
-  type StateGeo,
-  areaFromHit,
-  cityPaths,
   loadStateGeo,
   locate,
   lookupsAt,
   mergeFoundArea,
+  NEAR_LINE_METERS,
+  type StateGeo,
 } from "../lib/geo";
 import {
   type Area,
   DISTRICT_COUNTS,
-  NO_DISTRICT,
   districtFamilyLabel,
   jurisdictionLabel,
+  NO_DISTRICT,
   noRaceReason,
 } from "../lib/jurisdictions";
 import {

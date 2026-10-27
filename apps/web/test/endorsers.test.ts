@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { type Position, createSlate, generateKeyPair } from "@openslate/core";
+import { createSlate, generateKeyPair, type Position } from "@openslate/core";
 import { decodeSlates } from "../src/lib/collate";
 import {
   directoryFromCatalog,

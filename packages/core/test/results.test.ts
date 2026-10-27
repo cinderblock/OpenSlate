@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import type { RaceSummary } from "../src/results";
 import {
   confidenceBucket,
   electionDateWindow,
@@ -6,7 +7,6 @@ import {
   scoreMatch,
   subjectToRaceQuery,
 } from "../src/results";
-import type { RaceSummary } from "../src/results";
 import type { Subject } from "../src/schema";
 
 describe("parseJurisdiction", () => {

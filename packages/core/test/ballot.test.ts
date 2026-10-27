@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { type PositionSource, ballotListing, isBallotListing, resolveChoice } from "../src/ballot";
+import { ballotListing, isBallotListing, type PositionSource, resolveChoice } from "../src/ballot";
 import type { Position } from "../src/schema";
 
 const SOS = "Secretary of State";

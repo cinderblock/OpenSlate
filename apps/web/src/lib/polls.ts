@@ -1,15 +1,15 @@
 import {
-  type Poll,
-  type PollsLookup,
-  type PollsSource,
-  type Subject,
-  US_STATE_NAMES,
   inferMeasureNumber,
   inferOfficeFromTitle,
   inferUsHouseDistrict,
   inferUsStateCode,
   inferYear,
   isUsStatewide,
+  type Poll,
+  type PollsLookup,
+  type PollsSource,
+  type Subject,
+  US_STATE_NAMES,
 } from "@openslate/core";
 import { baseUrlFor } from "./routing";
 

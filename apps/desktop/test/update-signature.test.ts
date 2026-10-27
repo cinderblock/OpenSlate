@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { encodePublicKey, generateKeyPair } from "@openslate/core";
 import {
-  STATEMENT_TYPE,
+  compareVersions,
   type SignedUpdate,
+  STATEMENT_TYPE,
+  signUpdate,
   type UpdateExpectation,
   type UpdateStatement,
-  compareVersions,
-  signUpdate,
   verifyUpdate,
 } from "../src/bun/update-signature";
 

@@ -8,7 +8,7 @@ import { useKnownIdentities } from "./identities";
 import type { Area } from "./jurisdictions";
 import { EMPTY_AREA, upgradeArea } from "./jurisdictions";
 import { createLocalStore, useLocalStore } from "./localStore";
-import { type Standing, isStanding } from "./sources";
+import { isStanding, type Standing } from "./sources";
 
 /**
  * Client-side state for the "My vote" mode. All of it stays in this browser.

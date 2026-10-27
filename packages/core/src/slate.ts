@@ -1,4 +1,4 @@
-import { type KeyPair, decodePublicKey, encodePublicKey } from "./crypto";
+import { decodePublicKey, encodePublicKey, type KeyPair } from "./crypto";
 import { type DecodedSlate, decodeToken, encodeToken, verifySignature } from "./envelope";
 import {
   type Adoption,

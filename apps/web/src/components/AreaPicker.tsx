@@ -3,12 +3,12 @@ import { flushSync } from "react-dom";
 import type { AreaOptions } from "../lib/collate";
 import {
   type Area,
-  NO_DISTRICT,
   allDistricts,
   districtFamilyLabel,
   isAreaSet,
   jurisdictionLabel,
   jurisdictionRank,
+  NO_DISTRICT,
   noRaceReason,
   parseJurisdiction,
 } from "../lib/jurisdictions";

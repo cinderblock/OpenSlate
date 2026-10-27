@@ -5,11 +5,11 @@ import { ballotChoices, choiceRowClass } from "../lib/ballotView";
 import type { Race } from "../lib/collate";
 import {
   type ApplyRank,
-  type RankChange,
   markChange,
   marksFor,
   moveNames,
   pickChange,
+  type RankChange,
   rankingOf,
   reorderChange,
   unrankedNames,

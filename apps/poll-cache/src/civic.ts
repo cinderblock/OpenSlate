@@ -15,11 +15,11 @@
 
 import {
   CivicError,
-  type VipVoterInfo,
   civicUrl,
   normalizeVoterInfo,
   parseCivicElections,
   readCivic,
+  type VipVoterInfo,
 } from "@openslate/core/civic";
 
 export const CIVIC_ELECTIONS_PATH = "/api/civic/elections";
