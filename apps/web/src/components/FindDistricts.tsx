@@ -97,6 +97,7 @@ const UNSURE_NAMES: Partial<Record<GeoLayer | LookupLayer, string>> = {
   boe: "Board of Equalization district",
   ccd: "community college district",
   sup: "supervisorial district",
+  council: "city council district",
 };
 
 export function FindDistricts({
@@ -211,7 +212,7 @@ export function FindDistricts({
               // The Census Bureau's own answer, from its full-resolution maps;
               // school, supervisorial and other districts from ours, at the
               // point it matched.
-              const extra = lookupsAt(geo, match.lon, match.lat, match.county);
+              const extra = lookupsAt(geo, match.lon, match.lat, match);
               applyHit(
                 {
                   districts: match.districts,

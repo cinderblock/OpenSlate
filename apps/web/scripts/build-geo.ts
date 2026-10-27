@@ -24,12 +24,13 @@
  * Re-run after redistricting or when Census publishes a new vintage, and commit
  * the output.
  */
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Feature, FeatureCollection, Geometry, Position } from "geojson";
-import { feature, quantize } from "topojson-client";
+import { feature, merge, quantize } from "topojson-client";
 import { topology } from "topojson-server";
 import { presimplify, simplify } from "topojson-simplify";
 import type { GeometryCollection, Topology } from "topojson-specification";
@@ -59,13 +60,18 @@ const LAYERS: Record<string, { id: number; key: string; name?: string }> = {
  * Boundaries Census doesn't publish, each from whoever draws or keeps them, as
  * our layer name, the ArcGIS layer to query, and how a feature's attributes
  * become its id (and name). Supervisorial districts are one layer for every
- * county we have, ids `<County>|<district>` with the county as TIGER names it.
+ * county we have, ids `<County>|<district>` with the county as TIGER names it;
+ * council districts the same per city (`<City>|<district>`, the city matched
+ * to its TIGER name whatever its case). `webMapLayer`: `url` is an ArcGIS web
+ * map and the features are its layer of that title (a city whose adopted map
+ * is published only that way, by its redistricting consultant).
  */
 type Attributes = Record<string, unknown>;
 const OTHER_SOURCES: {
-  layer: "boe" | "ccd" | "sup";
+  layer: "boe" | "ccd" | "sup" | "council";
   url: string;
   where?: string;
+  webMapLayer?: string;
   id: (a: Attributes) => string;
   name?: (a: Attributes) => string;
 }[] = [
@@ -116,6 +122,248 @@ const OTHER_SOURCES: {
     url: "https://services.arcgis.com/Zs2aNLFN00jrS4gG/arcgis/rest/services/Current_Supervisor_Districts/FeatureServer/0",
     id: (a) => `San Francisco|${a.supervisor}`,
   },
+  // City councils: plans/council-districts-lookup.md says how each was checked.
+  {
+    // OC Registrar of Voters, every city with districts. Newport Beach's are
+    // residency districts every voter in the city votes on: not a lookup.
+    layer: "council",
+    url: "https://services3.arcgis.com/slX5MYawmKdsiRUf/arcgis/rest/services/Map_Central_District_Dissolved_Public_City_Council/FeatureServer/1657",
+    where: "District_Name <> 'Newport Beach'",
+    id: (a) => `${a.District_Name}|${a.Subdistrict_ID}`,
+  },
+  {
+    // Alameda County Registrar of Voters: "CITY OF HAYWARD, DISTRICT #1".
+    // Not San Leandro yet: its first district elections are this November,
+    // and its District 2 (Short Term) seat may still be voted citywide.
+    layer: "council",
+    url: "https://services5.arcgis.com/ROBnTHSNjoZ2Wm1P/arcgis/rest/services/City_Council_Districts/FeatureServer/0",
+    where: "DIST_NAME NOT LIKE 'CITY OF SAN LEANDRO,%'",
+    id: (a) => {
+      const m = /^CITY OF (.+?), DIST(?:RICT)? ?#\s*(\w+)$/.exec(String(a.DIST_NAME));
+      return m ? `${m[1]}|${m[2]}` : "";
+    },
+  },
+  {
+    // SANDAG, every city in San Diego County with districts. Solana Beach has
+    // an unnumbered strip offshore.
+    layer: "council",
+    url: "https://geo.sandag.org/server/rest/services/Hosted/Council_Districts/FeatureServer/0",
+    where: "district IS NOT NULL",
+    id: (a) => `${a.jur_name}|${a.district}`,
+  },
+  ...(
+    [
+      // Each city's own GIS.
+      [
+        "Belmont",
+        "https://maps.belmont.gov/arcgis/rest/services/OpenData/OpenData/MapServer/50",
+        "DISTRICT",
+      ],
+      [
+        "Burlingame",
+        "https://services3.arcgis.com/GNfQzqBlylJyDTAC/arcgis/rest/services/Council_Districts_WFL1/FeatureServer/2",
+        "DISTRICT",
+      ],
+      [
+        "Foster City",
+        "https://services7.arcgis.com/CYn8XGt0yVlPlS5X/arcgis/rest/services/Foster_City_Election_Districts_-_Final_Less_Water/FeatureServer/0",
+        "district",
+      ],
+      [
+        "Half Moon Bay",
+        "https://services.arcgis.com/PmM1Bg9qFLS54qH7/arcgis/rest/services/Adopted_Map_503b/FeatureServer/0",
+        "DISTRICT",
+      ],
+      [
+        "Menlo Park",
+        "https://services7.arcgis.com/uRrQ0O3z2aaiIWYU/arcgis/rest/services/Adopted_Council_Districts_View/FeatureServer/0",
+        "DISTRICT",
+      ],
+      [
+        "Millbrae",
+        "https://services6.arcgis.com/paH4j1JG3JAZKLhE/arcgis/rest/services/CityCouncilMap2022/FeatureServer/0",
+        "DISTRICT",
+      ],
+      [
+        "Redwood City",
+        "https://gismaps.redwoodcity.org/server/rest/services/PublicMapServices/Council_Election_Districts_MS/MapServer/0",
+        "DISTRICT",
+      ],
+      [
+        "San Bruno",
+        "https://services2.arcgis.com/iLsFVn6d1pmqKEfA/arcgis/rest/services/Council_Districts/FeatureServer/0",
+        "DistrictName",
+      ],
+      [
+        "San Mateo",
+        "https://services2.arcgis.com/g26Y0m7OCdjU0ObA/arcgis/rest/services/City_of_San_Mateo_Council_Voting_Districts/FeatureServer/0",
+        "DISTRICT",
+      ],
+      [
+        "South San Francisco",
+        "https://services5.arcgis.com/inY93B27l4TSbT7h/arcgis/rest/services/districtlookup/FeatureServer/0",
+        "DISTRICT",
+      ],
+      [
+        "Gilroy",
+        "https://services8.arcgis.com/n7NW5ijV4dJUmrID/arcgis/rest/services/City_Council_Districts_WFL1/FeatureServer/1",
+        "DISTRICT",
+        "DISTRICT <> ' '",
+      ],
+      [
+        "San Jose",
+        "https://geo.sanjoseca.gov/server/rest/services/OPN/OPN_OpenDataService/MapServer/120",
+        "DISTRICT",
+      ],
+      [
+        "Santa Clara",
+        "https://map.santaclaraca.gov/maps/rest/services/PlanningDepartment/DistrictElectionZone/MapServer/0",
+        "DISTRICTNO",
+      ],
+      [
+        "Alhambra",
+        "https://services6.arcgis.com/GZCJsJngT6kRZkzb/arcgis/rest/services/Alhambra_Base/FeatureServer/12",
+        "Name",
+      ],
+      [
+        "Arcadia",
+        "https://services.arcgis.com/xsicuXZ553tglig9/arcgis/rest/services/Arcadia_Base_Map_WFL1/FeatureServer/15",
+        "DISTRICT",
+      ],
+      [
+        "Azusa",
+        "https://services5.arcgis.com/LRbjc1oq5r1BMKyz/arcgis/rest/services/Voting_Districts_2024/FeatureServer/7",
+        "DISTRICT",
+      ],
+      [
+        "Carson",
+        "https://services1.arcgis.com/D9ezssdp37tr9wbT/arcgis/rest/services/City_of_Carson_Council_Districts_2021_WFL1/FeatureServer/1",
+        "DISTRICT",
+      ],
+      [
+        "Diamond Bar",
+        "https://services1.arcgis.com/yvWpR6DCcpIEETDL/arcgis/rest/services/Districts/FeatureServer/0",
+        "DISTRICT",
+      ],
+      [
+        "Glendora",
+        "https://services2.arcgis.com/NQC8oBejgXkIxQpu/arcgis/rest/services/Glendora_Precincts/FeatureServer/0",
+        "DIV_CITY",
+      ],
+      [
+        "Inglewood",
+        "https://services.arcgis.com/YkFgoL8JnWkLrVRi/arcgis/rest/services/COUNCILDISTRCITS_MARCH2026/FeatureServer/0",
+        "CD",
+      ],
+      [
+        "Los Angeles",
+        "https://maps.lacity.org/lahub/rest/services/Boundaries/MapServer/13",
+        "District",
+      ],
+      [
+        "Montebello",
+        "https://services8.arcgis.com/pm0XuijYmcairS9K/arcgis/rest/services/Montebello_District_Map___Shape_File_of_Approved_Map_3B/FeatureServer/0",
+        "DISTRICT",
+      ],
+      [
+        "Monterey Park",
+        "https://services9.arcgis.com/ivAMP6vRMPA12GAA/arcgis/rest/services/Council_Districts/FeatureServer/0",
+        "DISTRICT",
+      ],
+      [
+        "Palmdale",
+        "https://mapserver.cityofpalmdale.org/arcgis/rest/services/General_Reference/GeneralReference/FeatureServer/3",
+        "DISTRICT",
+      ],
+      [
+        "Pomona",
+        "https://gismaps.ci.pomona.ca.us/arcgis/rest/services/CityCouncil/Council_Districts/FeatureServer/5",
+        "DISTRICT",
+      ],
+      [
+        "West Covina",
+        "https://services8.arcgis.com/WV8ogNubjFL2BKPt/arcgis/rest/services/Council_Districts_20220405_c/FeatureServer/6",
+        "DISTRICT",
+      ],
+      // LA County Registrar-Recorder's layer (August 2023), only for cities
+      // that haven't redrawn since and publish none of their own.
+      [
+        "Bellflower",
+        "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Incorporated_Cities1/FeatureServer/1",
+        "DIV_CITY",
+        "ABBR LIKE '08BL%'",
+      ],
+      [
+        "Claremont",
+        "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Incorporated_Cities1/FeatureServer/1",
+        "DIV_CITY",
+        "ABBR LIKE '08CH%'",
+      ],
+      [
+        "Compton",
+        "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Incorporated_Cities1/FeatureServer/1",
+        "DIV_CITY",
+        "ABBR LIKE '08CO%'",
+      ],
+      [
+        "Downey",
+        "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Incorporated_Cities1/FeatureServer/1",
+        "DIV_CITY",
+        "ABBR LIKE '08DO%'",
+      ],
+      [
+        "Duarte",
+        "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Incorporated_Cities1/FeatureServer/1",
+        "DIV_CITY",
+        "ABBR LIKE '08DU%'",
+      ],
+      [
+        "El Monte",
+        "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Incorporated_Cities1/FeatureServer/1",
+        "DIV_CITY",
+        "ABBR LIKE '08EM%'",
+      ],
+      [
+        "La Verne",
+        "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Incorporated_Cities1/FeatureServer/1",
+        "DIV_CITY",
+        "ABBR LIKE '08LG%'",
+      ],
+      [
+        "South Pasadena",
+        "https://services.arcgis.com/RmCCgQtiZLDCtblq/arcgis/rest/services/Incorporated_Cities1/FeatureServer/1",
+        "DIV_CITY",
+        "ABBR LIKE '08SW%'",
+      ],
+    ] as const
+  ).map(([city, url, field, where]: readonly [string, string, string, string?]) => ({
+    layer: "council" as const,
+    url,
+    ...(where ? { where } : {}),
+    id: (a: Attributes) => `${city}|${a[field]}`,
+  })),
+  ...(
+    [
+      // Adopted maps published only in the city's consultant's (NDC's) web
+      // map, beside the draft plans: the layer named as the adopted one.
+      // Not Morgan Hill's: its pieces don't meet, leaving gaps throughout.
+      // Not yet Huntington Park's ("Adopted (Magenta) Map", web map
+      // 64deba52c346416894c9a2997d56d10a): districts are new this November
+      // and its District 2 seat may still be voted citywide.
+      ["Sunnyvale", "640698809096492c9202c2ef2a4ca631", "101 V2 C Adopted Map"],
+      [
+        "Pacifica",
+        "265620ea3ea64333b71779843008fe35",
+        "Pacifica 2022-2030 Council Election Districts",
+      ],
+      ["Woodside", "f83038fc64ec4f9e8542a171a32af0fc", "2022 Adopted Map"],
+    ] as const
+  ).map(([city, item, title]) => ({
+    layer: "council" as const,
+    url: `https://www.arcgis.com/sharing/rest/content/items/${item}/data`,
+    webMapLayer: title,
+    id: (a: Attributes) => `${city}|${a.DISTRICT ?? a.District}`,
+  })),
 ];
 type OtherLayer = (typeof OTHER_SOURCES)[number]["layer"];
 type LayerName = keyof typeof LAYERS | OtherLayer;
@@ -184,7 +432,12 @@ async function fetchGeoJSON(
     f: "geojson",
   });
   console.log(`fetching ${cacheName} (${layerUrl})…`);
-  const response = await fetch(`${layerUrl}/query?${params}`);
+  // Some city servers answer a heavy query with an occasional 500: try again.
+  let response = await fetch(`${layerUrl}/query?${params}`);
+  for (let retry = 0; response.status >= 500 && retry < 3; retry++) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    response = await fetch(`${layerUrl}/query?${params}`);
+  }
   if (!response.ok) throw new Error(`${cacheName}: HTTP ${response.status}`);
   const collection = (await response.json()) as FeatureCollection & {
     exceededTransferLimit?: boolean;
@@ -202,19 +455,119 @@ function fetchLayer(name: keyof typeof LAYERS): Promise<FeatureCollection> {
   return fetchGeoJSON(`${SERVICE}/${id}`, `STATE='${STATE_FIPS}'`, outFields, name);
 }
 
+/** Web Mercator (EPSG:3857) to longitude, latitude. */
+function fromWebMercator([x = 0, y = 0]: Position): Position {
+  const r = 6378137;
+  const lon = (x / r) * (180 / Math.PI);
+  const lat = (2 * Math.atan(Math.exp(y / r)) - Math.PI / 2) * (180 / Math.PI);
+  return [Number(lon.toFixed(6)), Number(lat.toFixed(6))];
+}
+
+/**
+ * The features of a web map's layer titled `title` (a feature collection
+ * stored in the map itself), as GeoJSON, cached like `fetchGeoJSON`. Esri
+ * says rings run clockwise round an outside and anticlockwise round a hole,
+ * but consultants' maps don't all keep to it, so a ring is a hole when an
+ * odd number of the feature's other rings contain it.
+ */
+async function fetchWebMapLayer(
+  url: string,
+  title: string,
+  cacheName: string,
+): Promise<FeatureCollection> {
+  const cached = join(cacheDir, `${cacheName}.geojson`);
+  if (!args.has("--refresh") && existsSync(cached)) {
+    return JSON.parse(readFileSync(cached, "utf8")) as FeatureCollection;
+  }
+  console.log(`fetching ${cacheName} (${url}, "${title}")…`);
+  const response = await fetch(`${url}?f=json`);
+  if (!response.ok) throw new Error(`${cacheName}: HTTP ${response.status}`);
+  type EsriFeature = { attributes: Attributes; geometry?: { rings?: Position[][] } };
+  const map = (await response.json()) as {
+    operationalLayers?: {
+      title?: string;
+      featureCollection?: {
+        layers?: {
+          layerDefinition?: { spatialReference?: { wkid?: number } };
+          featureSet?: { features?: EsriFeature[]; spatialReference?: { wkid?: number } };
+        }[];
+      };
+    }[];
+  };
+  const matches = (map.operationalLayers ?? []).filter((l) => l.title === title);
+  const layers = matches[0]?.featureCollection?.layers ?? [];
+  if (matches.length !== 1 || layers.length !== 1) {
+    throw new Error(`${cacheName}: no single layer "${title}"`);
+  }
+  const layer = layers[0];
+  const wkid =
+    layer?.featureSet?.spatialReference?.wkid ?? layer?.layerDefinition?.spatialReference?.wkid;
+  if (wkid !== 102100 && wkid !== 3857) throw new Error(`${cacheName}: spatial reference ${wkid}`);
+  const features = (layer?.featureSet?.features ?? []).map((f): Feature => {
+    const rings = (f.geometry?.rings ?? []).map((r) => r.map(fromWebMercator));
+    const around = (ring: Position[]) =>
+      rings.filter((other) => {
+        const [x = 0, y = 0] = ring[0] ?? [];
+        return other !== ring && ringContains(other, x, y);
+      });
+    const outsides = rings.filter((r) => around(r).length % 2 === 0);
+    const polygons: Position[][][] = outsides.map((r) => [r]);
+    for (const hole of rings.filter((r) => around(r).length % 2 === 1)) {
+      // The hole of the innermost outside around it.
+      const owners = around(hole).filter((r) => outsides.includes(r));
+      const owner = owners.find((o) =>
+        owners.every((p) => p === o || !ringContains(o, ...(p[0] as [number, number]))),
+      );
+      polygons[outsides.indexOf(owner ?? [])]?.push(hole);
+    }
+    return {
+      type: "Feature",
+      properties: f.attributes,
+      geometry: { type: "MultiPolygon", coordinates: polygons },
+    };
+  });
+  if (features.length === 0) throw new Error(`${cacheName}: no features`);
+  const collection: FeatureCollection = { type: "FeatureCollection", features };
+  mkdirSync(cacheDir, { recursive: true });
+  writeFileSync(cached, JSON.stringify(collection));
+  return collection;
+}
+
 /**
  * One `OTHER_SOURCES` layer from all its sources, slimmed to id (and name),
  * with a district a source splits into several features joined into one.
+ * `places`: every city's TIGER name, for council ids.
  */
-async function fetchOther(layer: OtherLayer): Promise<FeatureCollection> {
+async function fetchOther(
+  layer: OtherLayer,
+  places: readonly string[],
+): Promise<FeatureCollection> {
+  const placeByName = new Map(places.map((p) => [p.toLowerCase(), p]));
   const byId = new Map<string, { name?: string; polygons: Position[][][] }>();
-  for (const [i, src] of OTHER_SOURCES.entries()) {
+  for (const src of OTHER_SOURCES) {
     if (src.layer !== layer) continue;
-    const collection = await fetchGeoJSON(src.url, src.where ?? "1=1", "*", `${layer}-${i}`);
+    // Cached by what is fetched, so adding or removing a source can't mix them up.
+    const key = createHash("sha256")
+      .update(JSON.stringify([src.url, src.where, src.webMapLayer]))
+      .digest("hex")
+      .slice(0, 12);
+    const collection = src.webMapLayer
+      ? await fetchWebMapLayer(src.url, src.webMapLayer, `${layer}-${key}`)
+      : await fetchGeoJSON(src.url, src.where ?? "1=1", "*", `${layer}-${key}`);
     for (const f of collection.features) {
       const attributes = (f.properties ?? {}) as Attributes;
-      const id = src.id(attributes);
+      let id = src.id(attributes);
       if (!id || /undefined|null/.test(id)) throw new Error(`${layer}: feature without an id`);
+      if (layer === "council") {
+        // `<City>|<district>`: the city as TIGER names it, the district as the
+        // last word of whatever the source says ("District 3", 3).
+        const [city = "", district = ""] = id.split("|");
+        const place = placeByName.get(city.trim().toLowerCase());
+        const n = /(\w+)\s*$/.exec(district)?.[1];
+        if (!place) throw new Error(`council: no city named ${city}`);
+        if (!n) throw new Error(`council: ${city} district "${district}"`);
+        id = `${place}|${/^\d+$/.test(n) ? String(Number(n)) : n.toUpperCase()}`;
+      }
       const entry = byId.get(id) ?? { polygons: [] };
       const name = src.name?.(attributes);
       if (name) entry.name = name;
@@ -230,10 +583,32 @@ async function fetchOther(layer: OtherLayer): Promise<FeatureCollection> {
         type: "Feature",
         id,
         properties: name ? { name } : {},
-        geometry: { type: "MultiPolygon", coordinates: polygons },
+        geometry: { type: "MultiPolygon", coordinates: dissolve(polygons) },
       }),
     ),
   };
+}
+
+/**
+ * Polygons that share borders joined into one (a district a source splits
+ * into several features), so no line runs through a district to be near.
+ */
+function dissolve(polygons: Position[][][]): Position[][][] {
+  if (polygons.length < 2) return polygons;
+  const pieces = topology({
+    pieces: {
+      type: "FeatureCollection",
+      features: polygons.map(
+        (coordinates): Feature => ({
+          type: "Feature",
+          properties: {},
+          geometry: { type: "Polygon", coordinates },
+        }),
+      ),
+    },
+  });
+  const object = pieces.objects.pieces as GeometryCollection;
+  return merge(pieces, object.geometries as Parameters<typeof merge>[1]).coordinates;
 }
 
 /**
@@ -291,8 +666,9 @@ const source: Record<LayerName, FeatureCollection> = {} as Record<LayerName, Fea
 for (const name of Object.keys(LAYERS)) {
   source[name] = slim(await fetchLayer(name), name);
 }
+const placeNames = source.place.features.map((f) => String(f.id));
 for (const layer of new Set(OTHER_SOURCES.map((s) => s.layer))) {
-  source[layer] = await fetchOther(layer);
+  source[layer] = await fetchOther(layer, placeNames);
 }
 
 const meta = (await (await fetch(`${SERVICE}?f=json`)).json()) as {
@@ -380,8 +756,11 @@ if (args.has("--check")) {
   );
   for (let i = 0; i < 20000; i++) {
     const [x, y] = randomCityPoint();
-    const county = whichFeature(source.county, x, y);
-    const found = lookupsAt(geo, x, y, county)?.lookups ?? {};
+    const within = {
+      county: whichFeature(source.county, x, y),
+      place: whichFeature(source.place, x, y),
+    };
+    const found = lookupsAt(geo, x, y, within)?.lookups ?? {};
     for (const layer of LOOKUP_LAYERS) {
       const truth = whichFeature(source[layer], x, y);
       const count = counts[layer];

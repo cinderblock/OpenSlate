@@ -20,9 +20,11 @@ export type DistrictLayer = (typeof DISTRICT_LAYERS)[number];
  * the state votes on (`subject.district`; plans/sub-county-districts.md).
  * School districts (Census TIGER: unified, elementary, secondary) by 5-digit
  * LEA code, Board of Equalization districts, community college districts by
- * Chancellor's Office code, and supervisorial districts as `<County>|<n>`.
+ * Chancellor's Office code, supervisorial districts as `<County>|<n>` and city
+ * council districts as `<City>|<n>`, each with the county or city as TIGER
+ * names it.
  */
-export const LOOKUP_LAYERS = ["unsd", "elsd", "scsd", "boe", "ccd", "sup"] as const;
+export const LOOKUP_LAYERS = ["unsd", "elsd", "scsd", "boe", "ccd", "sup", "council"] as const;
 export type LookupLayer = (typeof LOOKUP_LAYERS)[number];
 /**
  * Lookup layers that map every inch of the state, so a point in none of their
@@ -345,7 +347,7 @@ export function locate(
     const n = found[layer];
     if (n) districts[layer] = String(Number(n));
   }
-  const extra = lookupsAt(geo, lon, lat, found.county, nearMeters);
+  const extra = lookupsAt(geo, lon, lat, { county: found.county, place: found.place }, nearMeters);
   return {
     districts,
     county: found.county,
@@ -357,16 +359,16 @@ export function locate(
 
 /**
  * A point's districts in the lookup layers (`GeoHit.lookups`), and the layers
- * it's near a line of; undefined when the boundary data has none. `county`
- * (as TIGER names it) picks the supervisorial districts to look in. Also for
- * an address the Census geocoder placed: its relay returns legislative
- * districts, not these.
+ * it's near a line of; undefined when the boundary data has none. The county
+ * and city it's in (as TIGER names them) pick the supervisorial and council
+ * districts to look in. Also for an address the Census geocoder placed: its
+ * relay returns legislative districts, not these.
  */
 export function lookupsAt(
   geo: StateGeo,
   lon: number,
   lat: number,
-  county: string | undefined,
+  within: { county?: string | undefined; place?: string | undefined },
   nearMeters = NEAR_LINE_METERS,
 ): { lookups: NonNullable<GeoHit["lookups"]>; nearLine: LookupLayer[] } | undefined {
   if (LOOKUP_LAYERS.every((layer) => geo.lookups[layer].length === 0)) return undefined;
@@ -377,10 +379,11 @@ export function lookupsAt(
   const lookups: NonNullable<GeoHit["lookups"]> = {};
   const nearLine: LookupLayer[] = [];
   for (const layer of LOOKUP_LAYERS) {
+    const scope = layer === "sup" ? within.county : layer === "council" ? within.place : null;
     const shapes =
-      layer === "sup"
-        ? geo.lookups.sup.filter((s) => county && s.id.startsWith(`${county}|`))
-        : geo.lookups[layer];
+      scope === null
+        ? geo.lookups[layer]
+        : geo.lookups[layer].filter((s) => scope && s.id.startsWith(`${scope}|`));
     if (shapes.length === 0) continue;
     const nearby = shapes.filter(
       ({ bbox: [x0, y0, x1, y1] }) =>
@@ -490,7 +493,7 @@ export function areaFromHit(
     // The one its races use, else where they'd be filed (`<name>-county`).
     return candidates.find((p) => known.localities.includes(p)) ?? candidates[0];
   };
-  add("place", hit.place);
+  const placePath = add("place", hit.place);
   const countyPath = add("county", hit.county);
 
   const labels: Record<string, string> = {};
@@ -502,6 +505,15 @@ export function areaFromHit(
       districts[`${countyPath}/sup`] = districtId(n);
       const county = hit.county === "San Francisco" ? "San Francisco" : `${hit.county} County`;
       labels[`${countyPath}/sup`] = `${county} supervisorial district ${districtId(n)}`;
+      continue;
+    }
+    if (layer === "council") {
+      // Filed under the city, as its races are: `us/ca/sunnyvale/council`.
+      const n = id.split("|").pop() ?? "";
+      if (!placePath || !n) continue;
+      districts[`${placePath}/council`] = districtId(n);
+      labels[`${placePath}/council`] =
+        `${hit.place} council district ${districtId(n).toUpperCase()}`;
       continue;
     }
     const family = `${state}/${layer}`;

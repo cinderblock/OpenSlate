@@ -338,6 +338,7 @@ const DISTRICT_FAMILIES: Record<string, string> = {
   scsd: "High school district",
   sup: "Supervisorial district",
   ta: "Trustee area",
+  council: "Council district",
 };
 
 const LOCALITY_NAMES: Record<string, string> = {

@@ -15,6 +15,7 @@ import {
   mergeFoundArea,
   touching,
 } from "../src/lib/geo";
+import { placeRace } from "../src/lib/jurisdictions";
 
 // The real shipped file: these points are checked against the Census
 // geocoder's answers for the same addresses (2026-10-20).
@@ -118,16 +119,41 @@ describe("locate (shipped California boundaries)", () => {
     const line = geo.lookups.elsd.find((s) => s.id === "18030")?.polygons[0]?.[0]?.[0];
     if (!line) throw new Error("no HB City SD vertex");
     const [lon = 0, lat = 0] = line;
-    const found = lookupsAt(geo, lon, lat, "Orange");
+    const found = lookupsAt(geo, lon, lat, { county: "Orange" });
     expect(found?.lookups.elsd).toBeUndefined();
     expect(found?.nearLine).toContain("elsd");
     // SF City Hall is within 75 m of a supervisorial district line.
     expect(locate(geo, -122.41831, 37.778536)?.lookups?.sup).toBeUndefined();
   });
 
+  test("finds city council districts, as their sources do", () => {
+    // Checked 2026-10-27 against each source at full resolution
+    // (plans/council-districts-lookup.md).
+    const council = (lon: number, lat: number) => locate(geo, lon, lat)?.lookups?.council?.id;
+    expect(council(-122.0197, 37.3998)).toBe("Sunnyvale|6"); // Lakewood
+    expect(council(-122.0258, 37.3525)).toBe("Sunnyvale|3"); // Ortega Park
+    expect(council(-121.8995, 37.3005)).toBe("San Jose|6"); // Willow Glen
+    expect(council(-122.2517, 37.8442)).toBe("Oakland|1"); // Rockridge
+    expect(council(-118.27, 34.0869)).toBe("Los Angeles|13"); // Silver Lake
+    expect(council(-117.1297, 32.7479)).toBe("San Diego|3"); // North Park
+    expect(council(-117.79, 33.677)).toBe("Irvine|5"); // Woodbridge
+    expect(council(-122.487, 37.594)).toBe("Pacifica|4"); // Linda Mar
+    // Newport Beach votes citywide on every district seat: no lookup.
+    expect(geo.lookups.council.some((s) => s.id.startsWith("Newport Beach|"))).toBe(false);
+    expect(council(-117.9298, 33.6189)).toBeUndefined();
+  });
+
+  test("council districts only for the city the point is in", () => {
+    // A Sunnyvale point said to be in a city we have no council map for.
+    expect(
+      lookupsAt(geo, -122.0197, 37.3998, { county: "Santa Clara", place: "Cupertino" })?.lookups
+        .council,
+    ).toBeUndefined();
+  });
+
   test("supervisorial districts only for the county the point is in", () => {
     // A Huntington Beach point said to be in a county we have no map for.
-    expect(lookupsAt(geo, -117.998, 33.668, "Inyo")?.lookups.sup).toBeUndefined();
+    expect(lookupsAt(geo, -117.998, 33.668, { county: "Inyo" })?.lookups.sup).toBeUndefined();
   });
 
   test("outside the state is null", () => {
@@ -320,6 +346,38 @@ describe("areaFromHit", () => {
     expect(bare.area.found).toEqual(["us/ca/orange-county", "us/ca/orange"]);
   });
 
+  test("council districts under the city's path, as its races are filed", () => {
+    const sunnyvale = areaFromHit(
+      {
+        districts: {},
+        county: "Santa Clara",
+        place: "Sunnyvale",
+        nearLine: [],
+        lookups: { council: { id: "Sunnyvale|3" } },
+      },
+      "us/ca",
+      { ...known, localities: ["us/ca/sunnyvale"] },
+    );
+    expect(sunnyvale.area.localities).toEqual(["us/ca/sunnyvale"]);
+    expect(sunnyvale.area.districts["us/ca/sunnyvale/council"]).toBe("3");
+    expect(sunnyvale.area.labels?.["us/ca/sunnyvale/council"]).toBe("Sunnyvale council district 3");
+    // Morgan Hill's districts are lettered.
+    const morganHill = areaFromHit(
+      {
+        districts: {},
+        place: "Morgan Hill",
+        nearLine: [],
+        lookups: { council: { id: "Morgan Hill|B" } },
+      },
+      "us/ca",
+      known,
+    );
+    expect(morganHill.area.districts["us/ca/morgan-hill/council"]).toBe("b");
+    expect(morganHill.area.labels?.["us/ca/morgan-hill/council"]).toBe(
+      "Morgan Hill council district B",
+    );
+  });
+
   test("a county filed under its bare name still matches", () => {
     const hit = { districts: {}, county: "Marin", nearLine: [] };
     expect(areaFromHit(hit, "us/ca", known).area.localities).toEqual(["us/ca/marin"]);
@@ -445,4 +503,26 @@ test("mergeFoundArea always replaces school districts", () => {
     localities: ["us/ca/sf"],
     districts: { "us/ca/cd": "11" },
   });
+});
+
+test("mergeFoundArea drops the council district of the city you were in", () => {
+  // Moving from Sunnyvale to a spot near a council line in Mountain View.
+  const previous = {
+    localities: ["us/ca/sunnyvale"],
+    districts: { "us/ca/sunnyvale/council": "3" },
+    labels: { "us/ca/sunnyvale/council": "Sunnyvale council district 3" },
+  };
+  const found = { localities: ["us/ca/mountain-view"], districts: {} };
+  expect(mergeFoundArea(previous, found, geo)).toEqual(found);
+});
+
+test("a Sunnyvale address puts its own council race on the ballot and the others off", () => {
+  // The voter's report that started this (plans/ballot-feedback-sunnyvale.md):
+  // the listing files Sunnyvale's district races as council-1, -3 and -5.
+  const hit = locate(geo, -122.0258, 37.3525); // Ortega Park, district 3
+  if (!hit) throw new Error("not in California");
+  const known = { localities: ["us/ca/sunnyvale", "us/ca/santa-clara-county"], districts: {} };
+  const { area } = areaFromHit(hit, "us/ca", known, cityPaths(geo));
+  const place = (n: number) => placeRace("us/ca/sunnyvale", `us/ca/sunnyvale/council-${n}`, area);
+  expect([place(1), place(3), place(5)]).toEqual(["out", "in", "out"]);
 });

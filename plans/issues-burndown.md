@@ -47,7 +47,7 @@ commit, push master.
 - [x] 3b. Doubled quote marks on statements: the app no longer adds quotes; a statement is a ruled block (`.statement`) shown as written
 - [x] 4. Dark theme contrast: `--on-accent/ok/bad/warn` tokens for text on fills (dark text on dark theme's bright fills), dark `--bad` lightened to `#f26b5f`, lean fills as tokens; `theme.test.ts` checks each fill/text pair and that every filled rule uses its partner
 - [x] 4b. Endorsements CI gate: `verify-positions.ts` parses with `signInputSchema`; endorsements `1def270` (pin `5300971`), README `0beb2a3`
-- [ ] 5. Council districts
+- [x] 5. Council districts: `council` lookup layer (`<City>|<n>`, filed as `us/ca/<city>/council`), 433 districts in 84 cities from registrars' (OC, Alameda, LA), SANDAG's and cities' GIS (`plans/council-districts-lookup.md`). Follow-ups in ISSUES.md: citywide seats tagged as districts (Newport Beach; HP and San Leandro left out until checked), cities with no usable map
 - [ ] 6. Local measure text
 - [ ] 7. Cloudflare beacon
 
@@ -120,6 +120,19 @@ commit, push master.
 - One full `bun test` run reported `1 fail, 1 error` right after
   `bun run format`; four reruns all passed. Unidentified flake, not
   reproduced.
+
+- Council districts (2026-10-27, ~1 AM PDT): no statewide source; registrars
+  publish county-wide layers (OC `OCROV_WEBADMIN`, Alameda, LA RR/CC's Aug
+  2023 one), SANDAG covers San Diego County, San Mateo and Santa Clara
+  cities each publish their own. Some adopted maps exist only inside the
+  demographer's (NDC's) web map beside dozens of drafts: `build-geo.ts`
+  reads those by exact layer title. A wrong line hides a race, so anything
+  uncertain was left out (its races stay maybes). Registrars title
+  citywide-voted residency seats "District N" too (Newport Beach), so a
+  listing's `council-N` tag isn't proof a seat is by district.
+- `bun run format` reflowed the long source lists in `build-geo.ts`; the
+  boundary build (`bun run --filter '@openslate/web' geo`) takes ~2 min warm
+  and its cache is now keyed by source, not index.
 
 ## Open questions for the user
 
