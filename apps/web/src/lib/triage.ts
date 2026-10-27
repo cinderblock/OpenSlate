@@ -101,17 +101,10 @@ const PLURAL: Record<string, string> = {
 /**
  * A candidate's party: the ballot's own `party` field (SPEC §3.14), with the
  * usual spellings made one ("Democratic Party" → "Democratic").
- *
- * Until every ballot listing carries the field (plan C5), a listing's older
- * note still gives it: its first ` · ` part, when that's a known party
- * (`"Democratic · Attorney"` → `"Democratic"`). Judges' offices, measure
- * types and job titles aren't parties.
  */
-export function partyOf(choice: Pick<ChoiceGroup, "ballot" | "ballotNote">): string | undefined {
+export function partyOf(choice: Pick<ChoiceGroup, "ballot">): string | undefined {
   const party = choice.ballot?.party?.trim();
-  if (party) return PARTIES[party.toLowerCase()] ?? party;
-  const head = choice.ballotNote?.split(" · ")[0]?.trim().toLowerCase();
-  return head ? PARTIES[head] : undefined;
+  return party ? (PARTIES[party.toLowerCase()] ?? party) : undefined;
 }
 
 /** "Democrats", "Peace and Freedom candidates". */

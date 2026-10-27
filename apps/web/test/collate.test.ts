@@ -80,8 +80,18 @@ const ballot = slate({
   election: E,
   // Same title + jurisdiction + election as the endorsements, or it's another race.
   positions: [
-    { title: "Governor", choice: "C", stance: "neutral", statement: "Green · Teacher" },
-    { title: "Governor", choice: "A", stance: "neutral", statement: "Democratic · Attorney" },
+    {
+      title: "Governor",
+      choice: "C",
+      stance: "neutral",
+      ballot: { party: "Green", designation: "Teacher" },
+    },
+    {
+      title: "Governor",
+      choice: "A",
+      stance: "neutral",
+      ballot: { party: "Democratic", designation: "Attorney" },
+    },
     { title: "Governor", choice: "B", stance: "neutral" },
     { title: "Treasurer", choice: "T1", stance: "neutral" },
     { title: "Treasurer", choice: "T2", stance: "neutral" },
@@ -273,7 +283,7 @@ describe("collateRaces", () => {
       ["B", true, 1],
       ["C", true, 0],
     ]);
-    expect(governor?.choices[0]?.ballotNote).toBe("Democratic · Attorney");
+    expect(governor?.choices[0]?.ballot).toEqual({ party: "Democratic", designation: "Attorney" });
     // The ballot's own order survives the support sort, for the ballot view.
     expect(governor?.choices.map((c) => [c.choice, c.ballotIndex])).toEqual([
       ["A", 1],

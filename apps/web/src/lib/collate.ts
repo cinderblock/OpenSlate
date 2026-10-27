@@ -145,8 +145,6 @@ export interface ChoiceGroup {
   opposition: number;
   /** Listed by a ballot source: this choice is on the ballot even if nobody backs it. */
   onBallot: boolean;
-  /** What the ballot source says about the choice (party, ballot designation). */
-  ballotNote?: string;
   /** Not printed on the ballot: a voter writes the name in (SPEC §3.12). */
   writeIn: boolean;
   /**
@@ -336,7 +334,6 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
       if (ballot) {
         race.onBallot = true;
         group.onBallot = true;
-        if (position.statement && !group.ballotNote) group.ballotNote = position.statement;
         if (!race.ballotOrder.has(choiceName))
           race.ballotOrder.set(choiceName, race.ballotOrder.size);
         continue;

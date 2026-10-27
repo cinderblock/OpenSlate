@@ -9,6 +9,7 @@ const prop = {
   },
   jurisdiction: "us/ca",
   election: E,
+  ballot: { heading: "Proposition 43", number: "43" },
 };
 const governor = {
   subject: { title: "Governor of California", kind: "race" },
@@ -17,8 +18,12 @@ const governor = {
 };
 
 describe("raceQuery", () => {
-  test("drops a measure's long label and adds the year", () => {
+  test("a numbered measure goes by its place and heading, plus the year", () => {
     expect(raceQuery(prop)).toBe("California Proposition 43 2026");
+    // Without the ballot's heading, the title as it stands: nothing is read out of it.
+    expect(raceQuery({ ...prop, ballot: undefined })).toBe(
+      "California Proposition 43 (Limits Voters' Ability to Raise Revenues) 2026",
+    );
     expect(
       raceQuery({
         subject: { title: "US House of Representatives, California District 37" },

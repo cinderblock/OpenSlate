@@ -47,7 +47,7 @@ function race(title: string, choices: ChoiceGroup[], extra: Partial<Race> = {}):
 const mayor = race(
   "Mayor",
   [
-    choice("José Núñez", { ballotNote: "Small Business Owner" }),
+    choice("José Núñez", { ballot: { designation: "Small Business Owner" } }),
     choice("Barbara Lee", {
       positions: [{ source: sierra, stance: "endorse", valid: true, standing: "follow" }],
     }),

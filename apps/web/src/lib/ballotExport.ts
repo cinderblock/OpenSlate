@@ -43,7 +43,6 @@ interface ExportedChoice {
   onBallot: boolean;
   /** Not printed on the ballot: written in (SPEC §3.12). */
   writeIn?: true;
-  ballotNote?: string;
   /** How the ballot prints it: party, designation, incumbency (SPEC §3.14). */
   ballot?: BallotChoice;
   /** Followed sources counting for / against, a disagreed source the other way. */
@@ -103,7 +102,6 @@ function racesOf(input: BallotExportInput, options: BallotExportOptions): Export
           choice: group.choice,
           onBallot: group.onBallot,
           ...(group.writeIn ? { writeIn: true as const } : {}),
-          ...(group.ballotNote ? { ballotNote: group.ballotNote } : {}),
           ...(group.ballot ? { ballot: group.ballot } : {}),
           for: group.support,
           against: group.opposition,
@@ -148,7 +146,6 @@ export function ballotToCsv(input: BallotExportInput, options: BallotExportOptio
     "Choice",
     "OnBallot",
     "WriteIn",
-    "BallotNote",
     "Party",
     "Designation",
     "Incumbent",
@@ -170,7 +167,6 @@ export function ballotToCsv(input: BallotExportInput, options: BallotExportOptio
         choice.choice,
         choice.onBallot ? "yes" : "",
         choice.writeIn ? "yes" : "",
-        choice.ballotNote ?? "",
         choice.ballot?.party ?? "",
         choice.ballot?.designation ?? "",
         choice.ballot?.incumbent ? "yes" : "",
