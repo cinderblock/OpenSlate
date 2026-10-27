@@ -2784,6 +2784,39 @@ button.tag.active {
 .pick-statement {
   flex: 1 1 14rem;
 }
+/* A pick's label (My labels), beside its stance. */
+.pick-label {
+  min-width: 9rem;
+}
+
+/* Compose: My labels, one per line, in the order a slate lists them. */
+.label-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+.label-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.45rem 0;
+  border-top: 1px solid var(--border);
+}
+.label-name {
+  flex: 1 1 12rem;
+}
+.label-description {
+  flex: 1 1 14rem;
+}
+.label-stance {
+  min-width: 10rem;
+}
+.label-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
 
 /* My ballot: what I've already signed on this race. */
 .my-slate {

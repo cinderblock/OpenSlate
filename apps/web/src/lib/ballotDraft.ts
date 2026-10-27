@@ -16,6 +16,8 @@ export interface DraftRow {
   stance?: Stance;
   /** Public statement — included in generated slates. */
   statement?: string;
+  /** The user's own word for the position (lib/myLabels.ts) — included in generated slates. */
+  label?: string;
   /** Private note — kept entirely on the user's device, never signed or shared. */
   privateNote?: string;
   updatedAt: string;
@@ -169,6 +171,7 @@ export interface RowFields {
   writeIn?: true;
   stance?: Stance;
   statement?: string;
+  label?: string;
   privateNote?: string;
 }
 
@@ -198,6 +201,7 @@ export function applyPatch(
       : {}),
     stance: "stance" in fields ? fields.stance : existing?.stance,
     statement: "statement" in fields ? fields.statement : existing?.statement,
+    label: "label" in fields ? fields.label : existing?.label,
     privateNote: "privateNote" in fields ? fields.privateNote : existing?.privateNote,
     updatedAt: new Date().toISOString(),
   };
@@ -208,6 +212,21 @@ export function applyPatch(
     return next;
   }
   return { ...current, [id]: merged };
+}
+
+/**
+ * Rename the label `from` to `to` on every row, or take it off them (`to`
+ * undefined), when the user renames or removes one of their labels.
+ */
+export function relabeledRows(rows: DraftMap, from: string, to: string | undefined): DraftMap {
+  let next: DraftMap | undefined;
+  for (const row of Object.values(rows)) {
+    if (row.label !== from) continue;
+    next ??= { ...rows };
+    const { label: _, ...rest } = row;
+    next[row.id] = to === undefined ? rest : { ...rest, label: to };
+  }
+  return next ?? rows;
 }
 
 export function useBallotDraft(): {
@@ -227,6 +246,8 @@ export function useBallotDraft(): {
   clearAll: () => void;
   /** Move marks on re-filed races to the races as they're filed now (`refiledRows`). */
   refile: (subjects: readonly Subject[]) => void;
+  /** Rename or remove one of the user's labels on every row (`relabeledRows`). */
+  relabel: (from: string, to: string | undefined) => void;
 } {
   const [rows] = useLocalStore(ballotDraftStore);
 
@@ -282,5 +303,9 @@ export function useBallotDraft(): {
     ballotDraftStore.set((current) => refiledRows(current, subjects) ?? current);
   }, []);
 
-  return { rows, patch, patchMany, restore, clearRow, clearElection, clearAll, refile };
+  const relabel = useCallback((from: string, to: string | undefined) => {
+    ballotDraftStore.set((current) => relabeledRows(current, from, to));
+  }, []);
+
+  return { rows, patch, patchMany, restore, clearRow, clearElection, clearAll, refile, relabel };
 }

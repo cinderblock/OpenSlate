@@ -99,7 +99,10 @@ for it. Its two sides:
   create a signing identity (Compose walks you through your first one and its
   backup), sign your My-ballot picks (plus any other race or issue, on your
   ballot or not) as a slate, see the slates you've signed, and verify or
-  inspect any block.
+  inspect any block. *My labels* lets you publish in your own words: define
+  terms like "Endorsed" or "Recommended" (with what each means, and a stance
+  picks take by default), give any pick one, and the slate carries them so
+  readers see your words, not "leans for".
 
 A first visit goes straight into setup, right on My ballot, with nothing to
 choose first: *Where do you vote?* (the next election is picked already), then

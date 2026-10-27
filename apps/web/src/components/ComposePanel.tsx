@@ -3,7 +3,6 @@ import {
   deserializeIdentity,
   identityToIssuer,
   type Position,
-  STANCES,
   type Stance,
   type Subject,
   signSlate,
@@ -23,6 +22,7 @@ import { rememberPublished } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
 import { useActiveIdentity } from "../lib/identities";
 import { jurisdictionLabel, jurisdictionRank } from "../lib/jurisdictions";
+import { labelsFor, type MyLabel, useMyLabels } from "../lib/myLabels";
 import { localToday, useDecodedSlates, useFollows, useMyElection } from "../lib/myVote";
 import { usePageSearch } from "../lib/pageSearch";
 import { publishedRanks } from "../lib/ranking";
@@ -32,34 +32,40 @@ import { track } from "../lib/usage";
 import { CreateIdentity } from "./CreateIdentity";
 import { electionOptions } from "./electionOptions";
 import { RawInspector } from "./ImportVerifyPanel";
+import { MyLabelsCard } from "./MyLabelsCard";
 import { matchCount, PageSearch } from "./PageSearch";
 import { QrDialog } from "./Qr";
 import { SubjectPicker } from "./SubjectPicker";
+import { STANCE_LABEL, STANCE_OPTIONS } from "./stanceOptions";
 import { Checkbox } from "./ui/Checkbox";
 import { Select, type SelectOption } from "./ui/Select";
 import { TextArea, TextField } from "./ui/TextField";
 import { TokenBox } from "./ui/Token";
 
-const STANCE_LABEL: Record<Stance, string> = {
-  endorse: "Endorse",
-  oppose: "Oppose",
-  lean_for: "Lean for",
-  lean_against: "Lean against",
-  neutral: "Neutral",
-  abstain: "Abstain",
-};
+/** The label select's "none". Never a label: labels are trimmed, and this is a control character. */
+const NO_LABEL = "\u0000none";
 
-const STANCE_OPTIONS: SelectOption<Stance>[] = STANCES.map((stance) => ({
-  id: stance,
-  label: STANCE_LABEL[stance],
-  className: `stance-opt-${stance}`,
-}));
+/** A pick's label choices: none, the user's labels, and the pick's own if it's no longer one of them. */
+function labelOptions(labels: readonly MyLabel[], current: string | undefined): SelectOption[] {
+  const options: SelectOption[] = [
+    { id: NO_LABEL, label: "No label" },
+    ...labels.map((l) => ({
+      id: l.label,
+      label: l.label,
+      ...(l.stance ? { badge: STANCE_LABEL[l.stance] } : {}),
+    })),
+  ];
+  if (current && !labels.some((l) => l.label === current))
+    options.push({ id: current, label: current });
+  return options;
+}
 
 interface OtherEntry {
   id: string;
   subject: Subject;
   stance: Stance;
   choice?: string;
+  label?: string;
   statement?: string;
 }
 
@@ -82,6 +88,7 @@ export function ComposePanel() {
   const [chosenElection, setChosenElection] = useMyElection();
   const draft = useBallotDraft();
   const imported = useImportedSubjects();
+  const [myLabels] = useMyLabels();
 
   const today = localToday();
   const elections = useMemo(() => {
@@ -143,6 +150,7 @@ export function ComposePanel() {
   const [pickedSubject, setPickedSubject] = useState<Subject | null>(null);
   const [otherStance, setOtherStance] = useState<Stance>("endorse");
   const [otherChoice, setOtherChoice] = useState("");
+  const [otherLabel, setOtherLabel] = useState<string>(NO_LABEL);
   const [otherStatement, setOtherStatement] = useState("");
   const [pickerSeq, setPickerSeq] = useState(0);
 
@@ -163,6 +171,7 @@ export function ComposePanel() {
             ...(row.choice ? { choice: row.choice } : {}),
             ...(row.choice && row.writeIn ? { write_in: true as const } : {}),
             ...rankOf(row),
+            ...(row.label ? { label: row.label } : {}),
             ...(row.statement?.trim() ? { statement: row.statement.trim() } : {}),
           },
           listing,
@@ -173,6 +182,7 @@ export function ComposePanel() {
       subject: entry.subject,
       stance: entry.stance,
       ...(entry.choice ? { choice: entry.choice } : {}),
+      ...(entry.label ? { label: entry.label } : {}),
       ...(entry.statement?.trim() ? { statement: entry.statement.trim() } : {}),
     }));
     return [...fromPicks, ...fromOthers];
@@ -207,12 +217,14 @@ export function ComposePanel() {
         subject: pickedSubject,
         stance: otherStance,
         ...(otherChoice.trim() ? { choice: otherChoice.trim() } : {}),
+        ...(otherLabel === NO_LABEL ? {} : { label: otherLabel }),
         ...(otherStatement.trim() ? { statement: otherStatement.trim() } : {}),
       },
     ]);
     setPickedSubject(null);
     setOtherStance("endorse");
     setOtherChoice("");
+    setOtherLabel(NO_LABEL);
     setOtherStatement("");
     setPickerSeq((n) => n + 1);
     setError(null);
@@ -235,10 +247,12 @@ export function ComposePanel() {
     }
     try {
       const id = deserializeIdentity(identity);
+      const labels = labelsFor(myLabels, positions);
       const payload = buildSlate({
         issuer: identityToIssuer(id),
         ...(election ? { context: { election } } : {}),
         positions,
+        ...(labels.length > 0 ? { labels } : {}),
       });
       const signed = signSlate(payload, id.keyPair.secretKey);
       setToken(signed);
@@ -335,6 +349,7 @@ export function ComposePanel() {
                     <PickRow
                       key={row.id}
                       row={row}
+                      labels={myLabels}
                       included={!leftOut.has(row.id)}
                       onToggle={() => toggleLeftOut(row.id)}
                       onChange={(fields) => {
@@ -350,6 +365,8 @@ export function ComposePanel() {
         </div>
 
         <div>
+          <MyLabelsCard onChange={() => setToken("")} />
+
           <div className="card">
             <h3>Other positions</h3>
             <p className="hint">
@@ -370,6 +387,18 @@ export function ComposePanel() {
                 value={otherChoice}
                 onChange={setOtherChoice}
               />
+              {(myLabels.length > 0 || otherLabel !== NO_LABEL) && (
+                <Select
+                  label="Label"
+                  value={otherLabel}
+                  onChange={(label) => {
+                    setOtherLabel(label);
+                    const stance = myLabels.find((l) => l.label === label)?.stance;
+                    if (stance) setOtherStance(stance);
+                  }}
+                  options={labelOptions(myLabels, undefined)}
+                />
+              )}
             </div>
             <TextArea
               label="Public statement (optional)"
@@ -384,7 +413,9 @@ export function ComposePanel() {
               <ul className="position-list">
                 {others.map((entry) => (
                   <li key={entry.id}>
-                    <span className={`stance stance-${entry.stance}`}>{entry.stance}</span>
+                    <span className={`stance stance-${entry.stance}`}>
+                      {entry.label ?? STANCE_LABEL[entry.stance]}
+                    </span>
                     <span className="position-subject">
                       {entry.subject.title}
                       {entry.choice ? ` → ${entry.choice}` : ""}
@@ -438,14 +469,16 @@ export function ComposePanel() {
 
 function PickRow({
   row,
+  labels,
   included,
   onToggle,
   onChange,
 }: {
   row: DraftRow;
+  labels: readonly MyLabel[];
   included: boolean;
   onToggle: () => void;
-  onChange: (fields: { stance?: Stance; statement?: string }) => void;
+  onChange: (fields: { stance?: Stance; statement?: string; label?: string }) => void;
 }) {
   const [statement, setStatement] = useState(row.statement ?? "");
   const place = jurisdictionLabel(row.subject.jurisdiction);
@@ -480,6 +513,24 @@ function PickRow({
         aria-label={`Stance on ${row.choice || row.subject.title}`}
         options={STANCE_OPTIONS}
       />
+      {(labels.length > 0 || row.label) && (
+        <Select
+          className="pick-label"
+          value={row.label ?? NO_LABEL}
+          isDisabled={!included}
+          onChange={(label) => {
+            if (label === NO_LABEL) {
+              onChange({ label: undefined });
+              return;
+            }
+            // A label can bring its stance with it (My labels).
+            const stance = labels.find((l) => l.label === label)?.stance;
+            onChange({ label, ...(stance ? { stance } : {}) });
+          }}
+          aria-label={`Label on ${row.choice || row.subject.title}`}
+          options={labelOptions(labels, row.label)}
+        />
+      )}
       <TextField
         className="pick-statement"
         placeholder="public statement (optional)"
