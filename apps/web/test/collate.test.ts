@@ -25,6 +25,7 @@ interface P {
   stance?: Stance;
   jurisdiction?: string;
   district?: string;
+  votedIn?: string[];
   election?: string;
   kind?: string;
 }
@@ -51,6 +52,7 @@ function slate(input: {
         title: p.title,
         ...(p.jurisdiction ? { jurisdiction: p.jurisdiction } : {}),
         ...(p.district ? { district: p.district } : {}),
+        ...(p.votedIn ? { voted_in: p.votedIn } : {}),
         ...(p.election ? { election: p.election } : {}),
         ...(p.kind ? { kind: p.kind } : {}),
         ...(p.contest ? { ballot: p.contest } : {}),
@@ -385,6 +387,48 @@ describe("collateRaces", () => {
     expect(collateRaces(slates, { follows: {} }).some((r) => r.maybe)).toBe(false);
   });
 
+  test("a regional measure is on the ballot where it's voted, taking the ballot source's", () => {
+    const rtm = {
+      title: "Bay Area — Regional Measure RTM",
+      kind: "measure",
+      jurisdiction: "us/ca/bay-area",
+    };
+    const fiveCounties = [
+      "us/ca/alameda-county",
+      "us/ca/contra-costa-county",
+      "us/ca/san-mateo-county",
+      "us/ca/santa-clara-county",
+      "us/ca/sf",
+    ];
+    const slates = decodeSlates([
+      // An endorser that gets the counties wrong loses to the listing.
+      slate({
+        name: "Endorser",
+        positions: [{ ...rtm, choice: "Yes", votedIn: ["us/ca/alameda-county"] }],
+      }),
+      slate({
+        of: "SF Department of Elections",
+        ofKind: "election-authority",
+        positions: [
+          { ...rtm, choice: "Yes", stance: "neutral", votedIn: fiveCounties },
+          { ...rtm, choice: "No", stance: "neutral", votedIn: fiveCounties },
+        ],
+      }),
+      // One that doesn't say still names the same measure.
+      slate({ name: "Other", positions: [{ ...rtm, choice: "No" }] }),
+    ]);
+    const sf = collateRaces(slates, {
+      follows: {},
+      area: { localities: ["us/ca/sf"], districts: { "us/ca/cd": "11" } },
+    });
+    expect(sf.map((r) => [r.subject.title, r.maybe ?? false, r.totalSources])).toEqual([
+      [rtm.title, false, 2],
+    ]);
+    expect(sf[0]?.votedIn).toEqual(fiveCounties);
+    const fresno = { localities: ["us/ca/fresno", "us/ca/fresno-county"], districts: {} };
+    expect(collateRaces(slates, { follows: {}, area: fresno })).toEqual([]);
+  });
+
   test("a source's newer slate replaces its older one on the same race", () => {
     const keyPair = generateKeyPair();
     const reissued = decodeSlates([
@@ -464,6 +508,26 @@ describe("areaOptionsOf", () => {
       localities: ["us/ca/sf", "us/ca/chula-vista"],
       districts: { "us/ca/cd": ["2", "12"], "us/ca/ad": ["17"] },
     });
+  });
+
+  test("offers a regional race's counties, not the region (SPEC §3.3 voted_in)", () => {
+    const slates = decodeSlates([
+      slate({
+        name: "A",
+        positions: [
+          {
+            title: "RTM",
+            jurisdiction: "us/ca/bay-area",
+            votedIn: ["us/ca/alameda-county", "us/ca/sf"],
+          },
+          { title: "Mayor", jurisdiction: "us/ca/sf" },
+        ],
+      }),
+    ]);
+    expect(areaOptionsOf(positionJurisdictions(slates)).localities).toEqual([
+      "us/ca/sf",
+      "us/ca/alameda-county",
+    ]);
   });
 
   test("weighs each item by its race count", () => {

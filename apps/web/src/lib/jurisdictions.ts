@@ -12,6 +12,9 @@
  *   jurisdiction that votes on it, e.g. a trustee area of a school district
  *   in the county (`placeRace`). Where the area can't tell, the race is
  *   *unknown*: it may be on the user's ballot.
+ * - A regional race's `voted_in` (SPEC §3.3) says which jurisdictions vote on
+ *   it, where its own path (`us/ca/bay-area`) doesn't say what it contains:
+ *   it is on the ballot of anyone in one of them.
  *
  * Pure helpers, unit-tested in test/jurisdictions.test.ts.
  */
@@ -199,19 +202,24 @@ export function districtId(id: string): string {
 /**
  * Whether a race filed under `jurisdiction`, decided by the voters of
  * `district` (SPEC §3.3), is on the ballot of someone in `area`. Out when its
- * jurisdiction isn't the user's (`inArea`); then each segment of `district`
- * narrows it: a family segment (`sup-4`) against the user's district of that
- * family, a place segment against their localities. A family the area doesn't
- * know, or a place it doesn't list (a water district: no boundaries to find it
- * by), makes it unknown, unless a later segment already rules it out.
+ * jurisdiction isn't the user's (`inArea`), or, for a regional race, none of
+ * the jurisdictions it's `votedIn` is: those say where it's on the ballot, in
+ * place of the region's own path. Then each segment of `district` narrows it:
+ * a family segment (`sup-4`) against the user's district of that family, a
+ * place segment against their localities. A family the area doesn't know, or
+ * a place it doesn't list (a water district: no boundaries to find it by),
+ * makes it unknown, unless a later segment already rules it out.
  */
 export function placeRace(
   jurisdiction: string | undefined,
   district: string | undefined,
   area: Area,
+  votedIn?: readonly string[],
 ): Placement {
   if (!isAreaSet(area)) return "in";
-  const here = inArea(jurisdiction, area);
+  const here = votedIn?.length
+    ? votedIn.some((path) => inArea(path, area))
+    : inArea(jurisdiction, area);
   if (!district?.trim()) return here ? "in" : "out";
   const parts = district.trim().toLowerCase().split("/");
   let prefix = parts.slice(0, 2).join("/");

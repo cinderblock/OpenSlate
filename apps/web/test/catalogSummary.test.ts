@@ -56,6 +56,26 @@ describe("summaryOf", () => {
     });
   });
 
+  test("a regional race counts in the counties that vote on it, so setup finds it", () => {
+    const rtm = {
+      title: "Bay Area — Regional Measure RTM",
+      kind: "measure",
+      jurisdiction: "us/ca/bay-area",
+      voted_in: ["us/ca/alameda-county", "us/ca/sf"],
+    };
+    // An articles-only slate (SPEC §3.15) on the measure, like Local News Matters'.
+    const news = {
+      ...payload,
+      context: { election: E, jurisdiction: "us/ca/bay-area" },
+      positions: [],
+      articles: [{ subject: rtm, uri: "https://news.example/rtm", title: "RTM" }],
+    } as SlatePayload;
+    const summary = summaryOf(entry({ positions: 0, articles: 1 }), news);
+    expect(summary.jurisdictions).toEqual({ "us/ca/alameda-county": 1, "us/ca/sf": 1 });
+    expect(racesInArea(summary, { localities: ["us/ca/sf"], districts: {} })).toBe(1);
+    expect(racesInArea(summary, { localities: ["us/ca/fresno-county"], districts: {} })).toBe(0);
+  });
+
   test("an entry whose slate didn't load has no races", () => {
     const e = entry();
     expect(summaryOf(e)).toEqual({ entry: e, jurisdictions: {} });
