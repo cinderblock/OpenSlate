@@ -108,12 +108,14 @@ So RTM is the only subject the fix has to carry today.
    ballot lists "Bay Area · 1 / Regional Measure RTM" with SPUR's Yes; its
    race page shows Local News Matters' and the SF Standard's articles, so the
    Local News Matters slate came along.
-7. **Current:** ship. Push OpenSlate master first (deploys openslate.us; old
-   verifiers reject `voted_in`), then the endorsements branch to its master
-   (CI clones OpenSlate at the pin from GitHub, signs, publishes).
-8. Check live: openslate.us, area SF, RTM on My ballot, Local News Matters
-   offered.
-9. Close the ISSUES.md entry.
+7. [x] Shipped 2026-10-26: OpenSlate master `50da150` (live on openslate.us
+   by 7:59 PM PDT (02:59Z), bundle `index-BJoHFUni.js`), then endorsements
+   master `b9cf956` (publish run 40441679604 green, 8:00 PM PDT (03:00Z)).
+   Live catalog: Local News Matters' summary is the five counties.
+8. [x] Live check, openslate.us in incognito, area San Francisco, following
+   SPUR: My ballot lists Regional Measure RTM; its race page shows Local News
+   Matters' and the SF Standard's articles.
+9. [x] ISSUES.md entry closed.
 
 ## Findings / gotchas
 
@@ -144,12 +146,12 @@ So RTM is the only subject the fix has to carry today.
 - [x] Root cause and data survey.
 - [x] Spec + core.
 - [x] App.
-- [x] Catalog data (endorsements branch, not pushed).
+- [x] Catalog data.
 - [x] Dev-app verification against a locally signed catalog.
-- [ ] Ship app (push OpenSlate master).
-- [ ] Ship catalog (push endorsements master; CI publishes).
-- [ ] Live check.
-- [ ] Close the entry.
+- [x] Ship app (push OpenSlate master).
+- [x] Ship catalog (push endorsements master; CI publishes).
+- [x] Live check.
+- [x] Close the entry.
 
 ## Open questions for the user
 
