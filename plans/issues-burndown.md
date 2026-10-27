@@ -46,7 +46,7 @@ commit, push master.
 - [x] 3. validate: accepts sign input; core `signInputSchema` (closed) shared by `validate`, `sign`, `sign --batch` and `adopt --into`
 - [x] 3b. Doubled quote marks on statements: the app no longer adds quotes; a statement is a ruled block (`.statement`) shown as written
 - [ ] 4. Dark theme contrast
-- [ ] 4b. Endorsements CI gate: use `signInputSchema` (new, found by 3)
+- [x] 4b. Endorsements CI gate: `verify-positions.ts` parses with `signInputSchema`; endorsements `1def270` (pin `5300971`), README `0beb2a3`
 - [ ] 5. Council districts
 - [ ] 6. Local measure text
 - [ ] 7. Cloudflare beacon
@@ -97,6 +97,14 @@ commit, push master.
   sites (`ChoiceRow` popover, `RacePanel` position list) now use
   `<blockquote className="statement">`, a left rule with no glyphs. Labels
   (`“{label}”`) keep their quotes: they are the source's own term.
+
+- Endorsements CI gate (2026-10-26, ~11:55 PM PDT): `verify-positions.ts`
+  now parses each positions.json with core's `signInputSchema` (no
+  placeholder payload). All 387 bundles pass; a broken `adopts` entry and a
+  misspelt top-level key now fail it. A throwaway-key `sign --batch` with the
+  new pin signed all 387. In the endorsements repo on Windows, `bun run lint`
+  fails on every file (Biome 1.9 wants LF; logged in its ISSUES.md) and
+  `tsc` fails on old scripts (already logged there): neither is run by its CI.
 
 ## Open questions for the user
 

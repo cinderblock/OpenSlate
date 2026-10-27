@@ -32,20 +32,6 @@ white-on-red fills worse, so the fix probably wants "on-colour" tokens for text
 on filled backgrounds. `apps/web/test/theme.test.ts` lists the `--bad` pairs as
 known failures; take them off the list when fixed.
 
-## The endorsements CI gate never schema-checks a bundle's `adopts` or `labels`
-
-**In progress — master (ISSUES.md burn-down).**
-
-Seen 2026-10-26: `scripts/verify-positions.ts` in `openslate-public-endorsements`
-copies `positions`, `endorsed_by`, `attribution`, `context` and `articles` out
-of each positions.json into a placeholder payload and drops everything else,
-so the 10 bundles with `adopts` pass the gate without their adoptions being
-checked, a `labels` list would be dropped too (and its positions' labels then
-fail as undefined), and a misspelt top-level key passes silently. OpenSlate
-core now exports `signInputSchema` (what `openslate sign` and `validate`
-check); the gate should use it, after bumping `.openslate-version` past the
-commit that added it.
-
 ## Cloudflare's analytics beacon is injected and then blocked by our CSP
 
 Every page on https://openslate.us logs a console error (seen 2026-10-23,
