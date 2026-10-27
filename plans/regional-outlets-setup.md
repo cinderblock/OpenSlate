@@ -39,9 +39,9 @@ contains. A voter's own regional paper should be with their area's outlets.
    payload), `regionsOfSummaries` + `basedInArea` helpers, `GetStarted` `elsewhere` uses it. Tests.
 5. [x] Gates; README (catalog fields); commit with the ISSUES.md entry
    removed; push OpenSlate master.
-6. [ ] Endorsements repo (worktree, not the user's checkout): bump
+6. [x] Endorsements repo (worktree, not the user's checkout): bump
    `.openslate-version`, push; CI republishes the catalog with `regions`.
-7. [ ] Check the live catalog has `regions` for BANG; setup check.
+7. [x] Check the live catalog has `regions` for BANG; setup check.
 
 ## Findings / gotchas
 
@@ -58,6 +58,14 @@ contains. A voter's own regional paper should be with their area's outlets.
   (was 162). Area Fresno County: BANG stays under based elsewhere.
 - Until the endorsements catalog is re-signed with this CLI, the live
   catalog has no `regions` and setup behaves as before (no regression).
+- Shipped 2026-10-26: OpenSlate master `38104c0`; endorsements master
+  `b3ba2e9` (pin → `38104c0`, README), publish run 40460540861 green at
+  11:21 PM PDT (06:21Z). Before pushing, the endorsements repo's tests and
+  `verify-positions.ts` passed at the new pin, and a throwaway-key
+  `sign --batch` gave 64 entries `regions`. Live catalog: 64 entries with
+  `regions`, BANG's the five RTM counties. openslate.us in incognito, area
+  San Francisco: groups California, San Francisco, Bay Area (BANG), 161 based
+  elsewhere.
 - `CatalogEntry` is a plain interface (no strict schema), so a new catalog
   field doesn't break the app that's live now.
 

@@ -42,7 +42,7 @@ commit, push master.
 ## Progress log
 
 - [x] 1. Setup follow: interrupted setup downloads now resume (`pendingSetup.ts`)
-- [x] 2. Regional outlets: catalog `regions` (core `regionsOf`, `sign --batch`), setup's `basedInArea` (`plans/regional-outlets-setup.md`). Live once the endorsements repo re-signs with the new CLI (step 6 there)
+- [x] 2. Regional outlets: catalog `regions` (core `regionsOf`, `sign --batch`), setup's `basedInArea` (`plans/regional-outlets-setup.md`). Live: endorsements `b3ba2e9` re-signed the catalog, checked on openslate.us
 - [ ] 3. validate
 - [ ] 4. Dark theme contrast
 - [ ] 5. Council districts
