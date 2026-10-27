@@ -98,6 +98,8 @@ export const positionSchema = z
     write_in: z.literal(true).optional(),
     /** How the ballot prints the choice (SPEC §3.14). */
     ballot: ballotChoiceSchema.optional(),
+    /** The issuer's order of preference: 1 is their first choice (SPEC §3.16). */
+    rank: z.number().int().min(1).optional(),
     weight: z.number().min(0).max(1).optional(),
     statement: z.string().optional(),
     source: httpUrl.optional(),
@@ -106,9 +108,13 @@ export const positionSchema = z
   .refine(
     (p) =>
       p.choice !== undefined ||
-      (p.choice_id === undefined && !p.write_in && p.ballot === undefined),
-    { message: "choice_id, write_in and ballot need a choice" },
-  );
+      (p.choice_id === undefined && !p.write_in && p.ballot === undefined && p.rank === undefined),
+    { message: "choice_id, write_in, ballot and rank need a choice" },
+  )
+  .refine((p) => p.rank === undefined || p.stance === "endorse" || p.stance === "lean_for", {
+    message: "rank is only for endorse or lean_for",
+    path: ["rank"],
+  });
 export type Position = z.infer<typeof positionSchema>;
 
 export const issuerSchema = z

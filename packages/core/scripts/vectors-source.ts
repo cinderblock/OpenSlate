@@ -299,6 +299,49 @@ export const POSITIVES: PositiveDef[] = [
     },
   },
   {
+    name: "ranked",
+    description:
+      "Ranked preferences (SPEC §3.16): first and second choice in a ranked-choice contest, and a dual endorsement left unranked.",
+    signer: "alice",
+    payload: {
+      v: 1,
+      issuer: { name: "Alice", kind: "individual" },
+      issued_at: "2026-10-01T00:00:00Z",
+      positions: [
+        {
+          subject: { title: "Mayor of Springfield", kind: "race", election: "2026-11-03" },
+          stance: "endorse",
+          choice: "A. Candidate",
+          rank: 1,
+        },
+        {
+          subject: { title: "Mayor of Springfield", kind: "race", election: "2026-11-03" },
+          stance: "lean_for",
+          choice: "B. Candidate",
+          rank: 2,
+        },
+        {
+          subject: {
+            title: "Springfield Council, District 4",
+            kind: "race",
+            election: "2026-11-03",
+          },
+          stance: "endorse",
+          choice: "C. Candidate",
+        },
+        {
+          subject: {
+            title: "Springfield Council, District 4",
+            kind: "race",
+            election: "2026-11-03",
+          },
+          stance: "endorse",
+          choice: "D. Candidate",
+        },
+      ],
+    },
+  },
+  {
     name: "adopts-reference",
     description:
       "Slate adopting two positions of another (secondhand) slate by reference instead of " +
@@ -578,6 +621,44 @@ export const NEGATIVES: NegativeDef[] = [
       );
     },
     expect: { error_contains: ["write_in"] },
+  },
+  {
+    name: "rank-on-oppose",
+    description:
+      "Validly signed token ranking a choice it opposes. A rank is a vote for the choice; MUST be rejected (SPEC §3.16).",
+    build: (h) => {
+      const key = h.pubkey("alice");
+      return h.sign(
+        { alg: "EdDSA", typ: "openslate+jws", kid: key },
+        {
+          v: 1,
+          issuer: { key },
+          issued_at: "2026-01-01T00:00:00Z",
+          positions: [{ subject: { title: "Mayor" }, stance: "oppose", choice: "A", rank: 1 }],
+        },
+        h.seed("alice"),
+      );
+    },
+    expect: { error_contains: ["rank"] },
+  },
+  {
+    name: "rank-zero",
+    description:
+      "Validly signed token with `rank: 0`. Ranks start at 1; MUST be rejected (SPEC §3.16).",
+    build: (h) => {
+      const key = h.pubkey("alice");
+      return h.sign(
+        { alg: "EdDSA", typ: "openslate+jws", kid: key },
+        {
+          v: 1,
+          issuer: { key },
+          issued_at: "2026-01-01T00:00:00Z",
+          positions: [{ subject: { title: "Mayor" }, stance: "endorse", choice: "A", rank: 0 }],
+        },
+        h.seed("alice"),
+      );
+    },
+    expect: { error_contains: ["rank"] },
   },
   {
     name: "choice-id-without-choice",

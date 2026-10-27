@@ -135,6 +135,7 @@ one to prefer.
 | `choice_id` | string | no | Catalog id of the choice (§3.11). Requires `choice`. |
 | `write_in` | boolean | no | `true`: the choice is a write-in, not printed on the ballot (§3.12). Requires `choice`. MUST NOT be `false`; omit it instead. |
 | `ballot` | `BallotChoice` | no | How the ballot prints the choice: party, ballot designation, incumbency (§3.14). Requires `choice`. |
+| `rank` | integer | no | Where the issuer ranks `choice` among the subject's choices: `1` is their first choice (§3.16). Requires `choice`; only with `endorse` or `lean_for`. |
 | `weight` | number | no | Strength/confidence in `[0, 1]`. |
 | `statement` | string | no | Free-text endorsement / rationale. |
 | `source` | string | no | URL backing the position. |
@@ -409,6 +410,29 @@ Consumers:
 
 Adoptions (§3.10) take on positions only, not articles.
 
+### 3.16 Ranked preferences — `rank`
+
+`rank` puts an issuer's choices in a subject in order of preference: `1` is
+their first choice, `2` their second, and so on. It is how a slate says
+"rank Alice first and Bob second" in a ranked-choice contest
+(`BallotContest.ranks`, §3.14), and it MAY be used in any other contest to
+say which of several acceptable choices the issuer prefers.
+
+- `rank` is an integer ≥ 1. It requires `choice`, and the stance MUST be
+  `endorse` or `lean_for`: ranking a choice is a vote for it.
+- Positions on the same subject in one slate SHOULD NOT share a rank, and
+  ranks SHOULD run from 1 without gaps. Consumers order positions by rank;
+  ties keep the order the slate lists them in.
+- Choices the issuer endorses without a rank (a dual endorsement: "rank both,
+  in either order") come after the ranked ones, in no particular order.
+- A rank is not a mark on the ballot. In a contest that isn't ranked, a
+  consumer that marks a ballot from a ranking marks the first `vote_for`
+  ranked choices; in a ranked-choice contest, the first `ranks` of them, in
+  that order.
+
+`statement` is free text (§3.14): consumers MUST NOT read a rank out of it
+("first choice", "#2").
+
 ---
 
 ## 4. Canonical JSON
@@ -627,6 +651,13 @@ version by adding OPTIONAL fields (verifiers must already reject unknown fields,
 such additions ship with a coordinated spec revision). Incompatible changes bump `v`.
 
 ### 10.1 Changelog (within v1)
+
+- **2026-10-26** — Added optional `rank` to `Position` (§3.16): an issuer's
+  order of preference among a subject's choices, for ranked-choice contests
+  and beyond, where ranked endorsements had been written into `statement`.
+  Amended in place; verifiers built before this revision reject slates that
+  use it (closed schema, §3.8), so consumers should upgrade before
+  publishers use it.
 
 - **2026-10-25** — Added optional `ballot` to `Subject` and `Position`
   (§3.14): how the ballot prints a contest and a choice, as fields, where

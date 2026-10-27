@@ -43,6 +43,13 @@ slateDef.properties.positions.items.dependencies = {
   choice_id: ["choice"],
   write_in: ["choice"],
   ballot: ["choice"],
+  rank: ["choice"],
+};
+// A rank is a vote for the choice (SPEC §3.16).
+slateDef.properties.positions.items.if = { required: ["rank"] };
+// biome-ignore lint/suspicious/noThenProperty: JSON Schema's if/then keyword, not a thenable.
+slateDef.properties.positions.items.then = {
+  properties: { stance: { enum: ["endorse", "lean_for"] } },
 };
 slateDef.properties.articles.items.dependencies = { choice_id: ["choice"] };
 
