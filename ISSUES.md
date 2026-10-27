@@ -76,3 +76,15 @@ console shows an error. Either turn off the automatic beacon injection for
 the zone (a Cloudflare setting: needs the owner's authorization, through the
 ops repo), or decide to allow it in the CSP (which the `_headers` comment rules
 out on purpose).
+
+## Setup's "Follow 1 and see my ballot" may neither follow nor import
+
+Seen 2026-10-26 ~8:45 PM PDT (03:45Z) in a fresh browser profile on the dev
+server (`bunx vite`, master `fa2d974`). On the home page: "Show every race
+instead", then Follow on Courage California (its row turned
+`standing-follow`), then "Follow 1 and see my ballot →". My ballot opened
+saying "0 of 0 sources followed". `openslate.follows.v2` was never written,
+and the slates collection held only the 5 election-office listings: Courage
+California's slate wasn't imported. The clicks were automated (CDP
+coordinate clicks), so this may be a test artifact, but it needs a manual
+repro. Matters because this is the first-run path every new voter takes.
