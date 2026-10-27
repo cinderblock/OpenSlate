@@ -342,6 +342,30 @@ export const POSITIVES: PositiveDef[] = [
     },
   },
   {
+    name: "regional-measure",
+    description:
+      "A measure filed under a region whose path doesn't show what it contains, with the counties that vote on it (SPEC §3.3 `voted_in`).",
+    signer: "alice",
+    payload: {
+      v: 1,
+      issuer: { name: "Alice", kind: "individual" },
+      issued_at: "2026-10-01T00:00:00Z",
+      positions: [
+        {
+          subject: {
+            title: "Springfield Region — Measure RT",
+            kind: "measure",
+            jurisdiction: "us/ca/springfield-region",
+            voted_in: ["us/ca/shelbyville-county", "us/ca/springfield-county"],
+            election: "2026-11-03",
+          },
+          stance: "endorse",
+          choice: "Yes",
+        },
+      ],
+    },
+  },
+  {
     name: "adopts-reference",
     description:
       "Slate adopting two positions of another (secondhand) slate by reference instead of " +
@@ -659,6 +683,35 @@ export const NEGATIVES: NegativeDef[] = [
       );
     },
     expect: { error_contains: ["rank"] },
+  },
+  {
+    name: "voted-in-empty",
+    description:
+      "Validly signed token with an empty `voted_in`. It names at least one jurisdiction; MUST be rejected (SPEC §3.3).",
+    build: (h) => {
+      const key = h.pubkey("alice");
+      return h.sign(
+        { alg: "EdDSA", typ: "openslate+jws", kid: key },
+        {
+          v: 1,
+          issuer: { key },
+          issued_at: "2026-01-01T00:00:00Z",
+          positions: [
+            {
+              subject: {
+                title: "Measure RT",
+                jurisdiction: "us/ca/springfield-region",
+                voted_in: [],
+              },
+              stance: "endorse",
+              choice: "Yes",
+            },
+          ],
+        },
+        h.seed("alice"),
+      );
+    },
+    expect: { error_contains: ["voted_in"] },
   },
   {
     name: "choice-id-without-choice",

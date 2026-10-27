@@ -79,6 +79,8 @@ export const subjectSchema = z
     jurisdiction: z.string().min(1).optional(),
     /** Whose voters decide it, when narrower than `jurisdiction` (SPEC §3.3). Not identity. */
     district: z.string().min(1).optional(),
+    /** The jurisdictions whose voters decide it together, when `jurisdiction` is a region (SPEC §3.3). Not identity. */
+    voted_in: z.array(z.string().min(1)).min(1).optional(),
     election: z.string().min(1).optional(),
     uri: httpUrl.optional(),
     /** How the ballot prints the contest (SPEC §3.14). Not identity. */

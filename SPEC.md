@@ -95,6 +95,7 @@ Secret keys, when serialized (e.g. for backup), use the same scheme over the
 | `kind` | string | no | `candidate` \| `measure` \| `race` \| `option` \| other. |
 | `jurisdiction` | string | no | e.g. `us/ca/sf`. |
 | `district` | string | no | Whose voters decide it, when narrower than `jurisdiction`: a path like `jurisdiction`'s (below). Not part of identity. |
+| `voted_in` | string[] | no | The jurisdictions whose voters decide it together, when `jurisdiction` spans several: a regional measure's counties (below). Not part of identity. |
 | `election` | string | no | Election identifier or date. |
 | `uri` | string | no | Link for more info. |
 | `ballot` | `BallotContest` | no | How the ballot prints the contest: heading, measure number and label, how many to vote for (§3.14). Not part of identity. |
@@ -124,6 +125,36 @@ can't tell whether a voter is in a district SHOULD say so, not guess. Because
 `district` is not part of identity, slates that omit it, or disagree about
 it, still refer to the same subject; a ballot listing's (§8.2) value is the
 one to prefer.
+
+**`voted_in`** lists where a contest is on the ballot when its `jurisdiction`
+is a region whose path doesn't show what it contains. A path shows
+containment only by its prefix (`us/ca/sf` is in `us/ca`), so a measure filed
+under `us/ca/bay-area` says nothing about whose ballot it is on, and a region's
+name doesn't settle it either: one Bay Area measure is put to five counties,
+another to nine. `voted_in` names them, each a path like `jurisdiction`. A
+voter in any one of them has the contest on their ballot, as if it were filed
+under that path; `district`, if also given, still narrows it. For example:
+
+```json
+{
+  "title": "Bay Area — Regional Measure RTM (Regional Transit Measure)",
+  "kind": "measure",
+  "jurisdiction": "us/ca/bay-area",
+  "voted_in": [
+    "us/ca/alameda-county",
+    "us/ca/contra-costa-county",
+    "us/ca/san-mateo-county",
+    "us/ca/santa-clara-county",
+    "us/ca/sf"
+  ],
+  "election": "2026-11-03"
+}
+```
+
+It MUST NOT be empty, and SHOULD NOT repeat a path. Like `district`, it is not
+part of identity, and a ballot listing's value is the one to prefer: a
+county's listing knows the contest is on its own ballot, and SHOULD still name
+every jurisdiction that votes on it, so that slates agree.
 
 ### 3.4 `Position`
 
@@ -651,6 +682,14 @@ version by adding OPTIONAL fields (verifiers must already reject unknown fields,
 such additions ship with a coordinated spec revision). Incompatible changes bump `v`.
 
 ### 10.1 Changelog (within v1)
+
+- **2026-10-26** — Added optional `voted_in` to `Subject` (§3.3): the
+  jurisdictions whose voters decide a contest together, when its
+  `jurisdiction` is a region whose path doesn't show what it contains (a
+  regional measure filed under `us/ca/bay-area`). Not part of identity.
+  Amended in place; verifiers built before this revision reject slates that
+  use it (closed schema, §3.8), so consumers should upgrade before publishers
+  use it.
 
 - **2026-10-26** — Added optional `rank` to `Position` (§3.16): an issuer's
   order of preference among a subject's choices, for ranked-choice contests

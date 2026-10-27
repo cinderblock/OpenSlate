@@ -64,4 +64,24 @@ describe("racesByJurisdiction", () => {
     } as SlatePayload;
     expect(racesByJurisdiction(withArticles)).toEqual({ "us/ca": 1, "us/ca/sf": 1 });
   });
+
+  test("a regional contest counts where it's voted, not under the region (SPEC §3.3)", () => {
+    const rtm = {
+      title: "Bay Area — Regional Measure RTM",
+      kind: "measure",
+      jurisdiction: "us/ca/bay-area",
+      voted_in: ["us/ca/alameda-county", "us/ca/sf", "us/ca/sf"],
+      election: E,
+    };
+    const measure = { title: "Measure A", kind: "measure", jurisdiction: "us/ca/sf", election: E };
+    const withArticles = {
+      ...payload([
+        { subject: rtm, stance: "endorse", choice: "Yes" },
+        { subject: measure, stance: "endorse", choice: "Yes" },
+      ]),
+      articles: [{ subject: rtm, uri: "https://news.example/rtm", title: "RTM, explained" }],
+    } as SlatePayload;
+    // Once per county however often it's named; SF has it and Measure A.
+    expect(racesByJurisdiction(withArticles)).toEqual({ "us/ca/alameda-county": 1, "us/ca/sf": 2 });
+  });
 });
