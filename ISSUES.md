@@ -34,7 +34,11 @@ what "your area's" means for a regional outlet (e.g. by where its races are
 rather than its scope). Matters because a voter's own regional paper is
 tucked away with out-of-area ones.
 
+Decided (user, 2026-10-26): do whichever rule is *best*, even if it's more work; don't re-ask.
+
 ## `bun run lint` fails on every file in a Windows checkout
+
+**In progress — master (issues thread, lint).** Decided: upgrade to Biome 2 with `formatter.lineEnding: "auto"`.
 
 With `core.autocrlf=true` the working tree is CRLF, but `biome.json` leaves
 `formatter.lineEnding` at its default (`lf`), so `bun run lint` reports ~104
@@ -46,6 +50,8 @@ needs a choice that works on both OSes (e.g. a `.gitattributes` policy, or
 Biome 2's `lineEnding: "auto"`).
 
 ## Biome errors on master, beyond the line endings
+
+**In progress — master (issues thread, lint), with the Biome 2 upgrade above.**
 
 With line endings set aside (Biome with `"lineEnding": "crlf"`), `bunx biome
 check apps packages` still fails on master `612c12a` (2026-10-24):
@@ -80,6 +86,8 @@ Required` (seen 2026-10-23 on `orgs/ca-republican-party/2026-11-03/positions.jso
 `sign` accepts the same file. Either `validate` should accept sign input, or the
 skill should validate another way (the endorsements repo's
 `verify-positions.ts` already does the schema check).
+
+Leaning (user, 2026-10-26): `validate` accepts sign input, but the user wasn't sure; weigh it and say which you chose and why.
 
 ## Cloudflare's analytics beacon is injected and then blocked by our CSP
 
