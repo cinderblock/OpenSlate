@@ -44,6 +44,7 @@ commit, push master.
 - [x] 1. Setup follow: interrupted setup downloads now resume (`pendingSetup.ts`)
 - [x] 2. Regional outlets: catalog `regions` (core `regionsOf`, `sign --batch`), setup's `basedInArea` (`plans/regional-outlets-setup.md`). Live: endorsements `b3ba2e9` re-signed the catalog, checked on openslate.us
 - [x] 3. validate: accepts sign input; core `signInputSchema` (closed) shared by `validate`, `sign`, `sign --batch` and `adopt --into`
+- [x] 3b. Doubled quote marks on statements: the app no longer adds quotes; a statement is a ruled block (`.statement`) shown as written
 - [ ] 4. Dark theme contrast
 - [ ] 4b. Endorsements CI gate: use `signInputSchema` (new, found by 3)
 - [ ] 5. Council districts
@@ -86,6 +87,16 @@ commit, push master.
   keys silently; it now rejects them like `validate`. All 387 published
   bundles pass. Found: `verify-positions.ts` drops `adopts`/`labels` before
   its check (new ISSUES.md entry, endorsements repo).
+
+- Doubled quote marks (2026-10-26): fixed in the app, not the bundles.
+  SPEC §3.4 makes `statement` free text, not a quotation: Courage
+  California's statements are unquoted summaries ("Tax billionaires and
+  backfill…"), so the app's curly quotes were wrong there too, and scraped
+  bundles' own quote marks separate several excerpts (`"a"; "b"`), which
+  stripping would lose and re-signing 100+ bundles would cost. Both render
+  sites (`ChoiceRow` popover, `RacePanel` position list) now use
+  `<blockquote className="statement">`, a left rule with no glyphs. Labels
+  (`“{label}”`) keep their quotes: they are the source's own term.
 
 ## Open questions for the user
 

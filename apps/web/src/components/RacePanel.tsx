@@ -391,7 +391,9 @@ function ChoiceCard({
                     {position.label}: {position.labelDescription}
                   </div>
                 )}
-                {position.statement && <div className="hint">“{position.statement}”</div>}
+                {position.statement && (
+                  <blockquote className="statement hint">{position.statement}</blockquote>
+                )}
               </span>
             </li>
           ))}

@@ -1,17 +1,5 @@
 # Issues
 
-## Quoted statements show doubled quote marks
-
-**In progress — master (ISSUES.md burn-down).**
-
-Seen 2026-10-26: scraped bundles in openslate-public-endorsements write each
-statement as one or more quoted excerpts (`"\"We recommend …\"; \"…\""`, in
-over a hundred bundles), and the web app wraps `statement` in curly quotes too
-(`ChoiceRow.tsx` popover, `RacePanel.tsx` position list), so voters see
-`“"We recommend voting for Shirley Weber."”`. Either the app shouldn't add
-quotes to a statement that's already quoted, or the bundles should drop
-theirs. Affects every scraped source's statements.
-
 ## No lookup places a voter in a city council district
 
 Seen 2026-10-26 (a Sunnyvale voter's report): the Santa Clara listing files

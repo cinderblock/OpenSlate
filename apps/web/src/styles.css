@@ -310,6 +310,14 @@ main p {
   color: var(--muted);
   font-size: 0.9rem;
 }
+/* A source's statement is free text (SPEC §3.4), shown as the source wrote it:
+   scraped ones already carry their own quote marks, so the rule marks it as
+   quoted rather than adding glyphs. */
+.statement {
+  margin: 0.25rem 0;
+  padding-left: 0.6rem;
+  border-left: 3px solid var(--border);
+}
 .error {
   color: var(--bad);
   font-size: 0.9rem;

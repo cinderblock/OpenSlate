@@ -201,7 +201,9 @@ export function ChoiceRowContent({
                       {countsAs.charAt(0).toUpperCase() + countsAs.slice(1)}.
                     </p>
                   )}
-                  {position.statement && <p>“{position.statement}”</p>}
+                  {position.statement && (
+                    <blockquote className="statement">{position.statement}</blockquote>
+                  )}
                   {position.written && (
                     <p className="hint">
                       Named as “{position.written}”; the ballot spells it as above.
