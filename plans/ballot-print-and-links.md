@@ -184,7 +184,7 @@ Steps:
    fixed.
 6. C6 data for `articles`: answered 2026-10-26, see Part F.
 
-### Part D — imported catalog slates update (2026-10-26) ← current
+### Part D — imported catalog slates update (2026-10-26) — done
 
 The app stores a catalog slate's token once and never looks again
 (ISSUES.md "Imported catalog slates never update"). Two halves:
@@ -209,7 +209,7 @@ The app stores a catalog slate's token once and never looks again
    match a catalog entry).
 3. D3 then C5 (remove the text fallbacks), once D1 and D2 are live.
 
-### Part E — ranking is the primary interface (2026-10-26)
+### Part E — ranking is the primary interface (2026-10-26) ← current
 
 1. E1 spec: `Position.rank` (integer ≥ 1, 1 = first choice, requires
    `choice`, only with `endorse` / `lean_for`): ranked endorsements are in
@@ -308,10 +308,24 @@ The app stores a catalog slate's token once and never looks again
   dev app with locally signed copies: "Rank up to ten choices", "Vote for
   no more than three", party · designation · incumbent, proposition
   label and type.
-- [ ] C5 remove the text fallbacks: after Part D.
+- [x] C5 (`a5c…` see git log, 2026-10-26): no fallbacks left. A race no
+  listing covers shows its title whole and no vote-for line; measure search
+  words come from place + `ballot.heading`; the export lost its BallotNote
+  column.
 - [x] C6 answered (Part F).
-- [ ] D1 publish keeps unchanged tokens
-- [ ] D2 app updates imported catalog slates
+- [x] D1 endorsements `e4f288d`: `scripts/keep-unchanged.ts` after
+  signing. First CI run 2026-10-26 5:56 PM PDT (00:56Z): "376 slate(s)
+  unchanged since the last publish, 0 new or changed". Tested end to end
+  with a throwaway key first (unchanged slate kept its token and date,
+  edited one got a new one).
+- [x] D2 `4bf99f6`: `lib/catalogUpdates.ts` (`staleImports`,
+  `updateProblem`), `updateFromCatalog` through the import queue (new
+  `kind: "update"`, `check`, `replaces`; old tokens removed after the new
+  are stored), `CatalogUpdater` in App, banner copy for updates, usage
+  event `catalog.update`. Verified: a local test catalog (Sierra Club
+  55 → 54 positions replaced, "Updated 1 source"), then the live catalog:
+  this dev profile's 5 slates from Oct 20–23 became the Oct 26 ones with
+  `ballot` fields ("Updated 5 sources").
 - [ ] E1–E4 ranking
 - [ ] F1–F3 articles
 
@@ -323,6 +337,14 @@ The app stores a catalog slate's token once and never looks again
 3. ~~Who publishes the first `articles`~~: answered 2026-10-26 (Part F).
 
 ## Findings added during the build
+
+- The query cache is persisted (IndexedDB `keyval-store` /
+  `openslate.query-cache`) with a 5-minute staleTime, so a just-published
+  catalog reaches an open app on its next refetch after that, not on a
+  reload within it. Fine for real use; when testing, delete that key.
+- The catalog's `issued_at`, `election`, `scope` and `issuer.key` match
+  every published slate's payload (checked all 376), so a stream can be
+  matched from the index alone.
 
 - Ranked choice isn't in any county's list. Sourced rules in the scripts:
   SF city offices and Supervisors rank up to 10 (sf.gov/ranked-choice-voting);
