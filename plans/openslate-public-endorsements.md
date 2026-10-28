@@ -476,8 +476,43 @@ listing covers the race, so every edit runs `normalize-choices --apply`,
 (no `resolveAdoptions` in `apps/web`), so the deferred copy → adopt conversions
 stay deferred.
 
-- [ ] R3a agent: sf-chronicle, bay-area-news-group, sf-examiner, bernal-heights-dems
-- [ ] R3b agent: southern-california-news-group, la-times, sd-lincoln-club, la-county-federation-of-labor
-- [ ] Chrome (me): sierra-club-sf-bay, Sierra Club Santa Lucia, NFIB CA + FedPAC, VC Star,
-      Desert Sun, Napa/Placer/El Dorado measure lists (Placer placeholder titles), San Benito list
-- [ ] normalize-choices, verify, commit per org, push, CI
+- [x] R3a agent:
+  - sf-chronicle 53 → 64 `44e6ea6` (Props 40/43, Supe D10, school and college boards, Prop J,
+    Oakland EE; only Governor still "Coming Soon")
+  - bay-area-news-group 28 → 35 `5eee991` (**Prop 37 flipped Yes → No**, Oct 26 editorial; the
+    board doesn't endorse for governor)
+  - new bernal-heights-democratic-club 47 `37dbcf9` (slate card image, transcribed; Props 4/38
+    re-checked by eye; renamed from the assigned `bernal-heights-dems` to match other SF clubs)
+  - sf-examiner: still no November editorials (gap)
+- [x] R3b agent: sd-lincoln-club 58 → 77 `d92a0ab` (all 14 props, County A/B, "City of San Diego
+  Measure M" filed as SDUSD M, the only Measure M on the ballot); SCNG, LA Times, LA Fed
+  unchanged `65002bf` (LA Fed's "page 7" never existed: its file names skip 7)
+- [x] Chrome (me):
+  - sierra-club-sf-bay unchanged `22c9f99`
+  - new sierra-club-santa-lucia 8 + 13 adopted from Sierra Club California `5dfc127`
+    (`scripts/adopt.ts` now matches the same person under the ballot spelling, core `samePerson`)
+  - nfib 6 → 44 `7d8938f` (NFIB CA PAC's 30 legislative + FedPAC's 8 House picks; Cloudflare
+    cleared by itself in Chrome)
+  - VC Star and Desert Sun: no 2026 editorial-board picks (Gannett; VC Star only has readers'
+    letters, Desert Sun's newest editorial is from March 2025)
+  - Placer GOP's 7 placeholder measure titles retitled from the county's list `ca52390`
+  - American Canyon Measure P title confirmed against the city's page `3bd7f06`
+  - El Dorado Dems' locals checked against the county's Candidates on Ballot Report; LTUSD
+    Area 5 dropped (not on the ballot) `7439f73`
+  - South Bay Labor Council +3 San Benito picks confirmed on San Benito's list `4153962`
+    (Gavilan CCD Areas 5/7 still out: on neither county's list)
+- [x] normalize-choices (+ `--suggested` for NFIB's "Kristi" Bruce-Lane and "Joshua" Hoover,
+  checked by hand), assign-voted-in and refile-localities clean; verify 390 OK, 1 failed (the
+  held-back, untracked `sd-green-party`); every publish run green.
+- Marin IJ's reruns of BANG's Prop 5/43/45 editorials are syndicated BANG pieces (labelled
+  "BANG endorsement"), not IJ picks, so no adoption (matches its NOTES).
+
+**Result (2026-10-28 11:00 AM PDT, 18:00Z): 351 November endorser slates, 11,022 positions live;
+11 slates adopt by reference.** (The catalog also carries 9 election-authority listings, which
+the web app treats as ballot data, not sources.)
+
+Still open after round 3:
+- Web app doesn't expand `adopts` yet, so the deferred copy → adopt conversions above wait.
+- SF Chronicle Governor ("Coming Soon"), SCNG ("More will be published"), Sierra Club SF Bay
+  ("will be updated"): a last look on Nov 1–2 could catch late picks. Not scheduled.
+- The weekly scheduled task fires again 2026-11-04 and should delete itself (its guard).
