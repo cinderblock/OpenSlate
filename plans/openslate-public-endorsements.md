@@ -462,3 +462,22 @@ Known review items (details in each bundle's evidence/NOTES.md): SFTU is a
 paid slate mailer; WFP Connolly listed as SD 12 but on the ballot in SD 2
 (encoded SD 2); CAGOP neutral on Props 1 and 37; LWV CA's No on 37/41/42
 comes from icons only.
+
+## Round 3: pre-election re-scrape (2026-10-28, scheduled run)
+
+Started 2026-10-28 9:00 AM PDT (16:00Z). State found: endorsements repo `64d66cb`,
+388 bundles verify (only failure: the held-back, untracked `sd-green-party`). Other
+sessions added official ballot listings, `choice_id`s, `subject.district`/`voted_in`,
+labels, ranks and an evidence page since 10-19 (README "Ballot sources"). CI now
+fails any position whose choice isn't the ballot spelling with its `choice_id` where a
+listing covers the race, so every edit runs `normalize-choices --apply`,
+`assign-voted-in --apply` and `refile-localities` before verify.
+`ui/two-modes` merged, but the web app still doesn't expand `adopts`
+(no `resolveAdoptions` in `apps/web`), so the deferred copy → adopt conversions
+stay deferred.
+
+- [ ] R3a agent: sf-chronicle, bay-area-news-group, sf-examiner, bernal-heights-dems
+- [ ] R3b agent: southern-california-news-group, la-times, sd-lincoln-club, la-county-federation-of-labor
+- [ ] Chrome (me): sierra-club-sf-bay, Sierra Club Santa Lucia, NFIB CA + FedPAC, VC Star,
+      Desert Sun, Napa/Placer/El Dorado measure lists (Placer placeholder titles), San Benito list
+- [ ] normalize-choices, verify, commit per org, push, CI
