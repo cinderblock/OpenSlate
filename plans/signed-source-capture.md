@@ -38,8 +38,8 @@ accepted, and all 12 next steps are in scope, including the ones the plan deferr
   public blob (block pages often print the visitor's address). Local capture is for
   hosts that refuse CI, and any response containing that IP stays private.
 - Needs an account I don't have, so it stops at the boundary: a second CI witness on
-  GitLab (Q6). Save Page Now turned out not to need a key: an anonymous request was
-  accepted on 2026-10-30.
+  GitLab (Q6). Save Page Now accepts anonymous requests, but rate-limits GitHub's
+  addresses after a few, so a key is what would make it useful from CI.
 
 ## What was built
 
@@ -509,6 +509,10 @@ Verified offline and in Chrome, and provenance was rebuilt in the publish job.
   was fixed. The next scheduled run covers them, and the record was right to say so.
 - **The dead-page case works from the Archive's own bytes.** `archive.ts compare` found
   25 of 25 `sf-republican-party` statements in the 2026-10-18 snapshot.
+- **The Archive reads well from CI and writes slowly.** The first workflow run looked up
+  400 URLs (313 have snapshots) and compared 194, of which 108 hold every statement.
+  Save Page Now answered 429 after 3 requests from GitHub's address, with 1 accepted, so
+  anonymous snapshots will trickle in at a few an hour.
 
 Three bugs a build would hit again:
 
@@ -668,7 +672,8 @@ All 12 planned steps are built. What's left is:
 | Item | Needs |
 | --- | --- |
 | Merges above | The user |
-| A key would raise Save Page Now's rate; it runs anonymously today | An archive.org account |
+| Confirm the first scheduled run, 2026-10-31 3:00 AM PDT (10:00Z). It's the first CI proof of the thin-page rule, and the first provenance with Archive claims and the local Chronicle capture | Nothing: GitHub emails on failure |
+| An archive.org key, so CI can ask for more than a few snapshots an hour | An archive.org account, then a repo secret and a small change to `archive.ts` |
 | Second CI witness on GitLab | A GitLab account |
 | Decide on hosts blocked from CI: home fill-in by hand each time, or a self-hosted vantage | The user; a self-hosted runner can't earn the CI witness |
 | POST capture for XHR, step 3: not built | Nothing needs it yet. One page might: `alamedacountyca.gov/rov_app/candidatelist/`, unconfirmed |
