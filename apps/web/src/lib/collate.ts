@@ -80,6 +80,11 @@ export function decodeSlates(rows: Array<{ token: string; importedAt: string }>)
   return out;
 }
 
+/** A slate verified earlier and kept (catalogCopy.ts), so `decodeSlates` needn't again. */
+export function rememberVerified(token: string, payload: SlatePayload): void {
+  verified.set(token, { payload, valid: true, source: sourceOf(payload) });
+}
+
 /** The election a position belongs to: its subject's, else the slate's context. */
 export function electionOf(subject: Subject, payload: SlatePayload): string | undefined {
   return subject.election ?? payload.context?.election;

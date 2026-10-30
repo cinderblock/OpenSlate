@@ -7,6 +7,8 @@ import {
   raceSearchText,
   searchTerms,
   sourceSearchText,
+  raceSearchFields,
+  startsAWord,
 } from "../src/lib/search";
 import type { Source } from "../src/lib/sources";
 
@@ -142,5 +144,71 @@ describe("position search", () => {
     expect(matchesSearch(text, searchTerms("2026-11-03"))).toBe(true);
     expect(matchesSearch(text, searchTerms("housing"))).toBe(true);
     expect(matchesSearch(text, searchTerms("governor"))).toBe(false);
+  });
+});
+
+describe("raceSearchFields", () => {
+  const position = (name: string) => ({
+    source: { id: name, name, secondhand: true, signerKey: "k" },
+    stance: "endorse" as const,
+    valid: true,
+    standing: "off" as const,
+  });
+  const race = {
+    key: "k",
+    subject: { title: "Mayor" },
+    jurisdiction: "us/ca/oakland",
+    onBallot: true,
+    unlisted: false,
+    followedSources: 0,
+    totalSources: 2,
+    choices: [
+      {
+        choice: "Barbara Lee",
+        positions: [position("Sierra Club")],
+        support: 0,
+        opposition: 0,
+        onBallot: true,
+        writeIn: false,
+      },
+    ],
+  };
+  const statewide = {
+    ...race,
+    subject: { title: "Attorney General" },
+    jurisdiction: "us/ca",
+    choices: [
+      {
+        ...race.choices[0],
+        choice: "Rob Bonta",
+        positions: [
+          position("Santa Barbara County Democratic Party"),
+          position("Edwin M. Lee Asian Pacific Democratic Club"),
+        ],
+      },
+    ],
+  };
+  const whole = (r: typeof race, query: string) =>
+    raceSearchFields(r as never).some((field) => matchesSearch(field, searchTerms(query)));
+
+  test("a name held by one candidate is whole; the same words apart aren't", () => {
+    expect(whole(race, "barbara lee")).toBe(true);
+    expect(whole(statewide as never, "barbara lee")).toBe(false);
+    // ...though the race as a whole still has both words.
+    expect(matchesSearch(raceSearchText(statewide as never), searchTerms("barbara lee"))).toBe(true);
+  });
+
+  test("the title and where it's voted on count as one field", () => {
+    expect(whole(race, "oakland mayor")).toBe(true);
+  });
+
+  test("so does one source's name", () => {
+    expect(whole(race, "sierra club")).toBe(true);
+  });
+
+  test("startsAWord finds a name's words, not the inside of one", () => {
+    expect(startsAWord("Barbara Lee", "lee")).toBe(true);
+    expect(startsAWord("Kathleen Werner", "lee")).toBe(false);
+    expect(startsAWord("Donald P. (Don) Wagner", "don")).toBe(true);
   });
 });

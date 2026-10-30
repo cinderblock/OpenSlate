@@ -74,6 +74,32 @@ export function raceSearchText(race: Race): string {
 }
 
 /**
+ * The same text as `raceSearchText`, a field at a time: the race and where it's
+ * voted on, then each choice and each source. A long list can tell a race that
+ * holds a whole name ("barbara lee", in one candidate) from one that merely has
+ * the words apart ("Santa Barbara County Democrats" and "Edwin M. Lee Club").
+ */
+export function raceSearchFields(race: Race): string[] {
+  const place = [race.jurisdiction, race.district, ...(race.votedIn ?? [])].map(
+    (path) => path && jurisdictionLabel(path),
+  );
+  return [
+    searchTextOf([race.subject.title, ...place]),
+    ...race.choices.flatMap((choice) => [
+      foldText(choice.choice),
+      ...choice.positions.map((position) => foldText(position.source.name)),
+    ]),
+  ];
+}
+
+/** Whether a word starts somewhere in a name: "lee" finds Barbara Lee, not Kathleen. */
+export function startsAWord(name: string, term: string): boolean {
+  return foldText(name)
+    .split(/[\s,.()"-]+/)
+    .some((word) => word.startsWith(term));
+}
+
+/**
  * What an imported source is found by: its name, the researcher who reported
  * it, its link, and the elections it covers (as dated, and as shown).
  */

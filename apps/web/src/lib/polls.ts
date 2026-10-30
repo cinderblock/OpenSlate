@@ -11,6 +11,8 @@ import {
   type Subject,
   US_STATE_NAMES,
 } from "@openslate/core";
+import { useQueries } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { baseUrlFor } from "./routing";
 
 export type { Poll, PollAnswer } from "@openslate/core";
@@ -198,5 +200,36 @@ export function pollsBySubjectQueryOptions(subjectKey: string) {
     queryFn: async (): Promise<Poll[]> => pollsSource.pollsForKey(subjectKey),
     enabled: subjectKey.length > 0,
     staleTime: 1000 * 60 * 15,
+  };
+}
+
+/**
+ * The polls of one race, newest first, from every provider key that might hold
+ * them (most specific first; each shares TanStack's cache, so a remount is
+ * free). `PollsSource` keeps the taxonomy's quirks to itself.
+ */
+export function useRacePolls(subject: Subject) {
+  const lookup = useMemo(() => pollsSource.lookup(subject), [subject]);
+  const queries = useQueries({
+    queries: lookup.subjectKeys.map((key) => pollsBySubjectQueryOptions(key)),
+  });
+  const polls = useMemo(() => {
+    const seen = new Set<string>();
+    const merged: Poll[] = [];
+    for (const q of queries) {
+      for (const p of q.data ?? []) {
+        if (seen.has(p.id)) continue;
+        if (!pollsSource.matches(p, lookup)) continue;
+        seen.add(p.id);
+        merged.push(p);
+      }
+    }
+    return merged.sort((a, b) => (b.end_date ?? "").localeCompare(a.end_date ?? ""));
+  }, [queries, lookup]);
+  return {
+    lookup,
+    polls,
+    loading: queries.some((q) => q.isLoading),
+    firstError: queries.find((q) => q.error)?.error,
   };
 }
