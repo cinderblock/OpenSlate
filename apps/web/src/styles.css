@@ -35,6 +35,9 @@
   --jws-payload: #6a3fc0;
   --jws-signature: #0b6a88;
   /* District map: see .map-color-0 below. */
+  --record-agree: #18794a;
+  --record-partly: #8a93a1;
+  --record-differ: #c52a2a;
   --map-0: #eda100;
   --map-1: #e87ba4;
   --map-2: #008300;
@@ -71,6 +74,9 @@
     --jws-header: #ff79c6;
     --jws-payload: #bd93f9;
     --jws-signature: #8be9fd;
+    --record-agree: #27a35f;
+    --record-partly: #7b8494;
+    --record-differ: #e0604f;
     --map-0: #b87b04;
     --map-1: #c24c78;
     --map-2: #037904;
@@ -107,6 +113,9 @@
   --jws-header: #ff79c6;
   --jws-payload: #bd93f9;
   --jws-signature: #8be9fd;
+  --record-agree: #27a35f;
+  --record-partly: #7b8494;
+  --record-differ: #e0604f;
   --map-0: #b87b04;
   --map-1: #c24c78;
   --map-2: #037904;
@@ -4066,4 +4075,157 @@ button.tag.active {
   .race-row-actions {
     justify-content: flex-start;
   }
+}
+
+/* Compare: who agrees with the voter's picks. */
+.compare-summary p {
+  margin: 0.25rem 0;
+}
+.compare-controls {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-top: 0.5rem;
+}
+.compare-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(26rem, 100%), 1fr));
+  gap: 0 1rem;
+  align-items: start;
+}
+.compare-group h3 {
+  margin: 0;
+}
+.compare-group > .hint {
+  margin: 0.25rem 0 0.5rem;
+}
+.compare-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.compare-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.25rem 0.6rem;
+  align-items: start;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--border);
+}
+.compare-row-body {
+  min-width: 0;
+}
+.compare-row-head {
+  overflow-wrap: anywhere;
+}
+.compare-line {
+  font-size: 0.875rem;
+}
+.compare-details > summary {
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.compare-follow {
+  justify-self: end;
+}
+@container (max-width: 30rem) {
+  .compare-follow {
+    grid-column: 2 / -1;
+    justify-self: start;
+  }
+}
+.compare-group {
+  container-type: inline-size;
+}
+.compare-folded,
+.compare-races {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  font-size: 0.875rem;
+}
+.compare-races li {
+  display: grid;
+  grid-template-columns: 6.25rem minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: start;
+  padding: 0.25rem 0;
+}
+@container (max-width: 30rem) {
+  .compare-races li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
+.compare-verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.compare-verdict.verdict-agree .icon {
+  color: var(--record-agree);
+}
+.compare-verdict.verdict-differ .icon {
+  color: var(--record-differ);
+}
+/* One whole split into parts: thin, rounded, a 2px gap and no zero-width part. */
+.record-bar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  max-width: 16rem;
+  margin: 0.25rem 0;
+}
+.record-bar > span {
+  flex-basis: 0;
+  min-width: 4px;
+}
+.record-bar > span:first-child {
+  border-radius: 4px 0 0 4px;
+}
+.record-bar > span:last-child {
+  border-radius: 0 4px 4px 0;
+}
+.record-bar > span:only-child {
+  border-radius: 4px;
+}
+.record-agree {
+  background: var(--record-agree);
+}
+.record-partly {
+  background: var(--record-partly);
+}
+.record-differ {
+  background: var(--record-differ);
+}
+.record-legend {
+  display: inline-flex;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+}
+.record-swatch {
+  display: inline-block;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 2px;
+}
+.compare-method ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+}
+.compare-method li {
+  margin: 0.35rem 0;
+}
+.compare-method > summary {
+  cursor: pointer;
+}
+.compare-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.875rem;
 }

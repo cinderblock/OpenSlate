@@ -86,23 +86,68 @@ office races have no `vote_for`) the most names any one source backs there, and
 a conflict resting on that guess counts half. The voter's own count needn't
 raise it: when they fill the guessed seats the clamp gives the same answer.
 
+## What "orthogonal" became
+
+The user offered two readings. They're different things, so each got a group:
+
+- **Split with you** (mixed): at least 6 scored races and 35–65% agreement. A
+  source that speaks to the voter's races and comes out even. Where the record
+  splits by kind of race it says so ("agreed on 11 of 11 candidates, 0 of 11
+  measures"): that's the "different axis" made visible, inside a shared ballot.
+- **Looking at other races** (different focus): at least 5 races matched, at
+  least 3 unmarked races on the voter's ballot the source took a side on, and it
+  speaks to at most 25% of the marked races. Geography can't fake this: only
+  races on the voter's own ballot count. A finished ballot empties the group,
+  which is right: nothing is left to look elsewhere at.
+
+Thresholds were set by running simulated voters against the real catalog
+(see Findings), not by feel.
+
+## Design as built
+
+- `lib/alignment.ts`: pure scoring. `compareBallot` → `groupAlignments`.
+- `lib/comparison.ts`: `useBallotComparison` feeds it the voter's marks, deferred
+  so a mark paints first, and `useBallotElection`.
+- The catalog comes from `useAllRaces` (`lib/allSlates.ts`, the any-race thread's):
+  one kept, verified copy of the bundle for All races, All slates and Compare.
+- `components/CompareBallotPanel.tsx` (`/compare`; opening it asks for the catalog),
+  `components/CompareStrip.tsx` (My ballot's live line; never starts a download,
+  and is a link until this visit has the catalog).
+
 ## Plan / steps
 
-1. [ ] **Current:** pure scoring in `lib/alignment.ts`, tests, tried on
-   simulated voters against the real catalog.
-2. [ ] Data: load, verify and cache the catalog for the election off the main
-   thread.
-3. [ ] UI: `/compare` page, live strip on My ballot, one-click follow.
-4. [ ] README, checks, browser pass (desktop, phone), merge.
+1. [x] Pure scoring, tests, simulated voters.
+2. [x] Data: on the shared catalog copy (`useAllRaces`).
+3. [x] UI: `/compare`, live strip on My ballot, one-click follow.
+4. [x] README, checks, browser pass.
+5. [ ] **Current:** merge to master (deploys).
 
 ## Findings / gotchas
 
 - **Seat counts are mostly unknown:** of 1,567 November office races, 1,035 have
   no `vote_for`; 118 of those have an org backing 2+ names (West Hollywood City
   Council: 4). The spec forbids reading a seat count out of a title (§3.14).
-- **Verifying is the slow part:** `verifySlate` averages 21 ms per slate in Bun
-  (zod plus noble ed25519), about 7.5 s for the election on one thread, more on
-  a phone. It has to be off the main thread and cached.
+- **`feat/any-race-all-slates` shipped the same catalog loader first.** This thread
+  built its own (four verify workers, its own kept copy), then found `useAllRaces`
+  on rebase. Two paths would keep the 10 MB catalog twice, so that pipeline was
+  dropped and Compare sits on the shared one. The worker version is on the local
+  branch `ballot-alignment-worker-pipeline` (`b0a23cb`), and its speed gain is in
+  ISSUES.md.
+- **Verifying is the slow part.** Measured in a production worker on a 12-core
+  desktop, 349 slates: 4.3 s on 1 thread, 1.9 s on 4, 1.5 s on 8. Bundle fetch
+  ~0.1–0.5 s, `JSON.parse` 53 ms. The shared loader verifies on the page in 12 ms
+  slices, so it's in the single-thread range, once per catalog version.
+- **The strip is a link after a reload** until Compare or All races is opened in
+  that visit. Restoring the copy on My ballot would verify or collate the whole
+  catalog on the page for one line, at the moment the voter wants a fast ballot.
+- **Simulated voters (`$TEMP/alignment-scripts/persona.ts`, real catalog):**
+  SF Democratic Party's picks rank SF Dem clubs on top, Howard Jarvis and county
+  GOPs at the bottom; GrowSF's split 44 progressive SF groups into Mixed; "Dem on
+  candidates, GOP on measures" fills Mixed with labor, each "11 of 11 candidates,
+  0 of 11 measures". An early version let Looking-elsewhere swallow everyone at 3
+  picks (`open` is large on any partial ballot), so it now also requires low
+  coverage of what's marked, and at least 5 matched races.
+- **Don't halve an endorser's lean.** See Decisions: DSA SF showed 14 of 24 and 48%.
 - **The TanStack Query cache is the wrong place for it:** the whole client is
   persisted on every change, so a few MB of slates would slow everything.
 - **Most agreement isn't copying:** 258 pairs of orgs share ≥90% of the smaller
@@ -117,6 +162,14 @@ raise it: when they fill the guessed seats the clamp gives the same answer.
 
 - [x] Read the plans, collation, ballot view, ranking and the SPEC sections.
 - [x] Profiled the live catalog.
+- [x] Scoring and groups, 92 tests; rebased on the adopts expansion (`1357dde`),
+      using its `expandAdoptions` and `RacePosition.via`.
+- [x] Browser (Incognito): first load and restore; 9 aligned at 3 picks, matching
+      the simulation; 35 marks across all four groups; race lists; Sierra chapters
+      folded under Sierra Club California; one-click Follow imported the slate;
+      the strip tracked each pick live; "Sources I follow"; the empty state; 375 px
+      with no overflow; dark mode. Rechecked on the shared catalog after the rebase.
+- [x] 886 tests, typecheck, Biome.
 
 ## Open questions for the user
 
@@ -129,3 +182,4 @@ raise it: when they fill the guessed seats the clamp gives the same answer.
 - Don't say two orgs copied each other unless an `adopts` says so.
 - Don't count a neutral or abstain as disagreement.
 - Don't put catalog slates in the persisted query cache.
+- Don't make a second copy of the catalog: `useAllRaces` is the one.

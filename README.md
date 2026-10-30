@@ -65,7 +65,17 @@ for it. Its two sides:
   keys step back and forth. *Quick fill* marks many races at once: pick (or rule
   out) every candidate of a party, or agree with, or go against, everything
   one source recommends, followed or not. It only fills what you haven't
-  marked and can be undone. A race's own page compares every source's
+  marked and can be undone. *Compare* lines your picks up with every endorser
+  in the catalog, followed or not, live as you mark: most aligned, most at
+  odds, split with you (about even on enough shared races to say so), and
+  looking at other races (active on your ballot, but not on what you've
+  marked). It shows the count ("agreed on 12 of 14") and the races behind it,
+  ranks cautiously so two races at 100% can't beat forty at 90%, and counts a
+  clash only when two picks can't both go on one ballot, so a different name in
+  a vote-for-three isn't a disagreement. Neutral and abstaining aren't
+  disagreeing, and a group repeating another's list sits under it instead of
+  counting twice. It runs in your browser: every visitor downloads the same
+  public file, once, and your picks go nowhere. A race's own page compares every source's
   position and, where the catalog lists the election's official **voter
   guide** (the state's, or a county's for Congress, the Legislature and local
   races), shows it too: what the office does or what the measure would do,
@@ -404,7 +414,7 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 | --- | --- |
 | [`packages/core`](./packages/core) | `@openslate/core` — the standard's reference impl: types, schema, canonical JSON, Ed25519 sign/verify, JSON Schema export. Pure TS, minimal audited deps. |
 | [`packages/cli`](./packages/cli) | `@openslate/cli` — `keygen` / `pubkey` / `sign` (incl. `--batch` for research bundles) / `validate` / `verify` / `inspect` / `adopt` (copy or reference another slate's positions). |
-| [`apps/web`](./apps/web) | React + Vite SPA, voter-first. *My vote*: setup inline on My ballot, My ballot (your followed sources' endorsements by race, for your election and area, with private picks), All races (any race anywhere, with every slate on it, and the races you follow), and Sources (follow, disagree with, or leave off, the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/), import from link/file/QR/paste). *Publish* (a quiet link): identities, sign your picks (or any race) as a slate and share it, verify and inspect slates; view live polls and election results (and Kalshi market forecasts, when a self-hosted server opts in); pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
+| [`apps/web`](./apps/web) | React + Vite SPA, voter-first. *My vote*: setup inline on My ballot, My ballot (your followed sources' endorsements by race, for your election and area, with private picks), All races (any race anywhere, with every slate on it, and the races you follow), Compare (who agrees with your picks, across the whole catalog), and Sources (follow, disagree with, or leave off, the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/), import from link/file/QR/paste). *Publish* (a quiet link): identities, sign your picks (or any race) as a slate and share it, verify and inspect slates; view live polls and election results (and Kalshi market forecasts, when a self-hosted server opts in); pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
 | [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + relays for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic, with your `GOOGLE_API_KEY`), opinion polls ([VoteHub](https://votehub.com)), election results ([civicAPI](https://civicapi.org)), and, opt-in with `KALSHI_FORECASTS=true`, market forecasts ([Kalshi](https://kalshi.com)). |
 | [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls and [civicAPI](https://civicapi.org) results behind permissive CORS, relays opt-in address lookups to the [Census geocoder](https://geocoding.geo.census.gov/) (`POST /api/geocode/census`; nothing cached, logged or stored), and answers Google Civic Information lookups with the project's key (`GET /api/civic/elections`, `POST /api/civic/voterinfo`; only for openslate.us pages, addresses never cached, logged or stored). Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, `/api/geocode/census` and `/api/civic/*` shapes so the web client treats either backend identically. Runs at `https://api.openslate.us`. |
 | [`apps/desktop`](./apps/desktop) | [Electrobun](https://blackboard.sh/electrobun) desktop app around the web build, for Windows, macOS and Linux; standard and offline (catalog built in) editions, built and self-tested in CI, with signed self-updates. |

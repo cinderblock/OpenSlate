@@ -87,6 +87,11 @@ export interface AllRacesState {
   retry: () => void;
 }
 
+/** Whether this visit already has the catalog, without asking for it. */
+export function useCatalogCopyReady(): boolean {
+  return useSyncExternalStore(loader.subscribe, loader.status).state === "ready";
+}
+
 /** The last result, so going from page to page doesn't collate it all again. */
 let last: { signature: string; all: AllRaces } | undefined;
 

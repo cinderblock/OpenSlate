@@ -262,6 +262,10 @@ export interface RaceResult {
   label?: string;
   /** Who the source took this position on from. */
   via?: string;
+  /** It counts half because the voter's mark is a Maybe. */
+  maybe?: true;
+  /** It counts half because no listing says how many seats there are. */
+  guessedSeats?: true;
 }
 
 function sizeOfCommon(a: Set<string>, b: Set<string>): number {
@@ -327,13 +331,14 @@ function compare(race: Race, info: RaceFacts, marks: VoterMarks, stand: Stand): 
   const total = agreements + conflicts;
   if (total === 0) return { ...base, verdict: "compatible", score: 0, weight: 0 };
   const score = agreements / total;
-  let weight = marks.soft ? SOFT : 1;
-  if (conflicts > 0 && !info.seatsKnown && !info.ranks) weight *= SOFT;
+  const guessedSeats = conflicts > 0 && !info.seatsKnown && !info.ranks;
   return {
     ...base,
     verdict: score === 1 ? "agree" : score === 0 ? "differ" : "partly",
     score,
-    weight,
+    weight: (marks.soft ? SOFT : 1) * (guessedSeats ? SOFT : 1),
+    ...(marks.soft ? { maybe: true as const } : {}),
+    ...(guessedSeats ? { guessedSeats: true as const } : {}),
   };
 }
 
@@ -585,7 +590,10 @@ function foldRows(
     records.set(record, [...(records.get(record) ?? []), alignment]);
   }
   const rows = [...records.values()].map((same): AlignmentRow => {
-    const [top, ...rest] = [...same].sort(first);
+    // Whoever's list it is shows, never one repeating it.
+    const names = new Set(same.map((a) => a.source.name));
+    const repeater = (a: Alignment) => Number(names.has(a.repeats?.of ?? ""));
+    const [top, ...rest] = [...same].sort((a, b) => repeater(a) - repeater(b) || first(a, b));
     return { ...(top as Alignment), folded: rest };
   });
   const byEntity = new Map(rows.map((row) => [row.source.name, row]));

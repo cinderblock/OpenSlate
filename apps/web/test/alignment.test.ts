@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { Stance, Subject } from "@openslate/core";
+import { createSlate, generateKeyPair, type Stance, type Subject } from "@openslate/core";
+import { expandAdoptions } from "../src/lib/adoptions";
 import {
   type Alignment,
   compareBallot,
@@ -13,8 +14,15 @@ import {
   splitOf,
   wilson,
 } from "../src/lib/alignment";
-import { type DraftRow, NOTE_CHOICE, rowIdFor } from "../src/lib/ballotDraft";
-import type { ChoiceGroup, Race, RacePosition } from "../src/lib/collate";
+import { translateSlates } from "../src/lib/ballotCheck";
+import { applyPatch, type DraftRow, NOTE_CHOICE, rowIdFor } from "../src/lib/ballotDraft";
+import {
+  type ChoiceGroup,
+  collateRaces,
+  decodeSlates,
+  type Race,
+  type RacePosition,
+} from "../src/lib/collate";
 import { type Area, EMPTY_AREA } from "../src/lib/jurisdictions";
 import { subjectKey } from "../src/lib/subjects";
 
@@ -605,6 +613,15 @@ describe("groupAlignments", () => {
     expect(county?.repeats).toEqual({ of: "State", count: 5 });
     expect(county).toMatchObject({ agree: 5, differ: 1 });
   });
+  test("with one record between them, the original shows, not the one repeating it", () => {
+    const original = record("Zed State", 3, 3);
+    const copier = original.map((r) =>
+      measure(r.subject.title, { Yes: [["Ada County", "endorse", { via: "Zed State" }]] }),
+    );
+    const groups = grouped(merge(original, copier));
+    expect(names(groups.aligned)).toEqual(["Zed State"]);
+    expect(names(groups.aligned[0]?.folded ?? [])).toEqual(["Ada County"]);
+  });
   test("a list that's only partly another's keeps its own row", () => {
     const state = record("State", 5, 5);
     const copier = state
@@ -695,5 +712,70 @@ describe("evidenceOf", () => {
     expect(evidenceOf(5)).toBe("building");
     expect(evidenceOf(14)).toBe("building");
     expect(evidenceOf(15)).toBe("solid");
+  });
+});
+
+describe("from signed slates", () => {
+  const gov = { title: "Governor", kind: "race", jurisdiction: "us/ca", election: E } as Subject;
+  const prop = { title: "Prop 1", kind: "measure", jurisdiction: "us/ca", election: E } as Subject;
+  const researcher = generateKeyPair();
+  const report = (name: string, kind: string, extra: Partial<Parameters<typeof createSlate>[0]>) =>
+    createSlate({
+      keyPair: researcher,
+      issuer: { name: "Researcher", kind: "researcher" },
+      attribution: { of: { name, kind }, mode: "scraped", retrieved_at: "2026-10-19T00:00:00Z" },
+      context: { election: E },
+      positions: [],
+      ...extra,
+    });
+  const listing = report("Secretary of State", "election-authority", {
+    positions: [
+      { subject: gov, stance: "neutral", choice: "Alice A. Adams" },
+      { subject: gov, stance: "neutral", choice: "Bob Brown" },
+    ],
+  });
+  const state = report("State Party", "party", {
+    positions: [
+      { subject: gov, stance: "endorse", choice: "Alice Adams" },
+      { subject: prop, stance: "endorse", choice: "Yes" },
+    ],
+  });
+  const county = report("County Party", "party", {
+    adopts: [
+      {
+        issuer: state.payload.issuer.key,
+        of: "State Party",
+        election: E,
+        uri: "https://example.org/state.slate",
+      },
+    ],
+  });
+  const slates = translateSlates(
+    expandAdoptions(
+      decodeSlates(
+        [listing, state, county].map(({ token }) => ({
+          token,
+          importedAt: "2026-10-30T00:00:00Z",
+        })),
+      ),
+    ),
+  );
+  const races = collateRaces(slates, { follows: {}, election: E, includeUnfollowed: true });
+
+  test("a pick lines up under the ballot's spelling, and a republished list folds", () => {
+    const rows = applyPatch({}, E, gov, "Alice A. Adams", { stance: "endorse" });
+    const comparison = compareBallot({ races, rows, election: E, area: EMPTY_AREA });
+    const { aligned } = groupAlignments(comparison);
+    expect(aligned.map((row) => row.source.name)).toEqual(["State Party"]);
+    expect(aligned[0]?.folded.map((a) => a.source.name)).toEqual(["County Party"]);
+    expect(aligned[0]?.folded[0]?.repeats).toEqual({ of: "State Party", count: 1 });
+  });
+  test("an election authority's listing is never an endorser", () => {
+    const rows = applyPatch({}, E, gov, "Bob Brown", { stance: "endorse" });
+    const comparison = compareBallot({ races, rows, election: E, area: EMPTY_AREA });
+    expect(comparison.alignments.map((a) => a.source.name).sort()).toEqual([
+      "County Party",
+      "State Party",
+    ]);
   });
 });

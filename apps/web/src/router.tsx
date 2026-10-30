@@ -54,6 +54,14 @@ const sourcesRoute = createRoute({
   validateSearch: validateSourcesSearch,
   component: lazyRouteComponent(() => import("./components/SourcesPanel"), "SourcesPanel"),
 });
+const compareRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/compare",
+  component: lazyRouteComponent(
+    () => import("./components/CompareBallotPanel"),
+    "CompareBallotPanel",
+  ),
+});
 const raceRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/race/$key",
@@ -139,6 +147,7 @@ const routeTree = rootRoute.addChildren([
   ballotRoute,
   allRacesRoute,
   sourcesRoute,
+  compareRoute,
   raceRoute,
   resultsIndexRoute,
   resultsForSlateRoute,

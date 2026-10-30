@@ -9,6 +9,7 @@ import {
   type LucideIcon,
   MessageSquare,
   PenLine,
+  Scale,
   Settings,
   ShieldCheck,
   SquarePen,
@@ -35,6 +36,7 @@ interface NavItem {
     | "/"
     | "/races"
     | "/sources"
+    | "/compare"
     | "/results"
     | "/publish"
     | "/publish/identities"
@@ -64,6 +66,7 @@ const MODES: Record<
       { to: "/", label: "My ballot", icon: ListChecks, prefixes: ["/race/"] },
       { to: "/races", label: "All races", icon: Globe },
       { to: "/sources", label: "Sources", icon: Users },
+      { to: "/compare", label: "Compare", icon: Scale },
       { to: "/results", label: "Results", icon: ChartColumn, prefixes: ["/results/"] },
     ],
   },

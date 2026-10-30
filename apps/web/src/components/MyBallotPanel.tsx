@@ -105,6 +105,7 @@ import { track } from "../lib/usage";
 import { AreaPicker, describeArea } from "./AreaPicker";
 import { BallotProblemsNotice, RaceUnlistedNote } from "./BallotTags";
 import { ChoiceRow } from "./ChoiceRow";
+import { CompareStrip } from "./CompareStrip";
 import { electionOptions } from "./electionOptions";
 import { PageSearch } from "./PageSearch";
 import { PrintBallot, type PrintSection } from "./PrintBallot";
@@ -819,6 +820,10 @@ export function MyBallotPanel() {
           Your ballot by address on {VOTE411.label} ↗
         </a>
       </div>
+
+      {election && counts.picked + counts.maybe + counts.against > 0 && (
+        <CompareStrip election={election} slates={slates} />
+      )}
 
       {races.length > 0 && (
         <div className="triage-filter no-print">

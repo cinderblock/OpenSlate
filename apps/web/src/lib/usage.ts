@@ -30,6 +30,7 @@ export const ROUTE_TEMPLATES = [
   "/",
   "/races",
   "/sources",
+  "/compare",
   "/race/$key",
   "/results",
   "/results/$token",
