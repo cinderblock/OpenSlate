@@ -14,9 +14,10 @@ requirement.
 This is an **exploration**: research, spikes and a recommendation. No change to
 the scrapers or the published catalog. The user decides what gets built.
 
-Status: **exploration finished 2026-10-30, about 3:35 AM PDT (10:35Z).** Waiting
-on the user's decisions, under "Open questions for the user". One of them
-(Q1) is time-sensitive: the election is on Nov 3.
+Status: **exploration finished 2026-10-30, about 3:35 AM PDT (10:35Z); finding 11
+and Q8 added about 9:40 AM PDT (16:40Z).** Waiting on the user's decisions, under
+"Open questions for the user". One of them (Q1) is time-sensitive: the election
+is on Nov 3.
 
 ## The short version
 
@@ -375,6 +376,35 @@ Mistakes of mine, kept because a future build would make the same ones.
 - **My first statement-match figure of 15.5% was wrong**, because a naive substring
   check tripped on punctuation. The real figures are in finding 6.
 
+### 11. The live source check keeps nothing
+
+On 2026-10-30, about 9:32 AM PDT (16:32Z), the "Import Group Endorsements for Voter
+Tools" thread started a pre-election re-scrape, including a sweep of every Nov 3
+bundle's cited pages (`%TEMP%/os-round2/sweep.ts`). It's the right tool for its job, which
+is finding quietly changed picks, but it isn't a capture:
+
+| | That sweep | Capture design |
+| --- | --- | --- |
+| Bytes | Tags stripped in memory, then discarded. `pages.json` keeps only status and length | Whole response, verbatim |
+| PDFs and images | Skipped | Kept: 155 cited URLs |
+| Coverage | First 40 URLs per bundle | Every URL |
+| User agent | Browser string | Honest and recorded |
+| Headers, certificate chain | Not kept | Kept |
+| Proof of time | None | Two timestamps |
+
+The pages it read are changing right now, which is the case for capturing them: the
+Bay Area News Group roundup was updated at 9:23 AM PDT that morning, and the
+Chronicle's Governor pick arrived on Oct 28. The raw bytes of those pages as they
+stood before those updates weren't kept. The evidence from that thread's last pass
+is processed text ("HTML converted to text"), so finding 6's point still applies.
+
+**Raw pages can't simply go in a public repo.** Reading that thread raised a gap in
+this design. Some cited pages are news articles under copyright, and some of those
+may be paywalled; I haven't counted them. The bundles already hold extracted text
+from them, but a full public mirror of raw pages is a bigger step. So a sweep can run now only if its bytes stay
+private until Q3 and Q8 are settled. That costs nothing in proof: the timestamp
+authorities only ever see a hash, and a hash published later still pins the bytes.
+
 ## Recommended minimal design
 
 ### Claims, not a score
@@ -510,7 +540,10 @@ sealing added.
    to build and an hour to run. It's a real pass at sources (one GET each, honest
    user agent) and it's lower-rung, Time-stamped only, but the record can't be
    made later. **Recommendation: yes, and soon.** Even if the design changes,
-   timestamped raw bytes stay valid.
+   timestamped raw bytes stay valid. Run it after the Import thread's re-scrape
+   finishes, so the URL list includes anything it adds and sites don't get both
+   passes at once. Then repeat after its scheduled re-scrape on Sunday, Nov 1. Keep
+   the bytes on this machine, unpublished, until Q3 and Q8 are settled (finding 11).
 2. **Run one real CI capture?** This is the only way to learn whether Cloudflare
    and others block GitHub runners, and it proves the top rung end to end. It's a
    small, reversible change except for one thing: it writes a **permanent public
@@ -520,7 +553,8 @@ sealing added.
 3. **Where do raw bytes live?** A new `openslate-source-captures` repo, or Release
    assets on the endorsements repo. **Recommendation: a new public repo** for
    manifests, proofs and small blobs, and Release assets for files over about
-   5 MB. It keeps the endorsements repo's clone light.
+   5 MB. It keeps the endorsements repo's clone light. Subject to Q8 for pages
+   that shouldn't be mirrored publicly.
 4. **Add `attribution.capture` to the slate schema?** Needed for the slate's
    signature to cover the capture. It's a SPEC and schema change. **Recommendation:
    yes, but after a sidecar `provenance.json` has run through one election's worth
@@ -535,6 +569,14 @@ sealing added.
 7. **Should the app show these labels to voters at all, or only on the evidence
    page?** **Recommendation: the evidence page first.** Showing "Reported" against
    nearly every slate today could read as a warning rather than a neutral fact.
+8. **Which raw pages may be published?** Some are copyrighted news articles, so a
+   public mirror could be a problem where an organization's own endorsement page
+   isn't. This is a rights call, not an engineering one, and
+   I can't settle it. **Recommendation: publish manifests, hashes and proofs for
+   everything, publish raw bytes for organizations' and governments' own pages, and
+   keep news pages private, shared on request.** A private page then can't be
+   rechecked by a stranger from the bundle alone, so its claims should say so, and
+   an Internet Archive copy matters most for exactly those pages.
 
 ## Next steps, sized
 
@@ -542,7 +584,7 @@ Each assumes the questions above go as recommended.
 
 | # | Step | Size | Needs |
 | --- | --- | --- | --- |
-| 1 | Pre-election sweep: `sources.json` generator, capture all, stamp, commit | 0.5 day | Q1 |
+| 1 | Pre-election sweep: `sources.json` generator, capture all, stamp, keep unpublished; repeat after the Nov 1 re-scrape | 0.5 day | Q1 |
 | 2 | One real CI capture, record what's blocked and the real bundle size | 2 hours | Q2 |
 | 3 | Capture tool for real: promote `lib/capture.ts`, add POST for XHR, tests, `.gitattributes` | 1 day | Q3 |
 | 4 | Scheduled capture workflow: pinned actions, seal, publish | 1 day | Step 2 |
@@ -570,6 +612,7 @@ Steps 1 to 7 make a working system, about a week.
 - Don't put a new field in a slate before the schema and app accept it: they're
   `.strict()`.
 - Don't let a capture depend on workflow inputs. The URL list comes from a commit.
+- Don't count a change sweep as a capture, or publish raw news pages before Q8.
 
 ## Progress log
 
@@ -583,6 +626,7 @@ Steps 1 to 7 make a working system, about a week.
 - [x] Option research, with gaps stated
 - [x] Recommendation, design, byte estimate, next steps
 - [x] Side issues logged in `ISSUES.md`
+- [x] Compared against the Import thread's live re-scrape (finding 11), read only
 - [ ] The user's decisions on the open questions
 
 **Not done, deliberately:** no real Sigstore attestation was created (Q2), no
