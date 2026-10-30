@@ -687,8 +687,9 @@ publication rule, and the merges and the field going in now.
 
 | Item | Needs |
 | --- | --- |
-| Confirm the first scheduled capture, 2026-10-31 3:00 AM PDT (10:00Z). It's the first CI proof of the thin-page rule, and the first provenance with Archive claims and the local Chronicle capture | Nothing: GitHub emails on failure |
-| Confirm the first scheduled pin, 2026-10-31 4:30 AM PDT (11:30Z). It should pin Reform California and Lookout Santa Cruz | Nothing: GitHub emails on failure |
+| Confirm the first scheduled capture, 2026-10-31 3:00 AM PDT (10:00Z). It's the first CI proof of the thin-page rule, and the first provenance with Archive claims and the local Chronicle capture | Nothing: the backstop below reports it |
+| Confirm the first scheduled pin, 2026-10-31 4:30 AM PDT (11:30Z). It should pin Reform California and Lookout Santa Cruz | Nothing: the backstop below reports it |
+| GitHub's scheduler: no `schedule` run has fired in the capture repo. The `archive` job missed 18:30Z, 19:30Z, 20:30Z and 21:30Z on 2026-10-30, and a schedule that never fires sends no failure email. Cause unknown | A T3 scheduled task, daily at 5:00 AM PDT (12:00Z) through Nov 5, starts `capture` and `pin-capture` if they didn't run, and reports. It needs this machine awake |
 | An archive.org key, so CI can ask for more than a few snapshots an hour | The user's key from archive.org/account/s3.php, then a repo secret and a small change to `archive.ts` |
 | A desktop release, so desktop can read today's slates. `ISSUES.md` | A person: tagging drafts it, publishing the draft makes it live |
 | Decide on hosts blocked from CI: home fill-in by hand each time, or a self-hosted vantage | The user; a self-hosted runner can't earn the CI witness |
