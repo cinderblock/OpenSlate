@@ -332,9 +332,7 @@ pages no longer stay in `evidence/`: after refreshing, run `bun scripts/withhold
 - [ ] sierra-club-sf-bay: "will be updated as endorsements are finalized" (Chrome only, Imperva)
 - [ ] sf-examiner: no November picks as of 10-30
 - [ ] noe-valley-democratic-club: Supervisor D8 still "To Be Announced"
-- [ ] green-party-of-california: new org, not in the catalog yet. Props from its own voter guide:
-      https://cagreens.org/green-party-california-state-voter-guide-nov-2026 (see "Green Party" below)
-- [ ] sd-green-party: rebuild and publish only if the user said yes (see "Green Party" below)
+- [x] ca-green-party `217deb2`, sd-green-party `38db05e` (see "Green Party" below)
 - [x] sf-chronicle `2dccca5` (Governor: Becerra; BOE D1/D2 stay "It's complicated", no pick)
 - [x] sf-yimby `6b42331`, sd-lincoln-club `d92a0ab`, peace-and-freedom-party `25889da`,
       courage-california `8c42885`, bernal-heights-democratic-club `37dbcf9`
@@ -606,8 +604,11 @@ The user asked what was going on with the held-back `sd-green-party`. The hold's
 - The `verify-positions` failure is two missing `choice_id`s, because normalize skips untracked files. It clears once
   the bundle is tracked.
 
-Order if approved: publish `green-party-of-california`, then rebuild `sd-green-party` (Kraft and Measure E as own
-positions, Prop 40 adopted, sources first-party, KPBS kept as attribution), fix `meta.yaml`, publish.
+Done 2026-10-30 with the user's yes: `ca-green-party` 14 positions (`217deb2`), then `sd-green-party` with Kraft and
+Measure E as own positions and Prop 40 adopted (`38db05e`), `meta.yaml` fixed, and the June bundle's link too. The slug
+is `ca-green-party`, like the other state parties. KPBS isn't saved in the bundle: news pages stay private now
+(`plans/withhold-news-evidence.md`), so NOTES cites it by link. The four candidates the state list marks as
+county-endorsed are in `ca-green-party`'s NOTES; those county parties have no bundle.
 
 ## What the 10-30 adoptions rest on (2026-10-30)
 
@@ -625,5 +626,5 @@ our word, and SPEC 3.10 reads as "is claimed to hold", which is stronger than so
   own list"). The basis is reruns under BANG's byline and a roundup link to BANG. The 10-30 report didn't mention
   the reversal, so the user's OK on the Marin decision didn't cover it.
 
-Open question for the user: remove the Marin IJ adoption (recommended), and whether a "shares" relationship is worth
-having for pages like Sonoma's. The other 16 adopting slates were not re-read for this question.
+Decided 2026-10-30: the Marin IJ adoption is removed (`3df707d`). No "shares" relationship: the user doesn't want it,
+so Sonoma stays an adoption. The other 16 adopting slates were not re-read for this question.
