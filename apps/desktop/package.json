@@ -1,6 +1,6 @@
 {
   "name": "@openslate/desktop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "private": true,
   "description": "OpenSlate desktop app (Electrobun): the web app in a native window, with or without a built-in copy of the public catalog.",
