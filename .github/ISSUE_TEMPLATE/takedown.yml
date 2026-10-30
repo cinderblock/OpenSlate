@@ -1,0 +1,32 @@
+# Linked from the app's footer, the public catalog's site and its evidence pages. Keep the filename.
+name: Takedown request
+description: Ask for something published here to be removed, such as copyrighted text, a logo or personal information.
+labels: [takedown]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Everything here is public.** Point to what you'd like removed, but don't
+        paste private details into this form. If your request needs them, say so
+        and we'll find another way to talk.
+  - type: textarea
+    id: what
+    attributes:
+      label: What should be removed
+      description: A link to each page, file or slate, and which part of it.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: For example, that it's your copyrighted work, your trademark or your personal information.
+    validations:
+      required: true
+  - type: input
+    id: who
+    attributes:
+      label: Who you are
+      description: Your name or organization, and your connection to the material.
+    validations:
+      required: true

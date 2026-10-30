@@ -75,6 +75,11 @@ Ask the user for whatever you don't already have:
    `research-bot/orgs/<slug>/<election>/evidence/<page-name>.md` from the
    captured response, with the URL, the run id, the response's `sha256` and the
    capture timestamp at the top of the file. One file per URL.
+   - **News pages stay private.** A saved news page is its publisher's
+     copyrighted work, so it never ships in the public catalog. Once a bundle
+     is in the endorsements repo, run `bun scripts/withhold-evidence.ts --apply
+     --private ../openslate-source-captures-private` there and commit that
+     private repo first. `verify-positions` fails on one left in `evidence/`.
    - Evidence is a convenience for readers. The capture is the record, so a
      reviewer can always go back to the bytes.
    - Convert mechanically (the text of the page, in order). Don't drop parts of
@@ -254,7 +259,8 @@ network — once signed and shared, the slate is essentially permanent.
   documented in `NOTES.md`.** Inferred positions are the easiest way to
   inject incorrect data; default to omitting them.
 - **Do not re-fetch on every invocation.** If `evidence/<page>.md` already
-  exists and the user hasn't asked for a refresh, reuse it and update
+  exists (for a news page, in the private repo's `evidence/<slug>/<election>/`,
+  listed in `evidence/withheld.json`) and the user hasn't asked for a refresh, reuse it and update
   `attribution.retrieved_at` only if the user asks to re-scrape.
 - **Do not use WebFetch, a browser's reader text or a search snippet as
   evidence.** Use them to find a page if you must, then capture it.

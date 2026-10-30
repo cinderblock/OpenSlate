@@ -632,3 +632,10 @@ authors and whoever runs a copy aren't liable for errors or how it's used. It
 isn't legal advice or an official election resource; your official voter guide
 has the final word. The web app says the same in its footer, and printed picks
 say they aren't an official ballot.
+
+To ask for something to be removed, such as copyrighted text, a logo or personal
+information, use the
+[takedown form](https://github.com/cinderblock/openslate/issues/new?template=takedown.yml),
+linked in the app's footer. The public catalog doesn't publish saved news pages:
+it keeps the picks, short quotes, each page's link and a hash of the copy kept
+privately.

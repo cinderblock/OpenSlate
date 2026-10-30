@@ -20,6 +20,7 @@ import { useSyncExternalStore } from "react";
 import type { RouteTemplate } from "./usage";
 
 export const REPO_URL = "https://github.com/cinderblock/openslate";
+export const TAKEDOWN_URL = `${REPO_URL}/issues/new?template=takedown.yml`;
 
 /** The short commit this build came from (vite.config.ts), or "dev". */
 export const APP_VERSION: string = (import.meta.env?.VITE_COMMIT as string | undefined) ?? "dev";

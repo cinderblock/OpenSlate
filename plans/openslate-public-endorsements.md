@@ -321,7 +321,10 @@ https://cinderblock.github.io/openslate-public-endorsements/index.json.
 Re-scrape before Nov 3 (updated 2026-10-30 after the early run, for the Nov 1 scheduled run). Run the
 sweep first, because it found far more than this list did: `bun "%TEMP%\os-round2\sweep.ts" .
 "%TEMP%\os-rescrape-1101"` from the endorsements repo (about 10 minutes), then
-`bun "%TEMP%\os-round2\sweep-triage.ts" <out>\sweep-report.txt`. See "Early re-scrape" below.
+`bun "%TEMP%\os-round2\sweep-triage.ts" <out>\sweep-report.txt`. See "Early re-scrape" below. Saved news
+pages no longer stay in `evidence/`: after refreshing, run `bun scripts/withhold-evidence.ts --apply
+--private ../openslate-source-captures-private`, or `verify-positions` fails and publishing stops
+(`plans/withhold-news-evidence.md`).
 - [ ] bay-area-news-group: still "so far"; new picks land in the roundup (updated 10-30 9:23 AM PDT)
 - [ ] southern-california-news-group: roundup says "More will be published"
 - [ ] lookout-santa-cruz: its board was still publishing as of 10-28

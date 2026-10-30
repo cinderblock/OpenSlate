@@ -26,7 +26,7 @@ import { Switch } from "./components/ui/Switch";
 import { useAlphaBannerOpen } from "./lib/alpha";
 import { useDbStatus } from "./lib/dbStatus";
 import { EndorsersContext, useEndorserDirectory } from "./lib/endorsers";
-import { openFeedback, REPO_URL } from "./lib/feedback";
+import { openFeedback, REPO_URL, TAKEDOWN_URL } from "./lib/feedback";
 import { useUsageEnabled } from "./lib/usage";
 
 type Mode = "vote" | "publish";
@@ -194,6 +194,10 @@ export function RootLayout() {
           <button type="button" className="link" onClick={openFeedback}>
             <MessageSquare className="icon" /> Send feedback
           </button>
+          {" · "}
+          <a href={TAKEDOWN_URL} target="_blank" rel="noreferrer">
+            Request a takedown
+          </a>
           <UsageFooterToggle />
           <p className="footer-legal">
             OpenSlate gathers public voter information and endorsements, plus any shared with you
