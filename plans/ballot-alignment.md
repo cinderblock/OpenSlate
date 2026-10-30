@@ -121,8 +121,9 @@ Thresholds were set by running simulated voters against the real catalog
 2. [x] Data: on the shared catalog copy (`useAllRaces`).
 3. [x] UI: `/compare`, live strip on My ballot, one-click follow.
 4. [x] README, checks, browser pass.
-5. [x] Merged to master by fast-forward (`c7bdf75`), live on openslate.us within a
-   minute of the push, 2026-10-30 3:44 AM PDT (10:44Z).
+5. [x] Merged to master by fast-forward (`c7bdf75`, then `2ee9114`), live on
+   openslate.us within a minute or two of each push, 2026-10-30 from 3:44 AM PDT
+   (10:44Z).
 
 ## Findings / gotchas
 
@@ -170,7 +171,10 @@ Thresholds were set by running simulated voters against the real catalog
       the simulation; 35 marks across all four groups; race lists; Sierra chapters
       folded under Sierra Club California; one-click Follow imported the slate;
       the strip tracked each pick live; "Sources I follow"; the empty state; 375 px
-      with no overflow; dark mode. Rechecked on the shared catalog after the rebase.
+      with no overflow; dark mode. After moving to the shared catalog, rechecked the
+      group counts (73/22/45/15, the same as the worker version), Follow and the
+      live strip at desktop width; phone width and dark mode weren't rerun, as the
+      move changed no markup or styles.
 - [x] 886 tests, typecheck, Biome.
 
 - [x] Smoke test on openslate.us (`index-CCKLwWPf`): Compare in the nav, the empty
