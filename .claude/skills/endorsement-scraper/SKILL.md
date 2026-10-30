@@ -166,9 +166,10 @@ Ask the user for whatever you don't already have:
    `inferred` is reserved for positions derived from coalition membership
    etc. — flag these clearly and consider whether they belong at all.
 
-   Leave `attribution.capture` unset unless the user asks for it (SPEC §3.9.1).
-   The link from a slate to its captures is kept in the capture repo's
-   provenance records, so a later sweep doesn't mean a new slate.
+   Don't write `attribution.capture` by hand (SPEC §3.9.1), and keep it if a
+   re-scrape finds it there. The endorsements repo's `pin-capture.yml` sets it
+   after each scheduled capture, and moves it only when the slate cites a source
+   its run doesn't hold, so a sweep doesn't mean a new slate.
 
 5. **Validate before signing.** Run the schema-only check:
 

@@ -14,10 +14,9 @@ requirement.
 This began as an exploration. The user then approved everything, so it's now built:
 see "What was built" below. The research sections are kept as the reasoning behind it.
 
-Status: **built and running, 2026-10-30.** Live in
-[`cinderblock/openslate-source-captures`](https://github.com/cinderblock/openslate-source-captures).
-Waiting on the user to merge the OpenSlate and endorsements branches, under "Open
-questions for the user".
+Status: **built, merged and live, 2026-10-30.** Captures run in
+[`cinderblock/openslate-source-captures`](https://github.com/cinderblock/openslate-source-captures),
+evidence pages show them, and 399 of 401 published slates sign their capture run.
 
 ## Decisions already made (don't re-ask)
 
@@ -41,6 +40,15 @@ accepted, and all 12 next steps are in scope, including the ones the plan deferr
   GitLab (Q6). Save Page Now accepts anonymous requests, but rate-limits GitHub's
   addresses after a few, so a key is what would make it useful from CI.
 
+On 2026-10-30, about 2:00 PM PDT (21:00Z), the user asked why the PRs weren't merged and
+why slates shouldn't carry the field now, deferred GitLab, and said to set up archive.org
+soon. Read as:
+
+- Both PRs merge, and the field goes in now rather than after Nov 3. The earlier reason
+  was the reissue, which is weak: the 10-30 re-scrape reissued 362 slates anyway.
+- The second CI witness on GitLab is deferred. Don't raise it again unprompted.
+- The archive.org key comes from the user soon. Nothing is built for it yet.
+
 ## What was built
 
 | Piece | Where | State |
@@ -54,8 +62,9 @@ accepted, and all 12 next steps are in scope, including the ones the plan deferr
 | Internet Archive | `src/archive.ts`, `archive.yml` | Hourly through Nov 5, anonymous |
 | XHR discovery | `src/discover.ts`, `discovery-report.md` | Run on all 18 low-text hosts |
 | Browser capture | `src/render.ts`, `render-hosts.json` | Beside the GET, for listed hosts and any page a GET got almost no text from |
-| Statement check, evidence page | endorsements branch `feat/source-provenance` | Waiting on merge |
-| `attribution.capture`, SPEC, skill | OpenSlate branch `explore/signed-source-capture` | Waiting on merge; no slate uses the field yet |
+| Statement check, evidence page | endorsements [#1](https://github.com/cinderblock/openslate-public-endorsements/pull/1), `02b7aab` | Live |
+| `attribution.capture`, SPEC, skill | OpenSlate [#2](https://github.com/cinderblock/OpenSlate/pull/2), `f41bf95` | Live; the app accepts the field |
+| Slates point at their run | endorsements [#2](https://github.com/cinderblock/openslate-public-endorsements/pull/2), `03f9228`: `scripts/pin-capture.ts`, `pin-capture.yml` | Live; 399 of 401 slates pinned, the other 2 wait for a capture |
 
 Changes from the design below, made while building:
 
@@ -72,6 +81,14 @@ Changes from the design below, made while building:
   missed the Chronicle. Now any 200 HTML response with under 500 readable characters
   also gets a browser load, and the record says what triggered it. `render-hosts.json`
   stays for hosts that fail outright. That threshold catches 31 of 643 HTML pages.
+- **A slate's pointer is sticky.** It's signed content, so moving it reissues the slate.
+  A slate takes the newest witnessed run holding every source it cites, and keeps it
+  until that run no longer holds them all. Moving it with each run would make every
+  voter's app download every slate daily. `provenance` is a URL at a fixed commit, so
+  the record the signature names can't change underneath it.
+- **The field is added to `positions.json` as text, not by reformatting.** 39 of 401
+  bundles aren't laid out as `JSON.stringify` would, so `pin-capture.ts` edits the text
+  and checks that nothing else moved.
 - **Publication uses a host list as well as the kind rule.** Many papers are filed as
   plain `organization`, so `withheld-hosts.json` adds nine news hosts, plus Facebook
   and Instagram for personal-data risk.
@@ -509,6 +526,17 @@ Verified offline and in Chrome, and provenance was rebuilt in the publish job.
   was fixed. The next scheduled run covers them, and the record was right to say so.
 - **The dead-page case works from the Archive's own bytes.** `archive.ts compare` found
   25 of 25 `sf-republican-party` statements in the 2026-10-18 snapshot.
+- **Bumping the OpenSlate pin moved no slate.** Pin `2416fe3` to `f41bf95` is 28 commits.
+  Signed with a throwaway key, all 401 said what the published ones say, and the real
+  publish reported 401 unchanged.
+- **Pinning changed only the field.** 2026-10-30, about 2:15 PM PDT (21:15Z): 399 slates
+  reissued, about 290 bytes each, no other payload change, all 401 valid against the live
+  catalog, and the signed hash equals the hash of the real manifest. Reform California
+  and Lookout Santa Cruz wait: they cite sources no run holds yet.
+- **`.strict()` means any new field breaks every older release.** Desktop 0.1.0's core
+  already rejected 85 of 401 slates for fields added after it (`voted_in`, `articles`,
+  `ballot`, `rank`, `label`), and now rejects nearly all of them. Its installers show zero
+  downloads, so nobody seems affected. In `ISSUES.md`.
 - **The Archive reads well from CI and writes slowly.** The first workflow run looked up
   400 URLs (313 have snapshots) and compared 194, of which 108 hold every statement.
   Save Page Now answered 429 after 3 requests from GitHub's address, with 1 accepted, so
@@ -651,32 +679,21 @@ sealing added.
 
 ## Open questions for the user
 
-1. **Merge `feat/source-provenance` into the endorsements repo?** Recommendation: yes.
-   It adds a warning-only statement check and a "Source captures" table on evidence
-   pages, and changes nothing about signing. A merge publishes the pages.
-2. **Merge `explore/signed-source-capture` into OpenSlate?** Recommendation: yes. It adds
-   the optional schema field, the SPEC section, the skill update, this plan and the
-   spikes. No slate uses the field yet.
-3. **Should a slate start carrying `attribution.capture`?** Recommendation: yes, after
-   both merges and once the app has deployed, because `.strict()` means it must accept
-   the field first. That re-signs slates, so it should wait until after Nov 3.
-
-Settled on 2026-10-30, kept for the reasoning: Q1 sweep, Q2 CI run, Q3 storage, Q4 schema
-field, Q5 blocked sites, Q6 second witness (needs a GitLab account, not done), Q7 evidence
-page first, Q8 publication rule.
+None. Settled on 2026-10-30, kept for the reasoning: Q1 sweep, Q2 CI run, Q3 storage, Q4
+schema field, Q5 blocked sites, Q6 second witness (deferred), Q7 evidence page first, Q8
+publication rule, and the merges and the field going in now.
 
 ## Next steps
 
-All 12 planned steps are built. What's left is:
-
 | Item | Needs |
 | --- | --- |
-| Merges above | The user |
-| Confirm the first scheduled run, 2026-10-31 3:00 AM PDT (10:00Z). It's the first CI proof of the thin-page rule, and the first provenance with Archive claims and the local Chronicle capture | Nothing: GitHub emails on failure |
-| An archive.org key, so CI can ask for more than a few snapshots an hour | An archive.org account, then a repo secret and a small change to `archive.ts` |
-| Second CI witness on GitLab | A GitLab account |
+| Confirm the first scheduled capture, 2026-10-31 3:00 AM PDT (10:00Z). It's the first CI proof of the thin-page rule, and the first provenance with Archive claims and the local Chronicle capture | Nothing: GitHub emails on failure |
+| Confirm the first scheduled pin, 2026-10-31 4:30 AM PDT (11:30Z). It should pin Reform California and Lookout Santa Cruz | Nothing: GitHub emails on failure |
+| An archive.org key, so CI can ask for more than a few snapshots an hour | The user's key from archive.org/account/s3.php, then a repo secret and a small change to `archive.ts` |
+| A desktop release, so desktop can read today's slates. `ISSUES.md` | A person: tagging drafts it, publishing the draft makes it live |
 | Decide on hosts blocked from CI: home fill-in by hand each time, or a self-hosted vantage | The user; a self-hosted runner can't earn the CI witness |
 | POST capture for XHR, step 3: not built | Nothing needs it yet. One page might: `alamedacountyca.gov/rov_app/candidatelist/`, unconfirmed |
+| Second CI witness on GitLab | Deferred by the user |
 
 ## Things not to do
 
@@ -690,6 +707,8 @@ All 12 planned steps are built. What's left is:
 - Don't build SXG detection; it's ending.
 - Don't put a new field in a slate before the schema and app accept it: they're
   `.strict()`.
+- Don't move a slate's capture pointer on every run. It's signed content, so that
+  reissues every slate.
 - Don't let a capture depend on workflow inputs. The URL list comes from a commit.
 - Don't count a change sweep as a capture, or publish raw news pages before Q8.
 
@@ -708,6 +727,10 @@ All 12 planned steps are built. What's left is:
 - [x] Compared against the Import thread's live re-scrape (finding 11), read only
 - [x] The user's decisions on the open questions ("Do it all. Boil the ocean.")
 - [x] Steps 1 to 12, see "What was built" (POST capture left out: nothing needs it yet)
+- [x] Merged OpenSlate #2 and endorsements #1, 2026-10-30, about 2:10 PM PDT (21:10Z)
+- [x] First full `build-site`, then live: 401 slates, 382 evidence pages
+- [x] `attribution.capture` on 399 of 401 published slates, endorsements #2
+- [ ] First scheduled capture and pin, 2026-10-31 3:00 and 4:30 AM PDT (10:00Z, 11:30Z)
 - [ ] Merges, see "Open questions for the user"
 
 **Not done:** TLSNotary wasn't built, so its proof sizes are unmeasured. OpenTimestamps
