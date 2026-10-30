@@ -36,6 +36,12 @@ export interface GuideEntry {
   /** The key the manifest must be signed with. */
   key: string;
   repo?: string;
+  /**
+   * Only in a catalog snapshot: where a file with a name too long for the app's
+   * archive was saved, by its path in the manifest. The manifest still names it
+   * and checks it by the original path (scripts/snapshot-catalog.ts).
+   */
+  saved_as?: Record<string, string>;
 }
 
 export interface GuideList {
@@ -117,7 +123,7 @@ export async function fetchGuideFile(
 ): Promise<Uint8Array> {
   // The browser's cached copy may predate the manifest; ask the server once more before failing.
   for (const cache of ["default", "no-cache"] as const) {
-    const response = await fetch(new URL(path, entry.url), { cache });
+    const response = await fetch(new URL(entry.saved_as?.[path] ?? path, entry.url), { cache });
     if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
     const bytes = new Uint8Array(await response.arrayBuffer());
     if (await checkGuideFile(manifest, path, bytes)) return bytes;

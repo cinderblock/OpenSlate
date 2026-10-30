@@ -121,4 +121,24 @@ describe("fetching a guide's files", () => {
       GuideFileMismatch,
     );
   });
+
+  test("a snapshot's short name is where to look, and the manifest's path is what's checked", async () => {
+    const bytes = new TextEncoder().encode("{}");
+    const manifest = {
+      files: { "items/long.json": await sha256(bytes) },
+    } as unknown as GuideManifest;
+    const urls: string[] = [];
+    globalThis.fetch = (async (url: unknown) => {
+      urls.push(String(url));
+      return new Response(bytes);
+    }) as typeof fetch;
+
+    const entry = { ...CA, saved_as: { "items/long.json": "items/lo-abc.json" } };
+    expect(await fetchGuideFile(entry, manifest, "items/long.json")).toEqual(bytes);
+    expect(urls).toEqual(["https://example.org/ca/items/lo-abc.json"]);
+
+    await expect(fetchGuideFile(entry, manifest, "items/lo-abc.json")).rejects.toBeInstanceOf(
+      GuideFileMismatch,
+    );
+  });
 });

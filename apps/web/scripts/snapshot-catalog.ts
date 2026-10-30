@@ -19,8 +19,9 @@
  *   bun run snapshot --out <dir>              somewhere else (emptied first)
  *   bun run snapshot --catalog <index.json>   another catalog
  */
+import { createHash } from "node:crypto";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkGuideFile, verifyGuide, verifySlate } from "@openslate/core";
 import type { GuideEntry, GuideList } from "../src/lib/guides";
@@ -130,6 +131,22 @@ async function snapshotCatalog(): Promise<Catalog> {
   return catalog;
 }
 
+/** The longest file name a ustar archive holds, and Electrobun packs the app into one. */
+const LONGEST_NAME = 100;
+
+/**
+ * Where to save a guide file: `path`, unless its name won't fit in the app's archive. A short
+ * name then keeps the start of the original and a hash of the rest of it, so two can't collide.
+ */
+function savedPath(path: string): string {
+  const name = basename(path);
+  if (name.length <= LONGEST_NAME) return path;
+  const extension = extname(name);
+  const hash = createHash("sha256").update(path).digest("hex").slice(0, 12);
+  const start = name.slice(0, LONGEST_NAME - hash.length - extension.length - 1);
+  return `${path.slice(0, -name.length)}${start}-${hash}${extension}`;
+}
+
 /** Where a guide's files live in the snapshot: guides/<host>/<path of its folder>. */
 function guideFolder(guideUrl: URL): string {
   const folder = guideUrl.pathname.replace(/[^/]*$/, "");
@@ -158,15 +175,22 @@ async function snapshotGuides(): Promise<number> {
     save(`${folder}${name}`, token);
 
     const files = Object.keys(manifest.files);
+    const savedAs: Record<string, string> = {};
     await pool(files, async (path) => {
       const bytes = await download(new URL(safeRelative(path), guideUrl).href);
       if (!(await checkGuideFile(manifest, path, bytes))) {
         throw new Error(`${guideUrl.href}: ${path} doesn't match its manifest`);
       }
-      save(`${folder}${path}`, bytes);
+      const saved = savedPath(path);
+      if (saved !== path) savedAs[path] = saved;
+      save(`${folder}${saved}`, bytes);
     });
     console.log(`guide: ${entry.jurisdiction} (${files.length} files)`);
-    guides.push({ ...entry, url: `${folder}${name}` });
+    guides.push({
+      ...entry,
+      url: `${folder}${name}`,
+      ...(Object.keys(savedAs).length > 0 ? { saved_as: savedAs } : {}),
+    });
   }
 
   save("guides.json", `${JSON.stringify({ ...list, guides }, null, 2)}\n`);
