@@ -1,0 +1,10 @@
+{
+  "name": "attribution-capture-bad-hash",
+  "description": "Validly signed token whose attribution.capture.manifest_sha256 isn't a SHA-256. MUST be rejected (SPEC §3.9.1).",
+  "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkMjU1MTk6OWhTUjZTN1dQdHhtVG9qZ282R0czazR5RFBlY2dKWTI5Mmo3eHJzVUdXQnUiLCJ0eXAiOiJvcGVuc2xhdGUrandzIn0.eyJhdHRyaWJ1dGlvbiI6eyJjYXB0dXJlIjp7Im1hbmlmZXN0X3NoYTI1NiI6Im5vdC1hLWhhc2giLCJwcm92ZW5hbmNlIjoiaHR0cHM6Ly9leGFtcGxlLm9yZy9wcm92ZW5hbmNlLmpzb24iLCJydW4iOiIyMDI1LTEyLTE1VDE4MzBaIn0sIm1vZGUiOiJzY3JhcGVkIiwib2YiOnsibmFtZSI6IlNvbWUgT3JnIn0sInJldHJpZXZlZF9hdCI6IjIwMjUtMTItMTVUMTg6MzA6MDBaIn0sImlzc3VlZF9hdCI6IjIwMjYtMDEtMDFUMDA6MDA6MDBaIiwiaXNzdWVyIjp7ImtleSI6ImVkMjU1MTk6OWhTUjZTN1dQdHhtVG9qZ282R0czazR5RFBlY2dKWTI5Mmo3eHJzVUdXQnUiLCJraW5kIjoicmVzZWFyY2hlciJ9LCJwb3NpdGlvbnMiOltdLCJ2IjoxfQ.aL1cE-rNOkPRguau5a8buChGWfbMj2qdV_7xAJ1O5bU3BdMDcUfgLl4kFlSv76koJQI6rIJu0dTs8ecYwrwWDg",
+  "expect": {
+    "error_contains": [
+      "manifest_sha256"
+    ]
+  }
+}

@@ -159,6 +159,25 @@ export const attributionModeSchema = z.enum(ATTRIBUTION_MODES);
 export type AttributionMode = z.infer<typeof attributionModeSchema>;
 
 /**
+ * Which capture of the sources this slate was built from (SPEC §3.9.1), so the
+ * signature covers it. A pointer with a hash, not a claim of its own: a verifier
+ * recomputes what a run shows from the run itself.
+ */
+export const attributionCaptureSchema = z
+  .object({
+    run: z.string().min(1),
+    /** SHA-256 of the run's manifest file: what its proofs are made over. */
+    manifest_sha256: z.string().regex(/^[0-9a-f]{64}$/, "must be 64 lowercase hex digits"),
+    /** Where this slate's provenance record is. */
+    provenance: z
+      .string()
+      .url()
+      .regex(/^https:\/\//, "must be an https: URL"),
+  })
+  .strict();
+export type AttributionCapture = z.infer<typeof attributionCaptureSchema>;
+
+/**
  * Optional secondhand-report marker. When present, the slate's issuer (the
  * signer) is reporting what the entity in `of` is claimed to have said —
  * NOT claiming to BE that entity. Verifiers MUST surface attribution
@@ -177,6 +196,7 @@ export const attributionSchema = z
     mode: attributionModeSchema,
     retrieved_at: rfc3339,
     sources: z.array(httpUrl).optional(),
+    capture: attributionCaptureSchema.optional(),
   })
   .strict();
 export type Attribution = z.infer<typeof attributionSchema>;

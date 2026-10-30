@@ -27,6 +27,35 @@ describe("canonicalize", () => {
 });
 
 describe("sign + verify round trip", () => {
+  test("the signature covers an attribution's capture", () => {
+    const capture = {
+      run: "2026-10-30T1700Z",
+      manifest_sha256: "b".repeat(64),
+      provenance: "https://example.org/provenance/state-party/2026-11-03.json",
+    };
+    const { token } = createSlate({
+      keyPair: generateKeyPair(),
+      issuer: { name: "Researcher", kind: "researcher" },
+      positions: [],
+      attribution: {
+        of: { name: "State Party" },
+        mode: "scraped",
+        retrieved_at: "2026-10-30T17:00:00Z",
+        capture,
+      },
+    });
+    const result = verifySlate(token);
+    expect(result.valid).toBe(true);
+    expect(result.payload?.attribution?.capture).toEqual(capture);
+
+    // Swapping the capture breaks the signature, as any other payload edit does.
+    const [header, body, signature] = token.split(".");
+    const decoded = JSON.parse(Buffer.from(body as string, "base64url").toString("utf8"));
+    decoded.attribution.capture.manifest_sha256 = "c".repeat(64);
+    const edited = Buffer.from(JSON.stringify(decoded)).toString("base64url");
+    expect(verifySlate(`${header}.${edited}.${signature}`).valid).toBe(false);
+  });
+
   test("a freshly signed slate verifies", () => {
     const { token, payload } = createSlate({
       keyPair: generateKeyPair(),
