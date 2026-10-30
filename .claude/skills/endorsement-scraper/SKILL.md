@@ -13,6 +13,13 @@ captured this data, not that the entity blessed it.
 Spec references: [SPEC §3.9 Attribution](../../../SPEC.md#39-attribution--secondhand-reports),
 [§7.1 Researcher identities](../../../SPEC.md#71-researcher-identities-informative).
 Bundle layout: [`research-bot/README.md`](../../../research-bot/README.md).
+Capture tool and its rules: the
+[`openslate-source-captures`](../../../../openslate-source-captures) checkout.
+
+**Capture comes first, and it's objective.** The raw bytes a source served are
+the record; everything after them is reading. Capture never filters, cleans,
+summarises or picks: that's what makes the record worth having. Your judgement
+belongs in steps 3 and later, where a reviewer can check it against the bytes.
 
 ## Inputs
 
@@ -30,15 +37,50 @@ Ask the user for whatever you don't already have:
 
 ## Procedure
 
-1. **Fetch each page with WebFetch.** Save the rendered text into
-   `research-bot/orgs/<slug>/<election>/evidence/<page-name>.md` along
-   with the URL and the fetch timestamp at the top of the file.
-   - One file per URL. Strip obvious chrome (nav, footer) but preserve the
-     endorsement-bearing text verbatim, with surrounding context.
-   - Do NOT rely on AI summary alone — keep the source quotes so a human
-     reviewer can verify what was extracted.
+1. **Capture each source verbatim.** Don't use WebFetch for evidence: it runs
+   the page through a model, so what comes back isn't what the server sent.
+   Every URL gets captured, whole, by the capture tool. A published slate's
+   sources are picked up mechanically on the next scheduled run, but a new
+   source needs its bytes now, so capture it from the
+   [`openslate-source-captures`](../../../../openslate-source-captures) checkout:
 
-2. **Extract positions.** For each clearly stated endorsement, draft a
+   ```sh
+   # Add the URL to discovered.json, with where you found it and why, then:
+   bun src/sources.ts ../openslate-public-endorsements
+   bun src/run.ts out --only-hosts <host>[,<host>...]
+   bun src/seal.ts out
+   ```
+
+   `run.ts` reads only `sources.json`, so a URL that isn't listed there can't be
+   captured. That's the point: selection is public. `--only-hosts` narrows a run
+   to the hosts you name, and the manifest records that it did.
+   - **Whole responses only.** No stripping, no cleaning, no byte ranges, and
+     no choosing which part of a page to keep.
+   - **Failures are results.** A 403, a 404, a timeout or a 212-byte stub with a
+     200 stays in the record. A retry is another recorded exchange and never
+     replaces the first. Note each one in `evidence/NOTES.md`.
+   - **The user agent is honest,** and the tool sets it. Don't change it to get
+     past a block. If a site refuses the tool, keep that refusal on record, then
+     ask the user: a person may capture the page in a browser, and it's labelled
+     as a human capture in `evidence/NOTES.md`. It's still a capture, but it
+     can't claim the CI witness.
+   - **Data loaded by script.** If the page's text isn't in its HTML, find the
+     request that carries it and capture that response. If that's a vendor's
+     domain, capture the organization's page linking to it too, or nothing ties
+     the data to the organization. Add both to `discovered.json`.
+   - **Check the capture.** Read `manifest.json`'s status for each URL before
+     going on, and don't take a 200 to mean content.
+
+2. **Derive evidence from the capture.** Write
+   `research-bot/orgs/<slug>/<election>/evidence/<page-name>.md` from the
+   captured response, with the URL, the run id, the response's `sha256` and the
+   capture timestamp at the top of the file. One file per URL.
+   - Evidence is a convenience for readers. The capture is the record, so a
+     reviewer can always go back to the bytes.
+   - Convert mechanically (the text of the page, in order). Don't drop parts of
+     the page by judgement, and don't summarise.
+
+3. **Extract positions.** For each clearly stated endorsement, draft a
    Position object:
    - `subject.title` — the race or measure title as it appears on the page.
    - `subject.kind` — `race`, `measure`, `candidate`, or `option`.
@@ -55,16 +97,17 @@ Ask the user for whatever you don't already have:
      gets no label.
    - `choice` — the named candidate or "Yes"/"No" for measures, spelled
      **exactly as the official ballot prints it** when an election authority
-     bundle lists the race (see step 4b), e.g. `Donald P. (Don) Wagner`, not
+     bundle lists the race (see step 5b), e.g. `Donald P. (Don) Wagner`, not
      the page's "Don Wagner". Keep the page's own wording in `statement`.
    - `choice_id` — the listing's id for that choice (SPEC §3.11), copied
      from the election authority bundle. Don't type it:
-     `normalize-choices.ts --apply` (step 4b) fills it in for every choice
+     `normalize-choices.ts --apply` (step 5b) fills it in for every choice
      it can place. Never make one up for a race no authority lists.
    - `write_in: true` — only for a candidate who isn't printed on the
      ballot and has to be written in (SPEC §3.12). Never `false`; omit it.
    - `statement` — a short quote (~1–3 sentences) from the source page
-     justifying the position. Quote, don't paraphrase.
+     justifying the position. Quote, don't paraphrase: a statement that isn't
+     in the captured text shows up as unanchored on the evidence page.
    - `source` — the exact URL the position came from. REQUIRED for every
      position; this is the audit trail.
 
@@ -88,7 +131,7 @@ Ask the user for whatever you don't already have:
    Otherwise, list them in `evidence/NOTES.md` under `## Republished from
    <entity>` so they can be adopted once that bundle exists.
 
-3. **Write `positions.json`.** Wrap the extracted positions in the sign
+4. **Write `positions.json`.** Wrap the extracted positions in the sign
    input shape the CLI expects:
 
    ```json
@@ -102,7 +145,7 @@ Ask the user for whatever you don't already have:
          "kind": "organization"
        },
        "mode": "scraped",
-       "retrieved_at": "<RFC 3339 UTC timestamp of the LATEST fetch>",
+       "retrieved_at": "<RFC 3339 UTC timestamp of the LATEST capture>",
        "sources": [ "<top-level endorsements page URL>" ]
      },
      "labels": [
@@ -123,7 +166,11 @@ Ask the user for whatever you don't already have:
    `inferred` is reserved for positions derived from coalition membership
    etc. — flag these clearly and consider whether they belong at all.
 
-4. **Validate before signing.** Run the schema-only check:
+   Leave `attribution.capture` unset unless the user asks for it (SPEC §3.9.1).
+   The link from a slate to its captures is kept in the capture repo's
+   provenance records, so a later sweep doesn't mean a new slate.
+
+5. **Validate before signing.** Run the schema-only check:
 
    ```sh
    bun run packages/cli/src/index.ts validate research-bot/orgs/<slug>/<election>/positions.json
@@ -134,7 +181,7 @@ Ask the user for whatever you don't already have:
    It is the same check `sign` applies to the file, so a bundle that
    validates here signs.
 
-4b. **Check races and names against the ballot.** Copy the bundle into the
+5b. **Check races and names against the ballot.** Copy the bundle into the
    [`openslate-public-endorsements`](../../../../openslate-public-endorsements)
    checkout (`orgs/<slug>/<election>/`) and run, from there:
 
@@ -172,11 +219,12 @@ Ask the user for whatever you don't already have:
    Races in jurisdictions no authority covers aren't checked; match their
    titles to other orgs' bundles by eye (`bun scripts/list-subjects.ts <election> [filter]`).
 
-5. **Write `evidence/NOTES.md`** summarizing: which positions you
-   extracted, which positions you skipped and why, and any judgment calls
-   the human reviewer should double-check.
+6. **Write `evidence/NOTES.md`** summarizing: which positions you
+   extracted, which positions you skipped and why, any judgment calls the
+   human reviewer should double-check, and every capture that failed, was
+   blocked or came from a person's browser.
 
-6. **STOP. Do NOT sign.** Tell the user:
+7. **STOP. Do NOT sign.** Tell the user:
    - the bundle path
    - how many positions you extracted
    - which ones you flagged for review
@@ -207,6 +255,12 @@ network — once signed and shared, the slate is essentially permanent.
 - **Do not re-fetch on every invocation.** If `evidence/<page>.md` already
   exists and the user hasn't asked for a refresh, reuse it and update
   `attribution.retrieved_at` only if the user asks to re-scrape.
+- **Do not use WebFetch, a browser's reader text or a search snippet as
+  evidence.** Use them to find a page if you must, then capture it.
+- **Do not spoof a browser's user agent.** A block is a fact to record, and
+  getting past it silently makes the record dishonest.
+- **Do not describe a capture as proof the organization said something.** It
+  shows what a domain served, and a domain isn't an organization (SPEC §3.9.1).
 - **Do not edit positions.json by hand to "fix" a validate failure
   caused by an unknown field** — the closed schema is intentional; remove
   the field instead.
