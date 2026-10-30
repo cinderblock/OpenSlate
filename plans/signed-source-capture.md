@@ -11,13 +11,13 @@ verifiable unit: "here is the raw text we took in, it gets you to the same
 slate we computed, and here is proof it came from them." Objectivity is the top
 requirement.
 
-This is an **exploration**: research, spikes and a recommendation. No change to
-the scrapers or the published catalog. The user decides what gets built.
+This began as an exploration. The user then approved everything, so it's now built:
+see "What was built" below. The research sections are kept as the reasoning behind it.
 
-Status: **exploration finished 2026-10-30, about 3:35 AM PDT (10:35Z); finding 11
-and Q8 added about 9:40 AM PDT (16:40Z).** Waiting on the user's decisions, under
-"Open questions for the user". One of them (Q1) is time-sensitive: the election
-is on Nov 3.
+Status: **built and running, 2026-10-30.** Live in
+[`cinderblock/openslate-source-captures`](https://github.com/cinderblock/openslate-source-captures).
+Waiting on the user to merge the OpenSlate and endorsements branches, under "Open
+questions for the user".
 
 ## Decisions already made (don't re-ask)
 
@@ -39,6 +39,37 @@ accepted, and all 12 next steps are in scope, including the ones the plan deferr
   hosts that refuse CI, and any response containing that IP stays private.
 - Needs an account or key I don't have, so it stops at the boundary: a second CI
   witness on GitLab (Q6), and an archive.org key for Save Page Now's API.
+
+## What was built
+
+| Piece | Where | State |
+| --- | --- | --- |
+| Capture, seal, publish | `openslate-source-captures` `src/` | Live |
+| Scheduled workflow | `.github/workflows/capture.yml` | Daily through Nov 5, then weekly |
+| Verifier CLI | `src/verify.ts` | Our WebCrypto core and the reference Sigstore library must agree |
+| Browser verifier | [cinderblock.github.io/openslate-source-captures](https://cinderblock.github.io/openslate-source-captures/) | Live; verified a real run in Chrome, from the live repo and from `file://` offline |
+| Withheld store | `openslate-source-captures-private` | Live; deploy key only the publish job can read |
+| Provenance per slate | `provenance/<org>/<election>.json` | Rebuilt by each run |
+| Internet Archive | `src/archive.ts`, `archive.yml` | Hourly through Nov 5, anonymous |
+| XHR discovery | `src/discover.ts`, `discovery-report.md` | Run on all 18 low-text hosts |
+| Browser capture | `src/render.ts`, `render-hosts.json` | For hosts a GET can't see |
+| Statement check, evidence page | endorsements branch `feat/source-provenance` | Waiting on merge |
+| `attribution.capture`, SPEC, skill | OpenSlate branch `explore/signed-source-capture` | Waiting on merge; no slate uses the field yet |
+
+Changes from the design below, made while building:
+
+- **Provenance lives in the capture repo**, not in each `evidence/` folder, so a sweep
+  that changes no position doesn't republish a slate.
+- **The URL list is generated inside the capture job** from the public endorsements
+  commit, and stored in the run by hash. Committing it first would make the attested
+  commit differ from the one that ran.
+- **A browser capture can carry the CI witness.** Q5 ruled out witness labels for
+  browser-like captures to stop spoofing. Headless Chrome here uses the same honest
+  user agent and runs the same public code, so the witness statement stays true. The
+  record is marked `headless-chrome` and the evidence page says it's a browser's view.
+- **Publication uses a host list as well as the kind rule.** Many papers are filed as
+  plain `organization`, so `withheld-hosts.json` adds nine news hosts, plus Facebook
+  and Instagram for personal-data risk.
 
 ## The short version
 
@@ -426,6 +457,40 @@ from them, but a full public mirror of raw pages is a bigger step. So a sweep ca
 private until Q3 and Q8 are settled. That costs nothing in proof: the timestamp
 authorities only ever see a hash, and a hash published later still pins the bytes.
 
+### 12. What a real run showed
+
+First CI run, 2026-10-30, 10:00-10:17 AM PDT (17:00-17:17Z), run `2026-10-30T1700Z`:
+913 URLs: 852 returned 200, 36 another status, 25 no response. Verified offline by both
+Sigstore implementations, in Chrome, and from a fresh `autocrlf=true` clone.
+
+- **The witness works end to end.** The attestation is 11.5 KB, log index 3598270138,
+  and its certificate names this repo, workflow, commit and `github-hosted` runner.
+- **CI is blocked more than a home address.** Of 31 URLs that were neither 200 nor 404
+  on GitHub's runner, a run from home got 200 on 23, including
+  `files.santaclaracounty.gov`, `www.lacdp.org`, `www.stonewalldems.org` and
+  `www.southbaylabor.org`. So these are blocks on datacenter addresses, not on honest
+  clients. Those sources are Time-stamped only. `www.sf.gov` and `ballotpedia.org` answer
+  CI with an HTTP 202 challenge.
+- **Blocked from both:** `www.nfib.com`, `www.smdailyjournal.com`,
+  `www.sanbenitocounty-ca-cre.gov` (403), and `www.sacbee.com` (25 URLs, no response).
+- **HTTP 200 still doesn't mean content.** All 12 `www.sierraclub.org` URLs, cited by 365
+  positions, answer a GET with about 726 bytes. Headless Chrome with the same honest
+  user agent got the real page, about 107 KB.
+- **The byte estimate was too low.** 889 MB of responses, not 80 to 250 MB: 770 MB is 81
+  files over 5 MB, nearly all official voter guides from `media.api.sf.gov`,
+  `acvote.alamedacountyca.gov` and `www.sdvote.com`. The repo holds 116 MB of smaller
+  blobs. Most of that doesn't repeat: bytes are stored once by hash.
+- **Requests were higher than they should have been.** That first run fetched a PDF once
+  per `#page=` fragment. Fixed, but the sites took those requests.
+
+Three bugs a build would hit again:
+
+- A fragment isn't part of the request, so dedupe on the URL without it.
+- `gh release upload --clobber` would re-upload 770 MB every run. Upload only new names.
+- Bun on Windows throws `EEXIST` from a recursive `mkdir` of an existing `..\\` path. Use
+  absolute paths. It hid behind a `tail`, and the half-finished publish it left is why
+  placement is now resumable.
+
 ## Recommended minimal design
 
 ### Claims, not a score
@@ -555,70 +620,31 @@ sealing added.
 
 ## Open questions for the user
 
-1. **Do a one-off capture sweep before Nov 3?** This is the time-sensitive one.
-   Pages tend to vanish after an election, and 5 cited URLs already have. A sweep
-   of all 766 URLs from this machine, with two timestamps, takes about half a day
-   to build and an hour to run. It's a real pass at sources (one GET each, honest
-   user agent) and it's lower-rung, Time-stamped only, but the record can't be
-   made later. **Recommendation: yes, and soon.** Even if the design changes,
-   timestamped raw bytes stay valid. Run it after the Import thread's re-scrape
-   finishes, so the URL list includes anything it adds and sites don't get both
-   passes at once. Then repeat after its scheduled re-scrape on Sunday, Nov 1. Keep
-   the bytes on this machine, unpublished, until Q3 and Q8 are settled (finding 11).
-2. **Run one real CI capture?** This is the only way to learn whether Cloudflare
-   and others block GitHub runners, and it proves the top rung end to end. It's a
-   small, reversible change except for one thing: it writes a **permanent public
-   Sigstore log entry** naming the repo and workflow, for a public file's hash. I
-   staged it in `capture-workflow.example.yml` and stopped there, as the brief says
-   to stop at hosted services. **Recommendation: yes, one run on this branch.**
-3. **Where do raw bytes live?** A new `openslate-source-captures` repo, or Release
-   assets on the endorsements repo. **Recommendation: a new public repo** for
-   manifests, proofs and small blobs, and Release assets for files over about
-   5 MB. It keeps the endorsements repo's clone light. Subject to Q8 for pages
-   that shouldn't be mirrored publicly.
-4. **Add `attribution.capture` to the slate schema?** Needed for the slate's
-   signature to cover the capture. It's a SPEC and schema change. **Recommendation:
-   yes, but after a sidecar `provenance.json` has run through one election's worth
-   of use**, so the field's shape comes from real use.
-5. **When a site blocks an honest client, what do we do?** **Recommendation:**
-   record the block, then allow a human capture from a browser, labelled as such,
-   with no CI witness label. Never spoof silently.
-6. **Do you want a second, independent CI witness later?** GitLab CI is supported
-   by Fulcio, which would remove the single-operator dependency on GitHub, but it
-   needs a GitLab account. **Recommendation: defer** until the first witness is
-   proven; it's the cheapest real step up after that.
-7. **Should the app show these labels to voters at all, or only on the evidence
-   page?** **Recommendation: the evidence page first.** Showing "Reported" against
-   nearly every slate today could read as a warning rather than a neutral fact.
-8. **Which raw pages may be published?** Some are copyrighted news articles, so a
-   public mirror could be a problem where an organization's own endorsement page
-   isn't. This is a rights call, not an engineering one, and
-   I can't settle it. **Recommendation: publish manifests, hashes and proofs for
-   everything, publish raw bytes for organizations' and governments' own pages, and
-   keep news pages private, shared on request.** A private page then can't be
-   rechecked by a stranger from the bundle alone, so its claims should say so, and
-   an Internet Archive copy matters most for exactly those pages.
+1. **Merge `feat/source-provenance` into the endorsements repo?** Recommendation: yes.
+   It adds a warning-only statement check and a "Source captures" table on evidence
+   pages, and changes nothing about signing. A merge publishes the pages.
+2. **Merge `explore/signed-source-capture` into OpenSlate?** Recommendation: yes. It adds
+   the optional schema field, the SPEC section, the skill update, this plan and the
+   spikes. No slate uses the field yet.
+3. **Should a slate start carrying `attribution.capture`?** Recommendation: yes, after
+   both merges and once the app has deployed, because `.strict()` means it must accept
+   the field first. That re-signs slates, so it should wait until after Nov 3.
 
-## Next steps, sized
+Settled on 2026-10-30, kept for the reasoning: Q1 sweep, Q2 CI run, Q3 storage, Q4 schema
+field, Q5 blocked sites, Q6 second witness (needs a GitLab account, not done), Q7 evidence
+page first, Q8 publication rule.
 
-Each assumes the questions above go as recommended.
+## Next steps
 
-| # | Step | Size | Needs |
-| --- | --- | --- | --- |
-| 1 | Pre-election sweep: `sources.json` generator, capture all, stamp, keep unpublished; repeat after the Nov 1 re-scrape | 0.5 day | Q1 |
-| 2 | One real CI capture, record what's blocked and the real bundle size | 2 hours | Q2 |
-| 3 | Capture tool for real: promote `lib/capture.ts`, add POST for XHR, tests, `.gitattributes` | 1 day | Q3 |
-| 4 | Scheduled capture workflow: pinned actions, seal, publish | 1 day | Step 2 |
-| 5 | Verifier CLI: pinned workflow identity and roots, recompute claims | 1 to 2 days | Step 3 |
-| 6 | Anchoring: a warning in `verify-positions`, unanchored list in review | 1 day | Step 3 |
-| 7 | Skill update: capture first, evidence derived, no WebFetch-as-evidence | 0.5 day | Step 3 |
-| 8 | Save Page Now corroboration | 0.5 day | archive.org key |
-| 9 | XHR discovery helper for the JS-loaded hosts | 1 to 2 days | |
-| 10 | Evidence page shows claims and host match | 1 day | Step 5, Q7 |
-| 11 | SPEC and schema: `attribution.capture` | 1 day | Q4 |
-| 12 | Browser verifier: pkijs timestamps, then a Sigstore port | 2 to 3 days | Step 5 |
+All 12 planned steps are built. What's left is:
 
-Steps 1 to 7 make a working system, about a week.
+| Item | Needs |
+| --- | --- |
+| Merges above | The user |
+| Faster Save Page Now with an archive.org key; it runs anonymously today | An archive.org account |
+| Second CI witness on GitLab | A GitLab account |
+| Decide on hosts blocked from CI: home fill-in by hand each time, or a self-hosted vantage | The user; a self-hosted runner can't earn the CI witness |
+| POST capture for XHR, step 3: not built | Nothing needs it yet. One page might: `alamedacountyca.gov/rov_app/candidatelist/`, unconfirmed |
 
 ## Things not to do
 
@@ -648,12 +674,13 @@ Steps 1 to 7 make a working system, about a week.
 - [x] Recommendation, design, byte estimate, next steps
 - [x] Side issues logged in `ISSUES.md`
 - [x] Compared against the Import thread's live re-scrape (finding 11), read only
-- [ ] The user's decisions on the open questions
+- [x] The user's decisions on the open questions ("Do it all. Boil the ocean.")
+- [x] Steps 1 to 12, see "What was built"
+- [ ] Merges, see "Open questions for the user"
 
-**Not done, deliberately:** no real Sigstore attestation was created (Q2), no
-Save Page Now capture was triggered, TLSNotary wasn't built, nothing was tested
-from a GitHub runner, and no browser verifier was built. OpenTimestamps was only
-probed once (a 207-byte pending proof in 1.8 s) and that proof was never upgraded.
+**Not done:** TLSNotary wasn't built, so its proof sizes are unmeasured. OpenTimestamps
+was only probed once (a 207-byte pending proof in 1.8 s) and that proof was never
+upgraded.
 
 **Requests made:** most hosts got two GETs and one TLS 1.2 handshake.
 `ca.omniballot.us` got six GETs, over the one-or-two guidance; it's a static file on
