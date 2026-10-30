@@ -23,7 +23,7 @@ import { slatesCollection } from "./collections";
 import { useKnownIdentities } from "./identities";
 import { useFollows, withNicknames } from "./myVote";
 import { catalogQueryOptions, DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG, queryClient } from "./query";
-import type { Standing } from "./sources";
+import type { Follows } from "./sources";
 
 /**
  * Every slate there is to see: the public catalog's and the voter's own,
@@ -66,8 +66,8 @@ const loader = createCatalogLoader({
 export interface AllRaces {
   /** Imported and catalog slates, adoptions expanded, in the ballot's spellings. */
   slates: DecodedSlate[];
-  /** The voter's standings, with `off` for every catalog source they haven't imported. */
-  follows: Record<string, Standing>;
+  /** The voter's follows, with 0 for every catalog source they haven't imported. */
+  follows: Follows;
   /** Every race, in ballot order. */
   races: Race[];
   byKey: Map<string, Race>;
@@ -153,7 +153,7 @@ export function useAllRaces(enabled: boolean): AllRacesState {
 function lineUp(
   copy: CatalogCopy,
   imported: DecodedSlate[],
-  follows: Record<string, Standing>,
+  follows: Follows,
   contacts: Parameters<typeof withNicknames>[1],
 ): AllRaces {
   const catalog = decodeSlates(

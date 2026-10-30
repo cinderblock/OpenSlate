@@ -298,9 +298,9 @@ describe("gatherSlates", () => {
   });
 
   test("a catalog source you never imported is off, and yours stay as they are", () => {
-    const { follows } = gatherSlates(imported, fromCatalog, { "of:sierra club": "disagree" });
-    expect(follows["of:sierra club"]).toBe("disagree");
-    expect(follows["of:seiu local 1021"]).toBe("off");
+    const { follows } = gatherSlates(imported, fromCatalog, { "of:sierra club": -1 });
+    expect(follows["of:sierra club"]).toBe(-1);
+    expect(follows["of:seiu local 1021"]).toBe(0);
   });
 
   test("collated, an unimported source is off and a ballot listing never counts", () => {

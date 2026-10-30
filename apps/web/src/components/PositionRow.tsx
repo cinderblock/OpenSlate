@@ -47,6 +47,9 @@ export function PositionRow({
         {position.standing === "follow" && everySlate && (
           <span className="tag tag-inline">you follow</span>
         )}
+        {position.times !== undefined && (
+          <span className="tag tag-inline">you count this ×{position.times}</span>
+        )}
         {position.standing === "disagree" && (
           <span className="tag tag-inline tag-disagree">
             you disagree: counts the other way on My ballot

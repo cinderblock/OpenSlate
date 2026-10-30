@@ -43,7 +43,7 @@ describe("articlesByRace", () => {
   test("followed sources listed first among who attached it", () => {
     const slates = decodeSlates([slate("Zed", [explainer]), slate("Amy", [explainer])]);
     const amy = slates.find((s) => s.source.name === "Amy")?.source.id ?? "";
-    const [entry] = articlesByRace(slates, { [amy]: "off" }).get(KEY) ?? [];
+    const [entry] = articlesByRace(slates, { [amy]: 0 }).get(KEY) ?? [];
     expect(entry?.attachedBy.map((a) => [a.source.name, a.standing])).toEqual([
       ["Zed", "follow"],
       ["Amy", "off"],

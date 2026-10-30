@@ -43,7 +43,7 @@ function slate(of: string, picks: Pick[], kind = "organization", title = "Oaklan
 
 function raceOf(slates: ReturnType<typeof slate>[], follows: Record<string, Standing> = {}): Race {
   const decoded = decodeSlates(slates);
-  const off = Object.fromEntries(decoded.map((s) => [s.source.id, "off" as const]));
+  const off = Object.fromEntries(decoded.map((s) => [s.source.id, 0]));
   const races = collateRaces(decoded, {
     follows: { ...off, ...follows },
     includeUnfollowed: true,
@@ -121,7 +121,7 @@ describe("tallyRace", () => {
 
   test("a source disagreed with is still for what it says it's for", () => {
     const sierra = slate("Sierra Club", [{ choice: "Barbara Lee" }]);
-    const race = raceOf([sierra], { "of:sierra club": "disagree" });
+    const race = raceOf([sierra], { "of:sierra club": -1 });
     const tally = tallyRace(race);
     expect(tally.followed).toBe(1);
     expect(tally.tones.for).toBe(1);
@@ -159,7 +159,7 @@ describe("filters and groups", () => {
       slate("SEIU Local 1021", [{ choice: "Barbara Lee" }]),
       slate("Alameda County Republican Party", [{ choice: "Barbara Lee", stance: "oppose" }]),
     ],
-    { "of:sierra club": "follow" },
+    { "of:sierra club": 1 },
   );
   const tally = tallyRace(race);
   const choice = tally.choices[0];

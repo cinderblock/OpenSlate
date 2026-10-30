@@ -9,7 +9,14 @@ import { useKnownIdentities } from "./identities";
 import type { Area } from "./jurisdictions";
 import { EMPTY_AREA, upgradeArea } from "./jurisdictions";
 import { createLocalStore, useLocalStore } from "./localStore";
-import { isStanding, type Standing } from "./sources";
+import {
+  type Follows,
+  isCount,
+  isStanding,
+  STANDING_COUNT,
+  type Standing,
+  standingOfCount,
+} from "./sources";
 
 /**
  * Client-side state for the "My vote" mode. All of it stays in this browser.
@@ -28,33 +35,47 @@ const isBoolean = (v: unknown): v is boolean => typeof v === "boolean";
 const isString = (v: unknown): v is string => typeof v === "string";
 
 /**
- * Follow choices from before you could disagree with a source: id → followed.
- * Read once, to seed the current store; left in place so an older build in the
- * same browser still finds them.
+ * Follow choices from before they were numbers: v2's words, else v1's id →
+ * followed. Read once, to seed the current store; left in place so an older
+ * build in the same browser still finds them.
  */
-function followsFromV1(): Record<string, Standing> {
+function earlierFollows(): Follows {
+  const stored = (key: string): unknown => JSON.parse(localStorage.getItem(key) ?? "null");
   try {
-    const raw: unknown = JSON.parse(localStorage.getItem("openslate.follows.v1") ?? "null");
+    const words = stored("openslate.follows.v2");
+    if (isRecordOf(words, isStanding)) {
+      return Object.fromEntries(
+        Object.entries(words).map(([id, standing]) => [id, STANDING_COUNT[standing]]),
+      );
+    }
+    const raw = stored("openslate.follows.v1");
     if (!isRecordOf(raw, isBoolean)) return {};
-    return Object.fromEntries(
-      Object.entries(raw).map(([id, followed]) => [id, followed ? "follow" : "off"]),
-    );
+    return Object.fromEntries(Object.entries(raw).map(([id, followed]) => [id, followed ? 1 : 0]));
   } catch {
     return {};
   }
 }
 
-/** Source id → standing. Missing means followed (see `standingOf`). */
-export const followsStore = createLocalStore<Record<string, Standing>>(
-  "openslate.follows.v2",
-  followsFromV1(),
-  (raw) => (isRecordOf(raw, isStanding) ? raw : undefined),
+/** Source id → how much it counts. Missing means once (see `countOf`). */
+export const followsStore = createLocalStore<Follows>(
+  "openslate.follows.v3",
+  earlierFollows(),
+  (raw) => (isRecordOf(raw, isCount) ? raw : undefined),
 );
 
 export const useFollows = () => useLocalStore(followsStore);
 
+/** Set a source's way of counting. One already counting that way keeps its number. */
 export function setStanding(sourceId: string, standing: Standing): void {
-  followsStore.set((current) => ({ ...current, [sourceId]: standing }));
+  followsStore.set((current) => {
+    const count = current[sourceId];
+    if (count !== undefined && standingOfCount(count) === standing) return current;
+    return { ...current, [sourceId]: STANDING_COUNT[standing] };
+  });
+}
+
+export function setCount(sourceId: string, count: number): void {
+  followsStore.set((current) => ({ ...current, [sourceId]: count }));
 }
 
 /** Where sources you disagree with count in two-way races (see `DisagreeMode`). */
@@ -66,11 +87,11 @@ export const disagreeModeStore = createLocalStore<DisagreeMode>(
 
 export const useDisagreeMode = () => useLocalStore(disagreeModeStore);
 
-/** Record `off` for sources nobody decided about yet (bulk "import for comparison"). */
+/** Record 0 for sources nobody decided about yet (bulk "import for comparison"). */
 export function defaultToUnfollowed(sourceIds: Iterable<string>): void {
   followsStore.set((current) => {
     const next = { ...current };
-    for (const id of sourceIds) if (!(id in next)) next[id] = "off";
+    for (const id of sourceIds) if (!(id in next)) next[id] = 0;
     return next;
   });
 }

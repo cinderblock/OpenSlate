@@ -221,6 +221,7 @@ export function raceDetail(race: Race, election: string, draft: Draft) {
         ...(p.labelDescription ? { label_description: p.labelDescription } : {}),
         // How the user takes this source (see the get_race description).
         standing: p.standing,
+        ...(p.times ? { times: p.times } : {}),
         ...(p.valid ? {} : { signature_invalid: true as const }),
         ...(p.named && p.named !== groups[i]?.choice ? { named: p.named } : {}),
         ...(p.statement ? { statement: p.statement } : {}),

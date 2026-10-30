@@ -1429,13 +1429,19 @@ function RaceCardInner({
   const seats = voteFor(race);
   const picked = picksIn(race, election, rows);
   const top = race.choices[0];
-  const contested = race.choices.filter((c) => c.support > 0).length > 1;
+  const backed = race.choices.filter((c) => c.support > 0);
+  const contested = backed.length > 1;
+  // A source you count more can settle what a plain count would call even.
+  const weighted = race.choices.some((c) => c.positions.some((p) => p.times !== undefined));
+  const leaning = weighted && top && top.support > (backed[1]?.support ?? 0);
   const verdict =
     top && top.support > 0 && !contested
       ? `your sources agree: ${top.choice || "for"}`
-      : contested
-        ? "your sources split"
-        : "";
+      : contested && leaning
+        ? `your sources split, leaning ${top.choice || "for"}`
+        : contested
+          ? "your sources split"
+          : "";
   const field = fieldHint(race);
 
   return (

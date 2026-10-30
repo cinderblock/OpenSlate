@@ -104,7 +104,9 @@ for it. Its two sides:
   other way on My ballot: what they back counts against it, what they oppose
   counts for it; in a Yes/No measure or a two-name race you can have it count
   for the other side instead, under Settings → *My ballot*), or leave them
-  imported just for comparison; browse the
+  imported just for comparison; set how many times each one counts for you,
+  with no limit (3 counts three times, 0 turns it off, below zero counts the
+  other way, and a choice's total on My ballot adds these up); browse the
   public catalog; and add slates from a link, file, QR code or paste. Each
   endorser shows its logo
   (from the catalog, else a monogram) and where it sits *left to right*: the

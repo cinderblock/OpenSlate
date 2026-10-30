@@ -239,7 +239,7 @@ describe("sourceFill", () => {
 
   test("reads what the source named, even when My ballot lists it on the other side", () => {
     const moved = collateRaces(decodeSlates([ballot, gop]), {
-      follows: { [id]: "disagree" },
+      follows: { [id]: -1 },
       disagree: "side",
     });
     // The GOP's Ray and No are listed under Dee and Yes here.

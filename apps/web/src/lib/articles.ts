@@ -2,7 +2,7 @@ import type { Article } from "@openslate/core";
 import type { DecodedSlate } from "./collate";
 import { formatElectionDate, formatLocalDate } from "./dates";
 import { httpHref } from "./httpHref";
-import { type Source, type Standing, standingOf } from "./sources";
+import { type Follows, type Source, type Standing, standingOf } from "./sources";
 import { subjectKey } from "./subjects";
 
 /**
@@ -35,7 +35,7 @@ const STANDING_RANK: Record<Standing, number> = { follow: 0, disagree: 1, off: 2
  */
 export function articlesByRace(
   slates: DecodedSlate[],
-  follows: Record<string, Standing>,
+  follows: Follows,
 ): Map<string, AttachedArticle[]> {
   const newest = new Map<string, DecodedSlate>();
   for (const slate of slates) {

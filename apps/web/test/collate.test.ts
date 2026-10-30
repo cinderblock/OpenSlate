@@ -160,7 +160,7 @@ describe("collateRaces", () => {
   });
 
   test("unfollowed sources stay on a race's choices, marked, without counting", () => {
-    const follows = { "of:growsf": "off" } as const;
+    const follows = { "of:growsf": 0 } as const;
     const races = collateRaces(slates, { follows });
     const prop = races.find((r) => r.subject.title === "Prop 1");
     expect(prop?.choices.map((c) => c.choice)).toEqual(["Yes", "No"]);
@@ -172,7 +172,7 @@ describe("collateRaces", () => {
   });
 
   test("a source you disagree with counts the other way, after the ones you agree with", () => {
-    const follows = { "of:tenants union": "disagree" } as const;
+    const follows = { "of:tenants union": -1 } as const;
     const governor = collateRaces(slates, { follows }).find((r) => r.subject.title === "Governor");
     expect(governor?.followedSources).toBe(3);
     // Tenants Union opposes A (so A gains) and backs B (so B loses).
@@ -188,8 +188,65 @@ describe("collateRaces", () => {
     ]);
   });
 
+  describe("sources counted more than once", () => {
+    const governor = (follows: Record<string, number>, disagree?: "side") =>
+      collateRaces(slates, { follows, ...(disagree ? { disagree } : {}) }).find(
+        (r) => r.subject.title === "Governor",
+      );
+    const tally = (follows: Record<string, number>) =>
+      governor(follows)?.choices.map((c) => [c.choice, c.support, c.opposition]);
+
+    test("a choice adds up what its sources count for, and can overtake", () => {
+      expect(tally({ "of:tenants union": 5 })).toEqual([
+        ["B", 5, 0],
+        ["A", 2, 5],
+      ]);
+    });
+
+    test("there's no limit, and fractions add up cleanly", () => {
+      expect(tally({ "of:tenants union": 1000 })?.[0]).toEqual(["B", 1000, 0]);
+      expect(tally({ "of:growsf": 0.1, "of:spur": 0.2, "of:tenants union": 0 })).toEqual([
+        ["A", 0.3, 0],
+        ["B", 0, 0],
+      ]);
+    });
+
+    test("below zero counts the other way, that many times", () => {
+      expect(tally({ "of:tenants union": -3 })).toEqual([
+        ["A", 5, 0],
+        ["B", 0, 3],
+      ]);
+    });
+
+    test("whoever counts most is listed first, and says how much", () => {
+      const a = governor({ "of:spur": 4 })?.choices.find((c) => c.choice === "A");
+      expect(a?.positions.map((p) => [p.source.name, p.times])).toEqual([
+        ["SPUR", 4],
+        ["GrowSF", undefined],
+        ["Tenants Union", undefined],
+      ]);
+    });
+
+    test("once, off and -1 carry no number", () => {
+      const race = governor({ "of:spur": 1, "of:growsf": 0, "of:tenants union": -1 });
+      const times = race?.choices.flatMap((c) => c.positions.map((p) => p.times));
+      expect(times?.length).toBe(4);
+      expect(times?.every((t) => t === undefined)).toBe(true);
+    });
+
+    test("the source's own stance isn't rewritten", () => {
+      const a = governor({ "of:tenants union": -3 })?.choices.find((c) => c.choice === "A");
+      const tenants = a?.positions.find((p) => p.source.name === "Tenants Union");
+      expect([tenants?.stance, tenants?.standing, tenants?.times]).toEqual([
+        "oppose",
+        "disagree",
+        3,
+      ]);
+    });
+  });
+
   describe("two-way races, a source you disagree with", () => {
-    const follows = { "of:growsf": "disagree" } as const;
+    const follows = { "of:growsf": -1 } as const;
     const tally = (mode?: "choice" | "side") =>
       collateRaces(slates, { follows, ...(mode ? { disagree: mode } : {}) })
         .find((r) => r.subject.title === "Prop 1")
@@ -219,7 +276,7 @@ describe("collateRaces", () => {
     });
 
     test("races with more names stay against what it picked", () => {
-      const disagree = { "of:tenants union": "disagree" } as const;
+      const disagree = { "of:tenants union": -1 } as const;
       const governor = (mode: "choice" | "side") =>
         collateRaces(slates, { follows: disagree, disagree: mode }).find(
           (r) => r.subject.title === "Governor",
@@ -230,7 +287,7 @@ describe("collateRaces", () => {
   });
 
   test("races only unfollowed sources cover are listed on request", () => {
-    const follows = { "of:growsf": "off" } as const;
+    const follows = { "of:growsf": 0 } as const;
     const extra = decodeSlates([
       slate({
         of: "GrowSF",
@@ -280,7 +337,7 @@ describe("collateRaces", () => {
       [endorser, listing],
       [listing, endorser],
     ]) {
-      const [board] = collateRaces(decodeSlates(order), { follows: { "of:spur": "follow" } });
+      const [board] = collateRaces(decodeSlates(order), { follows: { "of:spur": 1 } });
       expect(board?.ballot).toEqual({ heading: "Board Member", vote_for: 3 });
       expect(board?.choices[0]?.ballot).toEqual({ party: "Green", incumbent: true });
     }
@@ -331,7 +388,7 @@ describe("collateRaces", () => {
 
   test("a ballot source supplies the field in ballot order, without being a source", () => {
     const races = collateRaces([...slates, ...decodeSlates([ballot])], {
-      follows: { "of:secretary of state": "off" },
+      follows: { "of:secretary of state": 0 },
     });
     const governor = races.find((r) => r.subject.title === "Governor");
     expect(governor?.onBallot).toBe(true);
@@ -519,7 +576,7 @@ describe("elections", () => {
   ]);
 
   test("summarises each election the slates cover", () => {
-    expect(electionsOf(slates, { "of:growsf": "off" })).toEqual([
+    expect(electionsOf(slates, { "of:growsf": 0 })).toEqual([
       { date: "2026-06-02", races: 1, sources: 1, followedSources: 1 },
       { date: E, races: 1, sources: 1, followedSources: 0 },
     ]);
@@ -544,7 +601,7 @@ describe("elections", () => {
   });
 
   test("prefers an upcoming election the user follows over an earlier unfollowed one", () => {
-    const summaries = electionsOf(slates, { "of:spur": "off" });
+    const summaries = electionsOf(slates, { "of:spur": 0 });
     expect(defaultElection(summaries, "2026-05-01")).toBe(E);
   });
 });

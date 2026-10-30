@@ -88,12 +88,22 @@ export function isBallotSource(source: Pick<Source, "kind">): boolean {
 }
 
 /**
- * How a voter takes a source. `follow`: its picks count for what it backs.
+ * How much each source counts for a voter, by source id: a signed number with
+ * no limit, fractions included. 1 counts once, 3 counts three times, 0 not at
+ * all. Below zero it counts the other way, that many times.
+ */
+export type Follows = Record<string, number>;
+
+/**
+ * Which way that number points. `follow`: its picks count for what it backs.
  * `disagree`: followed too, but its picks count the other way (what it backs
  * counts against, what it opposes counts for). `off`: imported for comparison
  * only, so it shows on race pages but not on My ballot.
  */
 export type Standing = "follow" | "disagree" | "off";
+
+/** The number each of Follow, Disagree and off sets. */
+export const STANDING_COUNT: Record<Standing, number> = { follow: 1, disagree: -1, off: 0 };
 
 export const STANDINGS: readonly Standing[] = ["follow", "disagree", "off"];
 
@@ -101,16 +111,29 @@ export function isStanding(value: unknown): value is Standing {
   return STANDINGS.includes(value as Standing);
 }
 
+export function isCount(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
 /**
- * A source's standing. A source nobody has decided about is followed:
+ * How much a source counts. A source nobody has decided about counts once:
  * importing a slate is usually a sign you want it. Bulk imports that shouldn't
- * land on the ballot record an explicit `off`.
+ * land on the ballot record an explicit 0.
  */
-export function standingOf(follows: Record<string, Standing>, sourceId: string): Standing {
-  return follows[sourceId] ?? "follow";
+export function countOf(follows: Follows, sourceId: string): number {
+  return follows[sourceId] ?? 1;
+}
+
+export function standingOfCount(count: number): Standing {
+  return count > 0 ? "follow" : count < 0 ? "disagree" : "off";
+}
+
+/** Which way a source counts. */
+export function standingOf(follows: Follows, sourceId: string): Standing {
+  return standingOfCount(countOf(follows, sourceId));
 }
 
 /** Whether a source is on My ballot: followed, to agree or to disagree. */
-export function isFollowed(follows: Record<string, Standing>, sourceId: string): boolean {
+export function isFollowed(follows: Follows, sourceId: string): boolean {
   return standingOf(follows, sourceId) !== "off";
 }

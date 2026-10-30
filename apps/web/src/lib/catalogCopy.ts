@@ -2,7 +2,7 @@ import type { SlatePayload } from "@openslate/core";
 import type { DecodedSlate } from "./collate";
 import { forEachConcurrently } from "./fetchProgress";
 import type { Catalog, CatalogEntry } from "./query";
-import type { Standing } from "./sources";
+import type { Follows } from "./sources";
 
 /**
  * A copy of every slate in the public catalog, for *All slates* and *All
@@ -210,12 +210,12 @@ export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
 export function gatherSlates(
   imported: DecodedSlate[],
   catalog: DecodedSlate[],
-  follows: Record<string, Standing>,
-): { slates: DecodedSlate[]; follows: Record<string, Standing> } {
+  follows: Follows,
+): { slates: DecodedSlate[]; follows: Follows } {
   const tokens = new Set(imported.map((slate) => slate.token));
   const sources = new Set(imported.map((slate) => slate.source.id));
   const fresh = catalog.filter((slate) => !tokens.has(slate.token));
   const standing = { ...follows };
-  for (const { source } of fresh) if (!sources.has(source.id)) standing[source.id] = "off";
+  for (const { source } of fresh) if (!sources.has(source.id)) standing[source.id] = 0;
   return { slates: [...imported, ...fresh], follows: standing };
 }

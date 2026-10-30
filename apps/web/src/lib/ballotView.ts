@@ -4,12 +4,11 @@ import {
   type ChoiceGroup,
   CONTEST_GROUPS,
   type ContestGroup,
+  comparePositions,
   contestGroup,
-  positionTone,
   type Race,
-  type RacePosition,
-  STANDING_ORDER,
   stanceTone,
+  tallyPositions,
 } from "./collate";
 
 /**
@@ -32,19 +31,6 @@ const FLIPPED: Partial<Record<Stance, Stance>> = {
   lean_for: "lean_against",
   lean_against: "lean_for",
 };
-
-/** As `collateRaces` tallies: followed sources, a disagreed one counting the other way. */
-function count(positions: RacePosition[]): Pick<ChoiceGroup, "support" | "opposition"> {
-  let support = 0;
-  let opposition = 0;
-  for (const position of positions) {
-    if (position.standing === "off") continue;
-    const tone = positionTone(position);
-    if (tone === "for") support++;
-    else if (tone === "against") opposition++;
-  }
-  return { support, opposition };
-}
 
 function isYesNoChoice(choice: string): boolean {
   return MEASURE_CHOICES.some((c) => c.toLowerCase() === choice.toLowerCase());
@@ -105,12 +91,8 @@ function measureChoices(race: Race): ChoiceGroup[] {
     // A source that said "Yes" and also endorsed the measure counts once.
     const positions = row.positions
       .filter((p, i) => row.positions.findIndex((q) => q.source.id === p.source.id) === i)
-      .sort(
-        (a, b) =>
-          STANDING_ORDER[a.standing] - STANDING_ORDER[b.standing] ||
-          collator.compare(a.source.name, b.source.name),
-      );
-    return { ...row, ...count(positions), positions };
+      .sort(comparePositions);
+    return { ...row, ...tallyPositions(positions), positions };
   });
   return [...folded, ...extra];
 }

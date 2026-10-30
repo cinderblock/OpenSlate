@@ -17,6 +17,7 @@ import { slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
 import {
   followsStore,
+  setCount,
   setRemoved,
   setStanding,
   useDecodedSlates,
@@ -25,7 +26,14 @@ import {
 } from "../lib/myVote";
 import { usePageSearch } from "../lib/pageSearch";
 import { matchesSearch, sourceSearchText } from "../lib/search";
-import { isBallotSource, type Source, type Standing, standingOf } from "../lib/sources";
+import {
+  countOf,
+  type Follows,
+  isBallotSource,
+  type Source,
+  type Standing,
+  standingOf,
+} from "../lib/sources";
 import { CatalogBrowser } from "./CatalogBrowser";
 import { ContactsCard } from "./ContactsCard";
 import { DisagreeModeSetting } from "./DisagreeModeSetting";
@@ -36,6 +44,7 @@ import { matchCount, PageSearch } from "./PageSearch";
 import { SlatesList } from "./SlatesList";
 import { SpectrumStrip } from "./SpectrumStrip";
 import { StandingToggle } from "./StandingToggle";
+import { NumberField } from "./ui/NumberField";
 
 interface SourceGroup {
   source: Source;
@@ -47,11 +56,13 @@ interface SourceGroup {
   /** Links attached to ballot items (SPEC §3.15). */
   articles: number;
   standing: Standing;
+  /** How much it counts for you. */
+  count: number;
   /** An official candidate list, not a recommendation. */
   ballot: boolean;
 }
 
-function groupBySource(slates: DecodedSlate[], follows: Record<string, Standing>): SourceGroup[] {
+function groupBySource(slates: DecodedSlate[], follows: Follows): SourceGroup[] {
   const groups = new Map<string, SourceGroup>();
   for (const slate of slates) {
     const group = groups.get(slate.source.id) ?? {
@@ -62,6 +73,7 @@ function groupBySource(slates: DecodedSlate[], follows: Record<string, Standing>
       positions: 0,
       articles: 0,
       standing: standingOf(follows, slate.source.id),
+      count: countOf(follows, slate.source.id),
       ballot: isBallotSource(slate.source),
     };
     group.slates.push(slate);
@@ -94,8 +106,13 @@ export function SourcesPanel() {
     ? groups.filter((g) => matchesSearch(g.searchText, search.terms))
     : groups;
   const ballots = shown.filter((g) => g.ballot);
-  const following = shown.filter((g) => !g.ballot && g.standing === "follow");
-  const disagreeing = shown.filter((g) => !g.ballot && g.standing === "disagree");
+  // Whoever counts most first. `sort` is stable, so even ones keep their order.
+  const following = shown
+    .filter((g) => !g.ballot && g.standing === "follow")
+    .sort((a, b) => b.count - a.count);
+  const disagreeing = shown
+    .filter((g) => !g.ballot && g.standing === "disagree")
+    .sort((a, b) => a.count - b.count);
   const notFollowing = shown.filter((g) => !g.ballot && g.standing === "off");
   const allFollowing = useMemo(
     () => groups.filter((g) => !g.ballot && g.standing === "follow"),
@@ -135,7 +152,8 @@ export function SourcesPanel() {
         The organizations and people whose endorsements you've imported. Sources you follow show on
         My ballot. So do sources you disagree with, counted the other way: what they back counts
         against it, and what they oppose counts for it. The rest stay imported so you can compare on
-        race pages.
+        race pages. The number beside a source is how many times it counts for you: raise it for the
+        ones you trust most, 0 turns a source off, and below zero counts it the other way.
       </p>
 
       {/* On one column, "Add endorsements" is below everything you already
@@ -377,6 +395,14 @@ function SourceRow({ group }: { group: SourceGroup }) {
           name={source.name}
           value={group.standing}
           onChange={(next) => setStanding(source.id, next)}
+        />
+      )}
+      {!group.ballot && (
+        <NumberField
+          aria-label={`How many times ${source.name} counts on My ballot`}
+          className="source-count"
+          value={group.count}
+          onChange={(next) => setCount(source.id, next)}
         />
       )}
       {confirming ? (

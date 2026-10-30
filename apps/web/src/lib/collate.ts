@@ -17,6 +17,8 @@ import {
   placeRace,
 } from "./jurisdictions";
 import {
+  countOf,
+  type Follows,
   isBallotSource,
   isFollowed,
   type Source,
@@ -133,6 +135,36 @@ export type DisagreeMode = "choice" | "side";
 /** Followed to agree first, then to disagree, then the rest. */
 export const STANDING_ORDER: Record<Standing, number> = { follow: 0, disagree: 1, off: 2 };
 
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
+/** A choice's positions: by standing, then whoever counts most, then by name. */
+export function comparePositions(a: RacePosition, b: RacePosition): number {
+  return (
+    STANDING_ORDER[a.standing] - STANDING_ORDER[b.standing] ||
+    (b.times ?? 1) - (a.times ?? 1) ||
+    collator.compare(a.source.name, b.source.name)
+  );
+}
+
+/** What followed positions add up to, each as many times as the voter counts it. */
+export function tallyPositions(
+  positions: RacePosition[],
+): Pick<ChoiceGroup, "support" | "opposition"> {
+  let support = 0;
+  let opposition = 0;
+  for (const position of positions) {
+    if (position.standing === "off") continue;
+    const tone = positionTone(position);
+    if (tone === "for") support += position.times ?? 1;
+    else if (tone === "against") opposition += position.times ?? 1;
+  }
+  // Fractions don't add cleanly: 0.1 + 0.2 shouldn't show as 0.30000000000000004.
+  return {
+    support: Number(support.toPrecision(12)),
+    opposition: Number(opposition.toPrecision(12)),
+  };
+}
+
 export interface RacePosition {
   source: Source;
   stance: Stance;
@@ -146,6 +178,8 @@ export interface RacePosition {
   valid: boolean;
   /** How the user takes the source; `off` positions don't count on My ballot. */
   standing: Standing;
+  /** How many times it counts, when the user made that anything but once. */
+  times?: number;
   /** The source's own spelling, when it's shown under the ballot's. */
   written?: string;
   /** The entity this was adopted from, when the source took it on by reference (SPEC §3.10). */
@@ -162,7 +196,7 @@ export interface ChoiceGroup {
   choice: string;
   /** Endorsement-type positions, followed sources first. Ballot listings aren't positions. */
   positions: RacePosition[];
-  /** Followed sources counting for / against this choice (`positionTone`). */
+  /** Followed sources counting for / against this choice, each as many times as it counts (`tallyPositions`). */
   support: number;
   opposition: number;
   /** Listed by a ballot source: this choice is on the ballot even if nobody backs it. */
@@ -210,7 +244,7 @@ export interface Race {
 }
 
 export interface CollateOptions {
-  follows: Record<string, Standing>;
+  follows: Follows;
   /** Only races in this election (date string as slates use it). */
   election?: string;
   /** Only races on the ballot for this area. */
@@ -266,8 +300,6 @@ function moveToOtherSide(race: Field): void {
     .concat((moving[0] ?? []).map((p) => ({ ...p, named: first.choice })));
 }
 
-const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
-
 /**
  * Imported slates → races → choices → who backs each. Ballot sources (election
  * authorities) contribute the field and its order but never count as sources;
@@ -299,6 +331,7 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
   for (const slate of slates) {
     const ballot = isBallotSource(slate.source);
     const standing = standingOf(options.follows, slate.source.id);
+    const times = Math.abs(countOf(options.follows, slate.source.id));
     const followed = ballot || standing !== "off";
     const labelDescriptions = new Map(
       slate.payload.labels?.map((definition) => [definition.label, definition.description]),
@@ -389,6 +422,7 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
         ...(position.rank !== undefined ? { rank: position.rank } : {}),
         valid: slate.valid,
         standing,
+        ...(times !== 0 && times !== 1 ? { times } : {}),
         ...(check?.written ? { written: check.written } : {}),
         ...(slate.adoptedFrom?.[index] ? { via: slate.adoptedFrom[index] } : {}),
       });
@@ -400,14 +434,7 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
     .map(({ sourceIds, followedIds, ballotOrder, ...race }) => {
       if (options.disagree === "side") moveToOtherSide(race);
       // Tallied once every position is where it counts.
-      for (const group of race.choices) {
-        for (const position of group.positions) {
-          if (position.standing === "off") continue;
-          const tone = positionTone(position);
-          if (tone === "for") group.support++;
-          else if (tone === "against") group.opposition++;
-        }
-      }
+      for (const group of race.choices) Object.assign(group, tallyPositions(group.positions));
       return { race, followedIds, sourceIds, ballotOrder };
     })
     .map(({ race, followedIds, sourceIds, ballotOrder }) => ({
@@ -418,11 +445,7 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
         .map((group) => ({
           ...group,
           ...(ballotOrder.has(group.choice) ? { ballotIndex: ballotOrder.get(group.choice) } : {}),
-          positions: [...group.positions].sort(
-            (a, b) =>
-              STANDING_ORDER[a.standing] - STANDING_ORDER[b.standing] ||
-              collator.compare(a.source.name, b.source.name),
-          ),
+          positions: [...group.positions].sort(comparePositions),
         }))
         .sort(
           (a, b) =>
@@ -495,10 +518,7 @@ export interface ElectionSummary {
 }
 
 /** Every election the imported slates cover, oldest first. Ballot sources count as races, not sources. */
-export function electionsOf(
-  slates: DecodedSlate[],
-  follows: Record<string, Standing>,
-): ElectionSummary[] {
+export function electionsOf(slates: DecodedSlate[], follows: Follows): ElectionSummary[] {
   const by = new Map<string, { races: Set<string>; sources: Set<string>; followed: Set<string> }>();
   for (const slate of slates) {
     const ballot = isBallotSource(slate.source);

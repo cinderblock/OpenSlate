@@ -30,6 +30,8 @@ interface ExportedSource {
   followed: boolean;
   /** Followed to disagree: counted the other way in `for` / `against`. */
   disagree?: true;
+  /** How many times it counts in `for` / `against`, when that isn't once. */
+  times?: number;
   /**
    * Listed under the other side of a two-way race (a source you disagree
    * with, counted for the other side): the choice the source named.
@@ -45,7 +47,7 @@ interface ExportedChoice {
   writeIn?: true;
   /** How the ballot prints it: party, designation, incumbency (SPEC §3.14). */
   ballot?: BallotChoice;
-  /** Followed sources counting for / against, a disagreed source the other way. */
+  /** Followed sources counting for / against, each as many times as it counts, a disagreed source the other way. */
   for: number;
   against: number;
   sources: ExportedSource[];
@@ -110,6 +112,7 @@ function racesOf(input: BallotExportInput, options: BallotExportOptions): Export
             stance: p.stance,
             followed: p.standing !== "off",
             ...(p.standing === "disagree" ? { disagree: true as const } : {}),
+            ...(p.times ? { times: p.times } : {}),
             ...(p.named ? { named: p.named } : {}),
             ...(p.statement ? { statement: p.statement } : {}),
           })),
@@ -175,7 +178,7 @@ export function ballotToCsv(input: BallotExportInput, options: BallotExportOptio
         choice.sources
           .map(
             (s) =>
-              `${s.name}: ${s.stance}${s.named ? ` ${s.named}` : ""}${s.disagree ? " (you disagree)" : s.followed ? "" : " (not followed)"}`,
+              `${s.name}: ${s.stance}${s.named ? ` ${s.named}` : ""}${s.times ? ` ×${s.times}` : ""}${s.disagree ? " (you disagree)" : s.followed ? "" : " (not followed)"}`,
           )
           .join("; "),
         choice.myPick ?? "",

@@ -123,7 +123,7 @@ export function ChoiceRowContent({
       </button>
       <span className={`endorse-count${group.support === 0 ? " zero" : ""}`}>
         {group.support}
-        <span className="sr-only"> of your sources for</span>
+        <span className="sr-only"> counted for</span>
         <span aria-hidden="true">✓</span>
         {group.opposition > 0 && (
           <span className="against">
@@ -147,7 +147,7 @@ export function ChoiceRowContent({
             {followed.map((position) => {
               // `named`: listed on the other side of a two-way race from the
               // one the source named (Settings → My ballot).
-              const what = `${positionWords(position, position.named ?? (group.choice || race.subject.title))}${position.rank ? `, ranked ${ordinal(position.rank)}` : ""}`;
+              const what = `${positionWords(position, position.named ?? (group.choice || race.subject.title))}${position.rank ? `, ranked ${ordinal(position.rank)}` : ""}${position.times ? `, counted ${position.times} times` : ""}`;
               // Coloured and marked by how it counts for you: a source you
               // disagree with counts the other way. ✗ = counts against.
               const counted = positionTone(position);
@@ -177,6 +177,9 @@ export function ChoiceRowContent({
                       </span>
                       {position.rank !== undefined && (
                         <span className="chip-rank">{ordinal(position.rank)}</span>
+                      )}
+                      {position.times !== undefined && (
+                        <span className="chip-rank">×{position.times}</span>
                       )}
                       {!position.valid && " ⚠"}
                     </>
