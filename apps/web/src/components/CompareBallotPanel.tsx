@@ -13,10 +13,12 @@ import {
   type Verdict,
 } from "../lib/alignment";
 import { useAllRaces } from "../lib/allSlates";
+import { ballotDraftStore } from "../lib/ballotDraft";
 import { CONTEST_GROUP_LABEL } from "../lib/ballotView";
 import { importCatalogEntry } from "../lib/catalogImport";
 import { electionOf } from "../lib/collate";
 import { useBallotComparison, useBallotElection } from "../lib/comparison";
+import { useLocalStore } from "../lib/localStore";
 import { setRemoved, setStanding, useDecodedSlates, useFollows } from "../lib/myVote";
 import { catalogQueryOptions, DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG } from "../lib/query";
 import { type Standing, sourceIdOf, standingOf } from "../lib/sources";
@@ -61,7 +63,11 @@ export function CompareBallotPanel() {
   const { slates, isReady } = useDecodedSlates();
   const election = useBallotElection(slates);
   const [follows] = useFollows();
-  const catalog = useAllRaces(true);
+  const [rows] = useLocalStore(ballotDraftStore);
+  // Having something to compare is what asks for the catalog: with no marks,
+  // there's no reason to spend a phone's data on it.
+  const hasMarks = Object.values(rows).some((r) => r.electionId === election && r.stance);
+  const catalog = useAllRaces(hasMarks);
   const [scope, setScope] = useState<Scope>("everyone");
 
   const context = useMemo((): FollowContext => {

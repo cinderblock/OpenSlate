@@ -110,7 +110,8 @@ Thresholds were set by running simulated voters against the real catalog
   so a mark paints first, and `useBallotElection`.
 - The catalog comes from `useAllRaces` (`lib/allSlates.ts`, the any-race thread's):
   one kept, verified copy of the bundle for All races, All slates and Compare.
-- `components/CompareBallotPanel.tsx` (`/compare`; opening it asks for the catalog),
+- `components/CompareBallotPanel.tsx` (`/compare`; asks for the catalog once the
+  voter has a mark),
   `components/CompareStrip.tsx` (My ballot's live line; never starts a download,
   and is a link until this visit has the catalog).
 
@@ -120,7 +121,8 @@ Thresholds were set by running simulated voters against the real catalog
 2. [x] Data: on the shared catalog copy (`useAllRaces`).
 3. [x] UI: `/compare`, live strip on My ballot, one-click follow.
 4. [x] README, checks, browser pass.
-5. [ ] **Current:** merge to master (deploys).
+5. [x] Merged to master by fast-forward (`c7bdf75`), live on openslate.us within a
+   minute of the push, 2026-10-30 3:44 AM PDT (10:44Z).
 
 ## Findings / gotchas
 
@@ -170,6 +172,12 @@ Thresholds were set by running simulated voters against the real catalog
       the strip tracked each pick live; "Sources I follow"; the empty state; 375 px
       with no overflow; dark mode. Rechecked on the shared catalog after the rebase.
 - [x] 886 tests, typecheck, Biome.
+
+- [x] Smoke test on openslate.us (`index-CCKLwWPf`): Compare in the nav, the empty
+      state under the production CSP. A profile with an older service worker saw
+      the old build until the worker updated and the page reloaded; that's the
+      usual update path, and `/compare` on the old build is just an empty page.
+- [x] The catalog is only asked for once there's a mark to compare.
 
 ## Open questions for the user
 
