@@ -134,7 +134,8 @@ Made here; the user can overrule them.
 9. [x] README, checks, browser at desktop and phone width.
 10. [x] Rebased on the `adopts` expansion (`1357dde`): `lineUp` calls
         `expandAdoptions`, and `PositionRow` keeps "Adopted from X".
-11. [ ] **Current:** merge to master (see the go-ahead in the thread).
+11. [x] Merged: fast-forward `67947e7..4a5c088`, 3:36 AM PDT Oct 30, 2026 (10:36Z),
+        live on openslate.us 31 s later.
 
 ## Depends on
 
@@ -188,6 +189,17 @@ Made here; the user can overrule them.
       elsewhere seeing "On your ballot" tags, what's new and Got it, the latest
       poll, a past race's card. `resultLine` run on real civicAPI races (Missouri,
       Aug 2026), since no California race has reported yet.
+
+- [x] Checked on openslate.us itself in a fresh incognito profile, because the dev
+      server doesn't apply the production Content-Security-Policy: the catalog
+      loaded, "barbara lee" found one race, its page showed 8 slates and Barbara Lee
+      8 for, 0 against.
+
+## Not built
+
+- Results for local races. civicAPI has none, so this needs each county's feed.
+- Finer kinds of source: waits on the catalog's data (ISSUES.md).
+- WebMCP tools still read imported slates only.
 
 ## Open questions for the user
 
