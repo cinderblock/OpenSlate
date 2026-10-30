@@ -49,17 +49,26 @@ evidence (private in the captures repo for personal data, not copyright).
   and the researcher's own note. Same for `NOTES.md`, which is the researcher's writing.
 - Hashes are over LF text. The working tree is CRLF on Windows, so hashing the file as it sits would
   never match a copy from git.
-- `orgs/sd-green-party/2026-11-03/` was untracked another thread's work when this ran; it was
-  skipped, and its KPBS capture needs the same treatment when it's committed. The verify check says
-  how.
+- `orgs/sd-green-party/2026-11-03/` was another thread's uncommitted work when this ran, so it was
+  skipped. That thread replaced its KPBS capture with the party's own site before publishing, so
+  nothing from it needed moving.
+- The first publish failed: `findWithheld`'s test assumed Windows' directory order, and Linux returned
+  another. `publish` stopped at its tests, so the old build stayed live. Fixed in `c7457aa` by sorting.
+- `gh run watch ... | tail` exits 0 whatever the run did, because the pipe's status is `tail`'s.
+  That hid the failure above: check the run's `conclusion`.
+- Scope of the check: 200 other evidence hosts were reviewed by eye. They're organizations' and
+  governments' own sites.
 
 ## Progress log
 
-- [ ] 1–4 code and tests
-- [ ] 5 move
-- [ ] 6 takedown
-- [ ] 7 skill and notes
-- [ ] 8 live check
+- [x] 1–4 code and tests: `45802d6`, `c7457aa` in the endorsements repo; 99 tests pass in CI
+- [x] 5 move: 75 files in 18 bundles, `dbb961f` public, `707a420` private; each file's hash matched git
+  and the private copy before it went
+- [x] 6 takedown: `6c1b925`, `takedown` label created
+- [x] 7 skill and Nov 1 notes: `6c1b925`
+- [x] 8 live check, 2026-10-30 2:40 PM PDT (21:40Z): removed pages 404, including with a cache-busting
+  query; `withheld.json`, NOTES and the slate 200; evidence page shows "Kept private" and doesn't link our
+  copy; takedown links on the evidence page, site index and openslate.us footer
 
 ## Things not to do
 
