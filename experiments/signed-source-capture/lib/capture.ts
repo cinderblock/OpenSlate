@@ -4,7 +4,7 @@
 // Failures are results too: a DNS error or a 403 is recorded the same way as a 200.
 
 import { createHash } from "node:crypto";
-import { connect as tlsConnect, type TLSSocket } from "node:tls";
+import { type TLSSocket, connect as tlsConnect } from "node:tls";
 import { brotliDecompressSync, gunzipSync, inflateSync } from "node:zlib";
 
 export interface TlsDetails {

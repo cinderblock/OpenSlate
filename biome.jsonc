@@ -34,7 +34,9 @@
       "!vectors/positive/*.json",
       "!vectors/negative/*.json",
       "!vectors/keys.json",
-      "!apps/web/public/geo/*.json"
+      "!apps/web/public/geo/*.json",
+      // Captured evidence: formatting one byte would break its proofs.
+      "!experiments/signed-source-capture/results"
     ]
   }
 }

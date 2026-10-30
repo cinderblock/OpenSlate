@@ -53,8 +53,8 @@ interface Suite {
 }
 
 const SUITES: Record<number, Suite> = {
-  0x1301: { id: 0x1301, hash: "sha256", hashLen: 32, keyLen: 16, cipher: "aes-128-gcm" },
-  0x1302: { id: 0x1302, hash: "sha384", hashLen: 48, keyLen: 32, cipher: "aes-256-gcm" },
+  4865: { id: 0x1301, hash: "sha256", hashLen: 32, keyLen: 16, cipher: "aes-128-gcm" },
+  4866: { id: 0x1302, hash: "sha384", hashLen: 48, keyLen: 32, cipher: "aes-256-gcm" },
 };
 
 const hmac = (hash: string, key: Buffer, data: Buffer) =>
@@ -161,17 +161,16 @@ export function seal(suite: Suite, t: Traffic, type: number, content: Buffer): B
   return Buffer.concat([header, body]);
 }
 
-export function open(
-  suite: Suite,
-  t: Traffic,
-  record: Buffer,
-): { type: number; content: Buffer } {
+export function open(suite: Suite, t: Traffic, record: Buffer): { type: number; content: Buffer } {
   const header = record.subarray(0, 5);
   const body = record.subarray(5);
   const decipher = createDecipheriv(suite.cipher, t.key, nonce(t));
   decipher.setAAD(header);
   decipher.setAuthTag(body.subarray(body.length - 16));
-  const inner = Buffer.concat([decipher.update(body.subarray(0, body.length - 16)), decipher.final()]);
+  const inner = Buffer.concat([
+    decipher.update(body.subarray(0, body.length - 16)),
+    decipher.final(),
+  ]);
   t.seq++;
   let end = inner.length;
   while (end > 0 && inner[end - 1] === 0) end--;
@@ -311,7 +310,7 @@ function parseServerHello(message: Buffer): { suite: Suite; peer: Buffer } {
   if (!suite) throw new Error(`server chose unsupported suite ${message.readUInt16BE(at)}`);
   at += 3;
   const share = helloExtensions(message, at).get(0x0033);
-  if (!share || share.readUInt16BE(0) !== 0x001d) throw new Error("no x25519 key share");
+  if (share?.readUInt16BE(0) !== 0x001d) throw new Error("no x25519 key share");
   return { suite, peer: share.subarray(4, 36) };
 }
 
@@ -336,27 +335,24 @@ function verifyChain(ders: Buffer[], host: string, at: Date): string[] {
   const leaf = chain[0];
   if (!leaf) throw new Error("server sent no certificate");
   if (!leaf.checkHost(host)) throw new Error(`certificate is not valid for ${host}`);
-  chain.forEach((cert, i) => {
+  // Stop at the first trusted root: servers often also send a cross-signed certificate above it,
+  // whose own issuer isn't in the store. Whatever sits past that point is irrelevant.
+  for (const [i, cert] of chain.entries()) {
     if (at < new Date(cert.validFrom) || at > new Date(cert.validTo)) {
       throw new Error(`certificate ${i} is outside its validity window at capture time`);
     }
+    const trusted = TRUST.some(
+      (root) =>
+        root.fingerprint256 === cert.fingerprint256 ||
+        (root.subject === cert.issuer && cert.verify(root.publicKey)),
+    );
+    if (trusted) return chain.slice(0, i + 1).map((c) => c.subject.replaceAll("\n", ", "));
     const issuer = chain[i + 1];
     if (issuer && !cert.verify(issuer.publicKey)) {
       throw new Error(`certificate ${i} is not signed by certificate ${i + 1}`);
     }
-  });
-  const top = chain[chain.length - 1] as X509Certificate;
-  const root = TRUST.find((candidate) => {
-    if (candidate.subject !== top.issuer) return false;
-    try {
-      return top.verify(candidate.publicKey);
-    } catch {
-      return false;
-    }
-  });
-  const selfRooted = TRUST.some((candidate) => candidate.fingerprint256 === top.fingerprint256);
-  if (!root && !selfRooted) throw new Error("chain does not reach a public web root");
-  return chain.map((cert) => cert.subject.replaceAll("\n", ", "));
+  }
+  throw new Error("chain does not reach a public web root");
 }
 
 function verifyCertificateVerify(message: Buffer, leafDer: Buffer, transcriptHash: Buffer): number {
@@ -377,12 +373,12 @@ function verifyCertificateVerify(message: Buffer, leafDer: Buffer, transcriptHas
       signature,
     );
   const verdicts: Record<number, () => boolean> = {
-    0x0403: () => signatureVerify("sha256", content, key, signature),
-    0x0503: () => signatureVerify("sha384", content, key, signature),
-    0x0804: () => pss("sha256", 32),
-    0x0805: () => pss("sha384", 48),
-    0x0806: () => pss("sha512", 64),
-    0x0807: () => signatureVerify(null, content, key, signature),
+    1027: () => signatureVerify("sha256", content, key, signature),
+    1283: () => signatureVerify("sha384", content, key, signature),
+    2052: () => pss("sha256", 32),
+    2053: () => pss("sha384", 48),
+    2054: () => pss("sha512", 64),
+    2055: () => signatureVerify(null, content, key, signature),
   };
   const check = verdicts[scheme];
   if (!check) throw new Error(`unsupported signature scheme ${scheme.toString(16)}`);
@@ -436,7 +432,7 @@ export function walkHandshake(bundle: HandshakeBundle): Walk {
   const serverKeys = trafficKeys(suite, secrets.serverHs);
   const transcript: Buffer[] = [clientHelloMessage, serverHelloMessage];
   const serverFlight: Buffer[] = [];
-  let pending = Buffer.alloc(0);
+  let pending: Buffer = Buffer.alloc(0);
   let serverFinishedAt = -1;
   let leaf: Buffer | undefined;
   let subjects: string[] = [];
@@ -503,7 +499,11 @@ export function walkHandshake(bundle: HandshakeBundle): Walk {
 }
 
 /** Decrypt the application data. Any bad tag throws. */
-export function readApplication(walk: Walk): { request: Buffer; response: Buffer; closed: boolean } {
+export function readApplication(walk: Walk): {
+  request: Buffer;
+  response: Buffer;
+  closed: boolean;
+} {
   const server = trafficKeys(walk.suite, walk.serverApplicationSecret);
   const client = trafficKeys(walk.suite, walk.clientApplicationSecret);
   const request: Buffer[] = [];
@@ -687,8 +687,8 @@ export function captureOverTls13(options: FetchOptions): Promise<HandshakeBundle
     let serverHs: Traffic | undefined;
     let serverAp: Traffic | undefined;
     const transcript: Buffer[] = [hello];
-    let flight = Buffer.alloc(0);
-    let buffer = Buffer.alloc(0);
+    let flight: Buffer = Buffer.alloc(0);
+    let buffer: Buffer = Buffer.alloc(0);
 
     socket.on("connect", () =>
       send("c2s", Buffer.concat([Buffer.from([22, 3, 1]), u16(hello.length), hello])),
@@ -740,21 +740,11 @@ export function captureOverTls13(options: FetchOptions): Promise<HandshakeBundle
             send("c2s", Buffer.from([20, 3, 3, 0, 1, 1]));
             send(
               "c2s",
-              seal(
-                suite,
-                trafficKeys(suite, done.clientHs),
-                CONTENT.handshake,
-                clientFinished,
-              ),
+              seal(suite, trafficKeys(suite, done.clientHs), CONTENT.handshake, clientFinished),
             );
             send(
               "c2s",
-              seal(
-                suite,
-                trafficKeys(suite, application.client),
-                CONTENT.application,
-                request,
-              ),
+              seal(suite, trafficKeys(suite, application.client), CONTENT.application, request),
             );
           }
         }

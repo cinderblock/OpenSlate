@@ -53,7 +53,9 @@ for (const { intended, hops } of manifest.captures) {
     const parsed = parseResponse(raw);
     if (parsed.status !== hop.status) throw new Error("manifest status disagrees with the bytes");
     console.log(`  ${hop.status ?? hop.error} ${hop.url}`);
-    console.log(`    ${hop.tls?.protocol} ${hop.tls?.cipher}, ${hop.response_bytes} response bytes`);
+    console.log(
+      `    ${hop.tls?.protocol} ${hop.tls?.cipher}, ${hop.response_bytes} response bytes`,
+    );
 
     const chain = (hop.tls?.chain_sha256 ?? []).map(
       (hash) => new X509Certificate(getRaw(dir, hash)),

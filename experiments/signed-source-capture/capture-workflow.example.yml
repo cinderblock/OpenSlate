@@ -1,0 +1,48 @@
+# NOT ACTIVE, and it can't run from here: GitHub only runs workflows in .github/workflows.
+#
+# The shape of the CI-witness rung in plans/signed-source-capture.md. Running it writes a permanent
+# public entry to Sigstore's transparency log, so whether to try it is the user's call. Once moved,
+# pin each action to a commit SHA, as a witness must not float on a mutable tag.
+#
+# There is no signing key here at all. The workflow's short-lived OIDC identity is the signer, and
+# Fulcio's certificate records this repository, commit, workflow file and runner.
+name: capture-sources
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Lets the job ask GitHub for an OIDC token, which is what gets certified.
+  id-token: write
+  # Stores the attestation with GitHub as well as in the public log.
+  attestations: write
+
+jobs:
+  capture:
+    # Must stay GitHub-hosted: verifiers reject any other `runner_environment`.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+        working-directory: experiments/signed-source-capture
+
+      # Everything that could touch the captured bytes runs in this one reviewed step. The URL list
+      # comes from a committed file, never a workflow input, so the run can't be pointed elsewhere
+      # without a public commit.
+      - name: Capture and timestamp
+        run: bun experiments/signed-source-capture/04-capture-and-stamp.ts out $(cat sources.txt)
+
+      # One attestation covers the whole run: the manifest names every other byte by hash.
+      - id: attest
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: out/manifest.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: capture
+          path: |
+            out
+            ${{ steps.attest.outputs.bundle-path }}

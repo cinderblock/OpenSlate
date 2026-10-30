@@ -8,8 +8,8 @@
 // The client identifies itself honestly and does not retry, so a 403 here is a real finding.
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { connect as tlsConnect } from "node:tls";
 import { join } from "node:path";
+import { connect as tlsConnect } from "node:tls";
 import { gzipSync } from "node:zlib";
 import { capture, decodeBody, header, parseResponse, sha256 } from "./lib/capture";
 
@@ -92,7 +92,8 @@ function supportsTls12(host: string): Promise<boolean | null> {
 }
 
 async function visit(target: Target) {
-  if (!target.url.startsWith("https:")) return { host: target.host, url: target.url, plain_http: true };
+  if (!target.url.startsWith("https:"))
+    return { host: target.host, url: target.url, plain_http: true };
   const hops = await capture(target.url, {
     userAgent: USER_AGENT,
     accept: "text/html,application/xhtml+xml,application/signed-exchange;v=b3;q=0.7,*/*;q=0.8",
@@ -150,9 +151,14 @@ async function visit(target: Target) {
     server: header(parsed, "server") ?? null,
     etag: header(parsed, "etag") ?? null,
     last_modified: header(parsed, "last-modified") ?? null,
-    behind: ["cf-ray", "x-amz-cf-id", "x-vercel-id", "x-served-by", "x-azure-ref", "x-github-request-id"].filter(
-      (name) => header(parsed, name),
-    ),
+    behind: [
+      "cf-ray",
+      "x-amz-cf-id",
+      "x-vercel-id",
+      "x-served-by",
+      "x-azure-ref",
+      "x-github-request-id",
+    ].filter((name) => header(parsed, name)),
   };
 }
 
@@ -183,16 +189,23 @@ console.log(`first pass done, ${first.length} hosts`);
 
 // The second pass only asks: are the bytes the same a few minutes later?
 await Bun.sleep(120_000);
-const resurvey = first.filter((r) => "body_sha256" in r && r.body_sha256 && (r.decoded_bytes ?? 0) < 3_000_000);
+const resurvey = first.filter(
+  (r) => "body_sha256" in r && r.body_sha256 && (r.decoded_bytes ?? 0) < 3_000_000,
+);
 const second = new Map(
-  (await pool(resurvey, async (r) => {
+  await pool(resurvey, async (r) => {
     const again = await visit(best.get(r.host) as Target);
     return [r.host, "body_sha256" in again ? again.body_sha256 : null] as const;
-  })),
+  }),
 );
 
 const results = first
-  .map((r) => ({ ...r, stable: second.has(r.host) ? second.get(r.host) === (r as { body_sha256?: string }).body_sha256 : null }))
+  .map((r) => ({
+    ...r,
+    stable: second.has(r.host)
+      ? second.get(r.host) === (r as { body_sha256?: string }).body_sha256
+      : null,
+  }))
   .sort((a, b) => a.host.localeCompare(b.host));
 
 mkdirSync(join(here, "results"), { recursive: true });

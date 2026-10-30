@@ -9,13 +9,7 @@
 // Runs on one machine, so the "witness" here is not actually independent: this shows the mechanism
 // and its trust boundary, not a usable deployment. The key lives only in memory.
 
-import {
-  createHash,
-  generateKeyPairSync,
-  type KeyObject,
-  sign,
-  verify,
-} from "node:crypto";
+import { createHash, generateKeyPairSync, type KeyObject, sign, verify } from "node:crypto";
 import { connect, createServer } from "node:net";
 import {
   captureOverTls13,
@@ -161,11 +155,21 @@ const selfSigned = signStatement(
   { ...proof.statement, s2c_sha256: streamHash(forged, "s2c") },
   stranger.privateKey,
 );
-attempt("3. Forger signs its own statement with its own key", forged, selfSigned, witness.publicKey);
+attempt(
+  "3. Forger signs its own statement with its own key",
+  forged,
+  selfSigned,
+  witness.publicKey,
+);
 
 // The limit of the idea, stated as a test: a witness that lies is believed.
 const colluding = signStatement(
   { ...proof.statement, s2c_sha256: streamHash(forged, "s2c") },
   witness.privateKey,
 );
-attempt("4. The witness itself colludes and signs the forgery", forged, colluding, witness.publicKey);
+attempt(
+  "4. The witness itself colludes and signs the forgery",
+  forged,
+  colluding,
+  witness.publicKey,
+);

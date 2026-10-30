@@ -58,7 +58,10 @@ console.log(`Captured ${real.records.length} TLS records, ${wireBytes} bytes on 
 
 attempt("1. Real capture", real);
 console.log();
-attempt("2. FORGED response, same handshake, re-encrypted by the client", forgeResponse(real, FAKE_RESPONSE));
+attempt(
+  "2. FORGED response, same handshake, re-encrypted by the client",
+  forgeResponse(real, FAKE_RESPONSE),
+);
 console.log();
 attempt("3. Control: one bit flipped in real ciphertext, no keys used", flip(real, "s2c", -2, 40));
 attempt("4. Control: one bit flipped in the ServerHello", flip(real, "s2c", 0, 20));

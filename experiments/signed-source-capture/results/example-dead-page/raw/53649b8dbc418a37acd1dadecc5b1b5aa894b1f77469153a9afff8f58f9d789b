@@ -1,0 +1,7 @@
+GET /web/20261018233112id_/https://sfgop.org/nov-2026-endorsements HTTP/1.1
+Host: web.archive.org
+User-Agent: openslate-source-capture-exploration (+https://openslate.us)
+Accept: text/html,application/json,application/pdf,*/*;q=0.8
+Accept-Encoding: gzip
+Connection: close
+
