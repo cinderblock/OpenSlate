@@ -43,6 +43,8 @@ export interface CatalogEntry {
     sources?: string[];
   };
   positions: number;
+  /** What the slate adopts by reference (SPEC §3.10), when it does; `subjects` is a count. */
+  adopts?: Array<{ issuer: string; of?: string; election?: string; subjects?: number }>;
   /** Articles attached to ballot items (SPEC §3.15), when there are any. */
   articles?: number;
   /** The slate's `context.jurisdiction`: where it publishes for. */

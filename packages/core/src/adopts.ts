@@ -1,5 +1,5 @@
 import type { Adoption, Position, SlatePayload, Subject } from "./schema";
-import { verifySlate } from "./slate";
+import { type VerifyResult, verifySlate } from "./slate";
 
 /**
  * Collation identity of a subject: `id` when present, else title + jurisdiction +
@@ -61,6 +61,8 @@ export interface ResolvedAdoptions {
 export interface ResolveOptions {
   /** Maximum adoption depth followed (SPEC §3.10). Defaults to 4. */
   maxDepth?: number;
+  /** Verifies a candidate; defaults to `verifySlate`. For callers that cache verification. */
+  verify?: (token: string) => Pick<VerifyResult, "valid" | "payload">;
 }
 
 /**
@@ -77,6 +79,7 @@ export function resolveAdoptions(
   options: ResolveOptions = {},
 ): ResolvedAdoptions {
   const maxDepth = options.maxDepth ?? 4;
+  const verify = options.verify ?? verifySlate;
   const positions: AdoptedPosition[] = [];
   const unresolved: ResolvedAdoptions["unresolved"] = [];
   const claimed = new Set(payload.positions.map((p) => subjectIdentity(p.subject)));
@@ -88,7 +91,7 @@ export function resolveAdoptions(
         unresolved.push({ adoption, depth });
         continue;
       }
-      const adopted = pickSlate(adoption, find);
+      const adopted = pickSlate(adoption, find, verify);
       if (!adopted) {
         unresolved.push({ adoption, depth });
         continue;
@@ -117,11 +120,12 @@ export function resolveAdoptions(
 function pickSlate(
   adoption: Adoption,
   find: (adoption: Adoption) => Iterable<string>,
+  verify: NonNullable<ResolveOptions["verify"]>,
 ): SlatePayload | undefined {
   const candidates = adoption.slate ? [adoption.slate, ...find(adoption)] : find(adoption);
   let best: SlatePayload | undefined;
   for (const token of candidates) {
-    const result = verifySlate(token);
+    const result = verify(token);
     if (!result.valid || !result.payload || !adoptionMatches(adoption, result.payload)) continue;
     // Prefer the most recently issued matching slate (a re-issued live copy beats a snapshot).
     if (!best || result.payload.issued_at > best.issued_at) best = result.payload;

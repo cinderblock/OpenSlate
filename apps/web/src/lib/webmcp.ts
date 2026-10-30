@@ -13,6 +13,7 @@ import {
   resolveRanking,
   shownElection,
 } from "./ballotAgent";
+import { expandAdoptions } from "./adoptions";
 import { translateSlates } from "./ballotCheck";
 import {
   applyPatch,
@@ -82,7 +83,7 @@ async function currentSlates(): Promise<DecodedSlate[]> {
     contacts.map((c) => [c.publicKey, c.displayName]),
   ]);
   if (decoded?.key !== key) {
-    decoded = { key, slates: withNicknames(translateSlates(decodeSlates(rows)), contacts) };
+    decoded = { key, slates: withNicknames(translateSlates(expandAdoptions(decodeSlates(rows))), contacts) };
   }
   return decoded.slates;
 }

@@ -1,5 +1,6 @@
 import { useLiveQuery } from "@tanstack/react-db";
 import { useMemo } from "react";
+import { expandAdoptions } from "./adoptions";
 import { translateSlates } from "./ballotCheck";
 import { type DecodedSlate, type DisagreeMode, decodeSlates } from "./collate";
 import { slatesCollection } from "./collections";
@@ -120,15 +121,16 @@ export function localToday(): string {
 }
 
 /**
- * Every imported slate, verified and decoded once, with choices shown under
- * the ballot listing's spelling where they plainly mean a listed candidate
+ * Every imported slate, verified and decoded once, with the positions it
+ * adopts from other slates (`expandAdoptions`), choices shown under the ballot
+ * listing's spelling where they plainly mean a listed candidate
  * (`translateSlates`), and firsthand sources named by the user's nickname for
  * the issuer when they've set one.
  */
 export function useDecodedSlates(): { slates: DecodedSlate[]; isReady: boolean } {
   const { data, isReady } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
   const contacts = useKnownIdentities();
-  const decoded = useMemo(() => translateSlates(decodeSlates(data)), [data]);
+  const decoded = useMemo(() => translateSlates(expandAdoptions(decodeSlates(data))), [data]);
   const slates = useMemo(() => withNicknames(decoded, contacts), [decoded, contacts]);
   return { slates, isReady };
 }

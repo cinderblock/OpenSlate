@@ -386,6 +386,7 @@ function ChoiceCard({
                 <LeanMeter sourceId={position.source.id} name={position.source.name} withWord />
                 {!position.valid && <span className="warning"> (unverified)</span>}
                 {position.written && <div className="hint">Named as “{position.written}”.</div>}
+                {position.via && <div className="hint">Adopted from {position.via}.</div>}
                 {position.labelDescription && (
                   <div className="hint">
                     {position.label}: {position.labelDescription}
