@@ -84,7 +84,14 @@ export function resolveAdoptions(
   const unresolved: ResolvedAdoptions["unresolved"] = [];
   const claimed = new Set(payload.positions.map((p) => subjectIdentity(p.subject)));
 
-  const visit = (current: SlatePayload, via: AdoptionHop[], seen: Set<string>) => {
+  // `allowed`: the subjects an outer adoption limited this one to, so a slate adopting part of
+  // another never picks up the rest of what that one adopts in turn.
+  const visit = (
+    current: SlatePayload,
+    via: AdoptionHop[],
+    seen: Set<string>,
+    allowed: Set<string> | null,
+  ) => {
     for (const adoption of current.adopts ?? []) {
       const depth = via.length + 1;
       if (depth > maxDepth) {
@@ -99,7 +106,11 @@ export function resolveAdoptions(
       const entity = slateEntity(adopted);
       if (seen.has(entity.id)) continue;
       const hop: AdoptionHop = { adoption, entity };
-      const wanted = adoption.subjects ? new Set(adoption.subjects.map(subjectIdentity)) : null;
+      const listed = adoption.subjects ? new Set(adoption.subjects.map(subjectIdentity)) : null;
+      const wanted =
+        listed && allowed
+          ? new Set([...listed].filter((k) => allowed.has(k)))
+          : (listed ?? allowed);
       const added = new Set<string>();
       for (const position of adopted.positions) {
         const key = subjectIdentity(position.subject);
@@ -109,11 +120,11 @@ export function resolveAdoptions(
         added.add(key);
       }
       for (const key of added) claimed.add(key);
-      visit(adopted, [...via, hop], new Set([...seen, entity.id]));
+      visit(adopted, [...via, hop], new Set([...seen, entity.id]), wanted);
     }
   };
 
-  visit(payload, [], new Set([slateEntity(payload).id]));
+  visit(payload, [], new Set([slateEntity(payload).id]), null);
   return { positions, unresolved };
 }
 
