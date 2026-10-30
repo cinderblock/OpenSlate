@@ -537,6 +537,12 @@ Verified offline and in Chrome, and provenance was rebuilt in the publish job.
   already rejected 85 of 401 slates for fields added after it (`voted_in`, `articles`,
   `ballot`, `rank`, `label`), and now rejects nearly all of them. Its installers show zero
   downloads, so nobody seems affected. In `ISSUES.md`.
+- **Cutting 0.2.0 turned up two build breaks, both caught by the PR's dry run.** GitHub is
+  retiring `macos-14` on 2026-11-02 and its brownouts cancel the job, so builds moved to
+  `macos-15`. And one signed San Luis Obispo item has a 105-character name, past the
+  100 ustar allows, so the offline build failed. The snapshot now saves that file under
+  a short name, listed in `saved_as` in its own `guides.json`, and the manifest still
+  checks it by the original path.
 - **The Archive reads well from CI and writes slowly.** The first workflow run looked up
   400 URLs (313 have snapshots) and compared 194, of which 108 hold every statement.
   Save Page Now answered 429 after 3 requests from GitHub's address, with 1 accepted, so
@@ -691,7 +697,7 @@ publication rule, and the merges and the field going in now.
 | Confirm the first scheduled pin, 2026-10-31 4:30 AM PDT (11:30Z). It should pin Reform California and Lookout Santa Cruz | Nothing: the backstop below reports it |
 | GitHub's scheduler: no `schedule` run has fired in the capture repo. The `archive` job missed 18:30Z, 19:30Z, 20:30Z and 21:30Z on 2026-10-30, and a schedule that never fires sends no failure email. Cause unknown | A T3 scheduled task, daily at 5:00 AM PDT (12:00Z) through Nov 5, starts `capture` and `pin-capture` if they didn't run, and reports. It needs this machine awake |
 | An archive.org key, so CI can ask for more than a few snapshots an hour | The user's key from archive.org/account/s3.php, then a repo secret and a small change to `archive.ts` |
-| A desktop release, so desktop can read today's slates. `ISSUES.md` | A person: tagging drafts it, publishing the draft makes it live |
+| Publish the desktop 0.2.0 draft, which is what makes installs offer it. Tagged `desktop-v0.2.0` at `80cc18f`, built and self-tested on all six targets; all 403 live slates verify on it | A person: `desktop.yml` leaves publishing to one |
 | Decide on hosts blocked from CI: home fill-in by hand each time, or a self-hosted vantage | The user; a self-hosted runner can't earn the CI witness |
 | POST capture for XHR, step 3: not built | Nothing needs it yet. One page might: `alamedacountyca.gov/rov_app/candidatelist/`, unconfirmed |
 | Second CI witness on GitLab | Deferred by the user |
@@ -731,6 +737,8 @@ publication rule, and the merges and the field going in now.
 - [x] Merged OpenSlate #2 and endorsements #1, 2026-10-30, about 2:10 PM PDT (21:10Z)
 - [x] First full `build-site`, then live: 401 slates, 382 evidence pages
 - [x] `attribution.capture` on 399 of 401 published slates, endorsements #2
+- [x] Desktop 0.2.0 tagged and drafted, 2026-10-30, about 3:10 PM PDT (22:10Z)
+- [ ] Desktop 0.2.0 published (a person)
 - [ ] First scheduled capture and pin, 2026-10-31 3:00 and 4:30 AM PDT (10:00Z, 11:30Z)
 - [ ] Merges, see "Open questions for the user"
 
