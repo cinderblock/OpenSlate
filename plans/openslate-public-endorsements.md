@@ -318,19 +318,24 @@ Post-batch cleanup to do once all batches land:
 **Result (2026-10-15): 39 November slates, 2,903 positions, live** at
 https://cinderblock.github.io/openslate-public-endorsements/index.json.
 
-Re-scrape before Nov 3 (sources said "coming soon" / pending; updated 2026-10-30 after rounds 2b
-and 3, for the Nov 1 scheduled run):
-- [ ] sf-chronicle: Governor is the only one still "Coming Soon"
+Re-scrape before Nov 3 (updated 2026-10-30 after the early run, for the Nov 1 scheduled run). Run the
+sweep first, because it found far more than this list did: `bun "%TEMP%\os-round2\sweep.ts" .
+"%TEMP%\os-rescrape-1101"` from the endorsements repo (about 10 minutes), then
+`bun "%TEMP%\os-round2\sweep-triage.ts" <out>\sweep-report.txt`. See "Early re-scrape" below.
+- [ ] bay-area-news-group: still "so far"; new picks land in the roundup (updated 10-30 9:23 AM PDT)
 - [ ] southern-california-news-group: roundup says "More will be published"
-- [ ] bay-area-news-group: cheat sheet says "so far" (it doesn't endorse for governor)
+- [ ] lookout-santa-cruz: its board was still publishing as of 10-28
+- [ ] marin-independent-journal, santa-cruz-sentinel, san-mateo-daily-journal, sacramento-bee: late editorials
 - [ ] sierra-club-sf-bay: "will be updated as endorsements are finalized" (Chrome only, Imperva)
-- [ ] sf-examiner: no November picks as of 10-28
+- [ ] sf-examiner: no November picks as of 10-30
+- [ ] noe-valley-democratic-club: Supervisor D8 still "To Be Announced"
+- [x] sf-chronicle `2dccca5` (Governor: Becerra; BOE D1/D2 stay "It's complicated", no pick)
 - [x] sf-yimby `6b42331`, sd-lincoln-club `d92a0ab`, peace-and-freedom-party `25889da`,
       courage-california `8c42885`, bernal-heights-democratic-club `37dbcf9`
 - [x] la-county-federation-of-labor: "page 7" never existed (`65002bf`)
 
-Conventions have moved on since the Oct 14 list: read "Round 3" below and the endorsements
-README ("Ballot sources", "Republished picks") first. Republished picks are adopted with
+Conventions have moved on since the Oct 14 list: read "Round 3" and "Early re-scrape" below and the
+endorsements README ("Ballot sources", "Republished picks") first. Republished picks are adopted with
 `scripts/adopt.ts`, never copied.
 
 ## Round 2 for the Nov 3 general (2026-10-19, 15 days out)
@@ -530,3 +535,45 @@ Still open after round 3:
 slates, all resolving against the live catalog. Two feature threads started from this one:
 `plans/any-race-all-slates.md` (branch `feat/any-race-all-slates`) and `plans/ballot-alignment.md`
 (branch `feat/ballot-alignment`).
+
+## Early re-scrape (2026-10-30, 4 days out)
+
+The user asked to scrape now rather than wait for Nov 1. Worked in the endorsements repo, pushed per batch.
+
+Result: 362 November endorser slates, 13,458 own positions + 438 adopted by 21 slates (was 351, 10,959,
+388, 16). 401 of 402 bundles pass `verify-positions`; the one failure is the held-back `sd-green-party`.
+
+- **Listed sources:** Chronicle Governor pick (Becerra); BANG Measure V; Press Democrat Prop 45; Sacramento
+  Bee CD 7. Sierra Club SF Bay and SCNG unchanged. SF Examiner still has nothing.
+- **New orgs (6):** Bay Area Reporter 109, Santa Cruz Sentinel 35, Monterey County Now 63, McClatchy's
+  California editorial boards 14 props, YIMBY Action 112, Lookout Santa Cruz 11.
+- **Largest refreshes:** Reform California 157 -> 2,145 (all 58 county guides);
+  San Mateo Daily Journal 35 -> 65; Equality California 184 -> 224; LA
+  Forward 186 -> 206; ACLU NorCal 1 -> 11; IE United 33 -> 44; League of Pissed-Off Voters 51 -> 67.
+- **Adoptions (5 more slates, 50 positions):** Sentinel -> BANG 4, Marin IJ -> BANG 12, Sacramento Bee ->
+  McClatchy 14, Sonoma Dems -> CADEM 14, Santa Cruz YIMBY -> YIMBY Action 6.
+
+Findings:
+- **The checklist badly undercounts.** It only knows what a source once said was pending. The sweep compares
+  each live source with the bundle and its saved evidence, and news hubs catch papers with no bundle at all.
+  Most of this run's picks came from neither the checklist nor any "coming soon" note.
+- `sweep.ts` reports names and prop numbers on the live page that are in neither the bundle nor its evidence.
+  A hit is a lead, not a pick: about half were opponents, mentions, or last cycle's text. It can't read PDFs,
+  images or bot-walled pages (207 PDFs, 82 403s this run), and an aggregator source (sfendorsements.com, KPBS,
+  voter guide pages) always hits.
+- Git Bash's curl fails with error 43 on many sites; use `/c/Windows/System32/curl.exe --ssl-no-revoke`.
+  McClatchy sites need Chrome. Chronicle's project page works with curl.
+- Don't read a hub article list as new picks. The U-T's "new" articles were all already in its roundup.
+- Modesto and Fresno Bee hubs mostly show June primary picks; low article numbers (315xxxxxx) are the
+  primary, 317xxxxxx the general.
+- Newspaper refreshes save no page text. The record is a NOTES entry and a short statement.
+
+Decisions to check (all recorded in the bundles' NOTES):
+- Reform California's 584 new races and 144 new measures sit in counties with no authority listing, so none
+  are confirmed on a ballot. Some may be uncontested seats, as 12 were in San Diego. Eight county guides
+  disagree with the statewide bundle on one race each; those were left as they were (list in NOTES).
+- B.A.R.'s "Retain all justices" is applied to the Supreme Court, First and Sixth Districts only.
+- EQCA's "Lyseria Kursave" is left out: the ballot's Lyseria Evelyn Phillips shares only the first name.
+- LA Forward's South Pasadena D4 pick is removed because the row now says "Write-up coming soon"; it may come
+  back.
+- Marin IJ adopts only what ran under BANG's byline; its SCNG-bylined Prop 4 and Prop 40 aren't adopted.
