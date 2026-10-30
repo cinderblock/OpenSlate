@@ -19,6 +19,27 @@ and Q8 added about 9:40 AM PDT (16:40Z).** Waiting on the user's decisions, unde
 "Open questions for the user". One of them (Q1) is time-sensitive: the election
 is on Nov 3.
 
+## Decisions already made (don't re-ask)
+
+On 2026-10-30, about 9:50 AM PDT (16:50Z), the user answered the open questions
+with "Do it all. Boil the ocean." Read as: every recommendation in Q1 to Q8 is
+accepted, and all 12 next steps are in scope, including the ones the plan deferred.
+
+- The brief's limits still hold unless the user lifts them: no push to `master` of
+  OpenSlate or the sibling repos (feature branches and PRs instead), no posts on
+  other people's projects, no Cloudflare or DNS, never force-push.
+- New repos, both the user's own: `cinderblock/openslate-source-captures` (public:
+  tool, URL list, manifests, proofs, non-withheld bytes) and
+  `cinderblock/openslate-source-captures-private` (withheld bytes).
+- Publication rule (Q8), mechanical and public: a URL is withheld if its host is
+  cited by a `news_organization` or `editorial_board` bundle. Hashes and proofs are
+  public for everything.
+- CI captures first, because a home-machine capture could put the user's IP in a
+  public blob (block pages often print the visitor's address). Local capture is for
+  hosts that refuse CI, and any response containing that IP stays private.
+- Needs an account or key I don't have, so it stops at the boundary: a second CI
+  witness on GitLab (Q6), and an archive.org key for Save Page Now's API.
+
 ## The short version
 
 **A saved HTTPS session cannot prove what a server sent.** That part of the idea
