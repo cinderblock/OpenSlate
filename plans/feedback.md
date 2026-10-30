@@ -71,8 +71,8 @@ screenshots on private submissions"):
 
 ## Plan / steps
 
-All built on `feat/feedback`, pushed and live. **Current step: the
-`openslate` ingest key (question 1), waiting on the user's yes.**
+Everything is built, pushed and live, both paths. **Current step: only the
+`data` label (question 2) is open, waiting on the user.**
 
 1. ~~Plan doc~~
 2. GitHub issue forms: `.github/ISSUE_TEMPLATE/{problem,wrong-info,idea}.yml`
@@ -166,27 +166,14 @@ All built on `feat/feedback`, pushed and live. **Current step: the
 
 ## Open questions for the user
 
-1. **Ingest key** (user asked 2026-10-21: "can you handle this?"). How it
-   works (telemetry-collector `worker/src/admin/pages.ts`,
-   `packages/core/src/keys.ts`): registering an app in the passkey-protected
-   admin UI (`POST /apps`) creates its secret and shows it **once**; ingest
-   keys are then derived offline, `HMAC(secret, app+channel)`, as
-   `<prefix>.openslate.<channel>.<mac>`. No other registration. Staged
-   proposal, awaiting an explicit yes (it changes a server's data):
-   - In the user's Chrome session on `https://telemetry.tomsawyerlabs.com/apps`,
-     register id `openslate`, name `OpenSlate`.
-   - Derive the key for channel `web` inside that page, so the secret never
-     leaves it; the user saves the secret themselves if they want it.
-   - Commit `VITE_TELEMETRY_ENDPOINT=https://telemetry.tomsawyerlabs.com`
-     and `VITE_TELEMETRY_KEY=<key>` to `apps/web/.env.production`, push,
-     send one test report from openslate.us and check it in the admin UI.
-   Needs the user logged in to the admin UI in Chrome (passkey).
-   **Note from the usage-analytics thread (2026-10-21):** app `openslate`
-   is registered. The secret is a secret build variable on `openslate-web`,
-   and `vite.config.ts` derives the channel `web` key at build time instead
-   of committing it. `.env.production` now holds `VITE_TELEMETRY_ENDPOINT`.
-   Private feedback turns on with the next deploy. See
-   `plans/usage-analytics.md`.
+1. ~~Ingest key~~ Done. App `openslate` is registered. The app secret is a
+   secret build variable on `openslate-web`, and `vite.config.ts` derives the
+   channel `web` key at build time, so `.env.production` holds only
+   `VITE_TELEMETRY_ENDPOINT` and a fork's build doesn't report to this
+   collector. Rechecked 2026-10-30 3:02 AM PDT (10:02Z): the live bundle
+   carries the endpoint and an `openslate.web` key, and the collector answers
+   the CORS preflight for that key with 204. The test report from
+   2026-10-22 is still in the collector for the user to delete.
 2. **`data` label** on GitHub issues for the "Wrong or missing
    information" form. GitHub skips labels that don't exist (`bug` and
    `enhancement` do). Create it, or point the form at an existing label?
