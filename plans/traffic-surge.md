@@ -28,27 +28,30 @@ about on 2026-10-30.
 
 ## Plan / steps
 
-1. [x] Fallback when the address lookups are overloaded (this repo).
-2. [ ] Spending limit: awaiting the user's yes on each change, see below.
-3. [ ] Catalog off GitHub Pages' soft limit: awaiting the user's yes, see below.
+1. [x] Fallback when the address lookups are overloaded (this repo). Live.
+2. [x] Rate limit on all of `/api/*`, 60 per 10 s (ops `6983f44`). Live.
+3. [ ] **Current:** spend breaker, written on ops branch `surge-circuit-breaker`
+       (`b42e88a`), not merged. Waiting on the user, see below.
 
-## Proposed infrastructure changes (none applied)
+Dropped or held by the user (2026-10-30): budget alerts weren't chosen, and the
+catalog move is on hold. If it's revived: publish to Workers static assets at
+`catalog.openslate.us` from the endorsements repo's CI alongside Pages, then
+point the app at it.
 
-Each needs its own yes, per the ops rules.
+## The spend breaker, waiting to land
 
-- **Budget alerts** in the Cloudflare dashboard at $25, $50 and $75. These only
-  notify, and arrive about a day late.
-- **Widen the zone's one rate limiting rule** from `/api/civic/*` at 10 per 10 s
-  to `/api/*` at 60 per 10 s, so one IP can't run up requests anywhere on the
-  API. That holds an IP to about 3 requests/s, or roughly $0.08/day flat out,
-  where an unlimited host at 1,000/s would cost about $26/day. Blocked requests
-  shouldn't reach the Worker, so they shouldn't be billed. The cost: Google's
-  quota gets less protection, which is what step 1's fallback is for.
-- **Circuit breaker**: at about $75 of usage, the uptime worker enables a
-  pre-created WAF block on `/api/*`. Needs a new scoped API token. The site and
-  catalog stay up, and the app falls back as in step 1.
-- **Catalog**: publish to Workers static assets (`catalog.openslate.us`) from
-  the endorsements repo's CI alongside Pages, then point the app at it.
+Each hour, after the cost poll, the uptime worker estimates the month's bill net
+of included usage. It turns the WAF rule `API circuit breaker` (block
+`api.openslate.us`) on at $75 and off below it. It holds no state, so a new
+month reopens the API by itself. It does nothing until its token is set.
+
+To land it:
+
+1. Merge the branch to master. CI creates the rule, disabled, and deploys uptime.
+2. Create a token with Zone WAF:Edit on `openslate.us` only, and set it as the
+   uptime secret `CF_BREAKER_TOKEN`.
+3. Prove the token can write with no outage: PATCH the rule to `enabled: false`,
+   the state it's already in. Then check the next hourly log line.
 
 ## Findings / gotchas
 
@@ -68,6 +71,19 @@ Each needs its own yes, per the ops rules.
   Other 403s (a referrer-restricted key) must stay reportable bugs.
 - `/api/civic/elections` isn't cached at the edge, so each browser asking
   spends one Google query. It's only on the Publish > Elections page.
+- The uptime cost log is gross: $19.85 for October so far, of which $18.70 is D1
+  writes inside the 50M allowance. The real overage is about $0, so a breaker
+  on those numbers would trip about $20 early. It subtracts allowances instead.
+- CPU time isn't in the cost log. About $6 at a full 316M requests, inside the
+  $25 margin. The breaker's month is the calendar month in UTC, which may not
+  match the billing period.
+- Live test of the rate limit, 2:54 PM PDT (21:54Z): of 90 requests, blocking
+  began at about 60, with no CORS headers on the block, and a request after the
+  timeout succeeded.
+- A local ops dry run needs `.env.local` loaded by Bun (`cd cloudflare && bun
+  src/cli.ts sync`). Sourcing it in a shell breaks `DO_SERVERS`' JSON, and
+  `SKIP_WORKERS=1` makes every worker look missing, including a false
+  `SECRET_KEK` create. The workflow's own dry run skips the sync job entirely.
 
 ## Progress log
 
@@ -76,18 +92,22 @@ Each needs its own yes, per the ops rules.
       and a failed fetch from the Census relay each show the notice, and both
       of its buttons work. Google's own quota answer is covered by unit tests
       only, since it can't be triggered on demand.
-- [ ] Step 1 pushed: a push to master deploys both the site and the worker.
-- [ ] Steps 2 and 3 not started, waiting on the user.
+- [x] Step 1 pushed (`87bd7b5`) and found in the production bundle. The worker
+      redeployed at 2:38 PM PDT (21:38Z).
+- [x] Step 2 applied by CI, with only that rule changed, and tested live.
+- [x] Step 3 written: 12 tests, typecheck, all ops hooks, and a dry run showing
+      one new disabled rule.
+- [ ] Step 3 merged, token set, and write access proven.
 
 ## Open questions for the user
 
-1. Which of the infrastructure changes above to apply. Recommendation: alerts,
-   the wider rate limit, and the circuit breaker; hold the catalog move unless
-   traffic actually appears.
+1. Merge the spend breaker and set its token? Recommendation: yes.
 
 ## Things not to do
 
 - Don't apply any Cloudflare or ops change without a per-change yes.
+- Don't remove a worktree until `git log` shows the commit landed: a failed hook
+  commit once took the uncommitted breaker with it.
 - Don't put a rate limit in the Worker expecting it to cap the bill.
 - Don't set a custom domain on the Pages site this close to the election: that
   makes `github.io` redirect, and a bad certificate would take the catalog down
