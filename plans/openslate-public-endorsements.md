@@ -512,7 +512,16 @@ stay deferred.
 the web app treats as ballot data, not sources.)
 
 Still open after round 3:
-- Web app doesn't expand `adopts` yet, so the deferred copy → adopt conversions above wait.
+- ~~Web app doesn't expand `adopts` yet~~ Done 2026-10-30 (`plans/adopt-by-reference.md`): five
+  bundles converted in `607192d` (Ventura Dems 15, LA GOP 7, Alameda GOP 18, Sierra Club SF Bay
+  12, Angeles 11). Left as they are: Sierra Club San Diego's No on 45 (its own statement) and
+  SFPOA/Local 798 (adopting would leave a row with 0 positions).
+- Realtors' six "not real estate related" props stay `abstain` (user said keep going, 2026-10-30).
 - SF Chronicle Governor ("Coming Soon"), SCNG ("More will be published"), Sierra Club SF Bay
   ("will be updated"): a last look on Nov 1–2 could catch late picks. Not scheduled.
 - The weekly scheduled task fires again 2026-11-04 and should delete itself (its guard).
+
+**State 2026-10-30:** 351 November endorser slates, 10,959 own positions + 388 adopted by 16
+slates, all resolving against the live catalog. Two feature threads started from this one:
+`plans/any-race-all-slates.md` (branch `feat/any-race-all-slates`) and `plans/ballot-alignment.md`
+(branch `feat/ballot-alignment`).

@@ -104,18 +104,31 @@ CLI:
 2. ~~CLI~~ `2708f8c`: `adopt --mode copy|reference|embed`, sign/verify/index passthrough, 3 tests.
 3. ~~Merged + pushed~~ `7d8ce98` (user OK 2026-10-19); openslate.us redeployed (Workers Builds green). Was: push OpenSlate (needs the user's OK: master also carries
    other threads' unpushed plan commits).
-4. Web (after `ui/two-modes` merges): resolve adoptions in collation/sources,
-   show "via <org>", and have the catalog import pull adopted slates.
-   **Deploy before any published slate uses `adopts`** (closed schema: older
-   clients reject the field).
-5. **[partly done]** Endorsements repo: bump `.openslate-version`, add `scripts/adopt.ts`, and
-   migrate the duplicates listed in NOTES "Republished" sections (CPF→IAFF,
-   SFPOA↔798, Ventura Dems→CADEM, Alameda GOP→CAGOP, Sierra chapters→SC
-   California, including the existing SF Bay/Angeles/SD copies).
-6. Compose "adopt" UI (copy / reference / embed), once ComposePanel is free.
+4. ~~Web~~ `1357dde`: `expandAdoptions` at the one choke point
+   (`translateSlates(expandAdoptions(decodeSlates(rows)))`, `lib/myVote.ts` and
+   `lib/webmcp.ts`), "Adopted from X" on race pages, a note on Sources. CatalogUpdater
+   imports adopted slates unfollowed, catalog entries only.
+5. ~~Endorsements~~ pin + `scripts/adopt.ts` `43ac6cc`; adoptions `4b1c4b3`, `d44382f`,
+   `5dfc127`, `607192d`. 16 slates adopt 388 positions.
+6. ~~Compose~~ `c45d0db`: "From another slate" card (reference / snapshot / copy), catalog
+   rows count adopted positions. Chain fix in core `0b1b5a0`.
+
+All steps done.
 
 ## Findings / gotchas
 
+- **Auto-import is catalog-only, on purpose.** A signed slate can name any URL in `uri`; fetching
+  it on import would let a slate make a voter's browser call any server. `adoptedEntries` only
+  matches catalog entries; anything else shows as "not loaded" on Sources.
+- **Chains must respect `subjects`.** The first core version followed all of an adopted slate's
+  adoptions even when the outer adoption listed a subset, which over-claims. Fixed in `0b1b5a0`
+  with a test, and stated in SPEC §3.10. Nothing in the catalog chained at the time.
+- **A match isn't a republish.** Only convert a bundle's copies when its source says they're
+  someone else's (footnote, badge, reposted template). Sierra Club San Diego's No on 45 matches
+  Sierra Club California but is the chapter's own signed statement, so it stayed.
+- Adopting everything a bundle has leaves a catalog row with 0 own positions, and the catalog's
+  `jurisdictions` counts own positions only, so setup's "N races on your ballot" undercounts
+  adopting slates. Why SFPOA/Local 798 stayed as copies (2 picks each).
 - `vectors:generate` writes LF; this checkout is CRLF. The regenerated vector files show as modified but have no content change; `git add` normalizes them (no diff staged).
 - Biome on this checkout needs `--line-ending=crlf` (ISSUES: "biome lint fails on CRLF checkouts"; ui/two-modes carries a config fix).
 
@@ -131,20 +144,18 @@ CLI:
 - [x] Spec + core (`b3d28b9`: 63 core tests, 16 vectors)
 - [x] CLI (`2708f8c`: e2e-checked against the live CADEM slate: reference, embed, copy, verify --resolve)
 - [x] Merge + push (`7d8ce98`, deployed)
-- [ ] Web (after ui/two-modes)
-- [~] Endorsements: pin `7d8ce98` + `scripts/adopt.ts` (`43ac6cc`); 10 slates adopt 312 positions (`4b1c4b3`, `d44382f`). Remaining conversions of *existing copies* wait for web support (list in the catalog plan, "Deferred until the web app expands adopts")
-- [ ] Compose UI
+- [x] Web (`1357dde`, deployed; tested in a browser: importing only CPF brings in IAFF as `off`,
+  Sources says "Includes 51 positions adopted from ...", race pages say "Adopted from ...")
+- [x] Endorsements: 16 slates adopt 388 positions, all resolving against the live catalog (2026-10-30)
+- [x] Compose UI (`c45d0db`, deployed; signed a test slate by reference in a browser: 0 own
+  positions and one `adopts` entry with issuer, `of`, election and `uri`)
 
 ## Open questions for the user
 
 1. ~~OK to push?~~ Yes (2026-10-19).
-2. Web step 4 needs `ui/two-modes` merged first: that's waiting on your walkthrough of the UI refactor.
+2. ~~Web step 4~~ `ui/two-modes` merged; done.
 
 ## Things not to do
 
-- Don't publish catalog slates with `adopts` before openslate.us deploys the
-  new schema.
-- Don't edit ComposePanel / ElectionCombobox / subjects.ts on master (another
-  thread's uncommitted work).
-- Don't build the web part on master while `ui/two-modes` is unmerged; it
-  rewrites collation.
+- Don't fetch an adoption's `uri` automatically unless it's a catalog entry.
+- Don't convert a bundle's copies just because they match: the source has to say so.
