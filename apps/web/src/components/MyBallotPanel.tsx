@@ -14,6 +14,7 @@ import {
   PenLine,
   Printer,
   UserPlus,
+  Users,
   WandSparkles,
 } from "lucide-react";
 import {
@@ -104,6 +105,7 @@ import { track } from "../lib/usage";
 import { AreaPicker, describeArea } from "./AreaPicker";
 import { BallotProblemsNotice, RaceUnlistedNote } from "./BallotTags";
 import { ChoiceRow } from "./ChoiceRow";
+import { CompareStrip } from "./CompareStrip";
 import { electionOptions } from "./electionOptions";
 import { PageSearch } from "./PageSearch";
 import { PrintBallot, type PrintSection } from "./PrintBallot";
@@ -819,6 +821,10 @@ export function MyBallotPanel() {
         </a>
       </div>
 
+      {election && counts.picked + counts.maybe + counts.against > 0 && (
+        <CompareStrip election={election} slates={slates} />
+      )}
+
       {races.length > 0 && (
         <div className="triage-filter no-print">
           <Segmented
@@ -1519,6 +1525,18 @@ function RaceCardInner({
         </p>
       )}
       {ranked && <WriteInField race={race} election={election} rows={rows} applyRank={applyRank} />}
+      <p className="race-all-slates no-print">
+        <Link
+          to="/race/$key"
+          params={{ key: race.key }}
+          search={{ all: true }}
+          hash="all-slates"
+          className="button-link"
+          aria-label={`All slates on ${race.subject.title}`}
+        >
+          <Users className="icon" aria-hidden="true" /> All slates
+        </Link>
+      </p>
       <p className="research-links no-print">
         <span className="hint">Read up:</span>{" "}
         {inGuide && (

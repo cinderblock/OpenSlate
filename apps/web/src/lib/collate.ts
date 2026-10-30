@@ -1,4 +1,5 @@
 import {
+  type Adoption,
   type BallotChoice,
   type BallotContest,
   type SlatePayload,
@@ -46,6 +47,13 @@ export interface DecodedSlate {
    * when no listing is imported.
    */
   checks?: ChoiceCheck[];
+  /**
+   * The entity each position was adopted from, by position index (SPEC §3.10,
+   * `expandAdoptions`); undefined for the slate's own. Absent when it adopts nothing.
+   */
+  adoptedFrom?: Array<string | undefined>;
+  /** Adoptions whose slate isn't imported, so their positions aren't here. */
+  unresolved?: Adoption[];
 }
 
 /**
@@ -70,6 +78,11 @@ export function decodeSlates(rows: Array<{ token: string; importedAt: string }>)
     out.push({ token: row.token, importedAt: row.importedAt, ...decoded });
   }
   return out;
+}
+
+/** A slate verified earlier and kept (catalogCopy.ts), so `decodeSlates` needn't again. */
+export function rememberVerified(token: string, payload: SlatePayload): void {
+  verified.set(token, { payload, valid: true, source: sourceOf(payload) });
 }
 
 /** The election a position belongs to: its subject's, else the slate's context. */
@@ -135,6 +148,8 @@ export interface RacePosition {
   standing: Standing;
   /** The source's own spelling, when it's shown under the ballot's. */
   written?: string;
+  /** The entity this was adopted from, when the source took it on by reference (SPEC §3.10). */
+  via?: string;
   /**
    * Listed on the other side of a two-way race from the one the source named
    * (a source you disagree with, `DisagreeMode` `side`): the choice it named.
@@ -375,6 +390,7 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
         valid: slate.valid,
         standing,
         ...(check?.written ? { written: check.written } : {}),
+        ...(slate.adoptedFrom?.[index] ? { via: slate.adoptedFrom[index] } : {}),
       });
     }
   }

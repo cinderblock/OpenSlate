@@ -318,15 +318,20 @@ Post-batch cleanup to do once all batches land:
 **Result (2026-10-15): 39 November slates, 2,903 positions, live** at
 https://cinderblock.github.io/openslate-public-endorsements/index.json.
 
-Re-scrape before Nov 3 (sources said "coming soon" / pending):
-- [ ] sf-chronicle: Governor, Props 2/40/43/45, SF Prop J, Supes D2/D6/D8/D10, school + college boards
-- [ ] sf-yimby: state props, "further endorsements pending"
-- [ ] sd-lincoln-club: measures hearing was Oct 14
-- [ ] peace-and-freedom-party: prop recommendations
-- [ ] sierra-club-sf-bay: "will be updated as endorsements are finalized"
-- [ ] courage-california: ~150 local races from its county digital guides (PDF was garbled)
-- [ ] la-county-federation-of-labor: guide page 7 (404 at scrape time)
-- [ ] sf-examiner, bernal-heights-dems: no November picks yet
+Re-scrape before Nov 3 (sources said "coming soon" / pending; updated 2026-10-30 after rounds 2b
+and 3, for the Nov 1 scheduled run):
+- [ ] sf-chronicle: Governor is the only one still "Coming Soon"
+- [ ] southern-california-news-group: roundup says "More will be published"
+- [ ] bay-area-news-group: cheat sheet says "so far" (it doesn't endorse for governor)
+- [ ] sierra-club-sf-bay: "will be updated as endorsements are finalized" (Chrome only, Imperva)
+- [ ] sf-examiner: no November picks as of 10-28
+- [x] sf-yimby `6b42331`, sd-lincoln-club `d92a0ab`, peace-and-freedom-party `25889da`,
+      courage-california `8c42885`, bernal-heights-democratic-club `37dbcf9`
+- [x] la-county-federation-of-labor: "page 7" never existed (`65002bf`)
+
+Conventions have moved on since the Oct 14 list: read "Round 3" below and the endorsements
+README ("Ballot sources", "Republished picks") first. Republished picks are adopted with
+`scripts/adopt.ts`, never copied.
 
 ## Round 2 for the Nov 3 general (2026-10-19, 15 days out)
 
@@ -512,7 +517,16 @@ stay deferred.
 the web app treats as ballot data, not sources.)
 
 Still open after round 3:
-- Web app doesn't expand `adopts` yet, so the deferred copy → adopt conversions above wait.
+- ~~Web app doesn't expand `adopts` yet~~ Done 2026-10-30 (`plans/adopt-by-reference.md`): five
+  bundles converted in `607192d` (Ventura Dems 15, LA GOP 7, Alameda GOP 18, Sierra Club SF Bay
+  12, Angeles 11). Left as they are: Sierra Club San Diego's No on 45 (its own statement) and
+  SFPOA/Local 798 (adopting would leave a row with 0 positions).
+- Realtors' six "not real estate related" props stay `abstain` (user said keep going, 2026-10-30).
 - SF Chronicle Governor ("Coming Soon"), SCNG ("More will be published"), Sierra Club SF Bay
   ("will be updated"): a last look on Nov 1–2 could catch late picks. Not scheduled.
 - The weekly scheduled task fires again 2026-11-04 and should delete itself (its guard).
+
+**State 2026-10-30:** 351 November endorser slates, 10,959 own positions + 388 adopted by 16
+slates, all resolving against the live catalog. Two feature threads started from this one:
+`plans/any-race-all-slates.md` (branch `feat/any-race-all-slates`) and `plans/ballot-alignment.md`
+(branch `feat/ballot-alignment`).

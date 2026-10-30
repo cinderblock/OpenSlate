@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { RaceSummary } from "../src/results";
 import {
+  civicRaceName,
   confidenceBucket,
   electionDateWindow,
   parseJurisdiction,
@@ -169,5 +170,80 @@ describe("confidenceBucket", () => {
   ];
   test.each(cases)("score %f → %s", (score, expected) => {
     expect(confidenceBucket(score)).toBe(expected);
+  });
+});
+
+describe("civicRaceName", () => {
+  // Titles from the Nov 2026 catalog, and what civicAPI calls those races.
+  test.each([
+    ["Governor of California", "California Governor"],
+    ["Attorney General of California", "California Attorney General"],
+    [
+      "California — Proposition 43 (Limits Voters' Ability to Raise Revenues for Local Government Services)",
+      "California Proposition 43",
+    ],
+    ["US House of Representatives, California District 10", "California US House 10"],
+    ["California State Assembly, District 52", "California State Assembly 52"],
+    ["California State Senate, District 30", "California State Senate 30"],
+    [
+      "California State Board of Equalization, District 1",
+      "California Board of Equalization Member 1",
+    ],
+  ])("%s", (title, name) => {
+    expect(civicRaceName(title)).toBe(name);
+  });
+
+  test("a title no rule fits is left as it is", () => {
+    expect(civicRaceName("California Secretary of State")).toBe("California Secretary of State");
+    expect(civicRaceName("Oakland Mayor")).toBe("Oakland Mayor");
+  });
+
+  test("a numbered district's own spelling doesn't filter the search", () => {
+    const params = subjectToRaceQuery({
+      title: "US House of Representatives, California District 10",
+      jurisdiction: "us/ca/cd-10",
+    });
+    expect(params.query).toBe("California US House 10");
+    expect(params.district).toBeUndefined();
+  });
+});
+
+describe("scoreMatch on numbered races", () => {
+  const assembly5: Subject = {
+    title: "California State Assembly, District 5",
+    jurisdiction: "us/ca/ad-5",
+    election: "2026-11-03",
+  };
+  const race = (election_name: string): RaceSummary =>
+    ({
+      id: 1,
+      election_name,
+      election_date: "2026-11-03",
+      country: "US",
+      province: "CA",
+    }) as RaceSummary;
+
+  test("the right number is a confident match, however the slate words it", () => {
+    expect(confidenceBucket(scoreMatch(assembly5, race("California State Assembly 5")))).toBe(
+      "high",
+    );
+    const house = {
+      title: "US House of Representatives, California District 10",
+      jurisdiction: "us/ca/cd-10",
+      election: "2026-11-03",
+    };
+    expect(confidenceBucket(scoreMatch(house, race("California US House 10")))).toBe("high");
+  });
+
+  test("another number never is, however much else agrees", () => {
+    expect(confidenceBucket(scoreMatch(assembly5, race("California State Assembly 58")))).toBe(
+      "low",
+    );
+    const prop4 = {
+      title: "California — Proposition 4 (Repeals Prohibition)",
+      jurisdiction: "us/ca",
+      election: "2026-11-03",
+    };
+    expect(confidenceBucket(scoreMatch(prop4, race("California Proposition 43")))).toBe("low");
   });
 });

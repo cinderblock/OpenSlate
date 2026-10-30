@@ -29,6 +29,7 @@ import { publishedRanks } from "../lib/ranking";
 import { matchesSearch, positionSearchText } from "../lib/search";
 import { subjectKey, useImportedSubjects } from "../lib/subjects";
 import { track } from "../lib/usage";
+import { AdoptCard, type ComposedAdoption } from "./AdoptCard";
 import { CreateIdentity } from "./CreateIdentity";
 import { electionOptions } from "./electionOptions";
 import { RawInspector } from "./ImportVerifyPanel";
@@ -153,6 +154,7 @@ export function ComposePanel() {
   const [otherLabel, setOtherLabel] = useState<string>(NO_LABEL);
   const [otherStatement, setOtherStatement] = useState("");
   const [pickerSeq, setPickerSeq] = useState(0);
+  const [fromSlates, setFromSlates] = useState<ComposedAdoption[]>([]);
 
   const [token, setToken] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -185,7 +187,7 @@ export function ComposePanel() {
       ...(entry.label ? { label: entry.label } : {}),
       ...(entry.statement?.trim() ? { statement: entry.statement.trim() } : {}),
     }));
-    return [...fromPicks, ...fromOthers];
+    return [...fromPicks, ...fromOthers, ...fromSlates.flatMap((entry) => entry.positions ?? [])];
 
     function rankOf(row: DraftRow): { rank?: number } {
       const rank = row.choice
@@ -193,7 +195,13 @@ export function ComposePanel() {
         : undefined;
       return rank === undefined ? {} : { rank };
     }
-  }, [picks, leftOut, others, listing, ranks]);
+  }, [picks, leftOut, others, fromSlates, listing, ranks]);
+
+  const adopts = useMemo(
+    () => fromSlates.flatMap((entry) => (entry.adoption ? [entry.adoption] : [])),
+    [fromSlates],
+  );
+  const adoptedCount = fromSlates.reduce((n, e) => n + (e.adoption ? e.count : 0), 0);
 
   function toggleLeftOut(id: string) {
     setLeftOut((current) => {
@@ -241,7 +249,7 @@ export function ComposePanel() {
       setError("create an identity first (Identities)");
       return;
     }
-    if (positions.length === 0) {
+    if (positions.length === 0 && adopts.length === 0) {
       setError("pick something on My ballot, or add one under Other positions");
       return;
     }
@@ -252,6 +260,7 @@ export function ComposePanel() {
         issuer: identityToIssuer(id),
         ...(election ? { context: { election } } : {}),
         positions,
+        ...(adopts.length > 0 ? { adopts } : {}),
         ...(labels.length > 0 ? { labels } : {}),
       });
       const signed = signSlate(payload, id.keyPair.secretKey);
@@ -433,9 +442,25 @@ export function ComposePanel() {
             )}
           </div>
 
+          <AdoptCard
+            slates={slates}
+            election={election}
+            ownKey={identity?.publicKey}
+            added={fromSlates}
+            onAdd={(entry) => {
+              setFromSlates((current) => [...current, entry]);
+              setToken("");
+            }}
+            onRemove={(id) => {
+              setFromSlates((current) => current.filter((e) => e.id !== id));
+              setToken("");
+            }}
+          />
+
           <div className="row">
             <button type="button" className="primary" onClick={sign}>
-              Sign slate ({positions.length} position{positions.length === 1 ? "" : "s"})
+              Sign slate ({positions.length} position{positions.length === 1 ? "" : "s"}
+              {adoptedCount > 0 && ` + ${adoptedCount} by reference`})
             </button>
           </div>
           {error && <p className="error">{error}</p>}

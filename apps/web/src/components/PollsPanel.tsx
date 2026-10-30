@@ -1,38 +1,12 @@
 import type { Subject } from "@openslate/core";
-import { useQueries } from "@tanstack/react-query";
-import { useMemo } from "react";
-import { type Poll, pollsBySubjectQueryOptions, pollsSource } from "../lib/polls";
+import { pollsSource, useRacePolls } from "../lib/polls";
 
 interface PollsPanelProps {
   subject: Subject;
 }
 
 export function PollsPanel({ subject }: PollsPanelProps) {
-  const lookup = useMemo(() => pollsSource.lookup(subject), [subject]);
-
-  // Fan out one query per candidate provider key (most-specific first). Each
-  // share TanStack cache so re-mounts are free; PollsSource encapsulates the
-  // taxonomy quirks.
-  const queries = useQueries({
-    queries: lookup.subjectKeys.map((key) => pollsBySubjectQueryOptions(key)),
-  });
-
-  const loading = queries.some((q) => q.isLoading);
-  const firstError = queries.find((q) => q.error)?.error;
-
-  const polls = useMemo(() => {
-    const seen = new Set<string>();
-    const merged: Poll[] = [];
-    for (const q of queries) {
-      for (const p of q.data ?? []) {
-        if (seen.has(p.id)) continue;
-        if (!pollsSource.matches(p, lookup)) continue;
-        seen.add(p.id);
-        merged.push(p);
-      }
-    }
-    return sortPolls(merged);
-  }, [queries, lookup]);
+  const { lookup, polls, loading, firstError } = useRacePolls(subject);
 
   const officeLabel = lookup.office && lookup.office !== "other" ? lookup.office : undefined;
 
@@ -145,8 +119,4 @@ function EmptyPolls({ subjectKeys, officeLabel }: { subjectKeys: string[]; offic
       to confirm.
     </p>
   );
-}
-
-function sortPolls(polls: Poll[]): Poll[] {
-  return [...polls].sort((a, b) => (b.end_date ?? "").localeCompare(a.end_date ?? ""));
 }

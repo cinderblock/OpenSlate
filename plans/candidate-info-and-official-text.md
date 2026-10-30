@@ -174,6 +174,14 @@ User, 2026-10-24:
    contact the county yet ("I don't want to start asking around yet"). No OCR,
    and no guessing at pamphlet file names.
 
+User, 2026-10-30:
+
+8. **San Mateo: read the scans by machine (option c).** "i'm not asking the
+   county. machine read will have to do." Windows' built-in OCR; the text is
+   marked as read by machine, and nothing the OCR gets wrong is corrected by
+   hand. Handwritten signer names are not read (OCR returns garbage for them);
+   a signer appears only when the filing prints it typed.
+
 ## Hosting today (checked 2026-10-22)
 
 - The web app (`openslate.us`) is Cloudflare Workers static assets
@@ -691,8 +699,32 @@ Steps:
     "ArgInFavor", "RebutArgAgainst").
   Measure documents checked 2026-10-24: 6 of 8 sampled have no text layer
   (scans, "_Redacted"); the two with text are OCR'd resolutions ("Ju1y24").
-- [ ] SM3 Signer organizations from San Mateo's arguments: needs text, which
-  option b doesn't give. Deferred until the user revisits options a or c.
+- [x] SM3 San Mateo text by OCR (decision 8; 2026-10-30, 9:30 AM–10:00 AM PDT
+  (16:30–17:00Z)). Ballot repo `4f6d8e0` (OCR tool and the raw reading of all 132
+  scans, 3.4 MB in `evidence/county/san-mateo/ocr/`), `3d8b0dc` (analyses and 77
+  arguments in the guide), `89c92ab` (a typed signer list whose numbers sit on a
+  separate OCR line), `60917c0` (each argument says its signer list may be
+  partial). Endorsements `0898cb2`: six signer organizations, 7 positions
+  (Burlingame Chamber of Commerce, Chamber San Mateo County, EPA Greyhounds,
+  San Bruno Police Association, SMFC Education Foundation, and 2 more for Silicon
+  Valley Taxpayers Association). `bun run verify`: 399 OK.
+  Findings:
+  - Windows OCR reads typed text well (analyses and arguments come out as
+    readable paragraphs); handwriting reads as noise, so a signer is listed only
+    when the form was typed. Many arguments list none, or only some, of their
+    signers; the argument's caveat says so.
+  - The OCR drops a descender where typed text sits on a form line ("Brierly",
+    "Valley", "Lo ood" for Logwood), and the county's form field cuts long titles
+    ("Associatio…"). Both show in the signer text; the reviewed `SIGNERS` table
+    in the endorsements repo maps each printed string, so a re-OCR that changes a
+    string needs the table checked. `scripts/lib/ocr-text.ts` drops a name or
+    title that shows those marks (a letter missing mid-word, stray scraps).
+  - An argument's measure letter is often blank ("Vote Yes on Measure _"): the
+    filing as submitted, so the text shows the gap.
+  - Not read: Mark Hinkle (Silicon Valley Taxpayers Association) also signs
+    arguments where the OCR gave his name but not his title (Burlingame School
+    District Measure R's argument against, Measure BB's rebuttal), so those don't
+    count as the organization's position. Counted only where title and name read.
 - [x] AL1 Alameda bond questions (ballot `5d75cc4`): the "BONDS YES/NO" box
   labels no longer merge into Alameda L, Berkeley U and Sunol Glen K. The same
   check found San Diego's two Permanent Road Division zones carrying "Tax –

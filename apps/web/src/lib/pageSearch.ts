@@ -5,6 +5,7 @@ import { searchTerms } from "./search";
 /** The pages with a search box at the top, each keeping it in its `?q=`. */
 export type SearchablePage =
   | "/"
+  | "/races"
   | "/sources"
   | "/results"
   | "/results/$token"

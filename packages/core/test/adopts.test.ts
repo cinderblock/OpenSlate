@@ -151,6 +151,37 @@ describe("resolveAdoptions", () => {
     ]);
   });
 
+  test("a chain stays within the subjects the outer adoption listed", () => {
+    const c = generateKeyPair();
+    const b = generateKeyPair();
+    const slateC = createSlate({
+      keyPair: c,
+      issuer: { name: "C" },
+      positions: [
+        { subject: gov, stance: "endorse", choice: "Alice" },
+        { subject: prop1, stance: "endorse", choice: "No" },
+      ],
+    });
+    const slateB = createSlate({
+      keyPair: b,
+      issuer: { name: "B" },
+      positions: [{ subject: ag, stance: "endorse", choice: "Bob" }],
+      adopts: [{ issuer: slateC.payload.issuer.key, uri: "https://e.org/c" }],
+    });
+    const a = createSlate({
+      keyPair: generateKeyPair(),
+      issuer: { name: "A" },
+      positions: [],
+      adopts: [{ issuer: slateB.payload.issuer.key, uri: "https://e.org/b", subjects: [ag, gov] }],
+    });
+    const result = resolveAdoptions(a.payload, () => [slateB.token, slateC.token]);
+    // Governor comes through B's own adoption; Prop 1, which A didn't list, doesn't.
+    expect(result.positions.map((p) => p.position.subject.title).sort()).toEqual([
+      "Attorney General",
+      "Governor",
+    ]);
+  });
+
   test("follows chains, stops at cycles and at maxDepth", () => {
     const a = generateKeyPair();
     const b = generateKeyPair();

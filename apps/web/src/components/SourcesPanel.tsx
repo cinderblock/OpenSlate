@@ -11,6 +11,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { adoptedCounts } from "../lib/adoptions";
 import { type DecodedSlate, electionOf } from "../lib/collate";
 import { slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
@@ -302,6 +303,32 @@ export function SourcesPanel() {
   );
 }
 
+/**
+ * What a source took on from others (SPEC §3.10), and what it adopts that isn't
+ * here: an adoption of a slate outside the catalog isn't fetched on its own.
+ */
+function AdoptionNote({ slates }: { slates: DecodedSlate[] }) {
+  const adopted = slates.flatMap(adoptedCounts);
+  const missing = slates.flatMap((slate) => slate.unresolved ?? []);
+  if (adopted.length === 0 && missing.length === 0) return null;
+  return (
+    <div className="hint">
+      {adopted.map(({ name, count }) => (
+        <div key={name}>
+          Includes {count} {count === 1 ? "position" : "positions"} adopted from {name}.
+        </div>
+      ))}
+      {missing.map((adoption) => (
+        <div key={`${adoption.issuer}:${adoption.of ?? ""}:${adoption.election ?? ""}`}>
+          Also adopts {adoption.subjects?.length ?? "the"}{" "}
+          {adoption.subjects?.length === 1 ? "position" : "positions"} from{" "}
+          {adoption.of ?? "another slate"}, not loaded.
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function SourceRow({ group }: { group: SourceGroup }) {
   const [confirming, setConfirming] = useState(false);
   const { source } = group;
@@ -342,6 +369,7 @@ function SourceRow({ group }: { group: SourceGroup }) {
             <span className="warning"> · a slate failed verification</span>
           )}
         </div>
+        <AdoptionNote slates={group.slates} />
         {!group.ballot && <LeanMeter sourceId={source.id} name={source.name} withWord />}
       </div>
       {!group.ballot && (

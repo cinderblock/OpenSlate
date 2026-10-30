@@ -28,7 +28,9 @@ import { useSyncExternalStore } from "react";
 export const ROUTE_TEMPLATES = [
   // My vote
   "/",
+  "/races",
   "/sources",
+  "/compare",
   "/race/$key",
   "/results",
   "/results/$token",

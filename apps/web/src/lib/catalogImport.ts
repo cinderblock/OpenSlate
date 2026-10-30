@@ -4,7 +4,7 @@ import { type StoredSlate, staleImports, updateProblem } from "./catalogUpdates"
 import { slatesCollection, upsertKnownIdentity } from "./collections";
 import { readTextWithProgress } from "./fetchProgress";
 import { createImportQueue } from "./importQueue";
-import { removedSourcesStore, setStanding } from "./myVote";
+import { followsStore, removedSourcesStore, setStanding } from "./myVote";
 import {
   addPending,
   type PendingSetup,
@@ -53,6 +53,25 @@ export async function importCatalogEntry(
     return { kind: "imported", token: outcome.slate.token };
   } catch (err) {
     return { kind: "error", error: errorMessage(err) };
+  }
+}
+
+/**
+ * Import the catalog slates other slates adopt positions from (SPEC §3.10). A
+ * voter who follows California Professional Firefighters needs the IAFF slate
+ * it adopts its House picks from, but never asked to follow the IAFF, so it
+ * comes in unfollowed unless they've already decided about it.
+ */
+export async function importAdoptedEntries(
+  entries: CatalogEntry[],
+  catalogUrl: string,
+  knownTokens: ReadonlySet<string>,
+  queryClient: QueryClient,
+): Promise<void> {
+  for (const entry of entries) {
+    const sourceId = sourceIdOf(entry);
+    if (followsStore.get()[sourceId] === undefined) setStanding(sourceId, "off");
+    await importCatalogEntry(entry, catalogUrl, knownTokens, queryClient);
   }
 }
 

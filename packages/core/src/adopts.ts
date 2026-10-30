@@ -1,5 +1,5 @@
 import type { Adoption, Position, SlatePayload, Subject } from "./schema";
-import { verifySlate } from "./slate";
+import { type VerifyResult, verifySlate } from "./slate";
 
 /**
  * Collation identity of a subject: `id` when present, else title + jurisdiction +
@@ -61,6 +61,8 @@ export interface ResolvedAdoptions {
 export interface ResolveOptions {
   /** Maximum adoption depth followed (SPEC §3.10). Defaults to 4. */
   maxDepth?: number;
+  /** Verifies a candidate; defaults to `verifySlate`. For callers that cache verification. */
+  verify?: (token: string) => Pick<VerifyResult, "valid" | "payload">;
 }
 
 /**
@@ -77,18 +79,26 @@ export function resolveAdoptions(
   options: ResolveOptions = {},
 ): ResolvedAdoptions {
   const maxDepth = options.maxDepth ?? 4;
+  const verify = options.verify ?? verifySlate;
   const positions: AdoptedPosition[] = [];
   const unresolved: ResolvedAdoptions["unresolved"] = [];
   const claimed = new Set(payload.positions.map((p) => subjectIdentity(p.subject)));
 
-  const visit = (current: SlatePayload, via: AdoptionHop[], seen: Set<string>) => {
+  // `allowed`: the subjects an outer adoption limited this one to, so a slate adopting part of
+  // another never picks up the rest of what that one adopts in turn.
+  const visit = (
+    current: SlatePayload,
+    via: AdoptionHop[],
+    seen: Set<string>,
+    allowed: Set<string> | null,
+  ) => {
     for (const adoption of current.adopts ?? []) {
       const depth = via.length + 1;
       if (depth > maxDepth) {
         unresolved.push({ adoption, depth });
         continue;
       }
-      const adopted = pickSlate(adoption, find);
+      const adopted = pickSlate(adoption, find, verify);
       if (!adopted) {
         unresolved.push({ adoption, depth });
         continue;
@@ -96,7 +106,11 @@ export function resolveAdoptions(
       const entity = slateEntity(adopted);
       if (seen.has(entity.id)) continue;
       const hop: AdoptionHop = { adoption, entity };
-      const wanted = adoption.subjects ? new Set(adoption.subjects.map(subjectIdentity)) : null;
+      const listed = adoption.subjects ? new Set(adoption.subjects.map(subjectIdentity)) : null;
+      const wanted =
+        listed && allowed
+          ? new Set([...listed].filter((k) => allowed.has(k)))
+          : (listed ?? allowed);
       const added = new Set<string>();
       for (const position of adopted.positions) {
         const key = subjectIdentity(position.subject);
@@ -106,22 +120,23 @@ export function resolveAdoptions(
         added.add(key);
       }
       for (const key of added) claimed.add(key);
-      visit(adopted, [...via, hop], new Set([...seen, entity.id]));
+      visit(adopted, [...via, hop], new Set([...seen, entity.id]), wanted);
     }
   };
 
-  visit(payload, [], new Set([slateEntity(payload).id]));
+  visit(payload, [], new Set([slateEntity(payload).id]), null);
   return { positions, unresolved };
 }
 
 function pickSlate(
   adoption: Adoption,
   find: (adoption: Adoption) => Iterable<string>,
+  verify: NonNullable<ResolveOptions["verify"]>,
 ): SlatePayload | undefined {
   const candidates = adoption.slate ? [adoption.slate, ...find(adoption)] : find(adoption);
   let best: SlatePayload | undefined;
   for (const token of candidates) {
-    const result = verifySlate(token);
+    const result = verify(token);
     if (!result.valid || !result.payload || !adoptionMatches(adoption, result.payload)) continue;
     // Prefer the most recently issued matching slate (a re-issued live copy beats a snapshot).
     if (!best || result.payload.issued_at > best.issued_at) best = result.payload;

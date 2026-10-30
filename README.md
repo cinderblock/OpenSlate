@@ -65,7 +65,17 @@ for it. Its two sides:
   keys step back and forth. *Quick fill* marks many races at once: pick (or rule
   out) every candidate of a party, or agree with, or go against, everything
   one source recommends, followed or not. It only fills what you haven't
-  marked and can be undone. A race's own page compares every source's
+  marked and can be undone. *Compare* lines your picks up with every endorser
+  in the catalog, followed or not, live as you mark: most aligned, most at
+  odds, split with you (about even on enough shared races to say so), and
+  looking at other races (active on your ballot, but not on what you've
+  marked). It shows the count ("agreed on 12 of 14") and the races behind it,
+  ranks cautiously so two races at 100% can't beat forty at 90%, and counts a
+  clash only when two picks can't both go on one ballot, so a different name in
+  a vote-for-three isn't a disagreement. Neutral and abstaining aren't
+  disagreeing, and a group repeating another's list sits under it instead of
+  counting twice. It runs in your browser: every visitor downloads the same
+  public file, once, and your picks go nowhere. A race's own page compares every source's
   position and, where the catalog lists the election's official **voter
   guide** (the state's, or a county's for Congress, the Legislature and local
   races), shows it too: what the office does or what the measure would do,
@@ -73,7 +83,23 @@ for it. Its two sides:
   vote mean, the arguments and rebuttals with who signed them (and, where a
   county prints them, paid arguments with who paid), the official summary and
   analysis, and the full text. That material is reference, not
-  endorsement: it's never counted as anyone backing anything. *Sources* is
+  endorsement: it's never counted as anyone backing anything. Every race card
+  has an *All slates* button, and a race page a *See all slates* one: every
+  slate in the public catalog that takes a position on it, not only the ones
+  you've imported. Counts come first (for and against, or Yes and No), with
+  the sources grouped by kind and filtered by stance, kind or name. *All races*
+  does the same for any race anywhere, on your ballot or not: search by seat,
+  measure, candidate, place or endorser, or browse by place. A name you search
+  for leads the list when one race holds the whole of it. The catalog comes
+  down only when you ask for it, as one file so its host can't tell what you're
+  looking up, and adds nothing to My ballot; once checked it's kept in this
+  browser, so the next visit needs no download until the catalog changes.
+  *Follow* a race or a candidate there (a friend running in another city) and
+  it stays at the top of *All races*: slates for and against, how that compares
+  with the rest of the field, who's new since you last looked, the latest poll
+  where one exists, and once polls close the count from civicAPI, which covers
+  statewide and legislative races but not local ones (a local race says so and
+  points you to the county). What you follow stays in this browser. *Sources* is
   where you follow sources, follow them to *disagree* (their picks count the
   other way on My ballot: what they back counts against it, what they oppose
   counts for it; in a Yes/No measure or a two-name race you can have it count
@@ -351,6 +377,14 @@ for cross-language conformance test vectors, and
 language. The standard is decentralized-first: a block is self-contained and
 verifiable without any server.
 
+A slate can **adopt** another slate's positions by reference instead of copying
+them ([SPEC §3.10](./SPEC.md)), for an org republishing someone else's list. The
+web app shows them as the adopting source's, marked "Adopted from …", and brings
+in the adopted slate, unfollowed, when it's in the catalog. It never fetches a
+URL just because a slate names one; an adoption it can't load shows as "not
+loaded" on Sources, and nothing is made up. Publishers choose how in Compose or
+with `openslate adopt`: a reference, a reference with a signed snapshot, or a copy.
+
 A **voter guide** carries an election authority's official material (candidate
 statements and photos, a measure's summary, analysis, arguments and full text)
 rather than positions, so it isn't a slate. It is one signed manifest
@@ -380,7 +414,7 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 | --- | --- |
 | [`packages/core`](./packages/core) | `@openslate/core` — the standard's reference impl: types, schema, canonical JSON, Ed25519 sign/verify, JSON Schema export. Pure TS, minimal audited deps. |
 | [`packages/cli`](./packages/cli) | `@openslate/cli` — `keygen` / `pubkey` / `sign` (incl. `--batch` for research bundles) / `validate` / `verify` / `inspect` / `adopt` (copy or reference another slate's positions). |
-| [`apps/web`](./apps/web) | React + Vite SPA, voter-first. *My vote*: setup inline on My ballot, My ballot (your followed sources' endorsements by race, for your election and area, with private picks), and Sources (follow, disagree with, or leave off, the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/), import from link/file/QR/paste). *Publish* (a quiet link): identities, sign your picks (or any race) as a slate and share it, verify and inspect slates; view live polls and election results (and Kalshi market forecasts, when a self-hosted server opts in); pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
+| [`apps/web`](./apps/web) | React + Vite SPA, voter-first. *My vote*: setup inline on My ballot, My ballot (your followed sources' endorsements by race, for your election and area, with private picks), All races (any race anywhere, with every slate on it, and the races you follow), Compare (who agrees with your picks, across the whole catalog), and Sources (follow, disagree with, or leave off, the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/), import from link/file/QR/paste). *Publish* (a quiet link): identities, sign your picks (or any race) as a slate and share it, verify and inspect slates; view live polls and election results (and Kalshi market forecasts, when a self-hosted server opts in); pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
 | [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + relays for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic, with your `GOOGLE_API_KEY`), opinion polls ([VoteHub](https://votehub.com)), election results ([civicAPI](https://civicapi.org)), and, opt-in with `KALSHI_FORECASTS=true`, market forecasts ([Kalshi](https://kalshi.com)). |
 | [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls and [civicAPI](https://civicapi.org) results behind permissive CORS, relays opt-in address lookups to the [Census geocoder](https://geocoding.geo.census.gov/) (`POST /api/geocode/census`; nothing cached, logged or stored), and answers Google Civic Information lookups with the project's key (`GET /api/civic/elections`, `POST /api/civic/voterinfo`; only for openslate.us pages, addresses never cached, logged or stored). Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, `/api/geocode/census` and `/api/civic/*` shapes so the web client treats either backend identically. Runs at `https://api.openslate.us`. |
 | [`apps/desktop`](./apps/desktop) | [Electrobun](https://blackboard.sh/electrobun) desktop app around the web build, for Windows, macOS and Linux; standard and offline (catalog built in) editions, built and self-tested in CI, with signed self-updates. |
@@ -451,7 +485,7 @@ flowchart LR
   Client -.->|"/api/results/v2/*"| Worker
   Client -.->|"/api/forecasts/v2/*, opt-in"| Hono
   Client -->|"direct (default)"| CA
-  Client -->|"index.json · signed.slate · guides.json"| OPE
+  Client -->|"index.json · signed.slate · bundle.json · guides.json"| OPE
   Client -->|"guide.jws · items · photos · PDFs"| VG
   Client -.->|"address, opt-in"| OSM
   Client -.->|"map tiles, on by default"| USGS

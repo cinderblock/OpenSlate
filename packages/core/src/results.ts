@@ -1,3 +1,4 @@
+import { US_STATE_NAMES } from "./polls";
 import type { Subject } from "./schema";
 
 // civicAPI race shape — see https://civicapi.org/api-documentation. Kept narrow
@@ -107,12 +108,14 @@ export type RaceHistoryResult =
  * returns `{ query: subject.title }` — civicAPI's search accepts a query alone.
  */
 export function subjectToRaceQuery(subject: Subject, limit = 10): RaceSearchParams {
-  const params: RaceSearchParams = { query: subject.title, limit };
+  const params: RaceSearchParams = { query: civicRaceName(subject.title), limit };
 
   const j = parseJurisdiction(subject.jurisdiction);
   if (j.country) params.country = j.country;
   if (j.province) params.province = j.province;
-  if (j.district) params.district = j.district;
+  // civicAPI writes a numbered district its own way ("CA-15" for `cd-15`), and
+  // a filter that doesn't match it hides the race: the name already says which.
+  if (j.district && !NUMBERED_DISTRICT.test(j.district)) params.district = j.district;
 
   const window = electionDateWindow(subject.election);
   if (window) {
@@ -121,6 +124,32 @@ export function subjectToRaceQuery(subject: Subject, limit = 10): RaceSearchPara
   }
 
   return params;
+}
+
+const NUMBERED_DISTRICT = /^[A-Z]+-\d+$/;
+
+/**
+ * The titles slates use for a race, as civicAPI names it. Its search matches
+ * words in the name, so "Governor of California" doesn't find its "California
+ * Governor", nor a proposition's title with the measure's description in it.
+ */
+const CIVIC_RACE_NAMES: Array<[RegExp, string]> = [
+  [/^US House of Representatives, (.+) District (\d+)$/, "$1 US House $2"],
+  [/^(.+) State (Senate|Assembly), District (\d+)$/, "$1 State $2 $3"],
+  [/^(.+) State Board of Equalization, District (\d+)$/, "$1 Board of Equalization Member $2"],
+  [/^(.+) — (Proposition \d+)\b.*$/, "$1 $2"],
+];
+
+/** The name to search civicAPI for. A title no rule fits is searched as it is. */
+export function civicRaceName(title: string): string {
+  for (const [pattern, name] of CIVIC_RACE_NAMES) {
+    if (pattern.test(title)) return title.replace(pattern, name);
+  }
+  const office = /^(.+) of ([A-Z][a-z]+(?: [A-Z][a-z]+)*)$/.exec(title);
+  if (office?.[1] && office[2] && Object.values(US_STATE_NAMES).includes(office[2])) {
+    return `${office[2]} ${office[1]}`;
+  }
+  return title;
 }
 
 interface ParsedJurisdiction {
@@ -249,11 +278,24 @@ export function scoreMatch(subject: Subject, race: RaceSummary): number {
   }
 
   // Title similarity (Jaccard on normalized tokens).
-  const titleSim = jaccard(tokens(subject.title), tokens(race.election_name));
+  const name = civicRaceName(subject.title);
+  const titleSim = jaccard(tokens(name), tokens(race.election_name));
   score += titleSim * 2;
   weight += 2;
 
-  return weight === 0 ? 0 : score / weight;
+  const total = weight === 0 ? 0 : score / weight;
+  // Date and place carry most of the weight, and every race on a state's ballot
+  // shares them. Search is fuzzy, so "Assembly 5" also brings back "Assembly
+  // 58": another race's numbers are worse than none.
+  return numbersDiffer(name, race.election_name) ? Math.min(total, NOT_THE_SAME_RACE) : total;
+}
+
+/** Below `confidenceBucket`'s "medium": never applied without the user choosing it. */
+const NOT_THE_SAME_RACE = 0.3;
+
+function numbersDiffer(a: string, b: string): boolean {
+  const [first, second] = [a, b].map((text) => text.match(/\d+/g)?.sort().join() ?? "");
+  return first !== "" && second !== "" && first !== second;
 }
 
 const STOPWORDS = new Set([

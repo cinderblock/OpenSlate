@@ -71,8 +71,9 @@ screenshots on private submissions"):
 
 ## Plan / steps
 
-Everything is built, pushed and live, both paths. **Current step: only the
-`data` label (question 2) is open, waiting on the user.**
+Everything is built, pushed and live, both paths, and all three issue-form
+labels exist. **Current step: two small checks left for the user
+(questions 4 and 5).**
 
 1. ~~Plan doc~~
 2. GitHub issue forms: `.github/ISSUE_TEMPLATE/{problem,wrong-info,idea}.yml`
@@ -174,11 +175,16 @@ Everything is built, pushed and live, both paths. **Current step: only the
    carries the endpoint and an `openslate.web` key, and the collector answers
    the CORS preflight for that key with 204. The test report from
    2026-10-22 is still in the collector for the user to delete.
-2. **`data` label** on GitHub issues for the "Wrong or missing
-   information" form. GitHub skips labels that don't exist (`bug` and
-   `enhancement` do). Create it, or point the form at an existing label?
-   Recommendation: create it.
+2. ~~`data` label~~ Done. Created on `cinderblock/OpenSlate` with the user's
+   yes, 2026-10-30 9:30 AM PDT (16:30Z), and confirmed with `gh label list`.
+   Before that, "Wrong or missing information" issues would have been filed
+   unlabeled, because GitHub skips labels that don't exist.
 3. ~~Merge and push~~ Done (see progress).
+4. **Prefilled issue form**, still unseen. The form page needs a login, so
+   no one has opened one with its fields filled in. To check, click **Open a
+   GitHub issue** in the feedback dialog while logged in.
+5. **The 2026-10-22 test report** is still in the collector for the user to
+   delete.
 
 ## Things not to do
 
