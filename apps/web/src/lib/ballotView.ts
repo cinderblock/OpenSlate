@@ -6,6 +6,7 @@ import {
   type ContestGroup,
   comparePositions,
   contestGroup,
+  positionTone,
   type Race,
   stanceTone,
   tallyPositions,
@@ -195,6 +196,28 @@ export function voteFor(race: Race): number | undefined {
 /** A ranked-choice race: how many choices a voter may rank (`ballot.ranks`). */
 export function ranksFor(race: Race): number | undefined {
   return isYesNo(race) ? undefined : race.ballot?.ranks;
+}
+
+/**
+ * One line on where a voter's sources stand, for a race on My ballot. "Leaning"
+ * needs a source the voter counts more or less than once to be taking a side,
+ * so a ballot with no numbers set reads as it always has, and a race with one
+ * winner: in a vote-for-three, several choices can all be right.
+ */
+export function sourcesVerdict(race: Race): string {
+  const [top, next] = race.choices
+    .filter((c) => c.support > 0)
+    .sort((a, b) => b.support - a.support);
+  if (!top) return "";
+  const name = top.choice || "for";
+  if (!next) return `your sources agree: ${name}`;
+  const oneWinner = isYesNo(race) || ranksFor(race) !== undefined || voteFor(race) === 1;
+  const weighted = race.choices.some((c) =>
+    c.positions.some((p) => p.times !== undefined && positionTone(p) !== "neutral"),
+  );
+  return oneWinner && weighted && top.support > next.support
+    ? `your sources split, leaning ${name}`
+    : "your sources split";
 }
 
 const NUMBER_WORDS = [

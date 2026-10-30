@@ -12,6 +12,7 @@ import {
   picksIn,
   raceHeading,
   ranksFor,
+  sourcesVerdict,
   voteFor,
   voteForLine,
 } from "../src/lib/ballotView";
@@ -306,5 +307,78 @@ describe("contestGroups", () => {
 
   test("leaves out a kind the section doesn't have", () => {
     expect(contestGroups([race("measure", [])]).map((g) => g.label)).toEqual(["Measures"]);
+  });
+});
+
+describe("sourcesVerdict", () => {
+  const backing = (name: string, times?: number): RacePosition => ({
+    ...position(name, "endorse"),
+    ...(times ? { times } : {}),
+  });
+  const office = (choices: ChoiceGroup[], vote_for?: number): Race => ({
+    ...race("office", choices),
+    ...(vote_for ? { ballot: { vote_for } as Race["ballot"] } : {}),
+  });
+
+  test("nothing to say when nobody backs a choice", () => {
+    expect(sourcesVerdict(office([group("A", [])]))).toBe("");
+  });
+
+  test("one choice backed: they agree", () => {
+    expect(sourcesVerdict(office([group("A", [backing("X")], { support: 1 })], 1))).toBe(
+      "your sources agree: A",
+    );
+  });
+
+  test("a plain split stays a split, even 2 to 1", () => {
+    const choices = [
+      group("A", [backing("X"), backing("Y")], { support: 2 }),
+      group("B", [backing("Z")], { support: 1 }),
+    ];
+    expect(sourcesVerdict(office(choices, 1))).toBe("your sources split");
+  });
+
+  test("a source counted more names who's ahead", () => {
+    const choices = [
+      group("A", [backing("X"), backing("Y")], { support: 2 }),
+      group("B", [backing("Z", 3)], { support: 3 }),
+    ];
+    expect(sourcesVerdict(office(choices, 1))).toBe("your sources split, leaning B");
+  });
+
+  test("a weighted tie is a split", () => {
+    const choices = [
+      group("A", [backing("X", 2)], { support: 2 }),
+      group("B", [backing("Y"), backing("Z")], { support: 2 }),
+    ];
+    expect(sourcesVerdict(office(choices, 1))).toBe("your sources split");
+  });
+
+  test("a vote-for-several race never leans", () => {
+    const choices = [
+      group("A", [backing("X", 3)], { support: 3 }),
+      group("B", [backing("Y")], { support: 1 }),
+    ];
+    expect(sourcesVerdict(office(choices, 3))).toBe("your sources split");
+    // Nothing says how many seats there are, so it can't say either.
+    expect(sourcesVerdict(office(choices))).toBe("your sources split");
+  });
+
+  test("a measure leans", () => {
+    const choices = [
+      group("Yes", [backing("X", 3)], { support: 3 }),
+      group("No", [backing("Y")], { support: 1 }),
+    ];
+    expect(sourcesVerdict(race("measure", choices))).toBe("your sources split, leaning Yes");
+  });
+
+  test("a counted source that took no side doesn't make a plain split lean", () => {
+    const neutral: RacePosition = { ...position("N", "neutral"), times: 3 };
+    const choices = [
+      group("A", [backing("X"), backing("Y")], { support: 2 }),
+      group("B", [backing("Z")], { support: 1 }),
+      group("", [neutral]),
+    ];
+    expect(sourcesVerdict(office(choices, 1))).toBe("your sources split");
   });
 });

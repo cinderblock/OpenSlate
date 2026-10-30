@@ -73,8 +73,10 @@ allowed; only non-finite values are refused.
   Compare keep Follow and Disagree only.
 - **Tallies:** `tallyPositions` in `collate.ts`, shared with `ballotView.ts`.
 - **Display:** `×3` on chips, "you count this ×3" on race pages, the total
-  beside each choice. When weights are in play and one choice leads, the line
-  reads "your sources split, leaning X". Unweighted ballots read as before.
+  beside each choice. `sourcesVerdict` (`ballotView.ts`) writes the race's line:
+  "your sources split, leaning X" when a source counted more or less than once
+  takes a side, one choice leads, and the race has one winner (a measure, a
+  ranked race, or vote-for-one on a listing). Otherwise it reads as before.
 - **Export and agent:** `for` / `against` and `sources_for` / `sources_against`
   are the weighted totals, so they match the screen, with `times` on each source.
   This replaces the proposal's "keep plain counts beside it": a second pair of
@@ -95,6 +97,11 @@ allowed; only non-finite values are refused.
   as `{a: 1, b: -1, c: 0}` with v2 untouched. Typing 2.5 stored 2.5. Emptying the
   field kept the old value. No sideways overflow at 390 px. My ballot showed
   `350 San Francisco Action ×3` with "3 counted for". No page errors.
+- "Leaning" on real races, headless Chrome with the state listing, 2026-10-30:
+  following both California parties gave 128 races at "your sources split" and
+  45 at "agree". With the Republican Party at 3, all 128 read "leaning", the 45
+  didn't change, and there were no page errors. Vote-for-several, unknown seats
+  and neutral sources are covered by unit tests only.
 - v3 is written on the first change, not on load. Until then the seed is
   re-read from v2 at each load, which is harmless.
 - The field's + and - step to the next whole number: 2.5 goes to 3, not 3.5.
