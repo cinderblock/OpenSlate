@@ -10,6 +10,9 @@ deployed the schema first. Release assets show zero installer downloads, so nobo
 yet, but anyone who installs 0.1.0 can't load the catalog. Schemas are `.strict()`, so every new
 field does this to every older release.
 
+Desktop 0.2.0 (`desktop-v0.2.0`, `80cc18f`) verifies all 403 live slates. Close this once its draft
+is published, which only a person does.
+
 ## Cited endorsement sources already gone, or answering a bot page
 
 Seen 2026-10-30, about 3:15 AM PDT (10:15Z), by `experiments/signed-source-capture/03-survey-hosts.ts`
