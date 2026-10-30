@@ -1,55 +1,74 @@
-import type { CandidateInfo, Passage, Stance, Subject } from "@openslate/core";
-import { Link, useLocation, useParams } from "@tanstack/react-router";
-import { useEffect, useMemo } from "react";
+import type { CandidateInfo, Passage, Subject } from "@openslate/core";
+import { Link, useLocation, useParams, useSearch } from "@tanstack/react-router";
+import { Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useAllRaces } from "../lib/allSlates";
 import { type AttachedArticle, articleDate, articlesByRace } from "../lib/articles";
 import { useBallotDraft } from "../lib/ballotDraft";
-import { designation, ordinal } from "../lib/ballotView";
-import { type ChoiceGroup, collateRaces, type Race, stanceTone } from "../lib/collate";
+import { designation, isYesNo } from "../lib/ballotView";
+import {
+  type ChoiceGroup,
+  collateRaces,
+  type Race,
+  type RacePosition,
+  stanceTone,
+} from "../lib/collate";
+import { followedSubject } from "../lib/followedRaces";
 import { type GuideForSubject, useGuideItem } from "../lib/guides";
 import { localToday, useDecodedSlates, useFollows } from "../lib/myVote";
+import {
+  type ChoiceTally,
+  filterPositions,
+  isFiltering,
+  NO_SLATE_FILTER,
+  type SlateFilter,
+  tallyRace,
+} from "../lib/raceTally";
 import { candidateLinks, type ResearchLink, raceLinks } from "../lib/researchLinks";
 import { subjectFromKey, subjectKey } from "../lib/subjects";
+import { AllSlatesFilters, AllSlatesLoading, CatalogNote, plural, SlateGroups } from "./AllSlates";
 import { ChoiceBallotTags, RaceUnlistedNote } from "./BallotTags";
-import { EndorserAvatar } from "./EndorserAvatar";
+import { FollowButton } from "./FollowButton";
 import { ForecastsPanel } from "./ForecastsPanel";
 import { CandidateGuide, GuideDetails, GuideMeans, GuideOverview } from "./GuideContent";
-import { LeanMeter } from "./LeanMeter";
 import { PollsPanel } from "./PollsPanel";
+import { PositionRow, STANCE_LABEL } from "./PositionRow";
 import { ResultsPanel } from "./ResultsPanel";
-
-const STANCE_LABEL: Record<Stance, string> = {
-  endorse: "Endorse",
-  oppose: "Oppose",
-  lean_for: "Lean for",
-  lean_against: "Lean against",
-  neutral: "Neutral",
-  abstain: "Abstain",
-};
 
 /**
  * One race: every imported source's position on it, followed sources first,
  * plus my own picks, polls, forecasts and results. Unlike My ballot, sources
  * you don't follow are listed in full here: this is where you compare.
+ *
+ * With `?all` it goes wider, to every slate in the public catalog (loaded
+ * when asked for, lib/allSlates.ts), on a race on your ballot or not: counts
+ * first, then the sources grouped by kind, because a proposition has 100+.
  */
 export function RacePanel() {
   const { key: routeKey } = useParams({ from: "/race/$key" });
   // TanStack Router auto-decodes route params, so routeKey is already the raw subject key.
   const targetKey = routeKey;
+  const { all: everySlate = false } = useSearch({ from: "/race/$key" });
 
   const { slates } = useDecodedSlates();
   const [follows] = useFollows();
   const draft = useBallotDraft();
+  const allRaces = useAllRaces(everySlate);
+  const { all } = allRaces;
+  const [filter, setFilter] = useState<SlateFilter>(NO_SLATE_FILTER);
 
-  const race = useMemo(
+  const imported = useMemo(
     () =>
       collateRaces(slates, { follows, includeUnfollowed: true }).find((r) => r.key === targetKey),
     [slates, follows, targetKey],
   );
+  const race = all?.byKey.get(targetKey) ?? imported;
+  const tally = useMemo(() => (all && race ? tallyRace(race) : undefined), [all, race]);
 
   // Articles slates attach to this race (SPEC §3.15).
   const articles = useMemo(
-    () => articlesByRace(slates, follows).get(targetKey) ?? [],
-    [slates, follows, targetKey],
+    () => articlesByRace(all?.slates ?? slates, all?.follows ?? follows).get(targetKey) ?? [],
+    [all, slates, follows, targetKey],
   );
 
   const myRows = useMemo(
@@ -71,6 +90,10 @@ export function RacePanel() {
   useEffect(() => {
     if (hash === "official" && guideReady) document.getElementById("official")?.scrollIntoView();
   }, [hash, guideReady]);
+  // My ballot's "All slates" lands here. The sidebar comes first on a phone.
+  useEffect(() => {
+    if (hash === "all-slates") document.getElementById("all-slates")?.scrollIntoView();
+  }, [hash]);
 
   // The guide's subject has what a parsed key lacks (kind, id).
   const subject = race || myRows[0] ? knownSubject : (guide.guide?.item.subject ?? knownSubject);
@@ -92,9 +115,17 @@ export function RacePanel() {
   return (
     <section className="panel">
       <p>
-        <Link to="/">← My ballot</Link>
+        <Link to="/">← My ballot</Link> · <Link to="/races">All races</Link>
       </p>
-      <h2>{subject?.title ?? targetKey}</h2>
+      <div className="race-title">
+        <h2>{subject?.title ?? targetKey}</h2>
+        {subject && (
+          <FollowButton
+            raceKey={targetKey}
+            subject={followedSubject({ subject, jurisdiction, election })}
+          />
+        )}
+      </div>
       <p className="hint">
         {subject?.kind && <span className="tag">{subject.kind}</span>}{" "}
         {jurisdiction && <span>{jurisdiction}</span>}
@@ -162,6 +193,37 @@ export function RacePanel() {
         </aside>
 
         <div className="race-choices">
+          <div id="all-slates" className="all-slates">
+            {!everySlate ? (
+              <p>
+                <Link
+                  from="/race/$key"
+                  to="."
+                  search={{ all: true }}
+                  className="button-link"
+                >
+                  <Users className="icon" aria-hidden="true" /> See all slates
+                </Link>{" "}
+                <span className="hint">
+                  Every slate in the public catalog, not only the ones you've imported.
+                </span>
+              </p>
+            ) : (
+              <>
+                <AllSlatesLoading state={allRaces} />
+                {all && tally && tally.sources > 0 && (
+                  <div className="card">
+                    <h3>
+                      {plural(tally.sources, "slate")} on this{" "}
+                      {subject?.kind === "measure" ? "measure" : "race"}
+                    </h3>
+                    <AllSlatesFilters tally={tally} filter={filter} onChange={setFilter} />
+                    <CatalogNote all={all} />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
           {guide.guide && <GuideOverview guide={guide.guide} />}
           {guide.status === "error" && (
             <p className="hint warning">
@@ -171,32 +233,44 @@ export function RacePanel() {
           {!race ? (
             <>
               {guide.guide && <GuideChoices guide={guide.guide} />}
-              <div className="card">
-                <p className="hint">
-                  No endorsements imported for this race yet. Add some in{" "}
-                  <Link to="/sources">Sources</Link>.
-                </p>
-              </div>
+              {(!everySlate || all) && (
+                <div className="card">
+                  <p className="hint">
+                    {all ? "No slate in the public catalog has this race." : "No endorsements imported for this race yet."}{" "}
+                    Add some in <Link to="/sources">Sources</Link>.
+                  </p>
+                </div>
+              )}
             </>
           ) : (
             <>
               <RaceUnlistedNote race={race} />
-              {race.onBallot && (
+              {race.onBallot && !tally && (
                 <p className="hint">
                   {race.choices.filter((c) => c.onBallot).length} on the ballot ·{" "}
                   {race.followedSources} of {race.totalSources} sources with a position here are
                   ones you follow
                 </p>
               )}
-              {race.choices.map((group) => (
-                <ChoiceCard
-                  key={group.choice}
-                  group={group}
+              {tally ? (
+                <EveryChoice
+                  tally={tally.choices}
+                  yesNo={tally.yesNo}
+                  filter={filter}
                   race={race}
-                  subjectTitle={race.subject.title}
                   guide={guide.guide}
                 />
-              ))}
+              ) : (
+                race.choices.map((group) => (
+                  <ChoiceCard
+                    key={group.choice}
+                    group={group}
+                    race={race}
+                    subjectTitle={race.subject.title}
+                    guide={guide.guide}
+                  />
+                ))
+              )}
             </>
           )}
           {guide.guide && <GuideDetails guide={guide.guide} />}
@@ -295,22 +369,63 @@ function GuideChoices({ guide }: { guide: GuideForSubject }) {
   );
 }
 
+/** Every choice with its sources, as far as the filter lets them through. */
+function EveryChoice({
+  tally,
+  yesNo,
+  filter,
+  race,
+  guide,
+}: {
+  tally: ChoiceTally[];
+  yesNo: boolean;
+  filter: SlateFilter;
+  race: Race;
+  guide?: GuideForSubject;
+}) {
+  const filtering = isFiltering(filter);
+  const shown = tally
+    .map((choice) => ({ choice, positions: filterPositions(choice, yesNo, filter) }))
+    .filter(({ positions }) => !filtering || positions.length > 0);
+  if (shown.length === 0) {
+    return (
+      <div className="card">
+        <p className="hint">No slate on this race matches.</p>
+      </div>
+    );
+  }
+  return shown.map(({ choice, positions }) => (
+    <ChoiceCard
+      key={choice.group.choice}
+      group={choice.group}
+      race={race}
+      subjectTitle={race.subject.title}
+      guide={guide}
+      every={{ positions, searching: filter.terms.length > 0 }}
+    />
+  ));
+}
+
 function ChoiceCard({
   group,
   race,
   subjectTitle,
   guide,
+  every,
 }: {
   group: ChoiceGroup;
   race: Race;
   subjectTitle: string;
   guide?: GuideForSubject;
+  /** Every slate on the choice, as filtered: shown by kind, not as one list. */
+  every?: { positions: RacePosition[]; searching: boolean };
 }) {
   const candidate: CandidateInfo | undefined = guide?.item.candidates?.find(
     (c) => c.choice === group.choice,
   );
   const means: Passage | undefined = group.choice ? guide?.item.means?.[group.choice] : undefined;
   const links = candidateLinks(race, group.choice);
+  const candidateChoice = group.choice !== "" && !isYesNo(race);
   const total = { for: 0, against: 0 };
   for (const p of group.positions) {
     const tone = stanceTone(p.stance);
@@ -325,8 +440,15 @@ function ChoiceCard({
         <ChoiceBallotTags group={group} race={race} />
         <span className="grow" />
         <span className="tag">
-          {total.for} for · {total.against} against, followed or not
+          {total.for} for · {total.against} against{every ? "" : ", followed or not"}
         </span>
+        {candidateChoice && (
+          <FollowButton
+            raceKey={race.key}
+            subject={followedSubject(race)}
+            choice={group.choice}
+          />
+        )}
       </div>
       {guide && candidate && <CandidateGuide candidate={candidate} guide={guide} />}
       {guide && !candidate && group.onBallot && guide.item.subject.kind === "race" && (
@@ -348,55 +470,16 @@ function ChoiceCard({
       )}
       {group.positions.length === 0 ? (
         <p className="hint">
-          On the ballot; none of your imported sources take a position on {subjectTitle} for this
-          choice.
+          {every
+            ? "On the ballot; no slate takes a position on this choice."
+            : `On the ballot; none of your imported sources take a position on ${subjectTitle} for this choice.`}
         </p>
+      ) : every ? (
+        <SlateGroups positions={every.positions} searching={every.searching} />
       ) : (
         <ul className="position-list">
           {group.positions.map((position) => (
-            <li key={position.source.id}>
-              {/* The source's own words when it labels the position (SPEC §3.17). */}
-              <span className={`stance stance-${position.stance}`}>
-                {position.label ?? STANCE_LABEL[position.stance]}
-                {position.rank !== undefined && `, ranked ${ordinal(position.rank)}`}
-              </span>
-              <EndorserAvatar sourceId={position.source.id} name={position.source.name} size="md" />
-              <span className="position-subject">
-                {position.source.uri ? (
-                  <a href={position.source.uri} target="_blank" rel="noreferrer">
-                    <strong>{position.source.name}</strong>
-                  </a>
-                ) : (
-                  <strong>{position.source.name}</strong>
-                )}
-                {position.standing === "off" && (
-                  <span className="tag tag-inline">not followed, not on My ballot</span>
-                )}
-                {position.standing === "disagree" && (
-                  <span className="tag tag-inline tag-disagree">
-                    you disagree: counts the other way on My ballot
-                  </span>
-                )}
-                {position.source.secondhand && (
-                  <span className="hint">
-                    {" "}
-                    · reported by {position.source.signerName ?? "a researcher"}, not signed by them
-                  </span>
-                )}
-                <LeanMeter sourceId={position.source.id} name={position.source.name} withWord />
-                {!position.valid && <span className="warning"> (unverified)</span>}
-                {position.written && <div className="hint">Named as “{position.written}”.</div>}
-                {position.via && <div className="hint">Adopted from {position.via}.</div>}
-                {position.labelDescription && (
-                  <div className="hint">
-                    {position.label}: {position.labelDescription}
-                  </div>
-                )}
-                {position.statement && (
-                  <blockquote className="statement hint">{position.statement}</blockquote>
-                )}
-              </span>
-            </li>
+            <PositionRow key={position.source.id} position={position} />
           ))}
         </ul>
       )}

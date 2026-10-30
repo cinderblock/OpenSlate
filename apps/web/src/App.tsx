@@ -3,6 +3,7 @@ import {
   CalendarDays,
   ChartColumn,
   Eye,
+  Globe,
   KeyRound,
   ListChecks,
   type LucideIcon,
@@ -32,6 +33,7 @@ type Mode = "vote" | "publish";
 interface NavItem {
   to:
     | "/"
+    | "/races"
     | "/sources"
     | "/results"
     | "/publish"
@@ -60,6 +62,7 @@ const MODES: Record<
     home: "/",
     nav: [
       { to: "/", label: "My ballot", icon: ListChecks, prefixes: ["/race/"] },
+      { to: "/races", label: "All races", icon: Globe },
       { to: "/sources", label: "Sources", icon: Users },
       { to: "/results", label: "Results", icon: ChartColumn, prefixes: ["/results/"] },
     ],

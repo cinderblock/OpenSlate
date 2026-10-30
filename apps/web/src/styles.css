@@ -3944,3 +3944,126 @@ button.tag.active {
   display: flex;
   width: fit-content;
 }
+
+/* Every slate on a ballot item: the link on a card, the counts and filters on a race page. */
+.race-all-slates {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+}
+.race-all-slates .button-link,
+.all-slates .button-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+}
+.all-slates {
+  scroll-margin-top: 0.5rem;
+}
+.all-slates h3 {
+  margin: 0;
+}
+.all-slates-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  margin: 0.6rem 0;
+}
+.all-slates-filters .ui-field {
+  flex: 1 1 12rem;
+  max-width: 18rem;
+}
+.slate-group summary {
+  cursor: pointer;
+  padding: 0.35rem 0;
+  font-weight: 600;
+}
+.slate-group summary .hint {
+  font-weight: 400;
+}
+.slate-group .link {
+  margin-bottom: 0.5rem;
+}
+.race-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+.follow-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.follow-button.following {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.follow-button.following .icon {
+  fill: currentColor;
+}
+
+/* All races */
+.all-races-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.5rem;
+}
+.race-rows {
+  list-style: none;
+  padding: 0;
+  margin: 0.25rem 0 0.75rem;
+}
+.race-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem 0.75rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--border);
+}
+.race-row-main {
+  flex: 1;
+  min-width: 0;
+}
+.race-row-title {
+  font-weight: 600;
+}
+.race-row-counts {
+  font-size: 0.9rem;
+}
+.race-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+.followed-races {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+  gap: 0.75rem;
+}
+.followed-race p {
+  margin: 0.25rem 0;
+}
+.followed-new {
+  padding: 0.3rem 0.5rem;
+  border-left: 3px solid var(--accent);
+  background: color-mix(in oklab, var(--surface), var(--accent) 8%);
+}
+@media (max-width: 40rem) {
+  .race-row {
+    flex-direction: column;
+  }
+  .race-row-actions {
+    justify-content: flex-start;
+  }
+}

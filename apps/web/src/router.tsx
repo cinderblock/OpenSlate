@@ -29,6 +29,11 @@ function validateSourcesSearch(search: Record<string, unknown>): { q?: string; a
   return { ...validateQuerySearch(search), ...(search.add === true ? { add: true } : {}) };
 }
 
+/** A race page's `?all`: every slate on the race, not only what's imported. */
+function validateRaceSearch(search: Record<string, unknown>): { all?: true } {
+  return search.all === true ? { all: true } : {};
+}
+
 // --- My vote ---
 
 const ballotRoute = createRoute({
@@ -36,6 +41,12 @@ const ballotRoute = createRoute({
   path: "/",
   validateSearch: validateBallotSearch,
   component: lazyRouteComponent(() => import("./components/MyBallotPanel"), "MyBallotPanel"),
+});
+const allRacesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/races",
+  validateSearch: validateQuerySearch,
+  component: lazyRouteComponent(() => import("./components/AllRacesPanel"), "AllRacesPanel"),
 });
 const sourcesRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -46,6 +57,7 @@ const sourcesRoute = createRoute({
 const raceRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/race/$key",
+  validateSearch: validateRaceSearch,
   component: lazyRouteComponent(() => import("./components/RacePanel"), "RacePanel"),
 });
 const resultsIndexRoute = createRoute({
@@ -125,6 +137,7 @@ const legacyRoutes = [
 
 const routeTree = rootRoute.addChildren([
   ballotRoute,
+  allRacesRoute,
   sourcesRoute,
   raceRoute,
   resultsIndexRoute,

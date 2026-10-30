@@ -14,6 +14,7 @@ import {
   PenLine,
   Printer,
   UserPlus,
+  Users,
   WandSparkles,
 } from "lucide-react";
 import {
@@ -1519,6 +1520,18 @@ function RaceCardInner({
         </p>
       )}
       {ranked && <WriteInField race={race} election={election} rows={rows} applyRank={applyRank} />}
+      <p className="race-all-slates no-print">
+        <Link
+          to="/race/$key"
+          params={{ key: race.key }}
+          search={{ all: true }}
+          hash="all-slates"
+          className="button-link"
+          aria-label={`All slates on ${race.subject.title}`}
+        >
+          <Users className="icon" aria-hidden="true" /> All slates
+        </Link>
+      </p>
       <p className="research-links no-print">
         <span className="hint">Read up:</span>{" "}
         {inGuide && (
