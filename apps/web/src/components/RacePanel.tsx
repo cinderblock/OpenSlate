@@ -183,7 +183,7 @@ export function RacePanel() {
             />
           )}
 
-          {articles.length > 0 && <InTheNews articles={articles} />}
+          {articles.length > 0 && <InTheNews articles={articles} everySlate={Boolean(all)} />}
 
           <PollsPanel subject={pollSubject} />
 
@@ -196,12 +196,7 @@ export function RacePanel() {
           <div id="all-slates" className="all-slates">
             {!everySlate ? (
               <p>
-                <Link
-                  from="/race/$key"
-                  to="."
-                  search={{ all: true }}
-                  className="button-link"
-                >
+                <Link from="/race/$key" to="." search={{ all: true }} className="button-link">
                   <Users className="icon" aria-hidden="true" /> See all slates
                 </Link>{" "}
                 <span className="hint">
@@ -236,7 +231,9 @@ export function RacePanel() {
               {(!everySlate || all) && (
                 <div className="card">
                   <p className="hint">
-                    {all ? "No slate in the public catalog has this race." : "No endorsements imported for this race yet."}{" "}
+                    {all
+                      ? "No slate in the public catalog has this race."
+                      : "No endorsements imported for this race yet."}{" "}
                     Add some in <Link to="/sources">Sources</Link>.
                   </p>
                 </div>
@@ -303,11 +300,22 @@ function ReadUp({ links }: { links: ResearchLink[] }) {
  * Articles attached to this race by the imported slates (SPEC §3.15): reading,
  * never endorsements, so from every slate, followed or not.
  */
-function InTheNews({ articles }: { articles: AttachedArticle[] }) {
+function InTheNews({
+  articles,
+  everySlate,
+}: {
+  articles: AttachedArticle[];
+  /** Read from every slate in the public catalog, not only the imported ones. */
+  everySlate: boolean;
+}) {
   return (
     <div className="card read-up" id="articles">
       <h3>In the news</h3>
-      <p className="hint">Linked to this race by the slates you've imported. Not endorsements.</p>
+      <p className="hint">
+        Linked to this race by{" "}
+        {everySlate ? "slates in the public catalog" : "the slates you've imported"}. Not
+        endorsements.
+      </p>
       <ul className="read-up-list">
         {articles.map((article) => {
           const by = article.attachedBy.map(
@@ -443,11 +451,7 @@ function ChoiceCard({
           {total.for} for · {total.against} against{every ? "" : ", followed or not"}
         </span>
         {candidateChoice && (
-          <FollowButton
-            raceKey={race.key}
-            subject={followedSubject(race)}
-            choice={group.choice}
-          />
+          <FollowButton raceKey={race.key} subject={followedSubject(race)} choice={group.choice} />
         )}
       </div>
       {guide && candidate && <CandidateGuide candidate={candidate} guide={guide} />}

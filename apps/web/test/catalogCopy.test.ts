@@ -54,11 +54,7 @@ function catalog(generated: string, entries: CatalogEntry[], bundle = true): Cat
 }
 
 /** A loader over fakes, counting what it does. */
-function harness(
-  current: Catalog,
-  tokens: Map<string, string>,
-  over: Partial<CopyDeps> = {},
-) {
+function harness(current: Catalog, tokens: Map<string, string>, over: Partial<CopyDeps> = {}) {
   const calls = { bundle: 0, slate: 0, verify: 0, writes: 0, yields: 0, catalog: 0 };
   let kept: CatalogCopy | undefined;
   let clock = 1000;
@@ -182,7 +178,12 @@ describe("createCatalogLoader", () => {
 
   test("a kept copy for another catalog isn't used", async () => {
     const h = harness(catalog("v1", entries), tokens);
-    h.keep({ catalogUrl: "https://other.test/index.json", generatedAt: "v1", slates: [], rejected: 0 });
+    h.keep({
+      catalogUrl: "https://other.test/index.json",
+      generatedAt: "v1",
+      slates: [],
+      rejected: 0,
+    });
     await h.loader.load(URL_A);
     expect(h.calls.bundle).toBe(1);
   });

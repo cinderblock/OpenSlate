@@ -195,7 +195,9 @@ describe("resultLine", () => {
   });
 
   test("no votes in, or a name the feed doesn't have, shows nothing", () => {
-    expect(resultLine(result({ candidates: [{ name: "Barbara Lee", percent: 0 }] }))).toBeUndefined();
+    expect(
+      resultLine(result({ candidates: [{ name: "Barbara Lee", percent: 0 }] })),
+    ).toBeUndefined();
     expect(resultLine(result({}), "Someone Else")).toBeUndefined();
   });
 });

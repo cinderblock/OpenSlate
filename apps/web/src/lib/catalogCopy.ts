@@ -95,7 +95,11 @@ export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
   ): Promise<Map<string, string>> {
     if (catalog.bundle) {
       const label = "Downloading the public catalog";
-      report({ label, value: 0, ...(catalog.bundle.bytes ? { maxValue: catalog.bundle.bytes } : {}) });
+      report({
+        label,
+        value: 0,
+        ...(catalog.bundle.bytes ? { maxValue: catalog.bundle.bytes } : {}),
+      });
       try {
         return await deps.fetchBundle(catalog, catalogUrl, (value, maxValue) =>
           report({ label, value, ...(maxValue ? { maxValue } : {}) }),

@@ -2,14 +2,14 @@ import { Link } from "@tanstack/react-router";
 import { memo, useEffect, useMemo, useState } from "react";
 import { type AllRaces, useAllRaces } from "../lib/allSlates";
 import { raceHeading } from "../lib/ballotView";
-import {
-  contestGroup,
-  type ContestGroup,
-  defaultElection,
-  type Race,
-} from "../lib/collate";
+import { type ContestGroup, contestGroup, defaultElection, type Race } from "../lib/collate";
 import { formatElectionDate } from "../lib/dates";
-import { followedRacesStore, followedSubject, useFollowedRaces, withSeen } from "../lib/followedRaces";
+import {
+  followedRacesStore,
+  followedSubject,
+  useFollowedRaces,
+  withSeen,
+} from "../lib/followedRaces";
 import {
   type Area,
   districtFamilyLabel,
@@ -20,7 +20,7 @@ import {
 } from "../lib/jurisdictions";
 import { localToday, useArea, useMyElection } from "../lib/myVote";
 import { usePageSearch } from "../lib/pageSearch";
-import { headlineChoices, namedChoices, type ChoiceTally, tallyRace } from "../lib/raceTally";
+import { type ChoiceTally, headlineChoices, namedChoices, tallyRace } from "../lib/raceTally";
 import {
   foldText,
   matchesSearch,
@@ -112,14 +112,14 @@ const RaceRow = memo(function RaceRow({
         >
           {title.heading}
         </Link>
-        {placement !== "out" && (
-          <span className="tag tag-inline">{PLACE_TAG[placement]}</span>
-        )}
+        {placement !== "out" && <span className="tag tag-inline">{PLACE_TAG[placement]}</span>}
         {title.label && <div className="hint">{title.label}</div>}
         <div className="race-row-counts">
           <strong>{plural(tally.sources, "slate")}</strong>
           {lead.length > 0 && tally.sources > 0 && ` · ${lead.map(countsOf).join(" · ")}`}
-          {lead.length > 0 && tally.sources === 0 && ` · ${lead.map((c) => c.group.choice).join(" · ")}`}
+          {lead.length > 0 &&
+            tally.sources === 0 &&
+            ` · ${lead.map((c) => c.group.choice).join(" · ")}`}
           {more > 0 && <span className="hint"> · and {more} more</span>}
         </div>
       </div>
@@ -169,7 +169,11 @@ function RaceSection({
   );
 }
 
-function RaceList({ all, election, onElection }: {
+function RaceList({
+  all,
+  election,
+  onElection,
+}: {
   all: AllRaces;
   election: string;
   onElection: (next: string) => void;
@@ -194,9 +198,7 @@ function RaceList({ all, election, onElection }: {
   const { terms } = search;
   const found = useMemo(() => {
     const ofContest =
-      contest === "all"
-        ? inElection
-        : inElection.filter((race) => contestGroup(race) === contest);
+      contest === "all" ? inElection : inElection.filter((race) => contestGroup(race) === contest);
     if (terms.length === 0) return ofContest;
     return ofContest.filter((race) => matchesSearch(searchText.get(race.key)?.text ?? "", terms));
   }, [inElection, searchText, contest, terms]);
@@ -291,13 +293,12 @@ export function AllRacesPanel() {
   // Nothing is new about a race followed before its slates were read.
   useEffect(() => {
     if (!all) return;
-    const current = followedRacesStore.get();
     const tallyOf = (key: string) => {
       const race = all.byKey.get(key);
       return race ? tallyRace(race) : undefined;
     };
-    const next = withSeen(current, tallyOf, new Date().toISOString());
-    if (next !== current) followedRacesStore.set(next);
+    const next = withSeen(followed, tallyOf, new Date().toISOString());
+    if (next !== followed) followedRacesStore.set(next);
   }, [all, followed]);
 
   const dates = all?.elections.map((e) => e.date) ?? [];

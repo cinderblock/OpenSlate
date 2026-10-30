@@ -6,8 +6,8 @@ import {
   groupPositions,
   type PositionGroup,
   type RaceTally,
-  SOURCE_GROUPS,
   type SlateFilter,
+  SOURCE_GROUPS,
   type SourceGroup,
 } from "../lib/raceTally";
 import { searchTerms } from "../lib/search";

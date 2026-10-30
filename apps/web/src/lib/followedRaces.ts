@@ -56,11 +56,7 @@ function sameFollow(item: FollowedRace, key: string, choice: string | undefined)
   return item.key === key && item.choice === choice;
 }
 
-export function isFollowing(
-  list: readonly FollowedRace[],
-  key: string,
-  choice?: string,
-): boolean {
+export function isFollowing(list: readonly FollowedRace[], key: string, choice?: string): boolean {
   return list.some((item) => sameFollow(item, key, choice));
 }
 

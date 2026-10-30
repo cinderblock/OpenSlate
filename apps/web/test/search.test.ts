@@ -4,10 +4,10 @@ import {
   foldText,
   matchesSearch,
   positionSearchText,
+  raceSearchFields,
   raceSearchText,
   searchTerms,
   sourceSearchText,
-  raceSearchFields,
   startsAWord,
 } from "../src/lib/search";
 import type { Source } from "../src/lib/sources";
@@ -195,7 +195,9 @@ describe("raceSearchFields", () => {
     expect(whole(race, "barbara lee")).toBe(true);
     expect(whole(statewide as never, "barbara lee")).toBe(false);
     // ...though the race as a whole still has both words.
-    expect(matchesSearch(raceSearchText(statewide as never), searchTerms("barbara lee"))).toBe(true);
+    expect(matchesSearch(raceSearchText(statewide as never), searchTerms("barbara lee"))).toBe(
+      true,
+    );
   });
 
   test("the title and where it's voted on count as one field", () => {

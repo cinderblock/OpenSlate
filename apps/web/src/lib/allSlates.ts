@@ -1,15 +1,15 @@
 import { useLiveQuery } from "@tanstack/react-db";
 import { get, set } from "idb-keyval";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { expandAdoptions } from "./adoptions";
 import { translateSlates } from "./ballotCheck";
-import { fetchCatalogBundle, fetchCatalogSlate } from "./catalogImport";
 import {
   type CatalogCopy,
   type CopyStatus,
   createCatalogLoader,
   gatherSlates,
 } from "./catalogCopy";
+import { fetchCatalogBundle, fetchCatalogSlate } from "./catalogImport";
 import {
   collateRaces,
   type DecodedSlate,
@@ -22,11 +22,7 @@ import {
 import { slatesCollection } from "./collections";
 import { useKnownIdentities } from "./identities";
 import { useFollows, withNicknames } from "./myVote";
-import {
-  catalogQueryOptions,
-  DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
-  queryClient,
-} from "./query";
+import { catalogQueryOptions, DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG, queryClient } from "./query";
 import type { Standing } from "./sources";
 
 /**
@@ -100,7 +96,6 @@ let last: { signature: string; all: AllRaces } | undefined;
  * paint, with `preparing` on the screen.
  */
 export function useAllRaces(enabled: boolean): AllRacesState {
-  const catalogUrl = DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG;
   const status = useSyncExternalStore(loader.subscribe, loader.status);
   const { data: rows, isReady } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
   const contacts = useKnownIdentities();
@@ -108,10 +103,8 @@ export function useAllRaces(enabled: boolean): AllRacesState {
   const [all, setAll] = useState<AllRaces | undefined>();
 
   useEffect(() => {
-    if (enabled) void loader.load(catalogUrl);
-  }, [enabled, catalogUrl]);
-
-  const retry = useCallback(() => void loader.load(catalogUrl), [catalogUrl]);
+    if (enabled) void loader.load(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG);
+  }, [enabled]);
 
   const copy = status.state === "ready" ? status.copy : undefined;
   const ready = enabled && isReady ? copy : undefined;
@@ -124,28 +117,31 @@ export function useAllRaces(enabled: boolean): AllRacesState {
       ])
     : undefined;
 
+  // `signature` stands for these, which can be new objects on any render.
+  const inputs = useRef({ ready, rows, follows, contacts });
+  inputs.current = { ready, rows, follows, contacts };
+
   useEffect(() => {
-    if (!ready || !signature) return;
+    if (!signature) return;
     if (last?.signature === signature) {
       setAll(last.all);
       return;
     }
     const timer = setTimeout(() => {
+      const { ready, rows, follows, contacts } = inputs.current;
+      if (!ready) return;
       const next = lineUp(ready, decodeSlates(rows), follows, contacts);
       last = { signature, all: next };
       setAll(next);
     });
     return () => clearTimeout(timer);
-    // `signature` stands for `rows`, `follows` and `contacts`, which are new
-    // objects on every render of the pages that use this.
-    // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   }, [signature]);
 
   return {
     status,
     all: enabled ? all : undefined,
     preparing: Boolean(ready) && !all,
-    retry,
+    retry: () => void loader.load(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG),
   };
 }
 

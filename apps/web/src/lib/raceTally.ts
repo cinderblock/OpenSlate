@@ -1,5 +1,11 @@
 import { ballotChoices, isYesNo } from "./ballotView";
-import { type ChoiceGroup, type Race, type RacePosition, type StanceTone, stanceTone } from "./collate";
+import {
+  type ChoiceGroup,
+  type Race,
+  type RacePosition,
+  type StanceTone,
+  stanceTone,
+} from "./collate";
 import { foldText, matchesSearch } from "./search";
 import type { Source } from "./sources";
 

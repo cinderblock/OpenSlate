@@ -26,7 +26,11 @@ function slate(of: string, picks: Pick[], kind = "organization", title = "Oaklan
       keyPair: researcher,
       issuer: { name: "Researcher" },
       context: { election: "2026-11-03" },
-      attribution: { of: { name: of, kind }, mode: "scraped", retrieved_at: "2026-10-20T00:00:00Z" },
+      attribution: {
+        of: { name: of, kind },
+        mode: "scraped",
+        retrieved_at: "2026-10-20T00:00:00Z",
+      },
       positions: picks.map((pick) => ({
         subject: { title, jurisdiction: "us/ca/oakland", election: "2026-11-03" },
         stance: pick.stance ?? "endorse",
@@ -37,10 +41,7 @@ function slate(of: string, picks: Pick[], kind = "organization", title = "Oaklan
   };
 }
 
-function raceOf(
-  slates: ReturnType<typeof slate>[],
-  follows: Record<string, Standing> = {},
-): Race {
+function raceOf(slates: ReturnType<typeof slate>[], follows: Record<string, Standing> = {}): Race {
   const decoded = decodeSlates(slates);
   const off = Object.fromEntries(decoded.map((s) => [s.source.id, "off" as const]));
   const races = collateRaces(decoded, {

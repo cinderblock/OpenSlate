@@ -88,6 +88,10 @@ Made here; the user can overrule them.
 - **Counts first.** Each choice shows for/against, then sources grouped by kind,
   collapsed, rendered only when opened. Filters: stance, kind, name, sources you
   follow.
+- **A search ranks whole names first.** One field (a candidate, a source's
+  name, the title with its place) holding every word beats the words turning up
+  apart, which fold under *Those words, but apart*. Without this, "barbara lee"
+  put the Oakland Mayor race 23rd of 24.
 - **Kinds:** the catalog's `kind` where it's specific (party, news, editorial
   board, individual), else careful name rules (parties, labor, business,
   political clubs), else *Other groups*. Needed because `kind` says
@@ -100,7 +104,12 @@ Made here; the user can overrule them.
   - New since you last looked: who joined or changed, kept in this browser. This
     is what makes following different from looking up.
   - Results (civicAPI): on the followed card once polls close, with percent
-    reporting and who leads. The real answer on election night.
+    reporting and who leads. The real answer on election night, for statewide
+    and legislative races. civicAPI has no local races at all (244 California
+    races for Nov 3, none of them a city or county's), so a local card says so
+    and links a news search rather than showing a blank. **Your Oakland friend
+    gets endorsements, not a count.** A better answer needs each county's results
+    feed, which is a project of its own.
   - Polls (VoteHub): the latest poll on the card where one exists. Statewide and
     House only, so most local races get none, and the card says nothing then.
   - Kalshi: race page only. It's opt-in for self-hosted servers and absent on
@@ -113,24 +122,24 @@ Made here; the user can overrule them.
 
 ## Plan / steps
 
-1. [ ] Plan, ISSUES entry for the catalog's `kind` data.
-2. [ ] `lib/raceTally.ts`: tally, source kinds, filters. Tests.
-3. [ ] `lib/followedRaces.ts`: store, marks, what's new. Tests.
-4. [ ] `lib/allSlates.ts`: loader (injected deps), IndexedDB copy, merge with
-       imports, `useAllRaces`. Tests.
-5. [ ] Race page: `?all`, summary and filters, grouped lists, follow buttons.
-6. [ ] My ballot: *All slates* on every card.
-7. [ ] `/races`: route, usage, tab, search, sections, rows.
-8. [ ] Following cards: counts, what's new, results, latest poll.
-9. [ ] README, checks, browser at desktop and phone width.
-10. [ ] Rebase on the `adopts` expansion when it lands (see below), merge.
+1. [x] Plan, ISSUES entry for the catalog's `kind` data.
+2. [x] `lib/raceTally.ts`: tally, source kinds, filters. Tests.
+3. [x] `lib/followedRaces.ts`: store, marks, what's new. Tests.
+4. [x] `lib/catalogCopy.ts` (loader, injected deps) and `lib/allSlates.ts`
+       (IndexedDB copy, merge with imports, `useAllRaces`). Tests.
+5. [x] Race page: `?all`, summary and filters, grouped lists, follow buttons.
+6. [x] My ballot: *All slates* on every card.
+7. [x] `/races`: route, usage, tab, search, sections, rows.
+8. [x] Following cards: counts, what's new, results, latest poll.
+9. [x] README, checks, browser at desktop and phone width.
+10. [x] Rebased on the `adopts` expansion (`1357dde`): `lineUp` calls
+        `expandAdoptions`, and `PositionRow` keeps "Adopted from X".
+11. [ ] **Current:** merge to master (see the go-ahead in the thread).
 
 ## Depends on
 
-- **`adopts` expansion** (thread on `feat/adopts-expansion`, `plans/adopt-by-reference.md`):
-  counts must go through its shared helper. `useAllRaces` has one place to add
-  it. If it hasn't landed when this is ready, ship without it and note the
-  undercount (11 slates) rather than wait.
+- **`adopts` expansion** (`plans/adopt-by-reference.md`): landed as `1357dde`.
+  Counts go through `expandAdoptions`. Prop 43 went from 124 slates to 134.
 - `feat/ballot-alignment`: endorser alignment scoring. Don't overlap: no scoring
   of sources against the voter's picks here.
 
@@ -141,6 +150,21 @@ Made here; the user can overrule them.
 - `sourceOf`'s `kind` is unreliable; see Decisions. Naive name rules are wrong
   too: `union` catches the San Diego Union-Tribune, Union City Chamber of
   Commerce and tenants unions; `club` catches Sierra Club and Club for Growth.
+- **civicAPI's search needs its own names.** Only 5 of the catalog's titles
+  matched exactly: "Governor of California" finds nothing, its name is
+  "California Governor". `civicRaceName` (core) fixes 131 of 180 statewide and
+  legislative titles, which helps every race page's results too, not only
+  following. The other 49 are races it doesn't list under those names.
+- **Fuzzy search plus date-and-state weighting made wrong races look certain.**
+  "California State Assembly 5" also returns "Assembly 58", which scored 0.88,
+  "high". `scoreMatch` now caps a race with different numbers below "medium".
+  Sending `cd-10` as civicAPI's `district` hid the race too: it writes `CA-10`.
+- Polls for a past race included later ones: June's Governor primary showed an
+  October general-election poll. `useRacePolls` drops polls ended after the
+  election, which fixes the race page as well.
+- Words in a name matched across fields: "barbara lee" found "Santa Barbara
+  County Democratic Party" and "Edwin M. Lee Democratic Club" on 22 statewide
+  races, and "lee" inside "Kathleen" offered to follow Kathleen Werner.
 - `measureChoices` drops a neutral stance on a measure as a whole ("no bubble to
   sit by"). All slates must still list it, so the tally adds it back.
 
@@ -157,7 +181,14 @@ Made here; the user can overrule them.
 ## Progress log
 
 - [x] Read the docs and code; measured the real bundle (2026-10-30).
+- [x] Built, tested, browser-checked in a fresh incognito profile at 1280 and
+      375 wide against the live catalog: first load, reload with no bundle fetch,
+      "barbara lee" to a followed card, Prop 43 (134 slates, filters, groups),
+      My ballot's button on all 13 cards with no bundle fetched there, a voter
+      elsewhere seeing "On your ballot" tags, what's new and Got it, the latest
+      poll, a past race's card. `resultLine` run on real civicAPI races (Missouri,
+      Aug 2026), since no California race has reported yet.
 
 ## Open questions for the user
 
-(none yet)
+(none)

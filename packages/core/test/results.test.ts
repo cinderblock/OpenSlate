@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import type { RaceSummary } from "../src/results";
 import {
+  civicRaceName,
   confidenceBucket,
   electionDateWindow,
   parseJurisdiction,
   scoreMatch,
   subjectToRaceQuery,
-  civicRaceName,
 } from "../src/results";
 import type { Subject } from "../src/schema";
 
@@ -185,7 +185,10 @@ describe("civicRaceName", () => {
     ["US House of Representatives, California District 10", "California US House 10"],
     ["California State Assembly, District 52", "California State Assembly 52"],
     ["California State Senate, District 30", "California State Senate 30"],
-    ["California State Board of Equalization, District 1", "California Board of Equalization Member 1"],
+    [
+      "California State Board of Equalization, District 1",
+      "California Board of Equalization Member 1",
+    ],
   ])("%s", (title, name) => {
     expect(civicRaceName(title)).toBe(name);
   });
@@ -221,14 +224,26 @@ describe("scoreMatch on numbered races", () => {
     }) as RaceSummary;
 
   test("the right number is a confident match, however the slate words it", () => {
-    expect(confidenceBucket(scoreMatch(assembly5, race("California State Assembly 5")))).toBe("high");
-    const house = { title: "US House of Representatives, California District 10", jurisdiction: "us/ca/cd-10", election: "2026-11-03" };
+    expect(confidenceBucket(scoreMatch(assembly5, race("California State Assembly 5")))).toBe(
+      "high",
+    );
+    const house = {
+      title: "US House of Representatives, California District 10",
+      jurisdiction: "us/ca/cd-10",
+      election: "2026-11-03",
+    };
     expect(confidenceBucket(scoreMatch(house, race("California US House 10")))).toBe("high");
   });
 
   test("another number never is, however much else agrees", () => {
-    expect(confidenceBucket(scoreMatch(assembly5, race("California State Assembly 58")))).toBe("low");
-    const prop4 = { title: "California — Proposition 4 (Repeals Prohibition)", jurisdiction: "us/ca", election: "2026-11-03" };
+    expect(confidenceBucket(scoreMatch(assembly5, race("California State Assembly 58")))).toBe(
+      "low",
+    );
+    const prop4 = {
+      title: "California — Proposition 4 (Repeals Prohibition)",
+      jurisdiction: "us/ca",
+      election: "2026-11-03",
+    };
     expect(confidenceBucket(scoreMatch(prop4, race("California Proposition 43")))).toBe("low");
   });
 });

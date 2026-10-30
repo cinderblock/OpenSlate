@@ -14,8 +14,10 @@ import {
   withSeen,
 } from "../lib/followedRaces";
 import { jurisdictionLabel } from "../lib/jurisdictions";
+import { localToday } from "../lib/myVote";
 import { useRacePolls } from "../lib/polls";
 import { fieldStanding, headlineChoices, namedChoices, tallyRace } from "../lib/raceTally";
+import { raceLinks } from "../lib/researchLinks";
 import { raceQueryOptions, raceSearchQueryOptions, resolveSubjectRace } from "../lib/results";
 import { plural } from "./AllSlates";
 import { FollowButton } from "./FollowButton";
@@ -29,7 +31,7 @@ const NEW_NAMES = 5;
  * read as this one's, so a doubtful match shows nothing here (the race page
  * lets you pick).
  */
-function useFollowedResult(subject: Subject): ResultRace | undefined {
+function useFollowedResult(subject: Subject): { result?: ResultRace; settled: boolean } {
   const [pinned, setPinned] = useState<string>();
   const search = useQuery(raceSearchQueryOptions(subject));
   const top = search.data?.ranked[0];
@@ -43,7 +45,11 @@ function useFollowedResult(subject: Subject): ResultRace | undefined {
     };
   }, [subject]);
   const confident = top && confidenceBucket(top.score) === "high" ? String(top.race.id) : undefined;
-  return useQuery(raceQueryOptions(pinned ?? confident)).data;
+  const race = useQuery(raceQueryOptions(pinned ?? confident));
+  return {
+    ...(race.data ? { result: race.data } : {}),
+    settled: !search.isLoading && !race.isLoading,
+  };
 }
 
 /** The newest poll of a race, on one line. Most local races have none. */
@@ -64,9 +70,29 @@ function LatestPoll({ subject }: { subject: Subject }) {
 }
 
 function FollowedResult({ subject, choice }: { subject: Subject; choice?: string }) {
-  const result = useFollowedResult(subject);
+  const { result, settled } = useFollowedResult(subject);
   const line = result && resultLine(result, choice);
-  if (!line) return null;
+  const phase = electionPhase(subject).kind;
+  if (!line) {
+    if (!settled || (phase !== "past" && phase !== "today")) return null;
+    // civicAPI stops at statewide and legislative races, so a local count can
+    // only be found elsewhere. Better to say so than leave a blank.
+    const news = raceLinks({ subject }, localToday()).find((link) => link.label === "News");
+    return (
+      <p className="hint">
+        No results here: they're not in civicAPI, which covers statewide and legislative races. The
+        county elections office has local counts.
+        {news && (
+          <>
+            {" "}
+            <a href={news.href} target="_blank" rel="noreferrer">
+              Search the news ↗
+            </a>
+          </>
+        )}
+      </p>
+    );
+  }
   return (
     <p className="followed-line">
       <span className="hint">Results:</span> <strong>{line}</strong>
@@ -102,12 +128,7 @@ function WhatsNew({ item, race }: { item: FollowedRace; race: Race }) {
         className="link"
         onClick={() =>
           followedRacesStore.set((current) =>
-            withSeen(
-              current,
-              () => tally,
-              new Date().toISOString(),
-              item,
-            ),
+            withSeen(current, () => tally, new Date().toISOString(), item),
           )
         }
       >

@@ -220,12 +220,14 @@ export function useRacePolls(subject: Subject) {
       for (const p of q.data ?? []) {
         if (seen.has(p.id)) continue;
         if (!pollsSource.matches(p, lookup)) continue;
+        // Taken after the vote, so of a later race for the same office.
+        if (subject.election && p.end_date && p.end_date > subject.election) continue;
         seen.add(p.id);
         merged.push(p);
       }
     }
     return merged.sort((a, b) => (b.end_date ?? "").localeCompare(a.end_date ?? ""));
-  }, [queries, lookup]);
+  }, [queries, lookup, subject.election]);
   return {
     lookup,
     polls,

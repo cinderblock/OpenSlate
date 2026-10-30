@@ -1,5 +1,5 @@
-import type { Subject } from "./schema";
 import { US_STATE_NAMES } from "./polls";
+import type { Subject } from "./schema";
 
 // civicAPI race shape — see https://civicapi.org/api-documentation. Kept narrow
 // on purpose: only fields we render or match against. Other fields the upstream
