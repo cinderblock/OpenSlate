@@ -105,6 +105,39 @@ test("a bad relay key is the relay's problem, not the address's", async () => {
   expect(res.status).toBe(502);
 });
 
+describe("Google saying not now", () => {
+  const quota = "Quota exceeded for quota metric 'Queries' and limit 'Queries per day'";
+
+  test("a spent quota or an overloaded Google answers 503", async () => {
+    for (const [status, message] of [
+      [429, quota],
+      [403, quota],
+      [403, "Daily Limit Exceeded"],
+      [503, "The service is currently unavailable."],
+    ] as const) {
+      stubGoogle({ error: { code: status, message } }, status);
+      const res = await handleCivicVoterInfo(post({ address: "x" }), { key: "KEY" }, {});
+      expect(res.status).toBe(503);
+      expect(res.headers.get("Cache-Control")).toBe("no-store");
+    }
+  });
+
+  test("the elections list says the same", async () => {
+    stubGoogle({ error: { code: 429, message: quota } }, 429);
+    const get = new Request(`https://api.example${CIVIC_ELECTIONS_PATH}`);
+    expect((await handleCivicElections(get, { key: "KEY" }, {})).status).toBe(503);
+  });
+
+  test("any other 403 is still the relay's problem", async () => {
+    stubGoogle(
+      { error: { code: 403, message: "Requests from referer <empty> are blocked." } },
+      403,
+    );
+    const res = await handleCivicVoterInfo(post({ address: "x" }), { key: "KEY" }, {});
+    expect(res.status).toBe(502);
+  });
+});
+
 describe("handleCivicElections", () => {
   const get = () => new Request(`https://api.example${CIVIC_ELECTIONS_PATH}`);
 

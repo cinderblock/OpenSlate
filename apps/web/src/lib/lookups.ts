@@ -103,6 +103,31 @@ export function useLookupConsent(): {
   };
 }
 
+/**
+ * A lookup that can't answer right now, for reasons that have nothing to do
+ * with the address: overloaded, out of quota, down, or unreachable. The way
+ * forward is the map or setting districts by hand, not a bug report.
+ */
+export class LookupUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "LookupUnavailableError";
+  }
+}
+
+/**
+ * `fetch`, with a request that never got an answer as an unavailable lookup.
+ * An edge rate limit lands here too: its 429 has no CORS headers, so the
+ * browser reports a failed fetch instead of the status.
+ */
+export async function fetchLookup(url: string, init: RequestInit, name: string): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch {
+    throw new LookupUnavailableError(`${name} couldn't be reached`);
+  }
+}
+
 /** A geocoder's answer: where an address is, and (Census) its districts. */
 export interface AddressMatch {
   /** The address as the service understood it. */
@@ -164,13 +189,20 @@ export async function searchOpenStreetMap(address: string): Promise<AddressMatch
     addressdetails: "1",
     limit: "5",
   });
-  const response = await fetch(`${NOMINATIM}?${params}`, {
-    // The page sends no referrer anywhere (Referrer-Policy: no-referrer);
-    // Nominatim's policy asks apps to identify themselves, so this one request
-    // names our origin (never the page or its #route).
-    referrerPolicy: "origin",
-    headers: { Accept: "application/json" },
-  });
+  const response = await fetchLookup(
+    `${NOMINATIM}?${params}`,
+    {
+      // The page sends no referrer anywhere (Referrer-Policy: no-referrer);
+      // Nominatim's policy asks apps to identify themselves, so this one request
+      // names our origin (never the page or its #route).
+      referrerPolicy: "origin",
+      headers: { Accept: "application/json" },
+    },
+    "OpenStreetMap",
+  );
+  if (response.status === 429 || response.status >= 500) {
+    throw new LookupUnavailableError(`OpenStreetMap answered ${response.status}`);
+  }
   if (!response.ok) throw new Error(`OpenStreetMap answered ${response.status}`);
   return parseNominatim(await response.json());
 }
@@ -209,17 +241,26 @@ export function parseCensusRelay(json: unknown): AddressMatch[] {
 
 /** Look an address up through the Census relay. Call only with the user's consent. */
 export async function searchCensus(address: string): Promise<AddressMatch[]> {
-  const response = await fetch(censusRelayUrl(), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ address }),
-  });
+  const response = await fetchLookup(
+    censusRelayUrl(),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address }),
+    },
+    "the Census relay",
+  );
   if (!response.ok) {
     const detail = await response
       .json()
       .then((b: { error?: string }) => b.error)
       .catch(() => undefined);
-    throw new Error(detail ?? `the Census relay answered ${response.status}`);
+    const message = detail ?? `the Census relay answered ${response.status}`;
+    // A 4xx is about the address; the relay's 502 is the Census geocoder failing.
+    if (response.status === 429 || response.status >= 500) {
+      throw new LookupUnavailableError(message);
+    }
+    throw new Error(message);
   }
   return parseCensusRelay(await response.json());
 }

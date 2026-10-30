@@ -27,6 +27,7 @@ import {
 } from "../lib/jurisdictions";
 import {
   type AddressMatch,
+  LookupUnavailableError,
   ONLINE_LOOKUPS,
   type OnlineLookup,
   searchCensus,
@@ -121,11 +122,14 @@ export function FindDistricts({
   const [error, setErrorState] = useState<{ message: string; google?: CivicRoute } | null>(null);
   const setError = (message: string | null, google?: CivicRoute) =>
     setErrorState(message === null ? null : { message, ...(google ? { google } : {}) });
+  // Which lookup couldn't answer: not an error to fix, so it gets a way around it.
+  const [unavailable, setUnavailable] = useState<OnlineLookup | null>(null);
   const { geo, error: geoError } = useStateGeo(method !== null);
 
   function choose(next: Method) {
     setMethod((m) => (m === next ? null : next));
     setError(null);
+    setUnavailable(null);
   }
 
   /** Apply a hit (from the boundaries or a geocoder) to the area. */
@@ -254,10 +258,31 @@ export function FindDistricts({
             });
             setError(null);
           }}
-          onError={setError}
+          onError={(message, google) => {
+            setUnavailable(null);
+            setError(message, google);
+          }}
+          onUnavailable={(service) => {
+            setError(null);
+            setUnavailable(service);
+          }}
         />
       )}
 
+      {unavailable && (
+        <p className="warning" role="status">
+          {unavailable === "osm" ? "OpenStreetMap's search" : "Our address lookup"} is overloaded or
+          out of reach right now. Try another service above, or do it without a lookup, which
+          doesn't need our servers:{" "}
+          <button type="button" className="link" onClick={() => choose("map")}>
+            Pick on the map
+          </button>
+          {" · "}
+          <button type="button" className="link" onClick={onAdjust}>
+            Set your districts by hand
+          </button>
+        </p>
+      )}
       {error && (
         <p className="error">
           {error.message}
@@ -407,12 +432,14 @@ function AddressPanel({
   onMatch,
   onCivicArea,
   onError,
+  onUnavailable,
 }: {
   options: AreaOptions;
   onMatch: (match: AddressMatch, service: OnlineLookup) => void;
   onCivicArea: (area: Area, from: string, service: OnlineLookup) => void;
   /** `google`: the Google route that failed, when it was Google. */
   onError: (message: string, google?: CivicRoute) => void;
+  onUnavailable: (service: OnlineLookup) => void;
 }) {
   const civic = useCivicRoutes();
   const { consents, grant, revoke } = useLookupConsent();
@@ -472,7 +499,8 @@ function AddressPanel({
         setChoices(matches);
       }
     } catch (err) {
-      onError(err instanceof Error ? err.message : String(err), google);
+      if (err instanceof LookupUnavailableError) onUnavailable(service);
+      else onError(err instanceof Error ? err.message : String(err), google);
     } finally {
       setBusy(false);
     }

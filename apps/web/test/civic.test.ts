@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { civicBallot, civicElections, civicProblemReport } from "../src/lib/civic";
-import { parseConsents } from "../src/lib/lookups";
+import { LookupUnavailableError, parseConsents } from "../src/lib/lookups";
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
@@ -69,6 +69,33 @@ describe("through OpenSlate", () => {
       { id: "9000", name: "General", electionDay: "2026-11-03" },
     ]);
     expect(calls[0]?.url).toBe("/api/civic/elections");
+  });
+});
+
+describe("when the relay can't answer", () => {
+  test("a spent quota or an edge rate limit is unavailable, not a bug", async () => {
+    for (const status of [429, 503]) {
+      stubFetch({ error: "used up for now" }, status);
+      await expect(civicBallot("relay", "", "1 Main St")).rejects.toBeInstanceOf(
+        LookupUnavailableError,
+      );
+    }
+  });
+
+  test("so is a request that never gets an answer", async () => {
+    globalThis.fetch = (async () => {
+      throw new TypeError("Failed to fetch");
+    }) as unknown as typeof fetch;
+    await expect(civicBallot("relay", "", "1 Main St")).rejects.toBeInstanceOf(
+      LookupUnavailableError,
+    );
+  });
+
+  test("a broken relay stays a reportable error", async () => {
+    stubFetch({ error: "Google answered 400: API key not valid" }, 502);
+    const failure = await civicBallot("relay", "", "1 Main St").catch((err: unknown) => err);
+    expect(failure).toBeInstanceOf(Error);
+    expect(failure).not.toBeInstanceOf(LookupUnavailableError);
   });
 });
 

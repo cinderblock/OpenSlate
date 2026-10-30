@@ -79,6 +79,21 @@ function json(
 const notConfigured = (cors: Record<string, string>) =>
   json({ error: "this relay has no Google key, so it can't ask Google" }, 501, cors);
 
+/**
+ * Google saying "not now" rather than "no": the relay's quota is spent or
+ * Google is overloaded. Nothing is wrong with the request or the key, and it
+ * passes on its own. 403 is how older paths say quota; other 403s (a
+ * referrer-restricted key, say) are the relay's own problem.
+ */
+function isOverloaded(err: unknown): boolean {
+  if (!(err instanceof CivicError)) return false;
+  if (err.status === 429 || err.status === 503) return true;
+  return err.status === 403 && /quota|limit exceeded/i.test(err.message);
+}
+
+const overloaded = (cors: Record<string, string>) =>
+  json({ error: "OpenSlate's Google lookups are used up for now" }, 503, cors);
+
 /** GET → `{ elections: CivicElection[] }`, cacheable as long as Google says. */
 export async function handleCivicElections(
   req: Request,
@@ -104,6 +119,7 @@ export async function handleCivicElections(
       upstream.headers.get("Cache-Control") ?? ELECTIONS_FALLBACK_CACHE,
     );
   } catch (err) {
+    if (isOverloaded(err)) return overloaded(cors);
     return json({ error: err instanceof Error ? err.message : "unexpected answer" }, 502, cors);
   }
 }
@@ -153,6 +169,7 @@ export async function handleCivicVoterInfo(
   try {
     return json(normalizeVoterInfo((await readCivic(upstream)) as VipVoterInfo), 200, cors);
   } catch (err) {
+    if (isOverloaded(err)) return overloaded(cors);
     // A 400 or 404 is about the address or election ("Failed to parse
     // address", "Election unknown"): pass Google's reason on as the asker's
     // problem. Anything else, a bad relay key included, is the relay's.

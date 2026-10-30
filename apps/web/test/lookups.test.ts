@@ -1,5 +1,46 @@
-import { describe, expect, test } from "bun:test";
-import { parseCensusRelay, parseNominatim } from "../src/lib/lookups";
+import { afterEach, describe, expect, test } from "bun:test";
+import {
+  LookupUnavailableError,
+  parseCensusRelay,
+  parseNominatim,
+  searchCensus,
+  searchOpenStreetMap,
+} from "../src/lib/lookups";
+
+const realFetch = globalThis.fetch;
+afterEach(() => {
+  globalThis.fetch = realFetch;
+});
+
+function stubFetch(body: unknown, status: number) {
+  globalThis.fetch = (async () =>
+    new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
+}
+
+describe("a lookup that can't answer", () => {
+  test("the Census relay overloaded, rate limited or unreachable", async () => {
+    for (const status of [429, 502, 503]) {
+      stubFetch({ error: "the Census geocoder answered 500" }, status);
+      await expect(searchCensus("1 Main St")).rejects.toBeInstanceOf(LookupUnavailableError);
+    }
+    globalThis.fetch = (async () => {
+      throw new TypeError("Failed to fetch");
+    }) as unknown as typeof fetch;
+    await expect(searchCensus("1 Main St")).rejects.toBeInstanceOf(LookupUnavailableError);
+  });
+
+  test("an address the relay rejects is still an ordinary error", async () => {
+    stubFetch({ error: "address is longer than 100 characters" }, 400);
+    const failure = await searchCensus("1 Main St").catch((err: unknown) => err);
+    expect(failure).not.toBeInstanceOf(LookupUnavailableError);
+    expect((failure as Error).message).toBe("address is longer than 100 characters");
+  });
+
+  test("OpenStreetMap rate limiting us", async () => {
+    stubFetch({}, 429);
+    await expect(searchOpenStreetMap("1 Main St")).rejects.toBeInstanceOf(LookupUnavailableError);
+  });
+});
 
 describe("parseNominatim", () => {
   test("keeps the point, label and state (recorded answer, trimmed)", () => {

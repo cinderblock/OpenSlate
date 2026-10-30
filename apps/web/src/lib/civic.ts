@@ -9,6 +9,7 @@ import {
 } from "@openslate/core";
 import { useQuery } from "@tanstack/react-query";
 import { createLocalStore, useLocalStore } from "./localStore";
+import { fetchLookup, LookupUnavailableError } from "./lookups";
 import { apiBase } from "./routing";
 
 /**
@@ -73,7 +74,12 @@ const DIRECT: RequestInit = { referrerPolicy: "origin" };
 async function relayAnswer(response: Response): Promise<unknown> {
   if (response.ok) return response.json();
   const body = (await response.json().catch(() => null)) as { error?: string } | null;
-  throw new Error(body?.error ?? `OpenSlate's relay answered ${response.status}`);
+  const message = body?.error ?? `OpenSlate's relay answered ${response.status}`;
+  // Its other 5xx, a bad relay key among them, are bugs worth reporting.
+  if (response.status === 429 || response.status === 503) {
+    throw new LookupUnavailableError(message);
+  }
+  throw new Error(message);
 }
 
 /** Google's list of elections it has data for, by date. */
@@ -102,12 +108,16 @@ export async function civicBallot(
     });
     return normalizeVoterInfo((await readCivic(response)) as VipVoterInfo);
   }
-  const response = await fetch(`${civicRelayBase()}/api/civic/voterinfo`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(electionId ? { address, electionId } : { address }),
-    cache: "no-store",
-  });
+  const response = await fetchLookup(
+    `${civicRelayBase()}/api/civic/voterinfo`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(electionId ? { address, electionId } : { address }),
+      cache: "no-store",
+    },
+    "OpenSlate's relay",
+  );
   return (await relayAnswer(response)) as CivicBallot;
 }
 
