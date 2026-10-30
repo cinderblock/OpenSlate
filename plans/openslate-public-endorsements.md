@@ -308,7 +308,7 @@ Batches:
 - [x] C SF 1: sf-chronicle, sf-bay-guardian, sf-league-of-pissed-off-voters, sf-yimby, grow-sf — 227 positions, published `4d9b701`. Re-scrape Chronicle + SF YIMBY later (partly "coming soon"). New title convention: `California Court of Appeal, First District — Retain Justice <Name>` (kind measure, Yes/No), `California Supreme Court — Retain Justice <Name>`.
 - [x] D SF 2: sf-democratic-party, sf-tenants-union, harvey-milk-club, sierra-club-sf-bay, lwv-san-francisco — 229 positions, published (see endorsements log). SFTU = paid slate mailer, noted.
 - [x] E LA/SB: thrive-la, la-forward, sierra-club-angeles, sb-independent, + LA County Fed of Labor (June gap) — 550 positions, published `14e3508`. LA Fed guide page 7 unpublished (some local picks likely missing). LA Forward \"Recommended\" → lean_for.
-- [x] F San Diego: the 7 SD orgs — 558 positions in 5 orgs, published `8c450f0`. SD Libertarians: no candidates on Nov ballot. **sd-green-party held back** (2 KPBS-only positions, no first-party page; local only, briefly published by accident in `ce6d305` and pulled in `b408649`). Lincoln Club moved to sdlincolnclub.com (meta updated).
+- [x] F San Diego: the 7 SD orgs — 558 positions in 5 orgs, published `8c450f0`. SD Libertarians: no candidates on Nov ballot. **sd-green-party held back** (2 KPBS-only positions, no first-party page found at the time; the party's site turned out to be sdgreenparty.org, see "Green Party" below; local only, briefly published by accident in `ce6d305` and pulled in `b408649`). Lincoln Club moved to sdlincolnclub.com (meta updated).
 - [x] G gaps/new: CA Labor Federation, SF Examiner, more SF clubs (sfendorsements.com list), SF Bicycle Coalition, Sierra Club San Diego — 8 new orgs, 366 positions, published `11c1e75`. SF Examiner + Bernal Heights Dems: no Nov picks yet. sfbike.org still 403 (used aggregator).
 
 Post-batch cleanup to do once all batches land:
@@ -329,6 +329,9 @@ sweep first, because it found far more than this list did: `bun "%TEMP%\os-round
 - [ ] sierra-club-sf-bay: "will be updated as endorsements are finalized" (Chrome only, Imperva)
 - [ ] sf-examiner: no November picks as of 10-30
 - [ ] noe-valley-democratic-club: Supervisor D8 still "To Be Announced"
+- [ ] green-party-of-california: new org, not in the catalog yet. Props from its own voter guide:
+      https://cagreens.org/green-party-california-state-voter-guide-nov-2026 (see "Green Party" below)
+- [ ] sd-green-party: rebuild and publish only if the user said yes (see "Green Party" below)
 - [x] sf-chronicle `2dccca5` (Governor: Becerra; BOE D1/D2 stay "It's complicated", no pick)
 - [x] sf-yimby `6b42331`, sd-lincoln-club `d92a0ab`, peace-and-freedom-party `25889da`,
       courage-california `8c42885`, bernal-heights-democratic-club `37dbcf9`
@@ -577,3 +580,47 @@ Decisions to check (all recorded in the bundles' NOTES):
 - LA Forward's South Pasadena D4 pick is removed because the row now says "Write-up coming soon"; it may come
   back.
 - Marin IJ adopts only what ran under BANG's byline; its SCNG-bylined Prop 4 and Prop 40 aren't adopted.
+
+## Green Party (2026-10-30, 2:05 PM PDT (21:05Z))
+
+The user asked what was going on with the held-back `sd-green-party`. The hold's reason turned out to be wrong.
+
+- **It was held because no first-party page was found.** The Oct 14 pass tried `cagreens.org/sandiego` (404),
+  `sdgreens.org` and `sandiegogreens.org`. The party's site is https://www.sdgreenparty.org/, listed in the state
+  party's directory at https://www.cagreens.org/county-party-directory. `greenpartysd.org` is not it (403).
+- **What the county party itself published:** Alexander Kraft for El Cajon Mayor (Feb 28 membership vote, and
+  `/candidates`); Yes on Lemon Grove Measure E (Sep 26 membership vote). Both are on the Nov 3 ballot. Measure E is
+  missing from the held bundle, because KPBS doesn't list it.
+- **Prop 40:** the county's own membership didn't vote on it. Its site reposted the state party's Jul 8 release and
+  linked the state voter guide on Oct 1, and KPBS lists it under the county. Adopt it from the state party, don't copy.
+- **Leave out, not on the Nov 3 ballot:** Butch Ware, Sasha Miller and the statewide Left Unity Slate (none is on the
+  Secretary of State or San Diego listings); the San Diego Choice Voting amendment and Public Power SD (no measure).
+  `/candidates` still shows them, and none of those were re-affirmed for November.
+- **Green Party of California is missing from the catalog.** Its Nov 2026 guide takes positions on all 14 props, voted
+  by county delegates. A fetch summary read Yes on 3, 4, 40, 44; No on 37, 38, 39, 41, 42, 43, 45; No position on 1, 2,
+  5. Check against the page before building. No position is `abstain`. County positions stay out of that bundle.
+- **`orgs/sd-green-party/meta.yaml`'s uri is a 404** and is published with the June bundle. Point it at the real site.
+- The `verify-positions` failure is two missing `choice_id`s, because normalize skips untracked files. It clears once
+  the bundle is tracked.
+
+Order if approved: publish `green-party-of-california`, then rebuild `sd-green-party` (Kraft and Measure E as own
+positions, Prop 40 adopted, sources first-party, KPBS kept as attribution), fix `meta.yaml`, publish.
+
+## What the 10-30 adoptions rest on (2026-10-30)
+
+The user asked whether these groups say they adopt, or whether we inferred it from overlap. Not inferred: each slate's
+own page prints the picks, and `adopt.ts` refuses a pick the adopted bundle doesn't hold. But none says "adopt". That's
+our word, and SPEC 3.10 reads as "is claimed to hold", which is stronger than some of these pages support.
+
+- Sacramento Bee -> McClatchy (14): solid. Same board, the Bee's list runs under the shared byline.
+- Santa Cruz Sentinel -> BANG (4): solid. Printed as "Recommendations from our Bay Area News Group".
+- Santa Cruz YIMBY -> YIMBY Action (6): fair. On its chapter page, marked Endorsed, but the page's own vote text is
+  about the June primary, so they may be YIMBY Action's picks shown there, not a chapter vote.
+- Sonoma Dems -> CADEM (14): overstated. The page says it is "sharing" the state party's positions, and that they
+  are "attributed to the California Democratic Party". That is republishing, not holding.
+- Marin IJ -> BANG (12): likely wrong. This reverses the earlier decisions above and in its NOTES ("not the IJ board's
+  own list"). The basis is reruns under BANG's byline and a roundup link to BANG. The 10-30 report didn't mention
+  the reversal, so the user's OK on the Marin decision didn't cover it.
+
+Open question for the user: remove the Marin IJ adoption (recommended), and whether a "shares" relationship is worth
+having for pages like Sonoma's. The other 16 adopting slates were not re-read for this question.
