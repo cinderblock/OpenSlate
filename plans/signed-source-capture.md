@@ -37,8 +37,9 @@ accepted, and all 12 next steps are in scope, including the ones the plan deferr
 - CI captures first, because a home-machine capture could put the user's IP in a
   public blob (block pages often print the visitor's address). Local capture is for
   hosts that refuse CI, and any response containing that IP stays private.
-- Needs an account or key I don't have, so it stops at the boundary: a second CI
-  witness on GitLab (Q6), and an archive.org key for Save Page Now's API.
+- Needs an account I don't have, so it stops at the boundary: a second CI witness on
+  GitLab (Q6). Save Page Now turned out not to need a key: an anonymous request was
+  accepted on 2026-10-30.
 
 ## What was built
 
@@ -52,7 +53,7 @@ accepted, and all 12 next steps are in scope, including the ones the plan deferr
 | Provenance per slate | `provenance/<org>/<election>.json` | Rebuilt by each run |
 | Internet Archive | `src/archive.ts`, `archive.yml` | Hourly through Nov 5, anonymous |
 | XHR discovery | `src/discover.ts`, `discovery-report.md` | Run on all 18 low-text hosts |
-| Browser capture | `src/render.ts`, `render-hosts.json` | For hosts a GET can't see |
+| Browser capture | `src/render.ts`, `render-hosts.json` | Beside the GET, for listed hosts and any page a GET got almost no text from |
 | Statement check, evidence page | endorsements branch `feat/source-provenance` | Waiting on merge |
 | `attribution.capture`, SPEC, skill | OpenSlate branch `explore/signed-source-capture` | Waiting on merge; no slate uses the field yet |
 
@@ -67,6 +68,10 @@ Changes from the design below, made while building:
   browser-like captures to stop spoofing. Headless Chrome here uses the same honest
   user agent and runs the same public code, so the witness statement stays true. The
   record is marked `headless-chrome` and the evidence page says it's a browser's view.
+- **Which pages get a browser is a rule, not a list.** The first list was hand-kept and
+  missed the Chronicle. Now any 200 HTML response with under 500 readable characters
+  also gets a browser load, and the record says what triggered it. `render-hosts.json`
+  stays for hosts that fail outright. That threshold catches 31 of 643 HTML pages.
 - **Publication uses a host list as well as the kind rule.** Many papers are filed as
   plain `organization`, so `withheld-hosts.json` adds nine news hosts, plus Facebook
   and Instagram for personal-data risk.
@@ -483,6 +488,28 @@ Sigstore implementations, in Chrome, and from a fresh `autocrlf=true` clone.
 - **Requests were higher than they should have been.** That first run fetched a PDF once
   per `#page=` fragment. Fixed, but the sites took those requests.
 
+Second CI run, 2026-10-30, about 10:47-11:05 AM PDT (17:47-18:05Z), run
+`2026-10-30T1747Z`: 914 URLs: 861 returned 200, 37 another status, 16 no response.
+Verified offline and in Chrome, and provenance was rebuilt in the publish job.
+
+- **Browser capture works on GitHub's runner.** Sierra Club (9 pages) and `www.sf.gov` (2)
+  came back 200 with real content. `www.sacbee.com` refuses Chrome too, with
+  `ERR_HTTP2_PROTOCOL_ERROR`, so it has no capture from anywhere.
+- **Local runs fill the gap, unwitnessed.** `2026-10-30T1731Z` (56 URLs from the hosts CI
+  couldn't get) and `2026-10-30T1808Z` (4 URLs, including the Chronicle, which sends
+  CI a 3 KB challenge and sends a home address the page). No response contained
+  the home address, so the guard moved nothing.
+- **Statements found in the raw bytes: 7,105 of 9,091 (78%).** That's the bundles at
+  run time, and it isn't an accuracy figure. Spot checks of the biggest misses: the
+  Chronicle was a challenge page; Lincoln Club's statements quote an image; Westside
+  Forward's differ only by run-together text (`NOProp A`). Many slates cite an app's page
+  while the data sits behind it. A miss is a fact about text, as designed.
+- **A slate can outrun a run.** 1,842 positions showed "no capture yet" because the Import
+  thread published new sources, mostly Reform California's county guides, after the list
+  was fixed. The next scheduled run covers them, and the record was right to say so.
+- **The dead-page case works from the Archive's own bytes.** `archive.ts compare` found
+  25 of 25 `sf-republican-party` statements in the 2026-10-18 snapshot.
+
 Three bugs a build would hit again:
 
 - A fragment isn't part of the request, so dedupe on the URL without it.
@@ -641,7 +668,7 @@ All 12 planned steps are built. What's left is:
 | Item | Needs |
 | --- | --- |
 | Merges above | The user |
-| Faster Save Page Now with an archive.org key; it runs anonymously today | An archive.org account |
+| A key would raise Save Page Now's rate; it runs anonymously today | An archive.org account |
 | Second CI witness on GitLab | A GitLab account |
 | Decide on hosts blocked from CI: home fill-in by hand each time, or a self-hosted vantage | The user; a self-hosted runner can't earn the CI witness |
 | POST capture for XHR, step 3: not built | Nothing needs it yet. One page might: `alamedacountyca.gov/rov_app/candidatelist/`, unconfirmed |
@@ -675,7 +702,7 @@ All 12 planned steps are built. What's left is:
 - [x] Side issues logged in `ISSUES.md`
 - [x] Compared against the Import thread's live re-scrape (finding 11), read only
 - [x] The user's decisions on the open questions ("Do it all. Boil the ocean.")
-- [x] Steps 1 to 12, see "What was built"
+- [x] Steps 1 to 12, see "What was built" (POST capture left out: nothing needs it yet)
 - [ ] Merges, see "Open questions for the user"
 
 **Not done:** TLSNotary wasn't built, so its proof sizes are unmeasured. OpenTimestamps
