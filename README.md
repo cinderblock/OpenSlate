@@ -356,7 +356,8 @@ them ([SPEC §3.10](./SPEC.md)), for an org republishing someone else's list. Th
 web app shows them as the adopting source's, marked "Adopted from …", and brings
 in the adopted slate, unfollowed, when it's in the catalog. It never fetches a
 URL just because a slate names one; an adoption it can't load shows as "not
-loaded" on Sources, and nothing is made up.
+loaded" on Sources, and nothing is made up. Publishers choose how in Compose or
+with `openslate adopt`: a reference, a reference with a signed snapshot, or a copy.
 
 A **voter guide** carries an election authority's official material (candidate
 statements and photos, a measure's summary, analysis, arguments and full text)

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createSlate, generateKeyPair } from "@openslate/core";
-import { adoptedCounts, adoptedEntries, expandAdoptions } from "../src/lib/adoptions";
+import { adoptedCount, adoptedCounts, adoptedEntries, expandAdoptions } from "../src/lib/adoptions";
 import { collateRaces, decodeSlates } from "../src/lib/collate";
 import type { CatalogEntry } from "../src/lib/query";
 import { sourceIdOf } from "../src/lib/sources";
@@ -125,5 +125,19 @@ describe("adoptedEntries", () => {
   test("an adoption of a slate outside the catalog is left alone", () => {
     const expanded = expandAdoptions(decode(county.token));
     expect(adoptedEntries(expanded, [entry("Someone Else")], new Set())).toEqual([]);
+  });
+});
+
+describe("adoptedCount", () => {
+  test("adds up what a catalog entry adopts, and is 0 for one that adopts nothing", () => {
+    expect(
+      adoptedCount({
+        adopts: [
+          { issuer: "k", subjects: 12 },
+          { issuer: "k", subjects: 3 },
+        ],
+      }),
+    ).toBe(15);
+    expect(adoptedCount({})).toBe(0);
   });
 });

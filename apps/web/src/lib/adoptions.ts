@@ -76,6 +76,11 @@ export function adoptedEntries(
   return [...wanted.values()];
 }
 
+/** How many positions a catalog entry takes on by reference, for its row in the catalog. */
+export function adoptedCount(entry: Pick<CatalogEntry, "adopts">): number {
+  return (entry.adopts ?? []).reduce((total, adoption) => total + (adoption.subjects ?? 0), 0);
+}
+
 function catalogEntryMatches(adoption: Adoption, entry: CatalogEntry): boolean {
   if (entry.issuer.key !== adoption.issuer) return false;
   if (adoption.of !== undefined && entry.attribution?.of.name !== adoption.of) return false;

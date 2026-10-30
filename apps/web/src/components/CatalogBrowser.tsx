@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Download, Plus, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
+import { adoptedCount } from "../lib/adoptions";
 import { type BallotProblem, ballotProblems, problemReport } from "../lib/ballotCheck";
 import { importCatalogEntry } from "../lib/catalogImport";
 import { electionOf } from "../lib/collate";
@@ -267,8 +268,9 @@ export function CatalogBrowser() {
                     <div className="hint">
                       {news
                         ? `${entry.articles} ${entry.articles === 1 ? "article" : "articles"}`
-                        : `${entry.positions} ${ballot ? "candidates" : "positions"}`}{" "}
-                      · reported by {entry.issuer.name ?? "a researcher"}
+                        : `${entry.positions} ${ballot ? "candidates" : "positions"}`}
+                      {adoptedCount(entry) > 0 && ` + ${adoptedCount(entry)} adopted`} · reported by{" "}
+                      {entry.issuer.name ?? "a researcher"}
                       {entry.attribution &&
                         ` · ${entry.attribution.mode} ${formatLocalDate(entry.attribution.retrieved_at)}`}
                       {catalogEntryEvidenceUrl(entry, catalogUrl) && (

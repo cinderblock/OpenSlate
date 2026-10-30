@@ -315,8 +315,9 @@ Consumers resolving an adoption:
   show it as unresolved (e.g. "adopts 12 positions from <of>, not loaded").
 - MUST let positions the slate states itself win over adopted positions on the
   same subject.
-- MAY follow adoptions inside adopted slates. Implementations SHOULD stop at a
-  depth of 4 and MUST ignore cycles.
+- MAY follow adoptions inside adopted slates, staying within the `subjects` an
+  outer adoption listed. Implementations SHOULD stop at a depth of 4 and MUST
+  ignore cycles.
 - SHOULD show adopted positions as the adopting entity's, with where they came
   from ("via <adopted entity>").
 
