@@ -490,6 +490,7 @@ async function cmdVerify(rest: string[]): Promise<void> {
       console.log(`  reported entity: ${attr.of.name}`);
       console.log(`  mode:            ${attr.mode}`);
       console.log(`  retrieved_at:    ${attr.retrieved_at}`);
+      if (attr.capture) console.log(`  capture run:     ${attr.capture.run}`);
     }
     console.log(`positions: ${result.payload?.positions.length ?? 0}`);
     if (result.payload?.labels?.length) {

@@ -80,7 +80,7 @@ function httpOnly(node: unknown): void {
   }
   if (!node || typeof node !== "object") return;
   const object = node as Record<string, unknown>;
-  if (object.format === "uri") object.pattern = "^[Hh][Tt][Tt][Pp][Ss]?:";
+  if (object.format === "uri" && !object.pattern) object.pattern = "^[Hh][Tt][Tt][Pp][Ss]?:";
   for (const value of Object.values(object)) httpOnly(value);
 }
 httpOnly(slateDef);

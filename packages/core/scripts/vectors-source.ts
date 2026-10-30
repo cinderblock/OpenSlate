@@ -209,6 +209,38 @@ export const POSITIVES: PositiveDef[] = [
     },
   },
   {
+    name: "attribution-captured",
+    description:
+      "A secondhand report whose attribution names the capture run it was built from (SPEC §3.9.1).",
+    signer: "bob",
+    payload: {
+      v: 1,
+      issuer: { name: "OpenSlate Research Bot v0", kind: "researcher" },
+      issued_at: "2026-11-01T18:00:00Z",
+      context: { election: "2026-11-03", jurisdiction: "us/ca/springfield" },
+      positions: [
+        {
+          subject: { title: "Mayor", kind: "race" },
+          stance: "endorse",
+          choice: "A. Candidate",
+          source: "https://sierra.example/endorsements/2026/mayor",
+        },
+      ],
+      attribution: {
+        of: { name: "Springfield Sierra Club", uri: "https://sierra.example/" },
+        mode: "scraped",
+        retrieved_at: "2026-11-01T17:00:00Z",
+        sources: ["https://sierra.example/endorsements/2026"],
+        capture: {
+          run: "2026-11-01T1700Z",
+          manifest_sha256: "e34f2732a1b0c9d8e7f60514233241506f7e8d9cab0b1c2d3e4f50617283cec1",
+          provenance:
+            "https://raw.githubusercontent.com/cinderblock/openslate-source-captures/master/provenance/springfield-sierra-club/2026-11-03.json",
+        },
+      },
+    },
+  },
+  {
     name: "ballot-listing",
     description:
       "A ballot listing (SPEC §8.2) with how the ballot prints each contest and choice (§3.14): heading, number, label, measure type, vote_for, ranks, retention; party, designation, incumbent.",
@@ -587,6 +619,35 @@ export const NEGATIVES: NegativeDef[] = [
       );
     },
     expect: { error_contains: ["attribution"] },
+  },
+  {
+    name: "attribution-capture-bad-hash",
+    description:
+      "Validly signed token whose attribution.capture.manifest_sha256 isn't a SHA-256. MUST be rejected (SPEC §3.9.1).",
+    build: (h) => {
+      const key = h.pubkey("bob");
+      return h.sign(
+        { alg: "EdDSA", typ: "openslate+jws", kid: key },
+        {
+          v: 1,
+          issuer: { key, kind: "researcher" },
+          issued_at: "2026-01-01T00:00:00Z",
+          positions: [],
+          attribution: {
+            of: { name: "Some Org" },
+            mode: "scraped",
+            retrieved_at: "2025-12-15T18:30:00Z",
+            capture: {
+              run: "2025-12-15T1830Z",
+              manifest_sha256: "not-a-hash",
+              provenance: "https://example.org/provenance.json",
+            },
+          },
+        },
+        h.seed("bob"),
+      );
+    },
+    expect: { error_contains: ["manifest_sha256"] },
   },
   {
     name: "javascript-uri",

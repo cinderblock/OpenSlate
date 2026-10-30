@@ -1,0 +1,72 @@
+{
+  "format": "openslate-source-capture/spike-1",
+  "intended": [
+    "https://web.archive.org/web/20261018233112id_/https://sfgop.org/nov-2026-endorsements",
+    "https://www.sacbee.com/opinion/election-endorsements/article316956698.html"
+  ],
+  "capturer": {
+    "tool": "experiments/signed-source-capture/04-capture-and-stamp.ts",
+    "user_agent": "openslate-source-capture-exploration (+https://openslate.us)",
+    "runtime": "bun 1.4.2",
+    "platform": "win32"
+  },
+  "captures": [
+    {
+      "intended": "https://web.archive.org/web/20261018233112id_/https://sfgop.org/nov-2026-endorsements",
+      "hops": [
+        {
+          "url": "https://web.archive.org/web/20261018233112id_/https://sfgop.org/nov-2026-endorsements",
+          "started_at": "2026-10-30T10:24:02.610Z",
+          "ended_at": "2026-10-30T10:24:04.168Z",
+          "remote_ip": "207.241.237.3",
+          "status": 200,
+          "error": null,
+          "truncated": false,
+          "request_sha256": "53649b8dbc418a37acd1dadecc5b1b5aa894b1f77469153a9afff8f58f9d789b",
+          "response_sha256": "f9145d884023298a070a7df49b378b2985d8a747c37b136b760b88d1a39da1b6",
+          "response_bytes": 19865,
+          "tls": {
+            "protocol": "TLSv1.3",
+            "cipher": "TLS_AES_256_GCM_SHA384",
+            "alpn": "http/1.1",
+            "chain_sha256": [
+              "5186c5ec3d3e7b93a7466222166194428b7cf889350284a6d0c840e796cb1a4d",
+              "973a41276ffd01e027a2aad49e34c37846d3e976ff6a620b6712e33832041aa6",
+              "3a2fbe92891e57fe05d57087f48e730f17e5a5f53ef403d618e5b74d7a7e6ecb",
+              "c3846bf24b9e93ca64274c0ec67c1ecc5e024ffcacd2d74019350e81fe546ae4"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "intended": "https://www.sacbee.com/opinion/election-endorsements/article316956698.html",
+      "hops": [
+        {
+          "url": "https://www.sacbee.com/opinion/election-endorsements/article316956698.html",
+          "started_at": "2026-10-30T10:24:04.172Z",
+          "ended_at": "2026-10-30T10:24:34.176Z",
+          "remote_ip": "23.211.139.208",
+          "status": null,
+          "error": "timeout",
+          "truncated": false,
+          "request_sha256": "cb2908d327980da3028fd2ce4203bc019e772b465672ceb0e9d201a90bd9b277",
+          "response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "response_bytes": 0,
+          "tls": {
+            "protocol": "TLSv1.3",
+            "cipher": "TLS_AES_256_GCM_SHA384",
+            "alpn": "http/1.1",
+            "chain_sha256": [
+              "c33648dd60789748e6f324f814f0f29ebf812b8338a8c725b614d95664d36460",
+              "97658de8c68dfa98ace1e5028a63d54a1aae911b3e21471076c6850cd08cbab4",
+              "0fc0901cca2bae9e9fdbb02d50d02f1094f7b36672086991b9e897626dc485f0",
+              "ee5f7abd6981bb0255632cd8f49283451b4b18844d12040b44ee00f07b8fe2c6",
+              "96bcec06264976f37460779acf28c5a7cfe8a3c0aae11a8ffcee05c0bddf08c6"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

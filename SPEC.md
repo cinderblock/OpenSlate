@@ -238,6 +238,7 @@ it does not prove the underlying claim is correct.
 | `mode` | string | yes | `scraped` \| `transcribed` \| `inferred`. |
 | `retrieved_at` | string | yes | RFC 3339. When the researcher observed the source. |
 | `sources` | string[] | no | Slate-level source URLs. (`Position.source` is per-position.) |
+| `capture` | object | no | The capture of the sources this slate was built from. See §3.9.1. |
 
 `attribution.of`:
 
@@ -266,6 +267,48 @@ Verifiers and UIs that render slates carrying `attribution` MUST:
 - Prefer a firsthand slate from `attribution.of` (i.e. one whose `issuer.key`
   the entity has attested to under §7) when one is available, and offer to
   supersede the secondhand slate with it.
+
+#### 3.9.1 `attribution.capture`
+
+`capture` ties a secondhand report to a sealed record of the raw sources it was
+built from, so the slate's signature covers which record that is. It's optional,
+and a slate without it is still a valid secondhand report: it just offers nothing
+checkable beyond its `source` URLs.
+
+| Field | Type | Req | Notes |
+| --- | --- | --- | --- |
+| `run` | string | yes | Id of the capture run. |
+| `manifest_sha256` | string | yes | SHA-256 of the run's manifest file, as 64 lowercase hex digits. Every timestamp and attestation for the run is made over this file, and it names every captured byte by hash. |
+| `provenance` | string | yes | `https` URL of this slate's provenance record, which maps each source to its captures. |
+
+The field is a pointer, not a claim. A verifier MUST recompute what a run shows
+from the run's own bytes and proofs, and MUST NOT take a stored claim on trust.
+What can be recomputed, source by source:
+
+| Claim | Requires | Says | Does **not** say |
+| --- | --- | --- | --- |
+| Captured | Raw bytes, hash in the manifest | These are the exact bytes used | When, or from where |
+| Time-stamped | RFC 3161 timestamps from two independent authorities | These bytes existed by this time, unchanged | That the server sent them |
+| Witnessed by public CI | Sigstore attestation from a pinned public workflow on a GitHub-hosted runner | This public code, on GitHub's runner, fetched and hashed this | That the site wasn't hacked, hijacked, or showing bots something else |
+| Independently archived | A third-party archive's copy with matching text | Someone unconnected saw the same text | Anything cryptographic |
+
+Limits every consumer MUST respect:
+
+- **No claim proves a domain is the organization.** A certificate says a server
+  was `example.org`. That `example.org` speaks for `attribution.of` is the
+  researcher's claim, and a consumer that shows capture claims SHOULD show the
+  source's host against `attribution.of.uri` beside them.
+- A saved TLS session proves nothing about content, because both ends of a
+  session hold its symmetric keys. An implementation MUST NOT present one as
+  proof of what a server sent.
+- A capture says what a source said, not that the slate reports it fairly. How
+  positions were derived from the text is a separate fact.
+- Bytes may be withheld for rights or privacy reasons. Their hash and proofs still
+  verify, but only someone holding the bytes can check them against the hash, and
+  a consumer SHOULD say so.
+
+A capture that changes no position SHOULD NOT produce a new slate: `provenance`
+records later runs, and `run` stays the capture the slate was built from.
 
 Issuers SHOULD set `kind: "researcher"` on themselves when publishing
 attributed slates (see §7.1).
@@ -374,7 +417,8 @@ consumers SHOULD treat it as the printed candidate.
 
 Every field this specification gives as a link (`Issuer.uri`, `Subject.uri`,
 `Position.source`, `Reference.uri`, `Attribution.of.uri`,
-`Attribution.sources`, `Adoption.uri`, `Adoption.source`) MUST be an
+`Attribution.sources`, `Attribution.capture.provenance`, `Adoption.uri`,
+`Adoption.source`) MUST be an
 absolute URL with the scheme `http` or `https`. Verifiers MUST reject a
 payload with any other scheme. Consumers show these as links, and a
 `javascript:` or `data:` URL in a link runs whatever its author wrote as soon

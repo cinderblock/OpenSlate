@@ -28,6 +28,36 @@ describe("signInputSchema", () => {
     expect(signInputSchema.parse({ context: { election: E } }).positions).toEqual([]);
   });
 
+  test("takes a capture on the attribution, and checks it", () => {
+    const attribution = {
+      of: { name: "State Party" },
+      mode: "scraped",
+      retrieved_at: "2026-10-19T00:00:00Z",
+    };
+    const capture = {
+      run: "2026-10-30T1700Z",
+      manifest_sha256: "a".repeat(64),
+      provenance: "https://example.org/provenance/state-party/2026-11-03.json",
+    };
+    const parsed = signInputSchema.parse({
+      positions: [position],
+      attribution: { ...attribution, capture },
+    });
+    expect(parsed.attribution?.capture).toEqual(capture);
+
+    const accepted = (edit: Record<string, unknown>) =>
+      signInputSchema.safeParse({
+        attribution: { ...attribution, capture: { ...capture, ...edit } },
+      }).success;
+    expect(accepted({})).toBe(true);
+    expect(accepted({ run: "" })).toBe(false);
+    expect(accepted({ manifest_sha256: "A".repeat(64) })).toBe(false);
+    expect(accepted({ manifest_sha256: "a".repeat(63) })).toBe(false);
+    expect(accepted({ provenance: "http://example.org/p.json" })).toBe(false);
+    expect(accepted({ provenance: "javascript:alert(1)" })).toBe(false);
+    expect(accepted({ extra: true })).toBe(false);
+  });
+
   test("is closed: a key sign doesn't know fails instead of being dropped", () => {
     const result = signInputSchema.safeParse({ positions: [position], endorsedBy: [] });
     expect(result.success).toBe(false);
