@@ -526,11 +526,33 @@ Verified offline and in Chrome, and provenance was rebuilt in the publish job.
 - **A slate can outrun a run.** 1,842 positions showed "no capture yet" because the Import
   thread published new sources, mostly Reform California's county guides, after the list
   was fixed. The next scheduled run covers them, and the record was right to say so.
-- **What a slate was read from wasn't being captured.** 38 slates are transcribed from images or
-  PDFs, but their positions cite the page around those files. On 2026-10-30 about 4:45 PM PDT
-  (23:45Z), 149 documents across 19 of them were missing from the list, Abundant Housing LA's 48
-  cards and San Joaquin's 23 among them. The discovery report had flagged seven pages for a person,
+- **What a slate was read from wasn't being captured.** 38 slates say `transcribed`, most of them
+  read from images or PDFs, but their positions cite the page around those files. On 2026-10-30
+  about 4:45 PM PDT (23:45Z), 149 documents across 19 of them were missing from the list, Abundant
+  Housing LA's 48 cards and San Joaquin's 23 among them. The discovery report had flagged seven pages for a person,
   but the slates' own `evidence/` notes already named the files, so none needed one.
+- **The three slates whose notes named no document.** Checked 2026-10-30, about 5:45 PM PDT
+  (2026-10-31 00:45Z), against the saved captures, each slate's evidence and build history, and two
+  GETs (Riverside's cover and PDF) plus one of `sf.gov/ranked-choice-voting`, with the honest user
+  agent. No position changed.
+
+  | Slate | Read from | `mode` | Recorded |
+  | --- | --- | --- | --- |
+  | `riverside-county-republican-party` | Eight JPEGs, pages 02 to 09 of its guide, read again by eye and matching the transcription. All 75 positions already cite them, and CI has held them from the first run. The notes only looked empty: they named the files by relative path, which `documentsIn` can't read | Right | Full URLs in `NOTES.md` (`6884a83`), plus the cover and the PDF. No run has those two yet. The PDF is the same nine pages: no text layer, one image a page, same size, under 1 of 255 grey levels apart |
+  | `sf-department-of-elections` | No document. The HTML text of two sf.gov pages, through WebFetch, then `scripts/sf-elections-ballot.ts`. All 65 values are in CI's Chrome capture. `ballot.ranks` comes from a third page the slate doesn't cite, so no capture holds it | Looks wrong | New `NOTES.md` (`f8bd0f5`). Nothing to add to the list |
+  | `newport-beach-city-clerk` | No document. The city page's HTML text, entered by hand. The page says only "Measure H", so the title and ids are the Orange County Registrar's | Looks wrong | `NOTES.md` (`5ab10e9`). Nothing to add to the list |
+
+  Riverside's two new documents make it the one slate this moves. The next capture lists them, and
+  the pin after it reissues Riverside. `mode` is an open question below.
+- **Nothing shows these pages as they were read.** The saved copies start on 2026-10-30, and
+  `archived.json` has no snapshot of any of them. So SF (read 2026-10-19) and Newport (read
+  2026-10-27) can only be shown to carry the same values now. Riverside's files are dated 2026-10-05
+  by the server, before its reading, but no hash from that day exists to prove they're the same
+  bytes. Two things aren't recorded anywhere: how WebFetch's output became SF's evidence files, and
+  whether `sf.gov/ranked-choice-voting` was opened in October or just remembered. It does say 10.
+- **The notes rule reads absolute URLs only.** Riverside wasn't alone: a filename scan finds names
+  no URL in the slate carries in ten more transcribed slates. It's rough, and logged in the
+  endorsements repo's `ISSUES.md` (`3d6dda0`).
 - **Working Families' list sits behind a POST.** The page holds 10 rows of 221, and its View More
   button POSTs for the rest. This plan had said nothing needed POST capture. One request held all
   31 names.
@@ -705,9 +727,24 @@ sealing added.
 
 ## Open questions for the user
 
-None. Settled on 2026-10-30, kept for the reasoning: Q1 sweep, Q2 CI run, Q3 storage, Q4
+Settled on 2026-10-30, kept for the reasoning: Q1 sweep, Q2 CI run, Q3 storage, Q4
 schema field, Q5 blocked sites, Q6 second witness (deferred), Q7 evidence page first, Q8
 publication rule, and the merges and the field going in now.
+
+Open:
+
+1. **Should `sf-department-of-elections` and `newport-beach-city-clerk` say `scraped`?** Both say
+   `transcribed`, which SPEC §3.9 defines by a non-machine-readable source (PDF, video, in-person
+   notes), and `SecondhandBanner.tsx` shows voters "transcribed from a non-machine-readable source".
+   Both were read from HTML, so that label is false for them. Recommendation: `scraped` for both.
+   It fits SF exactly: a script built the slate from web pages, and the six county registrars' ballot
+   sources already say it. Newport is a looser fit, because a person entered it and SPEC has no mode
+   for that, but "scraped from public sources" is true there and today's label isn't. For SF, also
+   change `scripts/sf-elections-ballot.ts:134` so a rebuild doesn't undo it, and add
+   `sf.gov/ranked-choice-voting` to `attribution.sources` there and in the script, so the slate cites
+   and captures that page. Both slates reissue and no position changes. The notes rule stops applying
+   to them, which loses nothing, since they name no document. Not applied, because it changes what
+   the slates claim: both `NOTES.md` files say it's waiting on this.
 
 ## Next steps
 
@@ -717,7 +754,6 @@ publication rule, and the merges and the field going in now.
 | Confirm the first scheduled pin, 2026-10-31 4:30 AM PDT (11:30Z). A dry run moved 20 slates to a run holding those documents, pinned 4 for the first time (Reform California, Lookout Santa Cruz, both Green Party slates) and left none waiting. Los Angeles GOP moves too, for its refreshed script URL | Nothing: the daily task below reports it |
 | GitHub's scheduler: the first `schedule` run in the capture repo was `archive`, 2026-10-30 3:33 PM PDT (22:33Z), after it missed 18:30Z, 19:30Z, 20:30Z and 21:30Z. So schedules do fire there, late at first; a missed one sends no failure email. `capture` and `pin-capture` haven't had a scheduled slot yet | A T3 scheduled task, daily at 5:00 AM PDT (12:00Z) through Nov 5, starts `capture` and `pin-capture` if they didn't run, runs the home fill-in, and reports. It needs this machine awake |
 | An archive.org key, so CI can ask for more than a few snapshots an hour | The user's key from archive.org/account/s3.php, then a repo secret and a small change to `archive.ts` |
-| Three transcribed slates whose notes name no document: `newport-beach-city-clerk`, `riverside-county-republican-party`, `sf-department-of-elections` | Its own thread, "Find what three transcribed slates were read from" |
 | Five hosts refuse CI and a home address: `www.nfib.com`, `www.smdailyjournal.com`, `www.sanbenitocounty-ca-cre.gov`, `ballotpedia.org`, `www.sacbee.com` | Nothing for now: each failure is on the record |
 | `alamedacountyca.gov/rov_app/candidatelist/` may need a form post | Someone finds the request. Capture can now send one |
 | Second CI witness on GitLab | Deferred by the user |
@@ -738,6 +774,8 @@ publication rule, and the merges and the field going in now.
   reissues every slate.
 - Don't let a capture depend on workflow inputs. The URL list comes from a commit.
 - Don't count a change sweep as a capture, or publish raw news pages before Q8.
+- Don't write a document's full URL in a transcribed slate's notes unless it was read or belongs to
+  what was. The rule captures every URL it finds and reports it as a source, so describe the rest.
 
 ## Progress log
 
@@ -767,6 +805,8 @@ publication rule, and the merges and the field going in now.
   vantage isn't needed, and it couldn't earn the CI witness anyway
 - [x] `2026-10-31T0024Z`: 53 URLs from home, 26 of them 200
 - [x] `pin-capture` asks a run to hold what a slate was read from (endorsements #3)
+- [x] The three transcribed slates with no named document: all recorded in their notes, 2026-10-30,
+  about 5:50 PM PDT (2026-10-31 00:50Z), endorsements `5ab10e9`, `6884a83`, `f8bd0f5`
 - [ ] First scheduled capture and pin, 2026-10-31 3:00 and 4:30 AM PDT (10:00Z, 11:30Z)
 
 **Not done:** TLSNotary wasn't built, so its proof sizes are unmeasured. OpenTimestamps
