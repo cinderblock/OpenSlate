@@ -49,6 +49,16 @@ soon. Read as:
 - The second CI witness on GitLab is deferred. Don't raise it again unprompted.
 - The archive.org key comes from the user soon. Nothing is built for it yet.
 
+On 2026-10-30, about 6:00 PM PDT (2026-10-31 01:00Z), the user accepted the recommendation for
+`sf-department-of-elections` and `newport-beach-city-clerk`: both say `scraped`, and SF cites the
+ranked-choice page. Read as:
+
+- SPEC §3.9's meaning of `transcribed` governs: a non-machine-readable source. Text on a web page
+  is `scraped`, even if a person entered it. SPEC has no mode for that, and `scraped` is true of it,
+  which the banner's "transcribed from a non-machine-readable source" isn't.
+- The endorsements README said "written material", which covers a web page and would have argued
+  the other way. It now follows SPEC.
+
 ## What was built
 
 | Piece | Where | State |
@@ -533,16 +543,17 @@ Verified offline and in Chrome, and provenance was rebuilt in the publish job.
 - **The three slates whose notes named no document.** Checked 2026-10-30, about 5:45 PM PDT
   (2026-10-31 00:45Z), against the saved captures, each slate's evidence and build history, and two
   GETs (Riverside's cover and PDF) plus one of `sf.gov/ranked-choice-voting`, with the honest user
-  agent. No position changed.
+  agent. No position changed, then or when the mode was fixed.
 
   | Slate | Read from | `mode` | Recorded |
   | --- | --- | --- | --- |
   | `riverside-county-republican-party` | Eight JPEGs, pages 02 to 09 of its guide, read again by eye and matching the transcription. All 75 positions already cite them, and CI has held them from the first run. The notes only looked empty: they named the files by relative path, which `documentsIn` can't read | Right | Full URLs in `NOTES.md` (`6884a83`), plus the cover and the PDF. No run has those two yet. The PDF is the same nine pages: no text layer, one image a page, same size, under 1 of 255 grey levels apart |
-  | `sf-department-of-elections` | No document. The HTML text of two sf.gov pages, through WebFetch, then `scripts/sf-elections-ballot.ts`. All 65 values are in CI's Chrome capture. `ballot.ranks` comes from a third page the slate doesn't cite, so no capture holds it | Looks wrong | New `NOTES.md` (`f8bd0f5`). Nothing to add to the list |
-  | `newport-beach-city-clerk` | No document. The city page's HTML text, entered by hand. The page says only "Measure H", so the title and ids are the Orange County Registrar's | Looks wrong | `NOTES.md` (`5ab10e9`). Nothing to add to the list |
+  | `sf-department-of-elections` | No document. The HTML text of two sf.gov pages, through WebFetch, then `scripts/sf-elections-ballot.ts`. All 65 values are in CI's Chrome capture. `ballot.ranks` comes from a third page, which it didn't cite | Was wrong, now `scraped` | New `NOTES.md` (`f8bd0f5`). `2b50080` sets the mode, here and in the script, and cites `www.sf.gov/ranked-choice-voting` |
+  | `newport-beach-city-clerk` | No document. The city page's HTML text, entered by hand. The page says only "Measure H", so the title and ids are the Orange County Registrar's | Was wrong, now `scraped` | `NOTES.md` (`5ab10e9`). `cde01c1` sets the mode |
 
-  Riverside's two new documents make it the one slate this moves. The next capture lists them, and
-  the pin after it reissues Riverside. `mode` is an open question below.
+  SF and Newport reissued for the mode change. The next capture lists Riverside's two new documents
+  and SF's new page, and the pin after it moves those two slates to a run holding them. That leaves
+  36 slates saying `transcribed`.
 - **Nothing shows these pages as they were read.** The saved copies start on 2026-10-30, and
   `archived.json` has no snapshot of any of them. So SF (read 2026-10-19) and Newport (read
   2026-10-27) can only be shown to carry the same values now. Riverside's files are dated 2026-10-05
@@ -726,24 +737,9 @@ sealing added.
 
 ## Open questions for the user
 
-Settled on 2026-10-30, kept for the reasoning: Q1 sweep, Q2 CI run, Q3 storage, Q4
+None. Settled on 2026-10-30, kept for the reasoning: Q1 sweep, Q2 CI run, Q3 storage, Q4
 schema field, Q5 blocked sites, Q6 second witness (deferred), Q7 evidence page first, Q8
-publication rule, and the merges and the field going in now.
-
-Open:
-
-1. **Should `sf-department-of-elections` and `newport-beach-city-clerk` say `scraped`?** Both say
-   `transcribed`, which SPEC §3.9 defines by a non-machine-readable source (PDF, video, in-person
-   notes), and `SecondhandBanner.tsx` shows voters "transcribed from a non-machine-readable source".
-   Both were read from HTML, so that label is false for them. Recommendation: `scraped` for both.
-   It fits SF exactly: a script built the slate from web pages, and the six county registrars' ballot
-   sources already say it. Newport is a looser fit, because a person entered it and SPEC has no mode
-   for that, but "scraped from public sources" is true there and today's label isn't. For SF, also
-   change `scripts/sf-elections-ballot.ts:134` so a rebuild doesn't undo it, and add
-   `sf.gov/ranked-choice-voting` to `attribution.sources` there and in the script, so the slate cites
-   and captures that page. Both slates reissue and no position changes. The notes rule stops applying
-   to them, which loses nothing, since they name no document. Not applied, because it changes what
-   the slates claim: both `NOTES.md` files say it's waiting on this.
+publication rule, the merges and the field going in now, and `mode` on SF and Newport.
 
 ## Next steps
 
@@ -805,6 +801,8 @@ Open:
 - [x] `pin-capture` asks a run to hold what a slate was read from (endorsements #3)
 - [x] The three transcribed slates with no named document: all recorded in their notes, 2026-10-30,
   about 5:50 PM PDT (2026-10-31 00:50Z), endorsements `5ab10e9`, `6884a83`, `f8bd0f5`
+- [x] SF and Newport say `scraped`, and SF cites the ranked-choice page, 2026-10-30, about 6:00 PM
+  PDT (2026-10-31 01:00Z), endorsements `cde01c1`, `2b50080`, README `7bb33fd`
 - [ ] First scheduled capture and pin, 2026-10-31 3:00 and 4:30 AM PDT (10:00Z, 11:30Z)
 
 **Not done:** TLSNotary wasn't built, so its proof sizes are unmeasured. OpenTimestamps
