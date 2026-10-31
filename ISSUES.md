@@ -47,3 +47,11 @@ first thing a voter waits for on Compare and All races. A worked version of the
 pool is on the local branch `ballot-alignment-worker-pipeline`
 (`lib/comparison.ts` `verifyAll`). A worker can't import `collate.ts` today:
 `subjects.ts` pulls in React and the database, so `subjectKey` needs its own file.
+
+## Save Page Now replies 200 with no job for two news pages
+
+Seen 2026-10-30, about 5:35 PM PDT (00:35Z), archive run `41148660738`: `POST /save` answered 200
+with no `job_id` or `status_ext`, so `archive.ts` recorded `error: "200"`. Pages:
+`sfbg.com/2026/10/06/endorsements-for-the-november-3-2026-election/` and
+`sfchronicle.com/projects/2026/california-sf-election-endorsements/`. The reply body isn't logged.
+They retry daily, but without a reason recorded nobody can tell if those two can ever get a snapshot.
