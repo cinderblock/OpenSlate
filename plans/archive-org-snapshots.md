@@ -192,18 +192,63 @@ the election.
   | --- | --- | --- |
   | `error:too-many-daily-captures` | 22 | Mostly images and files, no snapshot yet. Retried after a day |
   | `error:no-request` | 7 | The Archive couldn't reach the page. Retried after a day |
-  | `200` with no job | 2 | `sfbg.com`, `sfchronicle.com`. Reply body not logged |
+  | `200` with no job | 2 | Not a failure: the Archive had a recent copy, see below |
   | `error:blocked-url` | 1 | Instagram, on Mozilla's tracker list. Won't succeed |
 
 - `lookup` hit a 429 from the CDX API after 150 pages in the last run, and stopped as designed.
   Lookups are behind `save`, which doesn't depend on them.
+
+## The 200 with no job
+
+Run `41148660738` recorded `error: "200"` for `sfbg.com/2026/10/06/endorsements-for-the-november-3-2026-election/`
+and `sfchronicle.com/projects/2026/california-sf-election-endorsements/`. Run `41155118921`,
+dispatched 2026-10-30 at 6:23 PM PDT (2026-10-31 01:23Z), asked for those two again with the
+reply logged. It spent no captures: the account's counter stayed at 91.
+
+- **One cause, and neither a refusal nor a block.** Both replies were 200 with `"job_id":null` and:
+
+  > The same snapshot had been made 127 hours, 1 minute ago. You can make new capture of this URL after 168 hours.
+
+  The other page's said 167 hours, 47 minutes. 168 hours is the 7 days we send as
+  `if_not_archived_within`, so this is that option working. The SPN2 documentation says a newer
+  capture is returned instead of a new one, but doesn't describe this reply. There's no job, and
+  the logged part of the reply shows no timestamp (the quote stops at 200 characters).
+- **Why they were asked at all.** Neither page had a record yet: both arrived with the capture
+  at 5:03 PM PDT (00:03Z), and `save` runs before `lookup`, so the queue saw no snapshot. Any new
+  page with a copy under 7 days old can do the same.
+- **Both pages can be snapshotted.** CDX shows five recent rows for each, the newest 200s at
+  `20261025182210` (sfbg) and `20261025182322` (sfchronicle), and `compare` found 42 of 42 and
+  61 of 65 statements. The Archive isn't refusing them.
+- **Only these two.** No other record in `archived.json` had `error: "200"`.
+- **Five other pages took the documented route.** `crimevictimsunited.com` pages inside the window
+  got a job, then a status naming a snapshot about 15 minutes old. What decides between the
+  two routes is unknown.
+- **The sfchronicle reply doesn't match the newest CDX row.** 167 hours, 47 minutes before the reply
+  is about 6:37 PM PDT on 10-23 (10-24 01:37Z), not the 10-25 row. The nearest row is
+  `20261024013559`. Why the Archive measured from that one is unknown.
+- **They don't retry daily.** Once `lookup` records a snapshot under 7 days old, `saveQueue` skips
+  the page. sfbg and sfchronicle become eligible at 10:22 and 10:23 AM PST on Sunday 2026-11-01
+  (18:22Z and 18:23Z), so the 10:30 AM PST (18:30Z) run asks, if the schedule fires.
+
+Changes in `openslate-source-captures`:
+
+- `d1933df`: a reply with no job records its message, or `no-job: HTTP <status>`, and logs at most
+  200 characters with the key removed. `save --only` and the workflow's `only` input replace the
+  queue for one manual run. Nothing scheduled uses them.
+- `8cafb88`: a message starting `The same snapshot had been made ` is recorded as
+  `already-archived`, and `lookup` is sent to find the snapshot. The rule looks at the reply text
+  alone, never the source. If the Archive rewords it, the page falls back to a `failed` record
+  quoting the new text.
+
+`archived.json` still shows these two as `failed` with the Archive's message, written by the run
+before `8cafb88`. The next request replaces those records.
 
 ## Plan
 
 1. [x] Primary-source research.
 2. [x] Size the gap.
 3. [x] Change `archive.ts` and `archive.yml`, with tests (`6868b7c`, `7290c2f`, `a002a41`, `8d04c0f`,
-   `6b095f3`).
+   `6b095f3`, `d1933df`, `8cafb88`).
 4. [x] Anonymous path checked in CI.
 5. [x] The user supplied the key; Actions secrets set 2:55 PM PDT (21:55Z). Temporary files
    deleted; the key was never printed and the logs show `***`.

@@ -48,10 +48,10 @@ pool is on the local branch `ballot-alignment-worker-pipeline`
 (`lib/comparison.ts` `verifyAll`). A worker can't import `collate.ts` today:
 `subjects.ts` pulls in React and the database, so `subjectKey` needs its own file.
 
-## Save Page Now replies 200 with no job for two news pages (in progress — fix/spn-no-job-news-pages)
+## The archive workflow's hourly schedule has fired only once
 
-Seen 2026-10-30, about 5:35 PM PDT (00:35Z), archive run `41148660738`: `POST /save` answered 200
-with no `job_id` or `status_ext`, so `archive.ts` recorded `error: "200"`. Pages:
-`sfbg.com/2026/10/06/endorsements-for-the-november-3-2026-election/` and
-`sfchronicle.com/projects/2026/california-sf-election-endorsements/`. The reply body isn't logged.
-They retry daily, but without a reason recorded nobody can tell if those two can ever get a snapshot.
+Seen 2026-10-30, about 6:36 PM PDT (2026-10-31 01:36Z), in `gh run list` for
+`openslate-source-captures`: `archive.yml` has one `schedule` run ever, at 3:33 PM PDT (22:33Z).
+The `:30` crons due at 4:30 PM and 5:30 PM PDT (23:30Z and 00:30Z) left no run, though other runs
+were active then. Every other run was a manual dispatch. `plans/archive-org-snapshots.md` forecasts
+the first pass from hourly runs, so that forecast depends on this.
