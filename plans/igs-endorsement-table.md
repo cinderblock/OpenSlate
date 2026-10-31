@@ -64,25 +64,48 @@ Where the catalog goes further than IGS: `courage-california`,
 props that IGS dashes. `mcclatchy-california-editorial-boards` holds the Sacramento
 Bee's 14 props, and they match the IGS row; the `sacramento-bee` bundle has none.
 
-## Plan (if approved)
+## Decisions
 
-1. Build bundles for Libertarian, AFSCME, MALDEF, FCLCA and Church IMPACT with the
-   `endorsement-scraper` skill.
-2. Reach CPEHN and AIP through the browser; drop AIP if it publishes nothing.
-3. Find the CalTax voter guide and fill in the bundle.
-4. Publish through the endorsements repo's normal CI signing.
+- Approved 2026-10-31: skip an IGS slate and build from primary sources.
+- A published "No Recommendation" on a measure is `neutral` or `abstain`. On a candidate
+  race it's omitted.
+- Bryan's Oakland Voter Guide is published with `kind: individual`, as the user asked to add it.
+
+## Built and pushed 2026-10-31 (endorsements repo `0e135f3`..`2a6857e`)
+
+| Bundle | Positions | Note |
+| --- | --- | --- |
+| `maldef` | 7 | |
+| `cpehn` | 14 | Live page blocks clients; read from a Wayback copy of 2026-10-08 |
+| `ca-libertarian-party` | 16 | 14 props, 2 candidates |
+| `afscme-california` | 147 | IGS cites only its props page; two more hold the candidates |
+| `friends-committee-on-legislation-california` | 14 | |
+| `california-church-impact` | 14 | No logo found |
+| `wellstone-democratic-renewal-club` | 60 | EBMUD Ward 4 and Peralta Area 3 picks aren't on the ballot listing |
+| `oakland-review-of-books` | 41 | News org; 27 pages withheld to the private store |
+| `bryans-oakland-voter-guide` | 48 | Personal guide; a first name only |
+| `caltax` | 15 | Now the published guide, read from an image; was 5 inferred |
+| `ca-labor-federation` | +1 | Prop 38 `neutral` |
+
+Courage California needed no change: the Progressive Voter Guide is its own guide, already
+the bundle's source. The one card updated after our capture is Prop 40, still "Support".
+
+American Independent Party is not built. `aipca.vote` resets every client tried, and its only
+readable copy (Wayback, July) is headed "2026 Primary", so those picks can't stand for November.
+
+The 10-20 OC Register article, reached with Bun, says "Yes on Prop 39", confirming that IGS cell is wrong.
+
+Every new prop pick matches its IGS row on a separate scripted reading.
+
+Fetching: curl fails on many of these hosts; Bun's `fetch` works. Git Bash's `/tmp` paths and
+relative paths for `pdftotext` are unreliable here; use Windows paths.
 
 ## Progress
 
 - [x] Read the IGS table and compared it to the catalog
 - [x] Verified each disagreement
-- [ ] User decision on the recommendation
-- [ ] Steps 1–4
-
-## Open questions for the user
-
-1. Add the missing organizations from primary sources, and skip an IGS slate?
-   Recommended: yes.
+- [x] User approved
+- [x] Bundles built, verified (413 OK, 0 failed; 101 tests) and pushed
 
 ## Things not to do
 
