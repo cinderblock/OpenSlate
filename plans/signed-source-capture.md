@@ -524,6 +524,24 @@ Verified offline and in Chrome, and provenance was rebuilt in the publish job.
 - **A slate can outrun a run.** 1,842 positions showed "no capture yet" because the Import
   thread published new sources, mostly Reform California's county guides, after the list
   was fixed. The next scheduled run covers them, and the record was right to say so.
+- **What a slate was read from wasn't being captured.** 38 slates are transcribed from images or
+  PDFs, but their positions cite the page around those files. On 2026-10-30 about 4:45 PM PDT
+  (23:45Z), 149 documents across 19 of them were missing from the list, Abundant Housing LA's 48
+  cards and San Joaquin's 23 among them. The discovery report had flagged seven pages for a person,
+  but the slates' own `evidence/` notes already named the files, so none needed one.
+- **Working Families' list sits behind a POST.** The page holds 10 rows of 221, and its View More
+  button POSTs for the rest. This plan had said nothing needed POST capture. One request held all
+  31 names.
+- **The workflow's publish job runs the commit the run started on.** Code pushed during a run isn't
+  used until the next one. So `2026-10-31T0003Z`'s provenance predates the change that lists these
+  documents in a slate's record.
+- **Some hosts refuse a home address too.** In `2026-10-31T0024Z`, `www.nfib.com`,
+  `www.smdailyjournal.com` and `www.sanbenitocounty-ca-cre.gov` sent 403 and `ballotpedia.org` 202,
+  and `www.sacbee.com` didn't answer. Everything else CI couldn't read came back, `smcdems.org`
+  included. No response contained the home address.
+- **A status can't show every block.** The Chronicle answers CI with a 200 holding a challenge. Treating
+  every stub as a block pulled in Facebook, Instagram and ordinary script apps, which a home run
+  doesn't help, so `src/blocked.ts` names that one host instead.
 - **The dead-page case works from the Archive's own bytes.** `archive.ts compare` found
   25 of 25 `sf-republican-party` statements in the 2026-10-18 snapshot.
 - **Bumping the OpenSlate pin moved no slate.** Pin `2416fe3` to `f41bf95` is 28 commits.
@@ -693,13 +711,14 @@ publication rule, and the merges and the field going in now.
 
 | Item | Needs |
 | --- | --- |
-| Confirm the first scheduled capture, 2026-10-31 3:00 AM PDT (10:00Z). It's the first CI proof of the thin-page rule, and the first provenance with Archive claims and the local Chronicle capture | Nothing: the backstop below reports it |
-| Confirm the first scheduled pin, 2026-10-31 4:30 AM PDT (11:30Z). It should pin Reform California and Lookout Santa Cruz | Nothing: the backstop below reports it |
-| GitHub's scheduler: the first `schedule` run in the capture repo was `archive`, 2026-10-30 3:33 PM PDT (22:33Z), after it missed 18:30Z, 19:30Z, 20:30Z and 21:30Z. So schedules do fire there, late at first; a missed one sends no failure email. `capture` and `pin-capture` haven't had a scheduled slot yet | A T3 scheduled task, daily at 5:00 AM PDT (12:00Z) through Nov 5, starts `capture` and `pin-capture` if they didn't run, and reports. It needs this machine awake |
+| Confirm the first scheduled capture, 2026-10-31 3:00 AM PDT (10:00Z). Its provenance is the first to list the documents each slate was read from | Nothing: the daily task below reports it |
+| Confirm the first scheduled pin, 2026-10-31 4:30 AM PDT (11:30Z). A dry run moved 20 slates to a run holding those documents, pinned 4 for the first time (Reform California, Lookout Santa Cruz, both Green Party slates) and left none waiting. Los Angeles GOP moves too, for its refreshed script URL | Nothing: the daily task below reports it |
+| GitHub's scheduler: the first `schedule` run in the capture repo was `archive`, 2026-10-30 3:33 PM PDT (22:33Z), after it missed 18:30Z, 19:30Z, 20:30Z and 21:30Z. So schedules do fire there, late at first; a missed one sends no failure email. `capture` and `pin-capture` haven't had a scheduled slot yet | A T3 scheduled task, daily at 5:00 AM PDT (12:00Z) through Nov 5, starts `capture` and `pin-capture` if they didn't run, runs the home fill-in, and reports. It needs this machine awake |
 | An archive.org key, so CI can ask for more than a few snapshots an hour | The user's key from archive.org/account/s3.php, then a repo secret and a small change to `archive.ts` |
 | Publish the desktop 0.2.0 draft, which is what makes installs offer it. Tagged `desktop-v0.2.0` at `80cc18f`, built and self-tested on all six targets; all 403 live slates verify on it | A person: `desktop.yml` leaves publishing to one |
-| Decide on hosts blocked from CI: home fill-in by hand each time, or a self-hosted vantage | The user; a self-hosted runner can't earn the CI witness |
-| POST capture for XHR, step 3: not built | Nothing needs it yet. One page might: `alamedacountyca.gov/rov_app/candidatelist/`, unconfirmed |
+| Three transcribed slates whose notes name no document: `newport-beach-city-clerk`, `riverside-county-republican-party`, `sf-department-of-elections` | Someone finds what they were read from |
+| Five hosts refuse CI and a home address: `www.nfib.com`, `www.smdailyjournal.com`, `www.sanbenitocounty-ca-cre.gov`, `ballotpedia.org`, `www.sacbee.com` | Nothing for now: each failure is on the record |
+| `alamedacountyca.gov/rov_app/candidatelist/` may need a form post | Someone finds the request. Capture can now send one |
 | Second CI witness on GitLab | Deferred by the user |
 
 ## Things not to do
@@ -739,8 +758,14 @@ publication rule, and the merges and the field going in now.
 - [x] `attribution.capture` on 399 of 401 published slates, endorsements #2
 - [x] Desktop 0.2.0 tagged and drafted, 2026-10-30, about 3:10 PM PDT (22:10Z)
 - [ ] Desktop 0.2.0 published (a person)
+- [x] CI browser capture on the thin-page rule: 22 pages in `2026-10-31T0003Z`
+- [x] Documents named in transcribed slates' notes, 148 of 149 fetched (`7c1272b`)
+- [x] POST capture, for Working Families (`7c1272b`), which was step 3
+- [x] Home fill-in decided and scripted: `src/fill-in.ts`, run daily through Nov 5. A self-hosted
+  vantage isn't needed, and it couldn't earn the CI witness anyway
+- [x] `2026-10-31T0024Z`: 53 URLs from home, 26 of them 200
+- [x] `pin-capture` asks a run to hold what a slate was read from (endorsements #3)
 - [ ] First scheduled capture and pin, 2026-10-31 3:00 and 4:30 AM PDT (10:00Z, 11:30Z)
-- [ ] Merges, see "Open questions for the user"
 
 **Not done:** TLSNotary wasn't built, so its proof sizes are unmeasured. OpenTimestamps
 was only probed once (a 207-byte pending proof in 1.8 s) and that proof was never
