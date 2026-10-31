@@ -48,7 +48,7 @@ pool is on the local branch `ballot-alignment-worker-pipeline`
 (`lib/comparison.ts` `verifyAll`). A worker can't import `collate.ts` today:
 `subjects.ts` pulls in React and the database, so `subjectKey` needs its own file.
 
-## Save Page Now replies 200 with no job for two news pages
+## Save Page Now replies 200 with no job for two news pages (in progress — fix/spn-no-job-news-pages)
 
 Seen 2026-10-30, about 5:35 PM PDT (00:35Z), archive run `41148660738`: `POST /save` answered 200
 with no `job_id` or `status_ext`, so `archive.ts` recorded `error: "200"`. Pages:
