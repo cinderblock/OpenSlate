@@ -48,10 +48,10 @@ pool is on the local branch `ballot-alignment-worker-pipeline`
 (`lib/comparison.ts` `verifyAll`). A worker can't import `collate.ts` today:
 `subjects.ts` pulls in React and the database, so `subjectKey` needs its own file.
 
-## The archive workflow's hourly schedule has fired only once
+## The archive workflow's hourly schedule skips slots
 
-Seen 2026-10-30, about 6:36 PM PDT (2026-10-31 01:36Z), in `gh run list` for
-`openslate-source-captures`: `archive.yml` has one `schedule` run ever, at 3:33 PM PDT (22:33Z).
-The `:30` crons due at 4:30 PM and 5:30 PM PDT (23:30Z and 00:30Z) left no run, though other runs
-were active then. Every other run was a manual dispatch. `plans/archive-org-snapshots.md` forecasts
-the first pass from hourly runs, so that forecast depends on this.
+Seen 2026-10-30, about 8:50 PM PDT (2026-10-31 03:50Z), in `gh run list` for
+`openslate-source-captures`. `archive.yml` has fired on schedule at 3:33 PM and 7:37 PM PDT
+(22:33Z, 02:37Z). The 4:30, 5:30 and 6:30 PM PDT slots (23:30Z, 00:30Z, 01:30Z) left no run, each
+falling inside another run. The 8:30 PM PDT slot (03:30Z) had none 18 minutes later, with nothing
+running. `plans/archive-org-snapshots.md` forecasts the first pass from hourly runs.

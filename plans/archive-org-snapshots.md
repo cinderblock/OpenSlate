@@ -240,6 +240,10 @@ Changes in `openslate-source-captures`:
   alone, never the source. If the Archive rewords it, the page falls back to a `failed` record
   quoting the new text.
 
+Scheduled run `41160830510`, 7:37 PM PDT (02:37Z), ran this code: 90 asked, 678 pages queued,
+captures for the day 181. It met no recent-copy reply, so that path is still proven only by a unit
+test using the real text. Its five `already-archived` results all came by job.
+
 `archived.json` still shows these two as `failed` with the Archive's message, written by the run
 before `8cafb88`. The next request replaces those records.
 
