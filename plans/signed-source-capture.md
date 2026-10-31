@@ -59,7 +59,7 @@ soon. Read as:
 | Browser verifier | [cinderblock.github.io/openslate-source-captures](https://cinderblock.github.io/openslate-source-captures/) | Live; verified a real run in Chrome, from the live repo and from `file://` offline |
 | Withheld store | `openslate-source-captures-private` | Live; deploy key only the publish job can read |
 | Provenance per slate | `provenance/<org>/<election>.json` | Rebuilt by each run |
-| Internet Archive | `src/archive.ts`, `archive.yml` | Hourly through Nov 5, anonymous |
+| Internet Archive | `src/archive.ts`, `archive.yml` | Hourly through Nov 5, with a key. See `plans/archive-org-snapshots.md` |
 | XHR discovery | `src/discover.ts`, `discovery-report.md` | Run on all 18 low-text hosts |
 | Browser capture | `src/render.ts`, `render-hosts.json` | Beside the GET, for listed hosts and any page a GET got almost no text from |
 | Statement check, evidence page | endorsements [#1](https://github.com/cinderblock/openslate-public-endorsements/pull/1), `02b7aab` | Live |
@@ -417,7 +417,8 @@ key, so a verifier must check that the key belongs to the org.
   and the `peaceandfreedom.us` guide has none. So we'd have to ask it to capture,
   and Save Page Now's API needs an archive.org key. Reported rate limits are
   roughly 4 captures a minute anonymously and 6 to 12 authenticated (not verified),
-  so a full sweep takes one to two hours.
+  so a full sweep takes one to two hours. Corrected in `plans/archive-org-snapshots.md`:
+  3 and 7 a minute by the API docs, and about 3 in practice.
 - I only read from it here, and triggered no captures.
 
 WACZ and WARC: the WARC format could hold these exchanges, but each record has
@@ -751,7 +752,6 @@ Open:
 | Confirm the first scheduled capture, 2026-10-31 3:00 AM PDT (10:00Z). Its provenance is the first to list the documents each slate was read from | Nothing: the daily task below reports it |
 | Confirm the first scheduled pin, 2026-10-31 4:30 AM PDT (11:30Z). A dry run moved 20 slates to a run holding those documents, pinned 4 for the first time (Reform California, Lookout Santa Cruz, both Green Party slates) and left none waiting. Los Angeles GOP moves too, for its refreshed script URL | Nothing: the daily task below reports it |
 | GitHub's scheduler: the first `schedule` run in the capture repo was `archive`, 2026-10-30 3:33 PM PDT (22:33Z), after it missed 18:30Z, 19:30Z, 20:30Z and 21:30Z. So schedules do fire there, late at first; a missed one sends no failure email. `capture` and `pin-capture` haven't had a scheduled slot yet | A T3 scheduled task, daily at 5:00 AM PDT (12:00Z) through Nov 5, starts `capture` and `pin-capture` if they didn't run, runs the home fill-in, and reports. It needs this machine awake |
-| An archive.org key, so CI can ask for more than a few snapshots an hour | The user's key from archive.org/account/s3.php, then a repo secret and a small change to `archive.ts` |
 | Publish the desktop 0.2.0 draft, which is what makes installs offer it. Tagged `desktop-v0.2.0` at `80cc18f`, built and self-tested on all six targets; all 403 live slates verify on it | A person: `desktop.yml` leaves publishing to one |
 | Five hosts refuse CI and a home address: `www.nfib.com`, `www.smdailyjournal.com`, `www.sanbenitocounty-ca-cre.gov`, `ballotpedia.org`, `www.sacbee.com` | Nothing for now: each failure is on the record |
 | `alamedacountyca.gov/rov_app/candidatelist/` may need a form post | Someone finds the request. Capture can now send one |

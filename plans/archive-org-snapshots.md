@@ -25,7 +25,7 @@ anonymous ones from GitHub's addresses are throttled after about 3.
   to the repo, a log or a chat.
 - Snapshot by a mechanical rule, never by who a source is.
 - No posts or messages to the Internet Archive.
-- Rate: 4 captures a minute, a 15 s gap, against the 7 the documentation allows.
+- Rate: at most 4 captures a minute, a 15 s gap, against the 7 the documentation allows.
 
 ## What the primary sources say
 
@@ -84,13 +84,13 @@ run `2026-10-30T1747Z`.
   | Snapshot within 7 days | 12 |
 
   So the known gap is 327 and the worst case is 742.
-- **Time:** at 4 a minute, 742 pages take about 3 h 5 m, and 754 about 3 h 10 m. Three full
-  passes fit before polls open.
+- **Time:** at 4 a minute, 742 pages take about 3 h 5 m unbroken. Real runs manage less,
+  see Results.
 - **Bytes:** the 754 responses total 251 MB, the largest 15 MB. Embeds add to that, but a
   pass should sit well under 5 GB a day.
 - **The hourly schedule has never fired.** `archive.yml` has one run, a manual dispatch at
   10:47 AM PDT (17:47Z). The `:30` crons were due at 18:30Z, 19:30Z and 20:30Z.
-  Unexplained so far; bigger than the rate limit.
+  It began after the next push, see below.
 - Bugs in `archive.ts` that would have hurt once snapshots flow:
   - A new snapshot replaced the old one even if it held fewer statements, so a page edited
     after we scraped it would lose its "independently archived" claim.
@@ -111,14 +111,85 @@ Written here and in `archive.ts`. No source is chosen for who it is.
 3. Pages with no known snapshot first, then oldest snapshot first.
 4. Ties go by URL order.
 
+## Results
+
+Measured 2026-10-30 about 5:55 PM PDT (2026-10-31 00:55Z).
+
+| | Start of this work | Now |
+| --- | --- | --- |
+| Pages cited | 754 | 980, after a capture at 5:03 PM PDT (00:03Z) added more |
+| Pages with a snapshot under 7 days old | 12 | 246 |
+| Sources compared to a snapshot | 194 | 626 |
+| Sources whose snapshot holds every statement | 108 | 417 |
+| `lookups.json` | 0 snapshots | snapshot `20261030214304`, marked `requested` |
+| Workflow | Never ran on schedule | Fired at 3:33 PM PDT (22:33Z) |
+
+Pages by the origin of their current snapshot: 163 `requested`, 255 `existing`, 285
+unknown. Unknown is mostly records no lookup has revisited since the field was added.
+
+| Run | Started | Mode | Result |
+| --- | --- | --- | --- |
+| `41131962317` | 2:33 PM PDT (21:33Z) | Anonymous | 45 captured, 1 already there, 1 failed |
+| `41134616671` | 3:24 PM PDT (22:24Z) | Key | **Records lost**, see below. Snapshots stand |
+| `41138931119` | 4:15 PM PDT (23:15Z) | Key | 46 captured, 28 already there, 27 failed, 12 pending |
+| `41148660738` | 5:10 PM PDT (00:10Z) | Key | 94 asked in 30 minutes, 75 captured, 5 already there, 5 failed, 21 pending |
+
+**Rate:** about 3 a minute in practice, against 7 allowed. The account's counter read 91
+captures for the UTC day at 5:43 PM PDT (00:43Z), against a limit of 30,000.
+
+**Forecast:** 734 of 980 pages lack a recent snapshot. At about 94 a run, hourly, the first
+pass ends about 3 AM PDT Saturday 2026-10-31 (10:00Z). That leaves three days of margin, so
+the rate stays where it is. Snapshots stay "recent" for 7 days, so nothing repeats before
+the election.
+
+## Findings from the real runs
+
+- **The account has 3 concurrent sessions and 70,000 status calls a day.** Neither is
+  documented; `/save/status/user` returned
+  `{"processing":0,"available":3,"daily_captures":0,"daily_captures_limit":30000,"daily_status":0,"daily_status_limit":70000}`.
+  The batch now waits for a free session, for up to 3 minutes.
+- **The hourly schedule started after a push to `master`.** No schedule fired from about
+  10:40 AM PDT (17:40Z) until the push at 2:33 PM PDT (21:33Z); the next `:30` fired. The
+  cause wasn't established. That the push re-registered the cron is a guess.
+- **A queued run loses its work.** `41134616671` waited 28 minutes behind another run and
+  checked out the commit it was triggered on, not the tip, so its `archived.json` was stale
+  and the commit failed: `CONFLICT (content): Merge conflict in archived.json`. Every job ID
+  it held was lost. The workflow now checks out `master`, this run's results win a conflict,
+  and `jq` confirms the file parses before pushing.
+- **The lost run mislabelled 28 pages.** The next run asked again and heard "already
+  archived", which recorded our own snapshots as `existing`. Those 28 were reset to unknown
+  (`8d04c0f`), since nothing can show who caused them.
+- **`save` overran 36 minutes** when sessions were busy, and was killed before reporting. It
+  now stops asking after 30 minutes.
+- **Anonymous was not as weak as reported.** It made 47 requests in 36 minutes with no 429.
+  The "throttled after about 3" result from the first run did not recur. Each anonymous
+  request blocks for about 45 s, which is the practical limit. The key's gains are a job ID,
+  so the Archive says what it did, and the 30,000-a-day allowance.
+- **Save Page Now queues.** Jobs ran about 8 minutes behind our requests, beyond the 3-minute
+  wait at the end of a run, so the last ~20 of each run stay `pending` until the next run
+  collects them. Any older than 2 hours become `status-expired`, and origin stays unknown.
+- **Failures so far:**
+
+  | Reason | Pages | Meaning |
+  | --- | --- | --- |
+  | `error:too-many-daily-captures` | 22 | Mostly images and files, no snapshot yet. Retried after a day |
+  | `error:no-request` | 7 | The Archive couldn't reach the page. Retried after a day |
+  | `200` with no job | 2 | `sfbg.com`, `sfchronicle.com`. Reply body not logged |
+  | `error:blocked-url` | 1 | Instagram, on Mozilla's tracker list. Won't succeed |
+
+- `lookup` hit a 429 from the CDX API after 150 pages in the last run, and stopped as designed.
+  Lookups are behind `save`, which doesn't depend on them.
+
 ## Plan
 
 1. [x] Primary-source research.
 2. [x] Size the gap.
-3. [ ] **Current:** change `archive.ts` and `archive.yml`, with tests, behind an unset secret.
-4. [ ] Push, and check the anonymous path still works in CI.
-5. [ ] The user supplies the key; set the Actions secrets.
-6. [ ] Run it for real and report the numbers.
+3. [x] Change `archive.ts` and `archive.yml`, with tests (`6868b7c`, `7290c2f`, `a002a41`, `8d04c0f`).
+4. [x] Anonymous path checked in CI.
+5. [x] The user supplied the key; Actions secrets set 2:55 PM PDT (21:55Z). Temporary files
+   deleted; the key was never printed and the logs show `***`.
+6. [x] Ran for real.
+7. [ ] **Current, automatic:** hourly runs finish the first pass.
 
 ## Things not to do
 
@@ -127,7 +198,8 @@ Written here and in `archive.ts`. No source is chosen for who it is.
 - Don't print request headers, or anything else holding the key.
 - Don't count a snapshot as ours because it's recent. Only a job naming that timestamp is.
 - Don't let a newer snapshot erase an older one that held more statements.
+- Don't hand-edit `archived.json` while a run is active: that run's results win.
 
 ## Open questions for the user
 
-None yet.
+None.
