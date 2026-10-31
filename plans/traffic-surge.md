@@ -30,28 +30,28 @@ about on 2026-10-30.
 
 1. [x] Fallback when the address lookups are overloaded (this repo). Live.
 2. [x] Rate limit on all of `/api/*`, 60 per 10 s (ops `6983f44`). Live.
-3. [ ] **Current:** spend breaker, written on ops branch `surge-circuit-breaker`
-       (`b42e88a`), not merged. Waiting on the user, see below.
+3. [ ] **Current:** spend breaker, merged and deployed (ops `7a29d1f`), token
+       made and tested, not yet stored on the Worker. Waiting on the user, see
+       below.
 
 Dropped or held by the user (2026-10-30): budget alerts weren't chosen, and the
 catalog move is on hold. If it's revived: publish to Workers static assets at
 `catalog.openslate.us` from the endorsements repo's CI alongside Pages, then
 point the app at it.
 
-## The spend breaker, waiting to land
+## The spend breaker, waiting on its token
 
 Each hour, after the cost poll, the uptime worker estimates the month's bill net
 of included usage. It turns the WAF rule `API circuit breaker` (block
 `api.openslate.us`) on at $75 and off below it. It holds no state, so a new
 month reopens the API by itself. It does nothing until its token is set.
 
-To land it:
+To finish it:
 
-1. Merge the branch to master. CI creates the rule, disabled, and deploys uptime.
-2. Create a token with Zone WAF:Edit on `openslate.us` only, and set it as the
-   uptime secret `CF_BREAKER_TOKEN`.
-3. Prove the token can write with no outage: PATCH the rule to `enabled: false`,
-   the state it's already in. Then check the next hourly log line.
+1. Add the token `openslate-spend-breaker` (Zone WAF Read and Write on
+   `openslate.us` only) as the secret `CF_BREAKER_TOKEN` on the `uptime` Worker,
+   in the dashboard. Local tokens can't write Worker secrets.
+2. Check that the next hourly `Spend breaker` log line shows no error.
 
 ## Findings / gotchas
 
@@ -84,6 +84,14 @@ To land it:
   src/cli.ts sync`). Sourcing it in a shell breaks `DO_SERVERS`' JSON, and
   `SKIP_WORKERS=1` makes every worker look missing, including a false
   `SECRET_KEK` create. The workflow's own dry run skips the sync job entirely.
+- The token form offers Account WAF and Zone WAF, and both look right. The rule
+  is on the zone, so use Zone WAF. Read and Write are separate lines, and the
+  breaker needs both: it reads the rule list, then PATCHes its rule.
+- `wrangler secret put` from `cloudflare/` fails with "No access to the specified
+  resource". `.env.local` has one token, which can read Worker secrets but not
+  write them. The write token is only in GitHub, as `CF_API_TOKEN_WORKERS`.
+- `/user/tokens/verify` answers 401 for these tokens. Use
+  `/accounts/<id>/tokens/verify`.
 
 ## Progress log
 
@@ -97,11 +105,14 @@ To land it:
 - [x] Step 2 applied by CI, with only that rule changed, and tested live.
 - [x] Step 3 written: 12 tests, typecheck, all ops hooks, and a dry run showing
       one new disabled rule.
-- [ ] Step 3 merged, token set, and write access proven.
+- [x] Step 3 merged (ops `7a29d1f`). CI passed: sync, uptime deploy, and verify.
+- [x] Token created and tested 2026-10-30 6:29 PM PDT (2026-10-31 01:29Z): GET
+      and PATCH both 200, and the rule stayed disabled.
+- [ ] Token stored as `CF_BREAKER_TOKEN`, confirmed by an hourly log line.
 
 ## Open questions for the user
 
-1. Merge the spend breaker and set its token? Recommendation: yes.
+None.
 
 ## Things not to do
 
