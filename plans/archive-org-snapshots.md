@@ -25,6 +25,11 @@ anonymous ones from GitHub's addresses are throttled after about 3.
   to the repo, a log or a chat.
 - Snapshot by a mechanical rule, never by who a source is.
 - No posts or messages to the Internet Archive.
+- Hosts in `withheld-hosts.json` `personal_data_risk` are never sent to the Archive, decided by
+  the user 2026-10-30. A snapshot is public, and those bytes stay private because they may
+  carry personal data. The list decides, so it's mechanical. Today that's 2 pages: a Facebook
+  post, and an Instagram post the Archive blocks anyway. `lookup` and `compare` still read
+  snapshots others made.
 - Rate: at most 4 captures a minute, a 15 s gap, against the 7 the documentation allows.
 
 ## What the primary sources say
@@ -72,7 +77,7 @@ and its footer says "last updated 12/31/2014", so the 2024 Wayback copy was alre
   used by the user's own repo, so that holds. It would stop holding if the repo gave others
   a way to use the secret.
 - Users agree "(a) not to violate anyone's rights of privacy" and "(d) not to collect or store
-  personal data about anyone". See the question below about the `personal_data_risk` hosts.
+  personal data about anyone". That's why `personal_data_risk` hosts are no longer sent.
 - The Archive asks that research publications list it as a resource, and may end access at its
   discretion. It may also remove a page if the author objects, so a snapshot isn't permanent.
 
@@ -117,8 +122,9 @@ run `2026-10-30T1747Z`.
 
 Written here and in `archive.ts`. No source is chosen for who it is.
 
-1. Every page in `sources.json` is eligible unless it has a snapshot under 7 days old, or
-   we asked in the last day.
+1. Every page in `sources.json` is eligible unless it has a snapshot under 7 days old, we
+   asked in the last day, it's already a Wayback link, or its host is on the
+   `personal_data_risk` list.
 2. Cited pages before discovered ones.
 3. Pages with no known snapshot first, then oldest snapshot first.
 4. Ties go by URL order.
@@ -196,7 +202,8 @@ the election.
 
 1. [x] Primary-source research.
 2. [x] Size the gap.
-3. [x] Change `archive.ts` and `archive.yml`, with tests (`6868b7c`, `7290c2f`, `a002a41`, `8d04c0f`).
+3. [x] Change `archive.ts` and `archive.yml`, with tests (`6868b7c`, `7290c2f`, `a002a41`, `8d04c0f`,
+   `6b095f3`).
 4. [x] Anonymous path checked in CI.
 5. [x] The user supplied the key; Actions secrets set 2:55 PM PDT (21:55Z). Temporary files
    deleted; the key was never printed and the logs show `***`.
@@ -214,8 +221,4 @@ the election.
 
 ## Open questions for the user
 
-1. Should `save` skip the hosts in `withheld-hosts.json` `personal_data_risk` (Facebook and
-   Instagram)? We keep those bytes private because they may carry personal data, yet asking the
-   Archive to snapshot them makes that same page public, which sits badly with that rule and
-   with terms (a) and (d). Recommendation: skip them, by that existing list. The cost is that
-   those pages get no independent witness. Left as "every cited URL" until the user decides.
+None.
