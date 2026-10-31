@@ -16,7 +16,9 @@ see "What was built" below. The research sections are kept as the reasoning behi
 
 Status: **built, merged and live, 2026-10-30.** Captures run in
 [`cinderblock/openslate-source-captures`](https://github.com/cinderblock/openslate-source-captures),
-evidence pages show them, and 399 of 401 published slates sign their capture run.
+evidence pages show them, and 399 of 401 published slates sign their capture run. Desktop 0.2.0 is
+public, published 2026-10-30 5:39 PM PDT (00:39Z). The user settled this thread that evening, and
+what's left under "Next steps" is deferred.
 
 ## Decisions already made (don't re-ask)
 
@@ -748,7 +750,6 @@ publication rule, the merges and the field going in now, and `mode` on SF and Ne
 | Confirm the first scheduled capture, 2026-10-31 3:00 AM PDT (10:00Z). Its provenance is the first to list the documents each slate was read from | Nothing: the daily task below reports it |
 | Confirm the first scheduled pin, 2026-10-31 4:30 AM PDT (11:30Z). A dry run moved 20 slates to a run holding those documents, pinned 4 for the first time (Reform California, Lookout Santa Cruz, both Green Party slates) and left none waiting. Los Angeles GOP moves too, for its refreshed script URL | Nothing: the daily task below reports it |
 | GitHub's scheduler: the first `schedule` run in the capture repo was `archive`, 2026-10-30 3:33 PM PDT (22:33Z), after it missed 18:30Z, 19:30Z, 20:30Z and 21:30Z. So schedules do fire there, late at first; a missed one sends no failure email. `capture` and `pin-capture` haven't had a scheduled slot yet | A T3 scheduled task, daily at 5:00 AM PDT (12:00Z) through Nov 5, starts `capture` and `pin-capture` if they didn't run, runs the home fill-in, and reports. It needs this machine awake |
-| Publish the desktop 0.2.0 draft, which is what makes installs offer it. Tagged `desktop-v0.2.0` at `80cc18f`, built and self-tested on all six targets; all 403 live slates verify on it | A person: `desktop.yml` leaves publishing to one |
 | Five hosts refuse CI and a home address: `www.nfib.com`, `www.smdailyjournal.com`, `www.sanbenitocounty-ca-cre.gov`, `ballotpedia.org`, `www.sacbee.com` | Nothing for now: each failure is on the record |
 | `alamedacountyca.gov/rov_app/candidatelist/` may need a form post | Someone finds the request. Capture can now send one |
 | Second CI witness on GitLab | Deferred by the user |
@@ -791,7 +792,8 @@ publication rule, the merges and the field going in now, and `mode` on SF and Ne
 - [x] First full `build-site`, then live: 401 slates, 382 evidence pages
 - [x] `attribution.capture` on 399 of 401 published slates, endorsements #2
 - [x] Desktop 0.2.0 tagged and drafted, 2026-10-30, about 3:10 PM PDT (22:10Z)
-- [ ] Desktop 0.2.0 published (a person)
+- [x] Desktop 0.2.0 published on the user's word, 2026-10-30 5:39 PM PDT (00:39Z). Both update
+  feeds serve 0.2.0 on all three platforms
 - [x] CI browser capture on the thin-page rule: 22 pages in `2026-10-31T0003Z`
 - [x] Documents named in transcribed slates' notes, 148 of 149 fetched (`7c1272b`)
 - [x] POST capture, for Working Families (`7c1272b`), which was step 3
