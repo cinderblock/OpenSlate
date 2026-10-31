@@ -30,28 +30,27 @@ about on 2026-10-30.
 
 1. [x] Fallback when the address lookups are overloaded (this repo). Live.
 2. [x] Rate limit on all of `/api/*`, 60 per 10 s (ops `6983f44`). Live.
-3. [ ] **Current:** spend breaker, merged and deployed (ops `7a29d1f`), token
-       made and tested, not yet stored on the Worker. Waiting on the user, see
-       below.
+3. [x] Spend breaker, merged (ops `7a29d1f`), token stored, and running hourly.
 
 Dropped or held by the user (2026-10-30): budget alerts weren't chosen, and the
 catalog move is on hold. If it's revived: publish to Workers static assets at
 `catalog.openslate.us` from the endorsements repo's CI alongside Pages, then
 point the app at it.
 
-## The spend breaker, waiting on its token
+## The spend breaker
 
 Each hour, after the cost poll, the uptime worker estimates the month's bill net
 of included usage. It turns the WAF rule `API circuit breaker` (block
 `api.openslate.us`) on at $75 and off below it. It holds no state, so a new
-month reopens the API by itself. It does nothing until its token is set.
+month reopens the API by itself.
 
-To finish it:
+Its token is `openslate-spend-breaker` (Zone WAF Read and Write on
+`openslate.us` only, no expiry), stored as `CF_BREAKER_TOKEN` on the `uptime`
+Worker. Local tokens can't write Worker secrets, so replacing it means the
+dashboard. Raise `SPEND_BREAKER_USD` to reopen the API early.
 
-1. Add the token `openslate-spend-breaker` (Zone WAF Read and Write on
-   `openslate.us` only) as the secret `CF_BREAKER_TOKEN` on the `uptime` Worker,
-   in the dashboard. Local tokens can't write Worker secrets.
-2. Check that the next hourly `Spend breaker` log line shows no error.
+It has never tripped for real, because that would take the API down. The
+switching logic has unit tests, and write access is proven by a no-op PATCH.
 
 ## Findings / gotchas
 
@@ -108,7 +107,8 @@ To finish it:
 - [x] Step 3 merged (ops `7a29d1f`). CI passed: sync, uptime deploy, and verify.
 - [x] Token created and tested 2026-10-30 6:29 PM PDT (2026-10-31 01:29Z): GET
       and PATCH both 200, and the rule stayed disabled.
-- [ ] Token stored as `CF_BREAKER_TOKEN`, confirmed by an hourly log line.
+- [x] Token stored in the dashboard, live 6:35 PM PDT (01:35Z). The first run,
+      7:01 PM PDT (02:01Z), logged `estimated bill $5.00, change: none`.
 
 ## Open questions for the user
 
