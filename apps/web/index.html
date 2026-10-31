@@ -33,6 +33,31 @@
       }
     </style>
     <title>OpenSlate</title>
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- What link previews show (Facebook, iMessage, SMS and the rest). Their
+         crawlers run no script and never see the part of a URL after the "#",
+         so every link to the app gets this one card. The image must be a
+         raster at an absolute URL: its source is scripts/og-image.html, and
+         test/linkPreview.test.ts holds the size to the PNG. -->
+    <meta
+      name="description"
+      content="See your ballot race by race, with where the organizations and people you trust agree and split. Every endorsement is signed, so you can check who said it."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="OpenSlate" />
+    <meta property="og:url" content="https://openslate.us/" />
+    <meta property="og:title" content="OpenSlate: plan your vote from sources you trust" />
+    <meta
+      property="og:description"
+      content="See your ballot race by race, with where the organizations and people you trust agree and split. Every endorsement is signed, so you can check who said it."
+    />
+    <meta property="og:image" content="https://openslate.us/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="OpenSlate: plan your vote from sources you trust" />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <div id="root"></div>

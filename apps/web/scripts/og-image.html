@@ -1,0 +1,60 @@
+<!doctype html>
+<!-- Source of public/og-image.png, the card link previews show (index.html).
+     Everything sits in the centre because some apps crop the card to a square.
+     Colours are the dark --bg and --text from src/styles.css. To regenerate,
+     from apps/web, with any Chrome (logging keeps it attached until it's done):
+
+     chrome --headless=new --enable-logging=stderr --hide-scrollbars \
+       --window-size=1200,630 --user-data-dir="$TEMP/og-chrome" \
+       --screenshot="$PWD/public/og-image.png" "file://$PWD/scripts/og-image.html"
+
+     public/apple-touch-icon.png is public/icon-maskable.svg, the same way at
+     512,512. Chrome won't make a headless window narrower than 500.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+        background: #0f1115;
+        color: #e6e8ec;
+        font-family: "Segoe UI", system-ui, sans-serif;
+      }
+      main {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      img {
+        width: 190px;
+        height: 190px;
+      }
+      h1 {
+        margin: 6px 0 0;
+        font-size: 104px;
+        font-weight: 700;
+        letter-spacing: -2px;
+      }
+      p {
+        margin: 10px 0 0;
+        font-size: 42px;
+        color: #aab0ba;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="../public/icon.svg" alt="" />
+      <h1>OpenSlate</h1>
+      <p>Plan your vote from sources you trust</p>
+    </main>
+  </body>
+</html>
