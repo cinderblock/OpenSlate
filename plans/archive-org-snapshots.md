@@ -57,15 +57,27 @@ finding 9.
 - Target-side protection is built in: over 20 concurrent captures of one host in 60 s adds
   a delay, and a 429 from a target slows that host for 60 s.
 
-**Terms.** `archive.org/about/terms` is now a JavaScript app. A plain fetch, a Wayback
-copy from 2026-10-22 and a headless dump all returned the empty shell, so the current text
-was **not read**. The latest readable copy is a Wayback snapshot from 2024-01-01 of terms
-dated 31 Dec 2014. It says not to "interfere with the work of other users or Archive
-personnel, servers, or resources", not to recirculate a password, and that the Archive may
-end access at its discretion. Nothing in it addresses automation, and the API docs invite
-it: they publish the rates and say to contact info@archive.org for more. Scheduled use
-inside the published limits fits both. Archive-It is the paid route for large or recurring
-crawls; 754 pages a few times is nowhere near that.
+**Terms.** `archive.org/about/terms` is a JavaScript app that keeps its text in shadow DOM,
+so a plain fetch, a Wayback copy and a headless `--dump-dom` all returned an empty shell. Walking
+the shadow roots in a rendered page worked, on 2026-10-30. The current text is dated 31 Dec 2014,
+and its footer says "last updated 12/31/2014", so the 2024 Wayback copy was already current.
+
+- Nothing addresses automation, rate or API use. The limits are the API docs' published ones,
+  and those docs invite scripted use and say to write to info@archive.org for more.
+- "You agree not to interfere with the work of other users or Archive personnel, servers, or
+  resources." Staying inside the published rate, and stopping on a 429, is how we honor this.
+- Access is "granted for scholarship and research purposes only". Keeping public evidence for
+  how endorsements were sourced fits.
+- Don't "recirculate your password to other people or organizations". The key is the user's,
+  used by the user's own repo, so that holds. It would stop holding if the repo gave others
+  a way to use the secret.
+- Users agree "(a) not to violate anyone's rights of privacy" and "(d) not to collect or store
+  personal data about anyone". See the question below about the `personal_data_risk` hosts.
+- The Archive asks that research publications list it as a resource, and may end access at its
+  discretion. It may also remove a page if the author objects, so a snapshot isn't permanent.
+
+Archive-It is the paid route for large or recurring crawls. 980 pages a few times is well short
+of that.
 
 ## Findings
 
@@ -202,4 +214,8 @@ the election.
 
 ## Open questions for the user
 
-None.
+1. Should `save` skip the hosts in `withheld-hosts.json` `personal_data_risk` (Facebook and
+   Instagram)? We keep those bytes private because they may carry personal data, yet asking the
+   Archive to snapshot them makes that same page public, which sits badly with that rule and
+   with terms (a) and (d). Recommendation: skip them, by that existing list. The cost is that
+   those pages get no independent witness. Left as "every cited URL" until the user decides.
