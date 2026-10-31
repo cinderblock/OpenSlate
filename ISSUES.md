@@ -1,18 +1,5 @@
 # Issues
 
-## Desktop 0.1.0 rejects today's slates
-
-Seen 2026-10-30, about 2:05 PM PDT (21:05Z): `verifySlate` from tag `desktop-v0.1.0`, run over
-the live catalog, passed 316 of 401. The rest failed on keys added since (`voted_in` 54,
-`articles` 11, `ballot` 10, `rank` 8, `label` 2). Since about 2:15 PM PDT (21:15Z), 399 slates
-also carry `attribution.capture`, so nearly all fail, with an error on import. Web is fine: it
-deployed the schema first. Release assets show zero installer downloads, so nobody seems affected
-yet, but anyone who installs 0.1.0 can't load the catalog. Schemas are `.strict()`, so every new
-field does this to every older release.
-
-Desktop 0.2.0 (`desktop-v0.2.0`, `80cc18f`) verifies all 403 live slates. Close this once its draft
-is published, which only a person does.
-
 ## Cited endorsement sources already gone, or answering a bot page
 
 Seen 2026-10-30, about 3:15 AM PDT (10:15Z), by `experiments/signed-source-capture/03-survey-hosts.ts`
