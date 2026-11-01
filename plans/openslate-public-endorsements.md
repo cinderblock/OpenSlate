@@ -661,9 +661,12 @@ Findings:
 - pvg pages serve full HTML to a plain GET. Each recommendation is an `<article>` under its race heading.
 - Registrars' PDFs can be 7-12 MB, and blobs over 5 MB live in the capture repo's `large/`, not `blobs/`.
 
-Still unread: NFIB's three press releases and San Benito's document refuse headless Chrome as well (403), and the machine wasn't
-idle, so Chrome was off limits. NFIB was read in Chrome on 10-28, and a web search found no newer release. No position cites the San
-Benito file. AIPAC's featured-candidates API returns 500, and AP's two pages aren't endorsements (that bundle has no positions).
+NFIB refuses headless Chrome too (403), so its three releases waited for the machine to go idle. Read in Chrome at 12:25 PM PST
+(20:25Z), after 5 minutes idle and with sound muted, then restored: all 44 picks match the bundle, and its Nov 2-6 Main Street Minute
+(Oct 31) has no new endorsements.
+
+Still unread: San Benito's document also refuses headless Chrome, but no position cites it. AIPAC's featured-candidates API returns
+500, and AP's two pages aren't endorsements (that bundle has no positions).
 
 ## Green Party (2026-10-30, 2:05 PM PDT (21:05Z))
 
