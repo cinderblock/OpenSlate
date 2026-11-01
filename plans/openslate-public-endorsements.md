@@ -325,13 +325,14 @@ sweep first, because it found far more than this list did: `bun "%TEMP%\os-round
 pages no longer stay in `evidence/`: after refreshing, run `bun scripts/withhold-evidence.ts --apply
 --private ../openslate-source-captures-private`, or `verify-positions` fails and publishing stops
 (`plans/withhold-news-evidence.md`).
-- [ ] bay-area-news-group: still "so far"; new picks land in the roundup (updated 10-30 9:23 AM PDT)
-- [ ] southern-california-news-group: roundup says "More will be published"
-- [ ] lookout-santa-cruz: its board was still publishing as of 10-28
-- [ ] marin-independent-journal, santa-cruz-sentinel, san-mateo-daily-journal, sacramento-bee: late editorials
-- [ ] sierra-club-sf-bay: "will be updated as endorsements are finalized" (Chrome only, Imperva)
-- [ ] sf-examiner: no November picks as of 10-30
-- [ ] noe-valley-democratic-club: Supervisor D8 still "To Be Announced"
+- [x] bay-area-news-group: 36 -> 39 on Nov 1 `6e3304c` (Santa Clara mayor, council D2, D3)
+- [x] southern-california-news-group: unchanged Nov 1 (list last updated Oct 20)
+- [x] lookout-santa-cruz: unchanged Nov 1
+- [x] marin-independent-journal, santa-cruz-sentinel, san-mateo-daily-journal: unchanged Nov 1
+- [x] sacramento-bee: 15 -> 16 on Nov 1 `06d01a1` (CD 6 Richard Pan)
+- [x] sierra-club-sf-bay: unchanged Nov 1
+- [x] sf-examiner: no November picks as of Nov 1 (searched in Chrome), no bundle
+- [x] noe-valley-democratic-club: Supervisor D8 still "To Be Announced" on Nov 1, nothing to add
 - [x] ca-green-party `217deb2`, sd-green-party `38db05e` (see "Green Party" below)
 - [x] sf-chronicle `2dccca5` (Governor: Becerra; BOE D1/D2 stay "It's complicated", no pick)
 - [x] sf-yimby `6b42331`, sd-lincoln-club `d92a0ab`, peace-and-freedom-party `25889da`,
@@ -413,7 +414,7 @@ Every publish run passed CI. `orgs/sd-green-party/2026-11-03/` is still held bac
 untracked.
 - [x] User OK to publish (2026-10-19) → commit per batch, push, check CI + Pages
 - [x] Follow-up pass for search-budget gaps + Sierra Club via Chrome (round 2b, below)
-- [ ] Re-scrape before Nov 3: **scheduled** for 2026-10-28 09:00 (T3 scheduled task "OpenSlate endorsements: pre-election re-scrape (Oct 28)", fires Wednesdays, date-guarded; deletes itself after Nov 3)
+- [x] Re-scrape before Nov 3: done 2026-10-28, 2026-10-30 and 2026-11-01 (see those sections). The scheduled task is date-guarded and deletes itself after Nov 2
 
 ## Round 2b (2026-10-19 evening): gap pass, Chrome pass, adopts
 
@@ -581,6 +582,47 @@ Decisions to check (all recorded in the bundles' NOTES):
 - LA Forward's South Pasadena D4 pick is removed because the row now says "Write-up coming soon"; it may come
   back.
 - Marin IJ adopts only what ran under BANG's byline; its SCNG-bylined Prop 4 and Prop 40 aren't adopted.
+
+## Final re-scrape (2026-11-01, 2 days out, scheduled run)
+
+Started 2026-11-01 9:00 AM PST (17:00Z). Daylight saving ended overnight, so this day's times are PST. Result: 374 November
+endorser slates, 13,915 own positions + 427 adopted by 21 slates. 413 of 413 bundles pass `verify-positions`. Publish
+run 41330887575 passed at 9:19 AM PST (17:19Z), and Sac Bee's live slate holds the new pick.
+
+Added, 16 picks in 7 bundles, every one checked against the page:
+- bay-area-news-group +3 `6e3304c`: Santa Clara Mayor Kertes, Council D2 Inciarte, D3 Crutchlow (roundup updated Oct 31)
+- sierra-club-california +1 `dc1fc80`: SD 10 Sakakihara
+- sierra-club-angeles +5 `768106c`: LACCD Seat 2 Veres, Foothill MWD Div 4 Chen, Manhattan Beach Howorth, Pasadena Area CCD
+  Area 3 Gibson, South Pasadena D4 Cacciotti
+- equality-california +1 `d8117a3`: Chabot-Las Positas Mojadedi (the page gives no area; the registrar lists him in Area 3)
+- stanislaus-county-republican-party +4 `e5a0649`: Patterson Mayor Clauzel, Patterson D Roque, Riverbank D1 Sosongkham,
+  Waterford Valdez
+- sd-county-republican-party +1 `c3c9a2b`: Lakeside Community Planning Group Robak
+- sacramento-bee +1 `06d01a1`: CD 6 Pan
+
+Unchanged after reading: SCNG, Lookout, Marin IJ, Sentinel, Daily Journal, U-T, Bakersfield Californian, Sierra Club SF Bay,
+Noe Valley Dems, the Labor Fed's council CSV (last modified Oct 10).
+
+Findings:
+- **The sweep now uses the honest capture user agent**, per the skill's rule, in `%TEMP%\os-round2\sweep-1101.ts`. It also reads
+  withheld news evidence from the private repo. Without that, every news bundle reports its own picks as leads.
+- **Diff against the last sweep.** `sweep-diff.ts` keeps only hits the 10-30 report didn't have, and that list is short
+  enough to read. The report caps each bundle at 25 hits, so a "new" hit in a capped bundle (Everytown, IAFF, Courage) can be
+  ordering, not news. Those three weren't read.
+- `page-diff.ts` and `blob-diff.ts` compare a live page with its saved evidence, which catches what the sweep's name dictionary
+  can't: Carlos Roque is in no other bundle, so only the page diff found him.
+- **A cited page can change under an older bundle.** Stanislaus GOP's voter guide and endorsements pages have drifted apart: the
+  guide has four picks the other lacks, and the other has Yosemite CCD. Both are kept.
+- sierraclub.org's plain GET is a 212-byte Incapsula stub even with HTTP 200. The run's `rendered` record holds the page, so
+  evidence for it comes from `dom_sha256`. It's Chrome's DOM, and the evidence header says so.
+- Chrome needs the machine idle for 5 minutes and sound muted (global rule). The run checked idle (11 hours), muted, read Sac Bee,
+  Daily Journal, Examiner, Bakersfield and U-T, and restored sound. Sac Bee, Daily Journal, Bakersfield and Examiner refuse the
+  honest user agent or rate-limit it.
+- A signed `.slate` is a JWS token, so searching it for a name finds nothing until the payload is decoded.
+
+Not checked: 281 sources the sweep can't read (218 PDFs, 46 images, 17 other binaries), and the 11 403s other than the Daily Journal's, which
+were not retried. The new picks' capture pointers move only when pin-capture needs them to, so a bundle's pinned run can predate
+the pick. Its evidence file names the run that holds it.
 
 ## Green Party (2026-10-30, 2:05 PM PDT (21:05Z))
 
