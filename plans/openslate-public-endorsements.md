@@ -620,9 +620,50 @@ Findings:
   honest user agent or rate-limit it.
 - A signed `.slate` is a JWS token, so searching it for a name finds nothing until the payload is decoded.
 
-Not checked: 281 sources the sweep can't read (218 PDFs, 46 images, 17 other binaries), and the 11 403s other than the Daily Journal's, which
-were not retried. The new picks' capture pointers move only when pin-capture needs them to, so a bundle's pinned run can predate
-the pick. Its evidence file names the run that holds it.
+The sources this sweep couldn't read got their own pass the same day (below). The new picks' capture pointers move only when
+pin-capture needs them to, so a bundle's pinned run can predate the pick. Its evidence file names the run that holds it.
+
+### Unread-sources pass (2026-11-01, 11:37 AM PST (19:37Z) on)
+
+The user asked for everything the sweep skipped to be read. Result: 2 more picks and 2 moved pages. Published in `edbb077`, on top
+of the 16 above, so 18 picks in 9 bundles for the day and 13,917 own positions.
+
+Added:
+- everytown +1 `1a3d348`: Attorney General Rob Bonta. His API record's `everytown_endorsement__c` went from "0" to "1" between runs
+  2026-10-30T1747Z and 2026-10-31T0003Z. 36 records are flagged now: 34 positions, plus Capps and Frerichs, still skipped.
+- courage-california +1 `3f0743b`: Costa Mesa D4 Angely Andrade Vallarta. On the Orange County guide page only, not in the PDF.
+
+Fixed: SF GOP and Oakland Rising Action's cited pages moved, and the old URLs are 404s (`edbb077`). New addresses:
+`sfgop.org/endorsements` and `oaklandrisingaction.org/homepage/oakland-progressive-voter-guide/`. Their picks didn't change. The
+daily capture rebuilds its source list from the bundles, so its next run (Nov 2, 2:00 AM PST (10:00Z)) picks up both, and
+pin-capture moves the two slates after that.
+
+What was read:
+- The sweep's 281 skipped rows are 173 URLs and 106 files. Every file's bytes match every capture since 10-30 that the repo holds
+  bytes for, apart from one run's 202s on the Labor Fed's files and the Incapsula stub on Sierra San Gorgonio's PDF. None has a
+  Last-Modified after its bundle's read. Four send no such header.
+- 46 images, all read against their bundles: no pick missing. Two Riverside GOP names are shorter than printed ("MARY MARQUEZ
+  LIMON" is Mary Limon, "J. KYLE ROOT" is Kyle Root). `bd7c71c` chose those from Reform California's guide on purpose, and no
+  Riverside ballot list can confirm or reject them, so they stay.
+- 26 endorser PDFs, text checked against their bundles: no pick missing. Every flagged name is explained. Statewide picks come
+  through adoptions, and Briscoe, Luna and Cuyama's Reynolds are on seats not on the ballot.
+- 34 registrar files (pamphlets and argument PDFs): not re-read. They're printed and frozen, and their bytes match.
+- Planned Parenthood and the four SF Bike pages opened in headless Chrome with the capture tool's renderer, and all match.
+- 94 URLs past the sweep's 40-per-bundle cap were never fetched. 54 are anchors on DSA-LA's one page. An uncapped sweep of the
+  rest found nothing new: Run for Something's 22 hits are alumni, and its directory still has the same 48 2026 records.
+- Everytown, IAFF, Courage: read in full. IAFF's only hits are the state picks on the shared CPF page, and CD 23 is still "Pending".
+  All 34 of Courage's guide pages were read card by card, matching on last name.
+
+Findings:
+- **Both misses came from the sweep's own caps.** The report keeps 25 hits per bundle, so a real name sits unseen among expected
+  ones. Structured sources should be compared by structure: Everytown's flag and Courage's cards gave exact answers, where the name
+  dictionary gave 340 hits to read.
+- pvg pages serve full HTML to a plain GET. Each recommendation is an `<article>` under its race heading.
+- Registrars' PDFs can be 7-12 MB, and blobs over 5 MB live in the capture repo's `large/`, not `blobs/`.
+
+Still unread: NFIB's three press releases and San Benito's document refuse headless Chrome as well (403), and the machine wasn't
+idle, so Chrome was off limits. NFIB was read in Chrome on 10-28, and a web search found no newer release. No position cites the San
+Benito file. AIPAC's featured-candidates API returns 500, and AP's two pages aren't endorsements (that bundle has no positions).
 
 ## Green Party (2026-10-30, 2:05 PM PDT (21:05Z))
 
