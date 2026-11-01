@@ -71,7 +71,7 @@ ranked-choice page. Read as:
 | Browser verifier | [cinderblock.github.io/openslate-source-captures](https://cinderblock.github.io/openslate-source-captures/) | Live; verified a real run in Chrome, from the live repo and from `file://` offline |
 | Withheld store | `openslate-source-captures-private` | Live; deploy key only the publish job can read |
 | Provenance per slate | `provenance/<org>/<election>.json` | Rebuilt by each run |
-| Internet Archive | `src/archive.ts`, `archive.yml` | Hourly through Nov 5, with a key. See `plans/archive-org-snapshots.md` |
+| Internet Archive | `src/archive.ts`, `archive.yml` | Scheduled hourly through Nov 5, with a key; GitHub ran 9 of about 50 slots by 2026-11-01. See `plans/archive-org-snapshots.md` |
 | XHR discovery | `src/discover.ts`, `discovery-report.md` | Run on all 18 low-text hosts |
 | Browser capture | `src/render.ts`, `render-hosts.json` | Beside the GET, for listed hosts and any page a GET got almost no text from |
 | Statement check, evidence page | endorsements [#1](https://github.com/cinderblock/openslate-public-endorsements/pull/1), `02b7aab` | Live |
@@ -578,6 +578,20 @@ Verified offline and in Chrome, and provenance was rebuilt in the publish job.
 - **A status can't show every block.** The Chronicle answers CI with a 200 holding a challenge. Treating
   every stub as a block pulled in Facebook, Instagram and ordinary script apps, which a home run
   doesn't help, so `src/blocked.ts` names that one host instead.
+- **GitHub's schedules are late or missing, and it isn't a time zone.** No workflow sets a `timezone`,
+  so the crons are UTC, and the docs say the `schedule` event can be delayed under load and queued
+  jobs dropped. A Pacific mix-up would show as exactly 7 or 8 hours, and no single offset fits:
+
+  | Workflow | Slot | 2026-10-31 | 2026-11-01 |
+  | --- | --- | --- | --- |
+  | `capture` | 10:00Z | 8:36 AM PDT (15:36Z), 5h37m late | 8:31 AM PST (16:31Z), 6h31m late |
+  | `pin-capture` | 11:30Z | 9:14 AM PDT (16:14Z), 4h44m late | 9:11 AM PST (17:11Z), 5h42m late |
+
+  `archive` is the larger sample. Its 50 or so hourly `:30` slots from 2026-10-30 11:30 AM PDT
+  (18:30Z) to 2026-11-01 11:30 AM PST (19:30Z) produced 9 runs, 3.4 to 7.8 hours apart. Moving a
+  cron off the top of the hour looks unlikely to help, since `archive` and `pin-capture` already
+  sit at `:30`. Both daily workflows landed at the same Pacific clock time on both days, across the
+  DST change. Two days can't show whether that means anything.
 - **The dead-page case works from the Archive's own bytes.** `archive.ts compare` found
   25 of 25 `sf-republican-party` statements in the 2026-10-18 snapshot.
 - **Bumping the OpenSlate pin moved no slate.** Pin `2416fe3` to `f41bf95` is 28 commits.
@@ -747,9 +761,7 @@ publication rule, the merges and the field going in now, and `mode` on SF and Ne
 
 | Item | Needs |
 | --- | --- |
-| Confirm the first scheduled capture, 2026-10-31 3:00 AM PDT (10:00Z). Its provenance is the first to list the documents each slate was read from | Nothing: the daily task below reports it |
-| Confirm the first scheduled pin, 2026-10-31 4:30 AM PDT (11:30Z). A dry run moved 20 slates to a run holding those documents, pinned 4 for the first time (Reform California, Lookout Santa Cruz, both Green Party slates) and left none waiting. Los Angeles GOP moves too, for its refreshed script URL | Nothing: the daily task below reports it |
-| GitHub's scheduler: the first `schedule` run in the capture repo was `archive`, 2026-10-30 3:33 PM PDT (22:33Z), after it missed 18:30Z, 19:30Z, 20:30Z and 21:30Z. So schedules do fire there, late at first; a missed one sends no failure email. `capture` and `pin-capture` haven't had a scheduled slot yet | A T3 scheduled task, daily at 5:00 AM PDT (12:00Z) through Nov 5, starts `capture` and `pin-capture` if they didn't run, runs the home fill-in, and reports. It needs this machine awake |
+| GitHub's scheduler runs `capture` and `pin-capture` hours late and `archive` about one slot in five (see Findings). A missed slot sends no failure email | A T3 scheduled task, daily at 5:00 AM local through Nov 5, starts `capture` and `pin-capture` if they haven't run, runs the home fill-in, and reports. It needs this machine awake |
 | Five hosts refuse CI and a home address: `www.nfib.com`, `www.smdailyjournal.com`, `www.sanbenitocounty-ca-cre.gov`, `ballotpedia.org`, `www.sacbee.com` | Nothing for now: each failure is on the record |
 | `alamedacountyca.gov/rov_app/candidatelist/` may need a form post | Someone finds the request. Capture can now send one |
 | Second CI witness on GitLab | Deferred by the user |
@@ -805,7 +817,8 @@ publication rule, the merges and the field going in now, and `mode` on SF and Ne
   about 5:50 PM PDT (2026-10-31 00:50Z), endorsements `5ab10e9`, `6884a83`, `f8bd0f5`
 - [x] SF and Newport say `scraped`, and SF cites the ranked-choice page, 2026-10-30, about 6:00 PM
   PDT (2026-10-31 01:00Z), endorsements `cde01c1`, `2b50080`, README `7bb33fd`
-- [ ] First scheduled capture and pin, 2026-10-31 3:00 and 4:30 AM PDT (10:00Z, 11:30Z)
+- [x] First scheduled capture and pin fired: 2026-10-31 8:36 and 9:14 AM PDT (15:36Z, 16:14Z), hours
+  after their slots
 
 **Not done:** TLSNotary wasn't built, so its proof sizes are unmeasured. OpenTimestamps
 was only probed once (a 207-byte pending proof in 1.8 s) and that proof was never
