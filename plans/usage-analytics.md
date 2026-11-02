@@ -384,8 +384,9 @@ a fan of the once a day"). Don't re-propose it.
 
 **Catalog loads can't be counted where they are.** The catalog is on GitHub
 Pages (`cinderblock.github.io/openslate-public-endorsements`), which gives us
-no request stats, so counting it means moving it behind our own domain, an
-infrastructure change. It'd also over-count: `catalogQueryOptions` goes stale
+no request stats. The move to `catalog.openslate.us` is already scheduled for
+2026-11-04 (`plans/traffic-surge.md`), which will make it countable. It'd still
+over-count: `catalogQueryOptions` goes stale
 after 5 minutes, so one session can load it several times, and only setup and
 visitors who already hold slates load it.
 

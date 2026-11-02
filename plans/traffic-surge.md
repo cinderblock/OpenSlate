@@ -93,6 +93,17 @@ switching logic has unit tests, and write access is proven by a no-op PATCH.
   write them. The write token is only in GitHub, as `CF_API_TOKEN_WORKERS`.
 - `/user/tokens/verify` answers 401 for these tokens. Use
   `/accounts/<id>/tokens/verify`.
+- **Signed slates carry `github.io` URLs, but the app doesn't use them**
+  (checked 2026-11-02). About 20 `positions.json` files have an `adopts[].uri`
+  on `cinderblock.github.io`. The app resolves adoptions from catalog entries by
+  issuer key, `of` and election, and never fetches that `uri`. Source IDs come
+  from `attribution.of.uri` or the issuer key, so the signing key's own `uri`
+  doesn't affect them. Pages stays anyway, as a mirror and so those signed links
+  keep working. Step 5 of the Nov 4 task moves `adopt.ts`, `keep-unchanged.ts`
+  and the key's `uri` to the new host, leaving existing `adopts[].uri` alone.
+- `bundle.json` is now 1.78 MB gzipped and 11.9 MB raw, about 56,000 full
+  downloads to GitHub's 100 GB. The repo tracks about 2,300 files and its
+  largest source file is 364 KB, so the catalog fits Workers' asset limits.
 
 ## Progress log
 
