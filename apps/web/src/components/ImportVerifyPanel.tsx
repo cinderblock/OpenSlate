@@ -147,7 +147,42 @@ export function ImportVerifyPanel({ embedded = false }: { embedded?: boolean }) 
       </div>
 
       {result && <VerifyResultView result={result} token={input.trim()} />}
+
+      {embedded && <FriendsGuideCard />}
     </Wrapper>
+  );
+}
+
+/** What to hand an agent. Its instructions are public/agents/import-friends-guide.md. */
+const FRIENDS_GUIDE_PROMPT =
+  "Read https://openslate.us/agents/import-friends-guide.md and follow it to turn my friend's voter guide (attached) into a slate I can import into OpenSlate.";
+
+/** A guide that isn't a slate yet: an agent can convert it, whatever format it's in. */
+function FriendsGuideCard() {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    await navigator.clipboard.writeText(FRIENDS_GUIDE_PROMPT);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
+  return (
+    <div className="card">
+      <h3>Have a friend's voter guide?</h3>
+      <p className="hint">
+        A spreadsheet, PDF or doc isn't a slate yet, but an AI agent that can run commands on your
+        computer, such as Claude Code or Codex, can convert it. Give it the guide and this message,
+        then add the file it makes here. Check its picks against the guide: the slate is its reading
+        of it.
+      </p>
+      <pre className="token">{FRIENDS_GUIDE_PROMPT}</pre>
+      <div className="row">
+        <button type="button" onClick={copy}>
+          {copied ? "Copied!" : "Copy message"}
+        </button>
+      </div>
+    </div>
   );
 }
 

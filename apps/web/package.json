@@ -49,6 +49,7 @@
     "@types/topojson-server": "^3.0.4",
     "@types/topojson-simplify": "^3.0.3",
     "@vitejs/plugin-react": "^4.3.4",
+    "esbuild": "^0.25.0",
     "telemetry-collector-core": "^0.1.0",
     "topojson-server": "^3.0.1",
     "topojson-simplify": "^3.0.3",

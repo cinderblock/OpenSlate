@@ -329,6 +329,15 @@ bun run --filter '@openslate/cli' start -- adopt https://example.org/party.slate
   --mode reference --match "Governor,Proposition" --into positions.json
 ```
 
+Every build of the web app also serves the CLI as one dependency-free file,
+<https://openslate.us/agents/openslate.mjs>, which runs on Node 20+ or Bun.
+Beside it, [`import-friends-guide.md`](./apps/web/public/agents/import-friends-guide.md)
+tells an AI agent how to turn a friend's voter guide, in any format, into a
+slate. Two commands exist for that: `races` prints the official ballot's exact
+subjects and names, and `check` reports anything in a `positions.json` that
+doesn't line up with them. Sources → Add endorsements has the message to give
+the agent.
+
 Other useful scripts: `bun test`, `bun run typecheck`, `bun run schema`
 (emits `packages/core/schema/openslate.schema.json`), `bun run lint` (Biome:
 format, imports and lint; line endings follow the OS, so CRLF checkouts on
@@ -422,7 +431,7 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 | Package | What it is |
 | --- | --- |
 | [`packages/core`](./packages/core) | `@openslate/core` — the standard's reference impl: types, schema, canonical JSON, Ed25519 sign/verify, JSON Schema export. Pure TS, minimal audited deps. |
-| [`packages/cli`](./packages/cli) | `@openslate/cli` — `keygen` / `pubkey` / `sign` (incl. `--batch` for research bundles) / `validate` / `verify` / `inspect` / `adopt` (copy or reference another slate's positions). |
+| [`packages/cli`](./packages/cli) | `@openslate/cli` — `keygen` / `pubkey` / `sign` (incl. `--batch` for research bundles) / `validate` / `races` / `check` (against the official ballot) / `verify` / `inspect` / `adopt` (copy or reference another slate's positions). |
 | [`apps/web`](./apps/web) | React + Vite SPA, voter-first. *My vote*: setup inline on My ballot, My ballot (your followed sources' endorsements by race, for your election and area, with private picks), All races (any race anywhere, with every slate on it, and the races you follow), Compare (who agrees with your picks, across the whole catalog), and Sources (follow, disagree with, or leave off, the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/), import from link/file/QR/paste). *Publish* (a quiet link): identities, sign your picks (or any race) as a slate and share it, verify and inspect slates; view live polls and election results (and Kalshi market forecasts, when a self-hosted server opts in); pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
 | [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + relays for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic, with your `GOOGLE_API_KEY`), opinion polls ([VoteHub](https://votehub.com)), election results ([civicAPI](https://civicapi.org)), and, opt-in with `KALSHI_FORECASTS=true`, market forecasts ([Kalshi](https://kalshi.com)). |
 | [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls and [civicAPI](https://civicapi.org) results behind permissive CORS, relays opt-in address lookups to the [Census geocoder](https://geocoding.geo.census.gov/) (`POST /api/geocode/census`; nothing cached, logged or stored), and answers Google Civic Information lookups with the project's key (`GET /api/civic/elections`, `POST /api/civic/voterinfo`; only for openslate.us pages, addresses never cached, logged or stored). Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, `/api/geocode/census` and `/api/civic/*` shapes so the web client treats either backend identically. Runs at `https://api.openslate.us`. |

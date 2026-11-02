@@ -2,6 +2,7 @@ import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import optimizeLocales from "@react-aria/optimize-locales-plugin";
 import react from "@vitejs/plugin-react";
+import { build as esbuild } from "esbuild";
 import { deriveIngestKey } from "telemetry-collector-core";
 import { defineConfig, type Plugin } from "vite";
 import { type ManifestOptions, VitePWA } from "vite-plugin-pwa";
@@ -46,6 +47,30 @@ function neverBundle(secret: string | undefined): Plugin {
   };
 }
 
+// The CLI as one file with no dependencies, served beside the instructions an
+// agent follows to turn a friend's voter guide into a slate
+// (public/agents/import-friends-guide.md). It's emitted here, not by a package
+// script, so every `vite build` ships it, and it needs nothing but Node to run.
+function agentTool(): Plugin {
+  return {
+    name: "openslate:agent-tool",
+    apply: "build",
+    async generateBundle() {
+      const { outputFiles } = await esbuild({
+        entryPoints: [fileURLToPath(new URL("../../packages/cli/src/index.ts", import.meta.url))],
+        bundle: true,
+        write: false,
+        platform: "node",
+        format: "esm",
+        target: "node20",
+      });
+      const source = outputFiles[0]?.contents;
+      if (!source) this.error("the CLI bundle came out empty");
+      this.emitFile({ type: "asset", fileName: "agents/openslate.mjs", source });
+    },
+  };
+}
+
 // The installed app's splash screen and title bar match the page: light and
 // dark --bg from src/styles.css (test/theme.test.ts checks). color_scheme_dark
 // is the manifest's dark override (spec 2026; Safari has it, Chrome plans to);
@@ -72,6 +97,7 @@ export default defineConfig(({ mode }) => ({
     // languages; the app is English-only, so keep just that. Must run first.
     { ...optimizeLocales.vite({ locales: ["en-US"] }), enforce: "pre" },
     neverBundle(appSecret),
+    agentTool(),
     VitePWA({
       disable: mode === "desktop",
       registerType: "autoUpdate",
@@ -96,7 +122,8 @@ export default defineConfig(({ mode }) => ({
         // API responses (ballot, elections) are cached client-side by TanStack
         // Query's IndexedDB persister, not by the service worker.
         navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api\//],
+        // /agents/ is plain files for agents (agentTool), never a route.
+        navigateFallbackDenylist: [/^\/api\//, /^\/agents\//],
         // Boundary data for finding your districts on this device (src/lib/geo.ts):
         // too big to precache for everyone, kept (and refreshed in the background)
         // once someone has used it, so the map and "Use my location" work offline.

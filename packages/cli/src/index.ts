@@ -1,8 +1,10 @@
 #!/usr/bin/env bun
-import { existsSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
+import { dirname, join, relative, sep } from "node:path";
 import {
   type Adoption,
+  ballotListing,
   buildSlate,
   createIdentity,
   decodeToken,
@@ -14,11 +16,14 @@ import {
   guideManifestSchema,
   guideReferences,
   identityToIssuer,
+  isBallotListing,
   isStatewideGuide,
+  type ListedRace,
   parseSlate,
   racesByJurisdiction,
   regionsOf,
   resolveAdoptions,
+  resolveChoice,
   type SignInput,
   type SlatePayload,
   type StoredIdentity,
@@ -43,6 +48,8 @@ Usage:
   openslate sign <positions.json|-> --key <identity.json> [--election E] [--jurisdiction J] [-o out.txt]
   openslate sign --batch <dir> --key <identity.json> [--force]
   openslate validate <positions.json|payload.json|->
+  openslate races [--election E] [--where TEXT] [--catalog URL] [-o races.jsonl]
+  openslate check <positions.json|-> [--catalog URL]
   openslate verify <token|file|url|-> [--resolve]
   openslate inspect <token|file|->
   openslate adopt <token|file|url> --mode copy|reference|embed [--uri U] [--subjects file.json]
@@ -79,6 +86,16 @@ validate is a schema-only check (no crypto) of a <positions.json> (what sign
 takes) or of a complete SlatePayload (one with "v", "issuer" and "issued_at"),
 useful on hand-authored research data before signing. Both are closed: a key
 the schema doesn't know is an error, not silently dropped.
+
+races prints the official ballot, one JSON race per line: the exact subject to
+copy into a position, and the choices as the ballot spells them. A race only
+lines up with the ballot when its title, jurisdiction and election match
+exactly. --election defaults to the next election the catalog lists; --where
+keeps races whose title or jurisdiction contains TEXT (a comma list means any).
+check then lines a <positions.json> up against that ballot, reports every race
+and name it can't place with the closest match, and exits non-zero if there
+are any. Both read the ballot listings of the public catalog (--catalog for
+another one) and skip any that fail verification.
 
 guide publishes an election authority's voter guide (candidate statements and
 photos, a measure's summary, analysis, arguments and full text) as reference
@@ -133,16 +150,28 @@ function parseFlags(rest: string[]): {
   return { flags, positional };
 }
 
+async function readStdin(): Promise<string> {
+  let text = "";
+  process.stdin.setEncoding("utf8");
+  for await (const chunk of process.stdin) text += chunk;
+  return text;
+}
+
+/** Write a file, making its directory if need be. */
+async function writeText(path: string, text: string): Promise<void> {
+  mkdirSync(dirname(path), { recursive: true });
+  await writeFile(path, text);
+}
+
 async function readText(pathOrDash: string): Promise<string> {
-  if (pathOrDash === "-") return await Bun.stdin.text();
-  return await Bun.file(pathOrDash).text();
+  if (pathOrDash === "-") return await readStdin();
+  return readFileSync(pathOrDash, "utf8");
 }
 
 async function resolveToken(arg: string): Promise<string> {
-  if (arg === "-") return (await Bun.stdin.text()).trim();
+  if (arg === "-") return (await readStdin()).trim();
   if (/^https?:\/\//.test(arg)) return await fetchToken(arg);
-  const file = Bun.file(arg);
-  if (await file.exists()) return (await file.text()).trim();
+  if (existsSync(arg) && statSync(arg).isFile()) return readFileSync(arg, "utf8").trim();
   return arg.trim();
 }
 
@@ -193,7 +222,7 @@ async function cmdKeygen(rest: string[]): Promise<void> {
   const stored = serializeIdentity(identity);
   const outPath = strFlag(flags, "o", "out");
   if (outPath) {
-    await Bun.write(outPath, `${JSON.stringify(stored, null, 2)}\n`);
+    await writeText(outPath, `${JSON.stringify(stored, null, 2)}\n`);
     console.error(`Wrote identity to ${outPath} (contains SECRET key — keep it safe).`);
     console.log(stored.publicKey);
   } else {
@@ -247,7 +276,7 @@ async function cmdSign(rest: string[]): Promise<void> {
 
   const outPath = strFlag(flags, "o", "out");
   if (outPath) {
-    await Bun.write(outPath, `${token}\n`);
+    await writeText(outPath, `${token}\n`);
     console.error(`Wrote token to ${outPath}`);
   } else {
     console.log(token);
@@ -320,14 +349,14 @@ async function cmdSignBatch(
         continue;
       }
 
-      const parsed = parseSignInput(await Bun.file(inputPath).text());
+      const parsed = parseSignInput(readFileSync(inputPath, "utf8"));
       if ("errors" in parsed) {
         console.error(`FAIL   ${slug}/${election}:\n  ${parsed.errors.join("\n  ")}`);
         process.exit(1);
       }
       try {
         const token = signSlate(slateFromInput(issuer, parsed.input), identity.keyPair.secretKey);
-        await Bun.write(outputPath, `${token}\n`);
+        await writeText(outputPath, `${token}\n`);
         console.error(`sign   ${slug}/${election}`);
         signed++;
       } catch (err) {
@@ -346,7 +375,7 @@ async function cmdSignBatch(
       const slatePath = join(bundleDir, "signed.slate");
       if (!existsSync(slatePath)) continue;
       try {
-        const token = (await Bun.file(slatePath).text()).trim();
+        const token = readFileSync(slatePath, "utf8").trim();
         const { payload } = parseSlate(token);
         const regions = regionsOf(payload);
         entries.push({
@@ -393,7 +422,7 @@ async function cmdSignBatch(
     ),
   };
   const indexPath = join(batchDir, "index.json");
-  await Bun.write(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+  await writeText(indexPath, `${JSON.stringify(index, null, 2)}\n`);
 
   console.error(
     `\nbatch: ${signed} signed, ${skipped} skipped, ${entries.length} entries in index.json`,
@@ -568,8 +597,8 @@ async function cmdAdopt(rest: string[]): Promise<void> {
 
   const into = strFlag(flags, "into");
   let input: SignInput = { positions: [] };
-  if (into && (await Bun.file(into).exists())) {
-    const parsed = parseSignInput(await Bun.file(into).text());
+  if (into && existsSync(into)) {
+    const parsed = parseSignInput(readFileSync(into, "utf8"));
     if ("errors" in parsed)
       fail(`${into} is not valid sign input:\n  ${parsed.errors.join("\n  ")}`);
     input = parsed.input;
@@ -599,11 +628,120 @@ async function cmdAdopt(rest: string[]): Promise<void> {
   const text = `${JSON.stringify(into ? input : mode === "copy" ? positions : input.adopts?.at(-1), null, 2)}\n`;
   const label = entity.name ?? entity.issuerKey;
   if (into) {
-    await Bun.write(into, text);
+    await writeText(into, text);
     console.error(`${mode}: ${positions.length} position(s) from ${label} → ${into}`);
   } else {
     process.stdout.write(text);
   }
+}
+
+/** The catalog `races` and `check` read unless told otherwise. */
+const PUBLIC_CATALOG = "https://cinderblock.github.io/openslate-public-endorsements/index.json";
+
+interface CatalogEntry {
+  election: string;
+  path: string;
+  attribution?: { of?: { kind?: string } };
+}
+
+/** The verified ballot listings a catalog holds, with the elections it lists them for. */
+async function catalogListings(catalogUrl: string): Promise<SlatePayload[]> {
+  const response = await fetch(catalogUrl);
+  if (!response.ok) fail(`could not fetch ${catalogUrl}: HTTP ${response.status}`);
+  const { entries } = (await response.json()) as { entries: CatalogEntry[] };
+  const listed = entries.filter((entry) => isBallotListing(entry));
+  const tokens = await Promise.all(
+    listed.map((entry) => fetchToken(new URL(entry.path, catalogUrl).href)),
+  );
+  const payloads: SlatePayload[] = [];
+  tokens.forEach((token, i) => {
+    const result = verifySlate(token);
+    if (result.valid && result.payload) payloads.push(result.payload);
+    else console.error(`skipping ${listed[i]?.path}: ${result.errors.join("; ")}`);
+  });
+  if (payloads.length === 0) fail(`no ballot listings in ${catalogUrl}`);
+  return payloads;
+}
+
+/** The next election on or after today, else the latest there is. */
+function nextElection(races: Iterable<ListedRace>): string | undefined {
+  const today = new Date().toISOString().slice(0, 10);
+  const dates = [...new Set([...races].map((race) => race.election))].sort();
+  return dates.find((date) => date >= today) ?? dates.at(-1);
+}
+
+/** One line of `races`: what a position copies, and what the ballot says about the contest. */
+function raceLine(race: ListedRace): string {
+  const { ballot, ...subject } = race.subject;
+  return JSON.stringify({
+    subject: {
+      ...subject,
+      jurisdiction: race.jurisdiction,
+      election: race.election,
+    },
+    ...(ballot?.vote_for ? { vote_for: ballot.vote_for } : {}),
+    ...(ballot?.ranks ? { ranks: ballot.ranks } : {}),
+    choices: race.choices.map((choice) => choice.name),
+  });
+}
+
+async function cmdRaces(rest: string[]): Promise<void> {
+  const { flags } = parseFlags(rest);
+  const payloads = await catalogListings(strFlag(flags, "catalog") ?? PUBLIC_CATALOG);
+  const races = [...ballotListing(payloads).races.values()];
+  const election = strFlag(flags, "election") ?? nextElection(races);
+  const where = strFlag(flags, "where")
+    ?.split(",")
+    .map((text) => text.trim().toLowerCase())
+    .filter(Boolean);
+  const lines = races
+    .filter((race) => race.election === election)
+    .filter(
+      (race) =>
+        !where ||
+        where.some((text) =>
+          `${race.subject.title}\n${race.jurisdiction}`.toLowerCase().includes(text),
+        ),
+    )
+    .map(raceLine);
+
+  const outPath = strFlag(flags, "o", "out");
+  if (outPath) await writeText(outPath, `${lines.join("\n")}\n`);
+  else if (lines.length > 0) console.log(lines.join("\n"));
+  console.error(`${lines.length} race(s) in the ${election} election`);
+}
+
+async function cmdCheck(rest: string[]): Promise<void> {
+  const { flags, positional } = parseFlags(rest);
+  const parsed = parseSignInput(await readText(positional[0] ?? "-"));
+  if ("errors" in parsed) fail(`not valid sign input:\n  ${parsed.errors.join("\n  ")}`);
+  const { input } = parsed;
+
+  const listing = ballotListing(await catalogListings(strFlag(flags, "catalog") ?? PUBLIC_CATALOG));
+  const problems: string[] = [];
+  let matched = 0;
+  let uncovered = 0;
+  for (const position of input.positions) {
+    const resolution = resolveChoice(listing, position, input);
+    const { title } = position.subject;
+    const named = `"${position.choice ?? "(the race as a whole)"}" in "${title}"`;
+    if (resolution.status === "listed" || resolution.status === "no-choice") matched++;
+    else if (resolution.status === "uncovered") uncovered++;
+    else if (resolution.status === "race-unlisted")
+      problems.push(`race not on the ballot: "${title}" (${position.subject.jurisdiction ?? ""})`);
+    else {
+      const hint = resolution.suggestion ? `; closest is "${resolution.suggestion.name}"` : "";
+      const what = resolution.status === "write-in" ? "uncertified write-in" : "not on the ballot";
+      problems.push(`${what}: ${named}${hint}`);
+    }
+  }
+
+  for (const problem of problems) console.log(problem);
+  console.log(
+    `${matched} of ${input.positions.length} position(s) line up with the ballot; ` +
+      `${problems.length} problem(s); ${uncovered} where no ballot listing exists to check against`,
+  );
+  if (problems.length > 0) process.exit(1);
 }
 
 /** Every file under `dir`, as `/`-separated paths relative to it. */
@@ -638,7 +776,7 @@ async function writeGuideReferences(dir: string): Promise<number> {
   });
   const path = join(dir, GUIDE_REFERENCES_FILE);
   if (references.length > 0)
-    await Bun.write(
+    await writeText(
       path,
       `${JSON.stringify({ v: 1, references })}
 `,
@@ -651,7 +789,7 @@ async function writeGuideReferences(dir: string): Promise<number> {
 async function buildGuide(dir: string): Promise<Omit<GuideManifest, "issuer" | "issued_at">> {
   const metaPath = join(dir, GUIDE_META);
   if (!existsSync(metaPath)) fail(`${metaPath} not found`);
-  const meta = JSON.parse(await Bun.file(metaPath).text()) as Pick<
+  const meta = JSON.parse(readFileSync(metaPath, "utf8")) as Pick<
     GuideManifest,
     "context" | "attribution"
   >;
@@ -661,7 +799,7 @@ async function buildGuide(dir: string): Promise<Omit<GuideManifest, "issuer" | "
   const problems: string[] = [];
   const items: GuideManifest["items"] = [];
   for (const path of paths.filter((p) => p.startsWith("items/") && p.endsWith(".json"))) {
-    const parsed = guideItemSchema.safeParse(JSON.parse(await Bun.file(join(dir, path)).text()));
+    const parsed = guideItemSchema.safeParse(JSON.parse(readFileSync(join(dir, path), "utf8")));
     if (!parsed.success) {
       for (const issue of parsed.error.issues)
         problems.push(`${path} ${issue.path.join(".")}: ${issue.message}`);
@@ -676,7 +814,7 @@ async function buildGuide(dir: string): Promise<Omit<GuideManifest, "issuer" | "
 
   const files: Record<string, string> = {};
   for (const path of paths)
-    files[path] = await sha256(new Uint8Array(await Bun.file(join(dir, path)).arrayBuffer()));
+    files[path] = await sha256(new Uint8Array(readFileSync(join(dir, path))));
   return { v: 1, ...meta, items, files };
 }
 
@@ -707,7 +845,7 @@ async function cmdGuide(rest: string[]): Promise<void> {
     const check = verifyGuide(token);
     if (!check.valid) fail(`signed guide does not verify: ${check.errors.join("; ")}`);
     const out = strFlag(flags, "o", "out") ?? join(target, GUIDE_OUT);
-    await Bun.write(out, `${token}\n`);
+    await writeText(out, `${token}\n`);
     console.error(
       `signed ${manifest.items.length} item(s), ${Object.keys(manifest.files).length} file(s) → ${out}`,
     );
@@ -736,7 +874,7 @@ async function cmdGuide(rest: string[]): Promise<void> {
           }
           bytes = new Uint8Array(await response.arrayBuffer());
         } else {
-          bytes = new Uint8Array(await Bun.file(join(target, "..", path)).arrayBuffer());
+          bytes = new Uint8Array(readFileSync(join(target, "..", path)));
         }
         if ((await sha256(bytes)) !== expected) bad.push(`${path}: hash mismatch`);
       }
@@ -763,6 +901,12 @@ switch (command) {
     break;
   case "validate":
     await cmdValidate(rest);
+    break;
+  case "races":
+    await cmdRaces(rest);
+    break;
+  case "check":
+    await cmdCheck(rest);
     break;
   case "verify":
     await cmdVerify(rest);
