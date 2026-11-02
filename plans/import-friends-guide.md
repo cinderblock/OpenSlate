@@ -52,7 +52,10 @@ want them in OpenSlate as a slate in their browser. Support any format.
 - [x] Dry run on plain Node against the live catalog: `check` caught a bad title
   and a misspelt name, and the signed file verified as a secondhand report.
 - [x] Instructions, prompt in the app, README.
-- [ ] Deployed and checked live.
+- [x] Deployed `95d57e3`, 2026-11-02. Downloaded the tool from openslate.us and ran
+  `races` with it (1,187 races for 2026-11-03).
+- [ ] Not tried by a real agent on a real guide yet: the dry run was a scripted
+  stand-in for the agent's reading of the guide.
 
 ## Things not to do
 
