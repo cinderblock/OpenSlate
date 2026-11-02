@@ -153,9 +153,9 @@ Decided while building:
 2. [x] CLI: `guide sign` writes `references.json` when there's anything to write.
 3. [x] Web: inline links in guide text, the "Referenced by" card, "Articles here also cover" on the news card.
 4. [x] Ballot repo: all 8 state figures become text (`scripts/lib/text-figures.ts`, also applied by the scraper).
-5. [ ] Push OpenSlate, then bump `.openslate-version` in the ballot repo and push it. This order matters: CI clones
+5. [x] Push OpenSlate, then bump `.openslate-version` in the ballot repo and push it. This order matters: CI clones
    OpenSlate at the pinned ref, and the app must be live before the file it reads appears (it copes either way).
-6. [ ] Check the live `references.json` and race pages headlessly.
+6. [x] Check the live `references.json` and race pages headlessly.
 
 Later, not before the election: a rule that can tell this ballot's lettered measures from old ones, then extend
 mentions to local measures.
@@ -166,7 +166,9 @@ mentions to local measures.
 - [x] Test content-blind links across the catalog
 - [x] User's go-ahead (2026-11-02)
 - [x] Rehearsal: all 25 guides signed and verified with `--files` under a throwaway key, 9 references
-- [ ] Deployed and checked live
+- [x] Deployed 2026-11-02: OpenSlate `e630201`, ballot repo `47b046f`. The live guide verifies against its key
+  with all 133 files matching. Headless Chrome on the live Props 40, 41 and 42 shows Referenced by, shared
+  coverage (41 and 42 at 4 each on Prop 40), inline links, and the interactions text with no figures left as images.
 
 ## Limits to keep in view
 
