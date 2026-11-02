@@ -6,8 +6,8 @@ Props 40, 41 and 42 (California, 2026-11-03) are legally connected: the outcome 
 on the yes votes for 41 and 42. A voter deciding on any one of them should find that out without
 going looking, and OpenSlate should say it without taking a position on any of the three.
 
-Asked by the user on 2026-11-01, two days before the election. Nothing is built yet; this is the
-finding and the proposal.
+Asked by the user on 2026-11-01, two days before the election. Nothing is built yet. The first proposal
+was rejected as not neutral on 2026-11-02; see "Superseded proposal".
 
 ## Environment / context
 
@@ -98,51 +98,71 @@ Pill"), CPEHN, Westside Forward, Friends Committee on Legislation, and the LA Ar
 - The guide schema has no field for a relationship between items.
 - `raceSearchText` doesn't include guide text or articles.
 
+### Content-blind links, tested across the catalog (2026-11-02)
+
+Of 152 articles, 8 are attached to more than one subject, giving 16 pairs of measures. No rule about
+these props went into this:
+
+| Measures | Articles in common | Publishers |
+| --- | --- | --- |
+| 40, 41, 42 (each pair) | 4 | 3 |
+| 3 and 40 | 2 | 2 |
+| SF D, E, F (each pair) | 2 | 2 |
+| 1, 37, 38 (each pair) | 1 | 1 |
+| 3, 40, 41, 42 with 43; 3 with 41 and 42 | 1 | 1 |
+
+Across all 14 statewide props, the guide names another measure only in these places: the analyses of 40,
+41 and 42, and the "No" arguments on 41 and 42. No "Yes" argument names one.
+
+## Superseded proposal
+
+The first proposal was a note quoting the Analyst, pinned under the overview of these three measures,
+plus a line on their My ballot cards, an `interactions` guide field, and a bar of "an official analysis
+names the measure". The user rejected it as not neutral on 2026-11-02, and that's correct:
+
+- Choosing one fact and pinning it high is editorial, even when every word is quoted.
+- Hand-built data for three measures singles them out. Who gets a note becomes our decision.
+- The Analyst's framing casts 40 as the measure at risk. Promoting it does more than report it.
+- Making the voter aware is useful to one side's campaign, so "just informing" isn't a neutral act here.
+- Rating the "No" arguments as "campaign framing" that a note should counter was itself a judgment.
+
 ## Decisions proposed (not yet approved)
 
-1. **Show the mechanism, never the motive.** The note quotes the Analyst verbatim. "Poison pill",
-   "designed to block" and "competing" stay in attributed sources.
-2. **The bar is an official analysis naming the measure,** or measure text naming it by number. We don't
-   judge whether two measures conflict. That leaves 40, 41 and 42 this election. Prop 3's clause and
-   Prop 40's "net worth, not income" wording don't qualify, and the other clauses have no named partner.
-3. **The same note whatever the voter picked.** No warning for Yes on 40 plus Yes on 41: that's a coherent
-   choice, and calling it a problem is an opinion.
-4. **Plain styling.** No warning colour or icon, no change to sort order, no effect on alignment scores.
-5. **The data lives in the signed guide, not in app code.** It keeps the source and signer attached, and
-   other elections can use it without an app change.
+1. **OpenSlate adds no sentence and picks no measure.** Every change is a rule that runs on every race and
+   doesn't know what any race is about.
+2. **Show coverage, not meaning.** Counts of shared articles claim only that publishers covered the two
+   together.
+3. **Accept the cost.** A voter gets a pointer, not an explanation, and has to follow it to learn why.
 
 ## Plan / steps
 
-1. Guide schema: optional `interactions` on an item: the subjects it names, plus a `Passage` carrying
-   `by`, `blocks` and `source`. Document it in SPEC.
-2. Ballot repo: add it to prop-40, 41 and 42 with the Analyst's text, transcribed from the figures. Re-sign.
-3. Race page: render it directly under `GuideOverview`, headed "Interacts with Prop 41 and Prop 42", linking
-   each measure, attributed to the Legislative Analyst.
-4. My ballot: one quiet line on those three cards linking to the note. `no-print`.
-5. Replace the JPEG in the Analysis with real text, so find and screen readers get the same words.
-6. After the election, for any measure: on an article attached to several races, show "Also about Prop 41,
-   Prop 42". It's derived from existing data with no curation. Label it as coverage, not a legal link.
+1. Article list on every race: "Articles here also cover Prop 41 (4), Prop 42 (4), Prop 3 (2), Prop 43 (1)",
+   linked, ordered by count. Computed in `articles.ts`. Shown for any race with a shared article.
+2. Guide text: turn any mention of another measure on the ballot into a link, on every measure. The text is
+   unchanged.
+3. Guide figures that are only text: render the words in place, in the same collapsed section, for every
+   measure. An accessibility fix that moves nothing.
 
-Steps 1 to 5 are the set worth shipping before 2026-11-03. Step 6 can wait.
+Limits to keep in view: article subjects are assigned when bundles are built, so step 1 reflects those
+signed claims and what publishers chose to cover. Step 2 will show links on the "No" side only for 41 and 42,
+because that's who wrote them.
 
 ## Progress log
 
 - [x] Trace what the app shows, and what the guide, news and endorsers say
-- [ ] User's go-ahead on the proposed decisions
-- [ ] Steps 1 to 5
-- [ ] Step 6
+- [x] Test content-blind links across the catalog
+- [ ] User's go-ahead on steps 1 to 3
+- [ ] Steps 1 to 3
 
 ## Open questions for the user
 
-1. Build steps 1 to 5 now, before the election? Recommendation: yes.
-2. Is the Analyst's text enough, or should the note also link the measure text's conflict clauses?
-   Recommendation: the Analyst's text alone; it's the only version written for voters.
+1. Build steps 1 to 3 before the election? Recommendation: yes. They are small, and useful in later elections.
 
 ## Things not to do
 
-- Don't write our own summary of what happens if each combination passes. The law here is unsettled and
-  the Analyst says "could".
-- Don't pin or rank the explainer articles: that's curation (SPEC §3.15).
+- Don't add a note, banner or heading of our own about these measures.
+- Don't add a hand-curated relation between measures, even one quoting official text.
+- Don't vary anything by the voter's picks.
+- Don't write our own summary of what happens if each combination passes.
+- Don't pin or rank the explainer articles (SPEC §3.15).
 - Don't group the three under a label such as "billionaire tax measures".
-- Don't treat every "Conflicting Measures" clause as an interaction. Most are boilerplate with no partner
-  on the ballot.
