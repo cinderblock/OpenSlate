@@ -373,6 +373,42 @@ SDK: `{events:[{event,dims}],release,environment}`. Local build with a
 throwaway secret: key in bundle, secret absent. Without it: no `ek1.`
 anywhere.
 
+## Counting real users (2026-11-01 to 11-02)
+
+The user wants "number of real users, basically". The opt-in events can't
+give it: few people opt in, and events carry no ID, so they count actions, not
+people. 65 events in total as of 2026-11-01.
+
+**Rejected by the user:** a default-on, once-a-day client ping with no ID ("not
+a fan of the once a day"). Don't re-propose it.
+
+**Catalog loads can't be counted where they are.** The catalog is on GitHub
+Pages (`cinderblock.github.io/openslate-public-endorsements`), which gives us
+no request stats, so counting it means moving it behind our own domain, an
+infrastructure change. It'd also over-count: `catalogQueryOptions` goes stale
+after 5 minutes, so one session can load it several times, and only setup and
+visitors who already hold slates load it.
+
+**Use `/sw.js` requests instead.** No code change and no change to the privacy
+promise. Browsers ask for it on a first visit and again on later page loads to
+check for updates; scanners that don't run JavaScript don't. Status 200 + 304,
+from Cloudflare's `httpRequestsAdaptiveGroups` on host `openslate.us` (UTC
+dates, read with `CLOUDFLARE_API_TOKEN` from the ops repo's
+`cloudflare/.env.local`):
+
+| 10-25 | 10-26 | 10-27 | 10-28 | 10-29 | 10-30 | 10-31 | 11-01 | 11-02 (to 19:22Z) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 33 | 22 | 16 | 23 | 13 | 27 | 65 | 151 | 98 |
+
+- It counts page loads by browsers, not people: a returning visitor counts
+  again on each full load.
+- Adding `userAgent` to that query drops Cloudflare to a 1-in-10 sample (every
+  count came back a multiple of 10). That sample was about 75% ordinary
+  browsers and 25% bots or headless over 29 days, and 11-01 showed no bots at
+  all. Treat the split as rough.
+- Cloudflare keeps about 30 days, so pull the election-week numbers before
+  2026-12-01.
+
 ## Open questions for the user
 
 1. ~~Design / default / release / register~~ (answered 2026-10-15).
