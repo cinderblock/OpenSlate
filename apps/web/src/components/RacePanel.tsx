@@ -1,9 +1,15 @@
-import type { CandidateInfo, Passage, Subject } from "@openslate/core";
+import type { CandidateInfo, GuideReference, Passage, Subject } from "@openslate/core";
 import { Link, useLocation, useParams, useSearch } from "@tanstack/react-router";
 import { Users } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useAllRaces } from "../lib/allSlates";
-import { type AttachedArticle, articleDate, articlesByRace } from "../lib/articles";
+import {
+  type AttachedArticle,
+  articleDate,
+  articlesByRace,
+  type SharedCoverage,
+  sharedCoverage,
+} from "../lib/articles";
 import { useBallotDraft } from "../lib/ballotDraft";
 import { designation, isYesNo } from "../lib/ballotView";
 import {
@@ -14,7 +20,12 @@ import {
   stanceTone,
 } from "../lib/collate";
 import { followedSubject } from "../lib/followedRaces";
-import { type GuideForSubject, useGuideItem } from "../lib/guides";
+import {
+  type GuideForSubject,
+  referencePlaceLabel,
+  useGuideItem,
+  useGuideReferences,
+} from "../lib/guides";
 import { localToday, useDecodedSlates, useFollows } from "../lib/myVote";
 import {
   type ChoiceTally,
@@ -66,9 +77,14 @@ export function RacePanel() {
   const tally = useMemo(() => (all && race ? tallyRace(race) : undefined), [all, race]);
 
   // Articles slates attach to this race (SPEC §3.15).
-  const articles = useMemo(
-    () => articlesByRace(all?.slates ?? slates, all?.follows ?? follows).get(targetKey) ?? [],
-    [all, slates, follows, targetKey],
+  const articlesEverywhere = useMemo(
+    () => articlesByRace(all?.slates ?? slates, all?.follows ?? follows),
+    [all, slates, follows],
+  );
+  const articles = articlesEverywhere.get(targetKey) ?? [];
+  const alsoCovers = useMemo(
+    () => sharedCoverage(articlesEverywhere, targetKey),
+    [articlesEverywhere, targetKey],
   );
 
   const myRows = useMemo(
@@ -83,6 +99,7 @@ export function RacePanel() {
 
   // The official voter guide's material on this race, when a guide covers it.
   const guide = useGuideItem(knownSubject);
+  const references = useGuideReferences(guide.guide);
   // My ballot's "Official guide" link lands here: the guide loads after the
   // page does, so scroll to it once it's there.
   const hash = useLocation({ select: (l) => l.hash });
@@ -183,7 +200,11 @@ export function RacePanel() {
             />
           )}
 
-          {articles.length > 0 && <InTheNews articles={articles} everySlate={Boolean(all)} />}
+          {references.length > 0 && <ReferencedBy references={references} />}
+
+          {articles.length > 0 && (
+            <InTheNews articles={articles} alsoCovers={alsoCovers} everySlate={Boolean(all)} />
+          )}
 
           <PollsPanel subject={pollSubject} />
 
@@ -296,15 +317,49 @@ function ReadUp({ links }: { links: ResearchLink[] }) {
   );
 }
 
+/** A race's title without its description: "California — Proposition 41". */
+function raceName(title: string): string {
+  return title.split(" (")[0] ?? title;
+}
+
+/**
+ * What else in the official voter guide mentions this race. Found by the same
+ * rule for every race; it says the words are there, not how the two relate.
+ */
+function ReferencedBy({ references }: { references: GuideReference[] }) {
+  return (
+    <div className="card read-up" id="referenced-by">
+      <h3>Referenced by</h3>
+      <p className="hint">Other items in the official voter guide that mention this one.</p>
+      <ul className="read-up-list">
+        {references.map(({ from, choice, where }) => (
+          <li key={`${from.title}|${choice ?? ""}`}>
+            <Link to="/race/$key" params={{ key: subjectKey(from) }}>
+              {raceName(from.title)}
+            </Link>
+            <div className="hint">
+              {choice && <>Names {choice} · </>}
+              {where.map(referencePlaceLabel).join(" · ")}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /**
  * Articles attached to this race by the imported slates (SPEC §3.15): reading,
  * never endorsements, so from every slate, followed or not.
  */
 function InTheNews({
   articles,
+  alsoCovers,
   everySlate,
 }: {
   articles: AttachedArticle[];
+  /** Other races these same articles are attached to. */
+  alsoCovers: SharedCoverage[];
   /** Read from every slate in the public catalog, not only the imported ones. */
   everySlate: boolean;
 }) {
@@ -316,6 +371,20 @@ function InTheNews({
         {everySlate ? "slates in the public catalog" : "the slates you've imported"}. Not
         endorsements.
       </p>
+      {alsoCovers.length > 0 && (
+        <p className="hint">
+          Articles here also cover{" "}
+          {alsoCovers.map((race, i) => (
+            <Fragment key={race.key}>
+              {i > 0 && ", "}
+              <Link to="/race/$key" params={{ key: race.key }}>
+                {raceName(race.title)}
+              </Link>{" "}
+              ({race.articles})
+            </Fragment>
+          ))}
+        </p>
+      )}
       <ul className="read-up-list">
         {articles.map((article) => {
           const by = article.attachedBy.map(

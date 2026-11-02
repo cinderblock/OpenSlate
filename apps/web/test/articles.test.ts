@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { type Article, createSlate, generateKeyPair } from "@openslate/core";
-import { articleDate, articlesByRace } from "../src/lib/articles";
+import { articleDate, articlesByRace, sharedCoverage } from "../src/lib/articles";
 import { decodeSlates } from "../src/lib/collate";
 import { subjectKey } from "../src/lib/subjects";
 
@@ -120,3 +120,39 @@ function formatted(y: number, m: number, d: number): string {
     year: "numeric",
   });
 }
+
+describe("sharedCoverage", () => {
+  const measure = (n: number) => ({ ...prop, title: `Proposition ${n} (About)` });
+  const link = (n: number, uri: string) => ({
+    subject: measure(n),
+    uri: `https://news.example/${uri}`,
+    title: uri,
+  });
+  const byRace = articlesByRace(
+    decodeSlates([
+      slate("News", [
+        link(40, "both"),
+        link(41, "both"),
+        link(3, "both"),
+        link(40, "again"),
+        link(41, "again"),
+        link(40, "alone"),
+        link(9, "elsewhere"),
+      ]),
+    ]),
+    {},
+  );
+
+  test("the other races, most shared articles first, numbers in order", () => {
+    const shared = sharedCoverage(byRace, subjectKey(measure(40)));
+    expect(shared.map((s) => [s.title, s.articles])).toEqual([
+      ["Proposition 41 (About)", 2],
+      ["Proposition 3 (About)", 1],
+    ]);
+  });
+
+  test("a race that shares nothing has none", () => {
+    expect(sharedCoverage(byRace, subjectKey(measure(9)))).toEqual([]);
+    expect(sharedCoverage(byRace, "no such race")).toEqual([]);
+  });
+});

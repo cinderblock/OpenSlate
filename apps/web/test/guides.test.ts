@@ -5,9 +5,13 @@ import {
   type GuideEntry,
   GuideFileMismatch,
   guideListUrl,
+  guideMeasureKeys,
   guidesFor,
   parseGuideList,
+  referencePlaceLabel,
+  referencesTo,
 } from "../src/lib/guides";
+import { subjectKey } from "../src/lib/subjects";
 
 const CA: GuideEntry = {
   election: "2026-11-03",
@@ -139,6 +143,45 @@ describe("fetching a guide's files", () => {
 
     await expect(fetchGuideFile(entry, manifest, "items/lo-abc.json")).rejects.toBeInstanceOf(
       GuideFileMismatch,
+    );
+  });
+});
+
+describe("references", () => {
+  const prop = (n: number) => ({ title: `Prop ${n} (About)`, kind: "measure" });
+  const manifest = (subjects: { title: string; kind: string }[]) =>
+    ({
+      items: subjects.map((subject, i) => ({ subject, file: `items/${i}.json` })),
+    }) as GuideManifest;
+
+  test("each numbered measure's race key, and no letter", () => {
+    const letter = { title: "Proposition C", kind: "measure" };
+    const keys = guideMeasureKeys(manifest([prop(41), letter]));
+    expect([...keys.keys()]).toEqual(["41"]);
+    expect(keys.get("41")).toBe(subjectKey(prop(41)));
+  });
+
+  test("what mentions a race, with numbers in order", () => {
+    const where = [{ part: "analysis" as const }];
+    const refs = [
+      { from: prop(41), to: prop(40), where },
+      { from: prop(5), to: prop(40), where },
+      { from: prop(40), to: prop(41), where },
+    ];
+    expect(referencesTo(refs, subjectKey(prop(40))).map((r) => r.from.title)).toEqual([
+      "Prop 5 (About)",
+      "Prop 41 (About)",
+    ]);
+  });
+
+  test("each place reads as what it is", () => {
+    expect(referencePlaceLabel({ part: "analysis" })).toBe("Analysis");
+    expect(referencePlaceLabel({ part: "argument", choice: "No" })).toBe("Argument for “No”");
+    expect(referencePlaceLabel({ part: "signer", choice: "Yes" })).toBe(
+      "Signer of the argument for “Yes”",
+    );
+    expect(referencePlaceLabel({ part: "statement", choice: "Tom Umberg" })).toBe(
+      "Statement of Tom Umberg",
     );
   });
 });

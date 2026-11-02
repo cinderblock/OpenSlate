@@ -3,12 +3,15 @@ import type {
   Block,
   CandidateInfo,
   GuideDocument,
+  GuideItem,
   Inline,
   Passage,
 } from "@openslate/core";
+import { measureMentions, measureNumber } from "@openslate/core";
+import { Link } from "@tanstack/react-router";
 import { Fragment, type ReactNode } from "react";
 import { formatLocalDate } from "../lib/dates";
-import { type GuideForSubject, useGuideFileUrl } from "../lib/guides";
+import { type GuideForSubject, guideMeasureKeys, useGuideFileUrl } from "../lib/guides";
 import { possessive } from "../lib/results-framing";
 
 /**
@@ -18,14 +21,38 @@ import { possessive } from "../lib/results-framing";
  * guide's block model; there is never raw HTML.
  */
 
-type Guide = Pick<GuideForSubject, "entry" | "manifest">;
+type Guide = Pick<GuideForSubject, "entry" | "manifest"> & { item?: GuideItem };
 
-function InlineText({ runs }: { runs: Inline[] }) {
+/**
+ * A line of the guide's text, unchanged, with each mention of another numbered
+ * measure in the same guide linked. A rule for every measure; nobody picks them.
+ */
+function GuideLine({ line, guide }: { line: string; guide: Guide }) {
+  const keys = guideMeasureKeys(guide.manifest);
+  const own = guide.item && measureNumber(guide.item.subject);
+  const parts: ReactNode[] = [];
+  let at = 0;
+  for (const { number, start, end } of measureMentions(line)) {
+    const key = keys.get(number);
+    if (!key || number === own) continue;
+    parts.push(line.slice(at, start));
+    parts.push(
+      <Link key={start} to="/race/$key" params={{ key }}>
+        {line.slice(start, end)}
+      </Link>,
+    );
+    at = end;
+  }
+  parts.push(line.slice(at));
+  return <>{parts}</>;
+}
+
+function InlineText({ runs, guide }: { runs: Inline[]; guide: Guide }) {
   return (
     <>
       {runs.map((run, i) => {
         // biome-ignore lint/suspicious/noArrayIndexKey: runs are static text, never reordered
-        if (typeof run !== "string") return <InlineRun key={i} run={run} />;
+        if (typeof run !== "string") return <InlineRun key={i} run={run} guide={guide} />;
         const lines = run.split("\n");
         return (
           // biome-ignore lint/suspicious/noArrayIndexKey: runs are static text, never reordered
@@ -34,7 +61,7 @@ function InlineText({ runs }: { runs: Inline[] }) {
               // biome-ignore lint/suspicious/noArrayIndexKey: lines of one run, never reordered
               <Fragment key={j}>
                 {j > 0 && <br />}
-                {line}
+                <GuideLine line={line} guide={guide} />
               </Fragment>
             ))}
           </Fragment>
@@ -44,17 +71,17 @@ function InlineText({ runs }: { runs: Inline[] }) {
   );
 }
 
-function InlineRun({ run }: { run: Exclude<Inline, string> }) {
+function InlineRun({ run, guide }: { run: Exclude<Inline, string>; guide: Guide }) {
   if ("em" in run) {
     return (
       <em>
-        <InlineText runs={run.em} />
+        <InlineText runs={run.em} guide={guide} />
       </em>
     );
   }
   return (
     <strong>
-      <InlineText runs={run.strong} />
+      <InlineText runs={run.strong} guide={guide} />
     </strong>
   );
 }
@@ -76,17 +103,17 @@ function GuideBlock({ block, guide }: { block: Block; guide: Guide }): ReactNode
       // Headings inside a passage sit below the passage's own heading.
       return block.level === 2 ? (
         <h4>
-          <InlineText runs={block.text} />
+          <InlineText runs={block.text} guide={guide} />
         </h4>
       ) : (
         <h5>
-          <InlineText runs={block.text} />
+          <InlineText runs={block.text} guide={guide} />
         </h5>
       );
     case "p":
       return (
         <p>
-          <InlineText runs={block.text} />
+          <InlineText runs={block.text} guide={guide} />
         </p>
       );
     case "ul":
@@ -117,7 +144,7 @@ function GuideBlock({ block, guide }: { block: Block; guide: Guide }): ReactNode
                     return (
                       // biome-ignore lint/suspicious/noArrayIndexKey: published content, never reordered
                       <Cell key={j}>
-                        <InlineText runs={cell.text} />
+                        <InlineText runs={cell.text} guide={guide} />
                       </Cell>
                     );
                   })}

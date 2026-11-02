@@ -1,8 +1,13 @@
 import {
   checkGuideFile,
+  GUIDE_REFERENCES_FILE,
   type GuideItem,
   type GuideManifest,
+  type GuideReference,
+  measureNumber,
   parseGuideItem,
+  parseGuideReferences,
+  type ReferencePlace,
   type Subject,
   verifyGuide,
 } from "@openslate/core";
@@ -241,6 +246,78 @@ export function useGuideItem(subject: Subject | undefined): {
   }
   if (error) return { status: "error", error };
   return { status: "none" };
+}
+
+const measureKeys = new WeakMap<GuideManifest, Map<string, string>>();
+
+/** Each numbered measure in a guide, by number: the race key to link it to. */
+export function guideMeasureKeys(manifest: GuideManifest): Map<string, string> {
+  let keys = measureKeys.get(manifest);
+  if (!keys) {
+    keys = new Map();
+    for (const { subject } of manifest.items) {
+      const number = measureNumber(subject);
+      if (number) keys.set(number, subjectKey(subject));
+    }
+    measureKeys.set(manifest, keys);
+  }
+  return keys;
+}
+
+/** What else in the race's voter guide mentions it. Empty when nothing does. */
+export function useGuideReferences(guide: GuideForSubject | undefined): GuideReference[] {
+  const entry = guide?.entry;
+  const manifest = guide?.manifest;
+  const hash = manifest?.files[GUIDE_REFERENCES_FILE];
+  const file = useQuery({
+    queryKey: ["guide-references", entry?.url, hash],
+    enabled: hash !== undefined,
+    queryFn: async () => {
+      if (!entry || !manifest) throw new Error("no guide");
+      const bytes = await fetchGuideFile(entry, manifest, GUIDE_REFERENCES_FILE);
+      return parseGuideReferences(bytes).references;
+    },
+    retry: retryUnlessMismatch,
+    staleTime: HOUR,
+  });
+  useRefetchManifestOnMismatch(entry, manifest, GUIDE_REFERENCES_FILE, file.error);
+  return useMemo(
+    () => (guide ? referencesTo(file.data ?? [], subjectKey(guide.item.subject)) : []),
+    [file.data, guide],
+  );
+}
+
+/** The references to a race, in title order, numbers in order. */
+export function referencesTo(references: GuideReference[], key: string): GuideReference[] {
+  return references
+    .filter((reference) => subjectKey(reference.to) === key)
+    .sort((a, b) => a.from.title.localeCompare(b.from.title, undefined, { numeric: true }));
+}
+
+/** Where in an item a mention is, as the race page shows it. */
+export function referencePlaceLabel({ part, choice }: ReferencePlace): string {
+  switch (part) {
+    case "about":
+      return "Overview";
+    case "means":
+      return `What “${choice}” means`;
+    case "summary":
+      return "Official summary";
+    case "analysis":
+      return "Analysis";
+    case "argument":
+      return `Argument for “${choice}”`;
+    case "rebuttal":
+      return `Rebuttal for “${choice}”`;
+    case "paid-argument":
+      return `Paid argument for “${choice}”`;
+    case "signer":
+      return `Signer of the argument for “${choice}”`;
+    case "statement":
+      return `Statement of ${choice}`;
+    case "full-text":
+      return "Full text";
+  }
 }
 
 /**

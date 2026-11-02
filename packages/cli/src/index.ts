@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import {
   type Adoption,
@@ -7,11 +7,14 @@ import {
   createIdentity,
   decodeToken,
   deserializeIdentity,
+  GUIDE_REFERENCES_FILE,
   type GuideManifest,
   guideItemFiles,
   guideItemSchema,
   guideManifestSchema,
+  guideReferences,
   identityToIssuer,
+  isStatewideGuide,
   parseSlate,
   racesByJurisdiction,
   regionsOf,
@@ -81,7 +84,8 @@ guide publishes an election authority's voter guide (candidate statements and
 photos, a measure's summary, analysis, arguments and full text) as reference
 material, not positions. <dir> holds guide.json ({ "context", "attribution" }),
 items/*.json (one GuideItem per race or measure) and the files they point at.
-check validates every item and that each file it names exists. sign also
+check validates every item and that each file it names exists. sign writes
+references.json, what the items mention of each other, and also
 hashes every file under <dir> into a manifest and signs it (default output
 <dir>/guide.jws). verify checks a signed manifest; --files fetches or reads
 every file it lists and checks its hash.
@@ -616,6 +620,33 @@ function walkFiles(dir: string, base = dir): string[] {
 const GUIDE_META = "guide.json";
 const GUIDE_OUT = "guide.jws";
 
+/**
+ * Write the guide's references (what its items mention of each other) beside
+ * them, so the signature covers the file. None found: no file.
+ */
+async function writeGuideReferences(dir: string): Promise<number> {
+  const items = walkFiles(dir)
+    .filter((p) => p.startsWith("items/") && p.endsWith(".json"))
+    .map((p) => guideItemSchema.safeParse(JSON.parse(readFileSync(join(dir, p), "utf8"))))
+    .flatMap((parsed) => (parsed.success ? [parsed.data] : []));
+  const meta = JSON.parse(readFileSync(join(dir, GUIDE_META), "utf8")) as Pick<
+    GuideManifest,
+    "context"
+  >;
+  const references = guideReferences(items, {
+    names: isStatewideGuide(meta.context?.jurisdiction),
+  });
+  const path = join(dir, GUIDE_REFERENCES_FILE);
+  if (references.length > 0)
+    await Bun.write(
+      path,
+      `${JSON.stringify({ v: 1, references })}
+`,
+    );
+  else rmSync(path, { force: true });
+  return references.length;
+}
+
 /** Validate a guide directory; returns the manifest minus issuer and signature details. */
 async function buildGuide(dir: string): Promise<Omit<GuideManifest, "issuer" | "issued_at">> {
   const metaPath = join(dir, GUIDE_META);
@@ -665,6 +696,7 @@ async function cmdGuide(rest: string[]): Promise<void> {
     const keyPath = strFlag(flags, "key");
     if (!keyPath) fail("guide sign needs --key <identity.json>");
     const identity = deserializeIdentity(JSON.parse(await readText(keyPath)) as StoredIdentity);
+    await writeGuideReferences(target);
     const guide = await buildGuide(target);
     const manifest = guideManifestSchema.parse({
       ...guide,

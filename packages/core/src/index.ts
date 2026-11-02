@@ -11,6 +11,7 @@ export * from "./identity";
 export * from "./lean";
 export { type BallotMatch, matchBallotName, samePerson, variants } from "./names";
 export * from "./polls";
+export * from "./references";
 export * from "./results";
 export * from "./schema";
 export * from "./slate";

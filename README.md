@@ -220,6 +220,10 @@ and the answers stay with your area (*Undo*, *Not sure after all* and *Show
 them again* take them back).
 A race or measure a voter guide covers links its official text, arguments or
 candidate statements from its card on My ballot.
+Race pages show how items connect by rules that run on every race: guide text
+mentioning another numbered measure links to it, *Referenced by* lists what in
+the guide mentions this race, and the news card says which other races its
+articles also cover. OpenSlate adds no words of its own and picks no measures.
 A regional measure (the Bay Area's transit measure, RTM) shows in each county
 that votes on it, as its slates list them.
 The lookup remembers which city and county it found, so if races for your
@@ -392,7 +396,10 @@ statements and photos, a measure's summary, analysis, arguments and full text)
 rather than positions, so it isn't a slate. It is one signed manifest
 (`typ: openslate-guide+jws`, the same canonical JSON and Ed25519) listing every
 published file with its SHA-256; clients fetch only the files a page needs and
-check each one. `openslate guide check|sign|verify` builds and checks one. The
+check each one. `openslate guide check|sign|verify` builds and checks one, and
+`sign` adds `references.json`, what the guide's items mention of each other: numbered
+measures, plus candidates' full names in a statewide guide. Letters are left out
+because they get reused (San Francisco's Prop A cites 2018's Proposition C). The
 format lives in [`packages/core/src/guide.ts`](./packages/core/src/guide.ts) and
 isn't part of SPEC.md yet. California's Nov 3, 2026 guides (the state's;
 the pamphlets of San Francisco, Los Angeles, Orange, San Diego, Alameda and

@@ -24,6 +24,15 @@ export interface AttachedArticle {
   choices: string[];
   /** Who attached it: followed sources first. */
   attachedBy: Array<{ source: Source; standing: Standing; valid: boolean }>;
+  /** The title of the race it's attached to. */
+  raceTitle: string;
+}
+
+/** Another race that shares articles with this one, and how many. */
+export interface SharedCoverage {
+  key: string;
+  title: string;
+  articles: number;
 }
 
 const STANDING_RANK: Record<Standing, number> = { follow: 0, disagree: 1, off: 2 };
@@ -94,9 +103,33 @@ export function articlesByRace(
   return out;
 }
 
+/**
+ * The other races this race's articles are also attached to, most shared
+ * first. It only says that the same links are on both: nothing about how the
+ * two relate. Ties go by title, numbers in order.
+ */
+export function sharedCoverage(
+  byRace: Map<string, AttachedArticle[]>,
+  key: string,
+): SharedCoverage[] {
+  const here = new Set((byRace.get(key) ?? []).map((article) => article.href));
+  const out: SharedCoverage[] = [];
+  for (const [other, list] of byRace) {
+    if (other === key) continue;
+    const shared = list.filter((article) => here.has(article.href));
+    const [first] = shared;
+    if (first) out.push({ key: other, title: first.raceTitle, articles: shared.length });
+  }
+  return out.sort(
+    (a, b) =>
+      b.articles - a.articles || a.title.localeCompare(b.title, undefined, { numeric: true }),
+  );
+}
+
 function fromArticle(article: Article, href: string): AttachedArticle {
   return {
     href,
+    raceTitle: article.subject.title,
     title: article.title,
     ...(article.publisher ? { publisher: article.publisher } : {}),
     ...(article.published_at ? { publishedAt: article.published_at } : {}),
