@@ -6,8 +6,8 @@ Props 40, 41 and 42 (California, 2026-11-03) are legally connected: the outcome 
 on the yes votes for 41 and 42. A voter deciding on any one of them should find that out without
 going looking, and OpenSlate should say it without taking a position on any of the three.
 
-Asked by the user on 2026-11-01, two days before the election. Nothing is built yet. The first proposal
-was rejected as not neutral on 2026-11-02; see "Superseded proposal".
+Asked by the user on 2026-11-01. The first proposal was rejected as not neutral on 2026-11-02 (see
+"Superseded proposal"); the rules below replaced it.
 
 ## Environment / context
 
@@ -126,37 +126,53 @@ names the measure". The user rejected it as not neutral on 2026-11-02, and that'
 - Making the voter aware is useful to one side's campaign, so "just informing" isn't a neutral act here.
 - Rating the "No" arguments as "campaign framing" that a note should counter was itself a judgment.
 
-## Decisions proposed (not yet approved)
+## Decisions already made (don't re-ask)
+
+User, 2026-11-02, approving the rules-based version and adding "Referenced by":
 
 1. **OpenSlate adds no sentence and picks no measure.** Every change is a rule that runs on every race and
    doesn't know what any race is about.
-2. **Show coverage, not meaning.** Counts of shared articles claim only that publishers covered the two
-   together.
-3. **Accept the cost.** A voter gets a pointer, not an explanation, and has to follow it to learn why.
+2. **Show coverage and mentions, not meaning.** They claim only that the words or links are there.
+3. **Mentions show on both ends.** A mention links forward in the text, and the mentioned race lists it under
+   "Referenced by". This also answers the fact that only the "No" side on 41 and 42 names Prop 40.
+
+Decided while building:
+
+4. **Numbered measures only.** Letters get reused: SF's Prop A cites "November 2018 Proposition C", and county
+   text cites old parcel taxes by letter. All 16 statewide mentions were checked by hand and are right.
+5. **A number dated to another year is skipped** ("Proposition 30 in 2012").
+6. **Candidates' names only in a statewide guide.** In county guides a US House candidate naming Senator Alex
+   Padilla matched the Inglewood City Council's Alex Padilla. The 4 name matches in the state guide are right.
+7. **Same guide only.** A county guide's "Prop 40" isn't linked to the state guide's.
+8. **`references.json` is a separate file, not a manifest field.** `guideManifestSchema` is strict, so a new field
+   would make every deployed app reject the guide as unverified. Old apps ignore an extra file.
 
 ## Plan / steps
 
-1. Article list on every race: "Articles here also cover Prop 41 (4), Prop 42 (4), Prop 3 (2), Prop 43 (1)",
-   linked, ordered by count. Computed in `articles.ts`. Shown for any race with a shared article.
-2. Guide text: turn any mention of another measure on the ballot into a link, on every measure. The text is
-   unchanged.
-3. Guide figures that are only text: render the words in place, in the same collapsed section, for every
-   measure. An accessibility fix that moves nothing.
+1. [x] `packages/core/src/references.ts`: the matcher and `guideReferences`, with tests.
+2. [x] CLI: `guide sign` writes `references.json` when there's anything to write.
+3. [x] Web: inline links in guide text, the "Referenced by" card, "Articles here also cover" on the news card.
+4. [x] Ballot repo: all 8 state figures become text (`scripts/lib/text-figures.ts`, also applied by the scraper).
+5. [ ] Push OpenSlate, then bump `.openslate-version` in the ballot repo and push it. This order matters: CI clones
+   OpenSlate at the pinned ref, and the app must be live before the file it reads appears (it copes either way).
+6. [ ] Check the live `references.json` and race pages headlessly.
 
-Limits to keep in view: article subjects are assigned when bundles are built, so step 1 reflects those
-signed claims and what publishers chose to cover. Step 2 will show links on the "No" side only for 41 and 42,
-because that's who wrote them.
+Later, not before the election: a rule that can tell this ballot's lettered measures from old ones, then extend
+mentions to local measures.
 
 ## Progress log
 
 - [x] Trace what the app shows, and what the guide, news and endorsers say
 - [x] Test content-blind links across the catalog
-- [ ] User's go-ahead on steps 1 to 3
-- [ ] Steps 1 to 3
+- [x] User's go-ahead (2026-11-02)
+- [x] Rehearsal: all 25 guides signed and verified with `--files` under a throwaway key, 9 references
+- [ ] Deployed and checked live
 
-## Open questions for the user
+## Limits to keep in view
 
-1. Build steps 1 to 3 before the election? Recommendation: yes. They are small, and useful in later elections.
+- Article subjects are assigned when bundles are built, so shared coverage reflects those signed claims and what
+  publishers chose to cover.
+- A voter gets a pointer, not an explanation, and has to follow it to learn why.
 
 ## Things not to do
 
@@ -166,3 +182,5 @@ because that's who wrote them.
 - Don't write our own summary of what happens if each combination passes.
 - Don't pin or rank the explainer articles (SPEC §3.15).
 - Don't group the three under a label such as "billionaire tax measures".
+- Don't add a field to the guide manifest without a migration: deployed apps reject unknown fields.
+- Don't match lettered measures or county-guide names without a rule for reuse.
