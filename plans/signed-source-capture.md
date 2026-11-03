@@ -592,6 +592,16 @@ Verified offline and in Chrome, and provenance was rebuilt in the publish job.
   cron off the top of the hour looks unlikely to help, since `archive` and `pin-capture` already
   sit at `:30`. Both daily workflows landed at the same Pacific clock time on both days, across the
   DST change. Two days can't show whether that means anything.
+- **A run queued behind another can't publish.** 2026-11-02 was a Monday, so `capture.yml`'s
+  "daily Nov 1 to 5" and "weekly on Monday" cron lines both matched, and GitHub queued two runs,
+  created 11:52 and 11:54 AM PST (19:52Z, 19:54Z). The `capture` concurrency group ran them one
+  after the other. The second rebuilt provenance on the commit it started from, which predates the
+  first run's publish, and its `Commit` step stopped at 12:35 PM PST (20:35Z) with `error: could not
+  apply 84376a3... capture 2026-11-02T2014Z` and a conflict in every `provenance/*.json`. The first
+  run published, so nothing was lost but a duplicate. `pin-capture.yml` doubled the same way and
+  both runs succeeded, since they move nothing. After Nov 5 only the weekly line is left, but any
+  run created while another is still going (a late `schedule` during a dispatched run, say) will
+  fail the same way.
 - **The dead-page case works from the Archive's own bytes.** `archive.ts compare` found
   25 of 25 `sf-republican-party` statements in the 2026-10-18 snapshot.
 - **Bumping the OpenSlate pin moved no slate.** Pin `2416fe3` to `f41bf95` is 28 commits.
@@ -765,6 +775,7 @@ publication rule, the merges and the field going in now, and `mode` on SF and Ne
 | Five hosts refuse CI and a home address: `www.nfib.com`, `www.smdailyjournal.com`, `www.sanbenitocounty-ca-cre.gov`, `ballotpedia.org`, `www.sacbee.com` | Nothing for now: each failure is on the record |
 | `alamedacountyca.gov/rov_app/candidatelist/` may need a form post | Someone finds the request. Capture can now send one |
 | Second CI witness on GitLab | Deferred by the user |
+| `capture.yml`: a queued run's publish conflicts with the run before it (see Findings) | A fix in the capture repo: rebuild provenance after the rebase, or check out the branch tip in `publish`. Not for the daily task, which may not edit workflows |
 
 ## Things not to do
 
