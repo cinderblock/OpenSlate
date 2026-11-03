@@ -2494,6 +2494,8 @@ details.card > summary {
   }
   .tabs,
   .app-header,
+  .alpha-banner,
+  .update-banner,
   .tagline,
   footer {
     display: none !important;
