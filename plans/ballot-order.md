@@ -178,3 +178,29 @@ Notes:
   when the area knows the supervisorial district).
 - Madera drew on August 14, not 13. San Joaquin's older URL still serves the
   2022 drawing; Santa Barbara's findable certificate is June's.
+
+## Google Civic: what it actually carries (checked 2026-11-03, about 12:00 AM PST (08:00Z))
+
+The relay now passes `ballotPlacement` and `orderOnBallot` through
+(`9434ccc`). Queried 200 N Spring St, Los Angeles (AD 54, CD 34, SD 26):
+
+- 66 contests, every one with `ballotPlacement`; **no candidate has
+  `orderOnBallot`**.
+- `ballotPlacement` is LA County's contest sequence (LA City Mayor 5, LACCD
+  187-189, State Senate 222, Governor 367, propositions 376+), and the array
+  comes sorted by it. It is not the printed order: §13109 puts state offices
+  first. Not used.
+- Candidate arrays are in the Secretary of State's drawn order for AD 1, for
+  every statewide race (Hilton/Becerra, Romero/Ma, Wagner/Weber, Cohen/Morgan,
+  Hawks/Kounalakis, Bonta/Gates, Kim/Allen, Shaw/Barrera), and in the drawn
+  order for local, congressional, legislative and LACCD races. That
+  independently confirms `compareByAlphabet` on about 20 races. It does not
+  show the AD 54 rotation the law requires (Becerra first there), so the
+  feed is the unrotated master list.
+- Coverage: Oakland, SF and San Jose addresses get "Election unknown" or no
+  contests; Texas and DC none.
+
+So Civic adds nothing to the order the app computes, and its candidate order
+is wrong for half the state's statewide races. Matching its contests to the
+app's races (no shared ids: catalog subjects carry no `vip:` id, and Civic
+contests have none) would need district + name matching; not built.
