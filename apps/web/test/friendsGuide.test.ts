@@ -1,17 +1,29 @@
 import { describe, expect, test } from "bun:test";
-import { ballotListing, slatePayloadSchema } from "@openslate/core";
+import {
+  ballotListing,
+  buildSlate,
+  createIdentity,
+  identityToIssuer,
+  type SlatePayload,
+  signSlate,
+  verifySlate,
+} from "@openslate/core";
 import {
   type ChoiceGroup,
+  type DecodedSlate,
   decodeLocalGuides,
+  decodeSlates,
   LOCAL_GUIDE_KEY,
   type Race,
 } from "../src/lib/collate";
 import {
+  earlierGuides,
   type GuideReply,
-  guidePayload,
   guidePrompt,
+  guideSlate,
   raceCode,
   readGuideReply,
+  signSavedGuide,
 } from "../src/lib/friendsGuide";
 
 const E = "2026-11-03";
@@ -143,31 +155,99 @@ describe("readGuideReply", () => {
   });
 });
 
-describe("guidePayload", () => {
+describe("guideSlate", () => {
   const { picks } = read(reply([pick(prop, "Yes", "endorse", { statement: "Housing." })]));
-  const payload = guidePayload("Sam Rivera", picks, ballotListing([]), E);
+  const voter = createIdentity({ name: "Alex", kind: "individual" });
+  const token = guideSlate("Sam Rivera", picks, ballotListing([]), E, voter);
+  const [slate] = decodeSlates([{ token, importedAt: "2026-11-02T00:00:00.000Z" }]);
 
-  test("is a slate's payload with no key behind it", () => {
-    expect(slatePayloadSchema.safeParse(payload).success).toBe(true);
-    expect(payload.issuer).toEqual({ key: LOCAL_GUIDE_KEY, name: "you" });
-    expect(payload.context?.election).toBe(E);
-    expect(payload.positions[0]?.subject.title).toBe(prop.subject.title);
+  test("is signed by the voter and verifies", () => {
+    expect(verifySlate(token).valid).toBe(true);
+    expect(slate?.payload.issuer).toEqual(identityToIssuer(voter));
+    expect(slate?.payload.context?.election).toBe(E);
+    expect(slate?.payload.positions[0]?.subject.title).toBe(prop.subject.title);
   });
 
-  test("reads as the friend's, reported by you, and marked local", () => {
-    const [slate] = decodeLocalGuides([payload]);
-    expect(slate).toMatchObject({ valid: true, local: true });
+  test("names the friend as the source, never as the signer", () => {
     expect(slate?.source).toMatchObject({
       id: "of:sam rivera",
       name: "Sam Rivera",
       secondhand: true,
-      signerName: "you",
+      signerName: "Alex",
     });
+    expect(slate?.payload.attribution?.mode).toBe("transcribed");
   });
 
-  test("names one guide per friend per election", () => {
-    const later = guidePayload("sam rivera", picks, ballotListing([]), E);
-    const [first, second] = decodeLocalGuides([payload, later]);
-    expect(first?.token).toBe(second?.token);
+  test("signs a guide saved unsigned, as the voter", () => {
+    const saved: SlatePayload = buildSlate({
+      issuer: { key: LOCAL_GUIDE_KEY, name: "you" },
+      context: { election: E, title: "Sam Rivera's voter guide" },
+      attribution: {
+        of: { name: "Sam Rivera", kind: "individual" },
+        mode: "transcribed",
+        retrieved_at: "2026-11-02T00:00:00.000Z",
+      },
+      positions: picks.map((p) => p.position),
+    });
+    const signed = signSavedGuide(saved, voter);
+    expect(verifySlate(signed).valid).toBe(true);
+    expect(verifySlate(signed).payload?.issuer).toEqual(identityToIssuer(voter));
+    expect(verifySlate(signed).payload?.attribution?.of?.name).toBe("Sam Rivera");
+  });
+});
+
+describe("earlierGuides", () => {
+  const { picks } = read(reply([pick(prop, "Yes", "endorse")]));
+  const voter = createIdentity({ name: "Alex", kind: "individual" });
+  const own = new Set([identityToIssuer(voter).key]);
+  const decoded = (token: string): DecodedSlate =>
+    decodeSlates([{ token, importedAt: "2026-11-02T00:00:00.000Z" }])[0] as DecodedSlate;
+  const report = (name: string, issuerName: string, election = E) => {
+    const signer = createIdentity({ name: issuerName, kind: "researcher" });
+    return decoded(
+      signSlate(
+        buildSlate({
+          issuer: identityToIssuer(signer),
+          context: { election },
+          attribution: {
+            of: { name, kind: "individual" },
+            mode: "transcribed",
+            retrieved_at: "2026-11-02T00:00:00.000Z",
+          },
+        }),
+        signer.keyPair.secretKey,
+      ),
+    );
+  };
+
+  test("finds the voter's own report, whatever the name's case", () => {
+    const mine = decoded(guideSlate("Sam Rivera", picks, ballotListing([]), E, voter));
+    expect(earlierGuides([mine], "sam rivera", E, own)).toEqual([mine]);
+  });
+
+  test("finds the unsigned and throwaway-key copies", () => {
+    const throwaway = report("Sam Rivera", "you");
+    const [unsigned] = decodeLocalGuides([
+      buildSlate({
+        issuer: { key: LOCAL_GUIDE_KEY, name: "you" },
+        context: { election: E },
+        attribution: {
+          of: { name: "Sam Rivera", kind: "individual" },
+          mode: "transcribed",
+          retrieved_at: "2026-11-02T00:00:00.000Z",
+        },
+      }),
+    ]);
+    const slates = [throwaway, unsigned as DecodedSlate];
+    expect(earlierGuides(slates, "Sam Rivera", E, own)).toEqual(slates);
+  });
+
+  test("leaves someone else's report, another friend and another election", () => {
+    const slates = [
+      report("Sam Rivera", "A researcher"),
+      report("Jo Park", "you"),
+      report("Sam Rivera", "you", "2024-11-05"),
+    ];
+    expect(earlierGuides(slates, "Sam Rivera", E, own)).toEqual([]);
   });
 });

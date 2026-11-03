@@ -57,9 +57,9 @@ export interface DecodedSlate {
   /** Adoptions whose slate isn't imported, so their positions aren't here. */
   unresolved?: Adoption[];
   /**
-   * Not a signed slate: a friend's guide kept in this browser (lib/friendsGuide.ts).
-   * `valid` only says nothing's wrong with it. `token` is just its name here, so
-   * it can't be shared, adopted or verified.
+   * Not a signed slate: a friend's guide from the version that kept them unsigned
+   * (`d7b8ace`), waiting for the voter to sign it. `valid` only says nothing's wrong
+   * with it. `token` is just its name here, so it can't be shared, adopted or verified.
    */
   local?: true;
 }

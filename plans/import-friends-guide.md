@@ -64,18 +64,24 @@ Added because agents with a shell are the minority of what friends have.
   stable codes (`raceCode`, a hash of the race key), so the chat needs no tools and
   no internet, and never copies a long title. A Sunnyvale ballot is 90 races, 12 KB.
   It needs an area set: every race in the election would be 100 KB or more.
-- **Nothing is signed.** The user's call: we don't sign on behalf of others. A guide is a
-  payload in `friendGuidesStore` (localStorage), joined to the decoded slates in
-  `useDecodedSlates` as `local: true`, so My ballot, race pages and Sources see it. It stays
-  out of `slatesCollection`, whose rows are re-verified as tokens across the app, and
-  `adoptableSlates` skips it. A throwaway key shipped briefly in `e94f361`: a signature
-  nobody stands behind says nothing, and it looked like verification.
-- **The agent path dropped signing too.** `import-friends-guide.md` now sends an agent to
-  the same copied message. `races`, `check` and `openslate.mjs` remain as CLI tools for
-  people publishing their own slates.
+- **The voter signs their own import.** The user's call: we never sign on behalf of the
+  friend, but the voter can sign what they imported, as their own report of the guide. So
+  it's an ordinary secondhand slate (`attribution.of` = the friend, mode `transcribed`)
+  signed by the active identity, in `slatesCollection`. A voter with no identity makes one
+  in the card, with the same `SigningAs` step as Compose.
+- **How we got here, don't repeat either.** `e94f361` signed with a hidden throwaway key: a
+  signature nobody stands behind, which looked like verification. `d7b8ace` overcorrected to
+  nothing signed at all, a misreading of "we don't need to sign on behalf of others".
+- **Guides saved by `d7b8ace` aren't lost.** `friendGuidesStore` takes nothing new, but
+  `useDecodedSlates` still shows what's in it as `local: true`, and the card offers to sign
+  them. Delete that plumbing (`decodeLocalGuides`, the store, `local`) after the election.
+- **The agent path uses the same card.** `import-friends-guide.md` sends an agent to the
+  copied message, and the person signs in the app. `races`, `check` and `openslate.mjs`
+  remain as CLI tools for people publishing their own slates.
 - **The reply is untrusted.** It only becomes positions on known races, and the user
   sees them first. A corrected reply replaces the earlier one with the same friend,
-  election and `you` issuer, and leaves a catalog source of the same name alone.
+  election by one of this voter's identities (or an unsigned or throwaway-key copy of it),
+  and leaves a catalog source of the same name alone.
 - **Blind test, 2026-11-02:** a Haiku subagent given only the prompt and a messy CSV got
   all 7 picks right, including "Controller: not Morgan" as an oppose. It reported the
   rows off this ballot and an unreadable row, and ignored an injected instruction to
@@ -83,10 +89,15 @@ Added because agents with a shell are the minority of what friends have.
 - **Headless run of the built app, 2026-11-02:** set an area, imported the SF listing,
   copied the message, refused garbage, added, replaced, reloaded, saw it on My ballot,
   removed it. One source row while present, nothing stored after, no browser errors.
+- **Headless run of the built app with own signing, 2026-11-02:** no identity left Sign and
+  add disabled, made one in the card, signed and added, replaced with a corrected reply (one
+  row, "reported by Alex, not signed by them"), signed an old unsigned guide, saw it on My
+  ballot, Compose still showed the signer, removed it. No browser errors.
 - **Not tried with ChatGPT itself**, or with a guide as a PDF or photo. Haiku is the
   stand-in.
 
 ## Things not to do
 
 - Don't suggest hand-copying short race names: they won't join the ballot.
-- Don't sign a guide, with any key, on anyone's behalf.
+- Don't sign as the friend, or name them as the issuer: they're only ever the source.
+- Don't sign a guide with a key the voter doesn't hold and stand behind.

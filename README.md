@@ -336,10 +336,10 @@ Every build of the web app also serves the CLI as one dependency-free file,
 
 To use a friend's voter guide, Sources → Add endorsements copies a message
 holding your own ballot. Any AI, such as ChatGPT, reads the guide with it and
-answers in JSON, and you paste that back and check the picks. Nothing is signed:
-nobody who could sign it did. The guide stays in your browser as an unsigned
-source, reported by you, so it can't be shared or adopted as a slate. Pasting a
-corrected reply replaces it.
+answers in JSON, and you paste that back and check the picks. You sign the result
+with your own identity, as a secondhand report: it names your friend as the
+source and is never signed as them. It stays in your browser unless you share it,
+and pasting a corrected reply replaces it.
 
 Other useful scripts: `bun test`, `bun run typecheck`, `bun run schema`
 (emits `packages/core/schema/openslate.schema.json`), `bun run lint` (Biome:

@@ -131,7 +131,10 @@ export const areaStore = createLocalStore<Area>("openslate.area.v1", EMPTY_AREA,
 
 export const useArea = () => useLocalStore(areaStore);
 
-/** Friends' guides read by an AI chat: unsigned, and never leaving this browser. */
+/**
+ * Friends' guides saved unsigned by `d7b8ace`. Nothing new lands here: they stay on
+ * the ballot until the voter signs them from the guide card, or removes them.
+ */
 export const friendGuidesStore = createLocalStore<SlatePayload[]>(
   "openslate.friendGuides.v1",
   [],
@@ -140,20 +143,6 @@ export const friendGuidesStore = createLocalStore<SlatePayload[]>(
     return parsed.success ? parsed.data : undefined;
   },
 );
-
-/** Keep a guide, in place of any earlier one from that friend for that election. Says if it did. */
-export function saveFriendGuide(payload: SlatePayload): boolean {
-  const [{ token, source }] = decodeLocalGuides([payload]) as [DecodedSlate];
-  const replaced = decodeLocalGuides(friendGuidesStore.get()).some((g) => g.token === token);
-  friendGuidesStore.set((guides) => [
-    ...decodeLocalGuides(guides)
-      .filter((g) => g.token !== token)
-      .map((g) => g.payload),
-    payload,
-  ]);
-  setRemoved(source.id, false);
-  return replaced;
-}
 
 export function removeFriendGuide(token: string): void {
   friendGuidesStore.set((guides) =>

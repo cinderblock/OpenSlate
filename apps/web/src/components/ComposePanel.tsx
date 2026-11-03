@@ -30,12 +30,12 @@ import { matchesSearch, positionSearchText } from "../lib/search";
 import { subjectKey, useImportedSubjects } from "../lib/subjects";
 import { track } from "../lib/usage";
 import { AdoptCard, type ComposedAdoption } from "./AdoptCard";
-import { CreateIdentity } from "./CreateIdentity";
 import { electionOptions } from "./electionOptions";
 import { RawInspector } from "./ImportVerifyPanel";
 import { MyLabelsCard } from "./MyLabelsCard";
 import { matchCount, PageSearch } from "./PageSearch";
 import { QrDialog } from "./Qr";
+import { SigningAs } from "./SigningAs";
 import { SubjectPicker } from "./SubjectPicker";
 import { STANCE_LABEL, STANCE_OPTIONS } from "./stanceOptions";
 import { Checkbox } from "./ui/Checkbox";
@@ -80,9 +80,7 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "bas
  * where you vote, so any race can be added here too, on the ballot or not.
  */
 export function ComposePanel() {
-  const { active: identity, all: myIdentities, activeKey, setActiveKey } = useActiveIdentity();
-  // A first identity stays in its setup card until it's backed up (or passed over).
-  const [settingUpIdentity, setSettingUpIdentity] = useState(false);
+  const { active: identity } = useActiveIdentity();
   const { slates } = useDecodedSlates();
   const listing = useMemo(() => listingOf(slates), [slates]);
   const [follows] = useFollows();
@@ -296,29 +294,7 @@ export function ComposePanel() {
       <div className="card-columns">
         <div>
           <div className="card signing-as">
-            {myIdentities.length === 0 || settingUpIdentity ? (
-              <CreateIdentity
-                onCreated={() => setSettingUpIdentity(true)}
-                onDone={() => setSettingUpIdentity(false)}
-              />
-            ) : myIdentities.length === 1 ? (
-              <p className="hint">
-                Signing as <strong>{identity?.name ?? "(unnamed)"}</strong>{" "}
-                <code className="key">{identity?.publicKey}</code>
-              </p>
-            ) : (
-              <Select
-                label="Signing as"
-                value={activeKey || (identity?.publicKey ?? null)}
-                onChange={setActiveKey}
-                options={myIdentities.map((id) => ({
-                  id: id.publicKey,
-                  label: id.name ?? "(unnamed)",
-                  description: <code className="key">{id.publicKey}</code>,
-                  badge: id.kind ?? "individual",
-                }))}
-              />
-            )}
+            <SigningAs />
           </div>
 
           <div className="card">

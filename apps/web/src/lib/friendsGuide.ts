@@ -1,21 +1,26 @@
 import {
   type BallotListing,
   buildSlate,
+  type Identity,
+  identityToIssuer,
   matchBallotName,
   type Position,
   type SlatePayload,
+  signSlate,
 } from "@openslate/core";
 import { z } from "zod";
 import { withBallotIds } from "./ballotCheck";
 import { instructionLine } from "./ballotView";
-import { LOCAL_GUIDE_KEY, optionsOf, type Race } from "./collate";
+import { type DecodedSlate, optionsOf, type Race } from "./collate";
+import { sourceIdOf } from "./sources";
 
 /**
  * A friend's voter guide, through any AI chat: the app writes a prompt holding
  * the voter's own ballot, the chat reads the guide (in whatever format) and
- * answers in JSON, and the app keeps that as an unsigned, local source. The chat needs no tools
- * and never has to copy a race's long title, which a race has to match exactly:
- * it answers with short codes. Pure, so test/friendsGuide.test.ts covers it.
+ * answers in JSON, and the voter signs the result as their own report of the guide.
+ * The chat needs no tools and never has to copy a race's long title, which a race
+ * has to match exactly: it answers with short codes. Pure, so
+ * test/friendsGuide.test.ts covers it.
  *
  * The reply is treated as untrusted: a chat can misread a guide, and a guide can
  * try to steer a chat. It only ever becomes positions on known races, shown to
@@ -201,19 +206,19 @@ export function readGuideReply(
 }
 
 /**
- * The picks as a slate's payload, never signed: nobody who could sign it did. It
- * stays in this browser (`friendGuidesStore`) as what the user read from their
- * friend's guide, with the friend as the source and "you" as who reported it.
+ * The picks as a slate signed by the voter, with their own identity. It's their
+ * report of the guide: the friend is the source it names, and never the signer.
  */
-export function guidePayload(
+export function guideSlate(
   friend: string,
   picks: GuidePick[],
   listing: BallotListing,
   election: string,
+  identity: Identity,
   now = new Date(),
-): SlatePayload {
-  return buildSlate({
-    issuer: { key: LOCAL_GUIDE_KEY, name: "you" },
+): string {
+  const payload = buildSlate({
+    issuer: identityToIssuer(identity),
     issuedAt: now,
     context: { election, title: `${friend}'s voter guide` },
     attribution: {
@@ -223,4 +228,32 @@ export function guidePayload(
     },
     positions: picks.map((pick) => withBallotIds(pick.position, listing, election)),
   });
+  return signSlate(payload, identity.keyPair.secretKey);
+}
+
+/** A guide saved unsigned by an earlier version, now signed by the voter. */
+export function signSavedGuide(payload: SlatePayload, identity: Identity): string {
+  return signSlate({ ...payload, issuer: identityToIssuer(identity) }, identity.keyPair.secretKey);
+}
+
+/** The signer's name on a guide from `e94f361`, which signed with a throwaway key. */
+const THROWAWAY_REPORTER = "you";
+
+/**
+ * What a corrected reply replaces: this voter's own earlier report of that friend
+ * for that election, and nobody else's report of a friend with the same name.
+ */
+export function earlierGuides(
+  slates: DecodedSlate[],
+  friend: string,
+  election: string,
+  ownKeys: ReadonlySet<string>,
+): DecodedSlate[] {
+  const id = sourceIdOf({ issuer: { key: "" }, attribution: { of: { name: friend } } });
+  return slates.filter(
+    ({ source, payload, local }) =>
+      source.id === id &&
+      payload.context?.election === election &&
+      (local || ownKeys.has(payload.issuer.key) || payload.issuer.name === THROWAWAY_REPORTER),
+  );
 }
