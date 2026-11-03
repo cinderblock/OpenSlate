@@ -1,5 +1,6 @@
 import { CA_DISTRICTS_2026, type DistrictOverlaps } from "./ballotOrderCa";
-import { type Area, NO_DISTRICT, parseJurisdiction } from "./jurisdictions";
+import { COUNTY_DRAWINGS_2026, type CountyDrawing } from "./ballotOrderCounties";
+import { type Area, localityPathFor, NO_DISTRICT, parseJurisdiction } from "./jurisdictions";
 
 /**
  * The order a California ballot prints a race's candidates in, for one voter.
@@ -15,37 +16,49 @@ import { type Area, NO_DISTRICT, parseJurisdiction } from "./jurisdictions";
  * - (d) Congress and the Board of Equalization: the drawn order in the
  *   lowest-numbered AD the district reaches, rotated once per AD after it.
  * - (e) State Senate and Assembly within one county: the drawn order, no
- *   rotation. (i) A district across counties uses each county's own drawing,
- *   which we don't have.
- *
- * Local offices aren't ordered here: charter cities set their own rules.
+ *   rotation. (i) A district across counties uses each county's own drawing
+ *   (`ballotOrderCounties.ts`).
+ * - (f) Local offices not voted on countywide: the drawn order, no rotation.
+ *   (g), (h) Countywide offices rotate by supervisorial district, or by
+ *   Assembly district in a county with five or more. Charter cities may set
+ *   their own rules, so local orders are "likely", not certain.
  */
 
 /** One election's drawing, and the district overlaps rotation needs. */
 export interface ElectionOrder {
-  /** The 26 letters as drawn, first first. */
+  /** The Secretary of State's 26 letters as drawn, first first. */
   alphabet: string;
   districts: DistrictOverlaps;
+  /** Each county's own drawing, by county name. */
+  counties: Record<string, CountyDrawing>;
 }
 
 /** California elections whose drawing we have, by election date. */
 const CALIFORNIA: Record<string, ElectionOrder> = {
   // Drawn 2026-08-13: https://www.sos.ca.gov/administration/news-releases-and-advisories/2026-news-releases-and-advisories/california-secretary-state-shirley-n-weber-phd-announces-results-randomized-alphabet-drawing-november-3-2026-general-election
-  "2026-11-03": { alphabet: "HXKWCPJOZALDNSQBIRYGVEFMTU", districts: CA_DISTRICTS_2026 },
+  "2026-11-03": {
+    alphabet: "HXKWCPJOZALDNSQBIRYGVEFMTU",
+    districts: CA_DISTRICTS_2026,
+    counties: COUNTY_DRAWINGS_2026,
+  },
 };
 
 /** Where an order comes from, or why it can't be known. */
 export type OrderBasis =
   /** The law, the drawing and the voter's districts fix it. */
   | "ballot"
+  /** The law's default for local races; a county or charter city may differ. */
+  | "likely"
   /** It differs across the race's area and the voter's district can't say which. */
-  | "varies";
+  | "varies"
+  /** The voter set it by hand from their own ballot. */
+  | "yours";
 
 export interface ComputedOrder {
   basis: OrderBasis;
-  /** The names in ballot order (`basis` "ballot"); the input order otherwise. */
+  /** The names in ballot order; the input order when it "varies". */
   names: string[];
-  /** Why the order can't be known, for a note under the race. */
+  /** Why the order can't be known, or may be off, for a note under the race. */
   reason?: string;
 }
 
@@ -124,20 +137,149 @@ function rotate<T>(list: T[], offset: number): T[] {
 
 const BOE_TITLE = /Board of Equalization,? District (\d+)/i;
 
+/** California's 58 counties, by the name the Census and the district data use. */
+const COUNTIES = [
+  "Alameda",
+  "Alpine",
+  "Amador",
+  "Butte",
+  "Calaveras",
+  "Colusa",
+  "Contra Costa",
+  "Del Norte",
+  "El Dorado",
+  "Fresno",
+  "Glenn",
+  "Humboldt",
+  "Imperial",
+  "Inyo",
+  "Kern",
+  "Kings",
+  "Lake",
+  "Lassen",
+  "Los Angeles",
+  "Madera",
+  "Marin",
+  "Mariposa",
+  "Mendocino",
+  "Merced",
+  "Modoc",
+  "Mono",
+  "Monterey",
+  "Napa",
+  "Nevada",
+  "Orange",
+  "Placer",
+  "Plumas",
+  "Riverside",
+  "Sacramento",
+  "San Benito",
+  "San Bernardino",
+  "San Diego",
+  "San Francisco",
+  "San Joaquin",
+  "San Luis Obispo",
+  "San Mateo",
+  "Santa Barbara",
+  "Santa Clara",
+  "Santa Cruz",
+  "Shasta",
+  "Sierra",
+  "Siskiyou",
+  "Solano",
+  "Sonoma",
+  "Stanislaus",
+  "Sutter",
+  "Tehama",
+  "Trinity",
+  "Tulare",
+  "Tuolumne",
+  "Ventura",
+  "Yolo",
+  "Yuba",
+];
+
 /**
- * Which district the race rotates over, and the voter's place in it: the
- * rotation offset, or why it can't be told. `undefined`: no rule applies here
- * (not a California office we order, or not an election we have).
+ * Counties a city shares its name with: their bare path (`us/ca/fresno`) is
+ * the city's, so only `<name>-county` is the county (`localityCandidates`).
  */
-function rotationFor(
+const NAMESAKE_CITIES = new Set([
+  "Alameda",
+  "Amador",
+  "Colusa",
+  "Fresno",
+  "Imperial",
+  "Los Angeles",
+  "Madera",
+  "Merced",
+  "Monterey",
+  "Napa",
+  "Nevada",
+  "Orange",
+  "Riverside",
+  "Sacramento",
+  "San Bernardino",
+  "San Diego",
+  "San Luis Obispo",
+  "San Mateo",
+  "Santa Barbara",
+  "Santa Clara",
+  "Santa Cruz",
+  "Sonoma",
+  "Tehama",
+  "Tulare",
+  "Ventura",
+  "Yuba",
+]);
+
+/** The county a locality path is, if it is one: `us/ca/marin-county`, `us/ca/marin`, `us/ca/sf`. */
+export function countyOfPath(path: string | undefined): string | undefined {
+  if (!path) return undefined;
+  if (path === "us/ca/sf") return "San Francisco";
+  return COUNTIES.find((county) => {
+    const base = localityPathFor("us/ca", county);
+    return path === `${base}-county` || (path === base && !NAMESAKE_CITIES.has(county));
+  });
+}
+
+/** The counties the voter's area puts them in (normally one). */
+export function voterCounties(area: Area | undefined): string[] {
+  if (!area) return [];
+  const paths = new Set([...area.localities, ...(area.found ?? [])]);
+  return [...new Set([...paths].map(countyOfPath).filter((c): c is string => !!c))];
+}
+
+/** A rotation offset and the alphabet it rotates, or why the order can't be told. */
+type Rule =
+  | { offset: number; alphabet: string; basis?: OrderBasis; reason?: string }
+  | { reason: string };
+
+/** The law's default for local races: a county or charter city may set its own. */
+const LIKELY = {
+  basis: "likely" as const,
+  reason: "State law's order for local races; a county or charter city can set its own.",
+};
+
+/**
+ * The rule for this race and voter: which alphabet, rotated how far, or why
+ * it can't be told. `undefined`: no rule applies here (not a California
+ * office we order, or not an election we have).
+ */
+function ruleFor(
   race: RaceForOrder,
   area: Area | undefined,
   order: ElectionOrder,
-): { offset: number } | { reason: string } | undefined {
+): Rule | undefined {
   const where = parseJurisdiction(race.jurisdiction);
+  const state = order.alphabet;
   const ad = area?.districts["us/ca/ad"];
   const voterAd = ad && ad !== NO_DISTRICT ? Number(ad) : undefined;
-  const acrossAds = (ads: number[] | undefined, unsure: number[] | undefined, label: string) => {
+  const counties = voterCounties(area);
+  const acrossAds = (
+    ads: number[] | undefined,
+    unsure: number[] | undefined,
+    label: string,
+  ): Rule | undefined => {
     if (!ads?.length) return undefined;
     if (voterAd === undefined)
       return { reason: `It changes from one Assembly district to the next across ${label}.` };
@@ -145,7 +287,7 @@ function rotationFor(
       return {
         reason: `It changes from one Assembly district to the next across ${label}, and we can't tell where yours falls.`,
       };
-    return { offset: ads.indexOf(voterAd) };
+    return { offset: ads.indexOf(voterAd), alphabet: state };
   };
 
   if (where.kind === "state" && where.path === "us/ca") {
@@ -160,8 +302,9 @@ function rotationFor(
     }
     if (voterAd === undefined)
       return { reason: "Statewide races change order from one Assembly district to the next." };
-    return { offset: voterAd - 1 };
+    return { offset: voterAd - 1, alphabet: state };
   }
+
   if (where.kind === "district" && where.state === "us/ca") {
     const n = where.number;
     if (where.family === "cd")
@@ -171,15 +314,62 @@ function rotationFor(
         `Congressional District ${n}`,
       );
     if (where.family === "sd" || where.family === "ad") {
-      const counties = (
+      const reaches = (
         where.family === "sd" ? order.districts.sdCounties : order.districts.adCounties
       )[n];
-      if (!counties) return undefined;
-      if (counties.length === 1) return { offset: 0 };
-      return {
-        reason: `The district reaches ${counties.length} counties, and each county draws its own letter order for it.`,
-      };
+      if (!reaches) return undefined;
+      if (reaches.length === 1) return { offset: 0, alphabet: state };
+      // §13111(i): each county orders its part with its own drawing.
+      const mine = counties.filter((county) => reaches.includes(county));
+      if (mine.length !== 1)
+        return {
+          reason: `The district reaches ${reaches.length} counties, each with its own letter order, and we can't tell which county you're in.`,
+        };
+      const county = mine[0] as string;
+      const drawing = order.counties[county];
+      if (!drawing)
+        return {
+          reason: `The district reaches ${reaches.length} counties, each with its own letter order, and we haven't found ${county} County's.`,
+        };
+      return { offset: 0, alphabet: drawing.alphabet };
     }
+    return undefined;
+  }
+
+  if (where.kind === "local" && where.state === "us/ca") {
+    // §13111(f)-(h).
+    const raceCounty = countyOfPath(where.path);
+    const county = raceCounty ?? (counties.length === 1 ? counties[0] : undefined);
+    if (!county && Object.values(order.counties).some((d) => d.local))
+      return {
+        reason:
+          "Some counties use their own letter order for local races, and we can't tell your county.",
+      };
+    const drawing = county ? order.counties[county] : undefined;
+    const alphabet = drawing?.local ? drawing.alphabet : state;
+    // Countywide offices rotate: by Assembly district in a county with five or
+    // more, else by supervisorial district (§13111(g), (h)).
+    if (raceCounty && !race.district) {
+      const ads = Object.entries(order.districts.adCounties)
+        .filter(([, reach]) => reach.includes(raceCounty))
+        .map(([n]) => Number(n))
+        .sort((a, b) => a - b);
+      if (ads.length >= 5) {
+        if (voterAd === undefined || !ads.includes(voterAd))
+          return {
+            reason: `Countywide races in ${raceCounty} County change order from one Assembly district to the next.`,
+          };
+        return { offset: ads.indexOf(voterAd), alphabet, ...LIKELY };
+      }
+      const sup = area?.districts[`${where.path}/sup`];
+      const supN = sup && sup !== NO_DISTRICT ? Number(sup) : Number.NaN;
+      if (Number.isNaN(supN))
+        return {
+          reason: `Countywide races in ${raceCounty} County change order from one supervisorial district to the next.`,
+        };
+      return { offset: supN - 1, alphabet, ...LIKELY };
+    }
+    return { offset: 0, alphabet, ...LIKELY };
   }
   return undefined;
 }
@@ -187,6 +377,8 @@ function rotationFor(
 export interface RaceForOrder {
   election?: string;
   jurisdiction?: string;
+  /** Who votes on it, when narrower than the jurisdiction (a supervisorial district). */
+  district?: string;
   title: string;
   kind?: string;
   /** A judge's yes/no retention question. */
@@ -196,7 +388,7 @@ export interface RaceForOrder {
 /**
  * The race's printed names in this voter's ballot order. `undefined` when no
  * rule here applies (keep the listing's order): measures, retention
- * questions, local offices, other states, elections we have no drawing for.
+ * questions, other states, elections we have no drawing for.
  */
 export function ballotOrderFor(
   race: RaceForOrder,
@@ -206,12 +398,19 @@ export function ballotOrderFor(
   if (!race.election || race.kind === "measure" || race.retention) return undefined;
   const order = CALIFORNIA[race.election];
   if (!order) return undefined;
-  const rotation = rotationFor(race, area, order);
-  if (!rotation) return undefined;
-  if (names.length < 2) return { basis: "ballot", names };
-  if ("reason" in rotation) return { basis: "varies", names, reason: rotation.reason };
-  const drawn = [...names].sort((a, b) => compareByAlphabet(order.alphabet, a, b));
-  return { basis: "ballot", names: rotate(drawn, rotation.offset) };
+  const rule = ruleFor(race, area, order);
+  if (!rule) return undefined;
+  if (!("offset" in rule)) {
+    return names.length < 2
+      ? { basis: "ballot", names }
+      : { basis: "varies", names, reason: rule.reason };
+  }
+  const drawn = [...names].sort((a, b) => compareByAlphabet(rule.alphabet, a, b));
+  return {
+    basis: rule.basis ?? "ballot",
+    names: rotate(drawn, rule.offset),
+    ...(rule.reason ? { reason: rule.reason } : {}),
+  };
 }
 
 /**

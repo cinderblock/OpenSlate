@@ -17,6 +17,7 @@ import {
   parseJurisdiction,
   placeRace,
 } from "./jurisdictions";
+import { type OrderOverrides, overrideKey, reconcileOrder } from "./orderOverrides";
 import {
   countOf,
   type Follows,
@@ -262,6 +263,7 @@ export interface Race {
   /**
    * How `ballotIndex` relates to this voter's ballot (`ballotOrderFor`):
    * "ballot", worked out from the law, the drawn alphabet and their districts;
+   * "yours", the order the voter set by hand from their own ballot;
    * "varies", the order changes across the race's area and theirs can't be
    * told (`orderNote` says why). Absent: as the ballot source lists it.
    */
@@ -294,6 +296,8 @@ export interface CollateOptions {
    * shows them.
    */
   disagree?: DisagreeMode;
+  /** The voter's own ballot order for races they've fixed by hand (`orderOverrides.ts`). */
+  orderOverrides?: OrderOverrides;
 }
 
 type Field = Pick<Race, "choices" | "onBallot" | "subject">;
@@ -471,7 +475,12 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
       return { race, followedIds, sourceIds, ballotOrder };
     })
     .map(({ race, followedIds, sourceIds, ballotOrder: listed }) => {
-      const { ballotOrder, basis, note } = printedOrder(race, listed, options.area);
+      const { ballotOrder, basis, note } = printedOrder(
+        race,
+        listed,
+        options.area,
+        options.orderOverrides?.[overrideKey(race)],
+      );
       return { race, followedIds, sourceIds, ballotOrder, basis, note };
     })
     .map(({ race, followedIds, sourceIds, ballotOrder, basis, note }) => ({
@@ -504,18 +513,20 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
  * Write-ins, which the ballot doesn't print, stay after the printed names.
  */
 function printedOrder(
-  race: Pick<Race, "election" | "jurisdiction" | "subject" | "ballot" | "choices">,
+  race: Pick<Race, "election" | "jurisdiction" | "district" | "subject" | "ballot" | "choices">,
   listed: Map<string, number>,
   area: Area | undefined,
+  saved: string[] | undefined,
 ): { ballotOrder: Map<string, number>; basis?: OrderBasis; note?: string } {
   if (listed.size === 0) return { ballotOrder: listed };
   const writeIns = new Set(race.choices.filter((c) => c.writeIn).map((c) => c.choice));
   const inListing = [...listed.keys()].sort((a, b) => (listed.get(a) ?? 0) - (listed.get(b) ?? 0));
   const printed = inListing.filter((name) => name !== "" && !writeIns.has(name));
-  const order = ballotOrderFor(
+  const computed = ballotOrderFor(
     {
       ...(race.election ? { election: race.election } : {}),
       ...(race.jurisdiction ? { jurisdiction: race.jurisdiction } : {}),
+      ...(race.district ? { district: race.district } : {}),
       title: race.subject.title,
       ...(race.subject.kind ? { kind: race.subject.kind } : {}),
       ...(race.ballot?.retention ? { retention: true } : {}),
@@ -523,12 +534,16 @@ function printedOrder(
     printed,
     area,
   );
+  // The voter's own order wins: they've looked at their ballot.
+  const order = saved
+    ? { basis: "yours" as const, names: reconcileOrder(saved, computed?.names ?? printed) }
+    : computed;
   if (!order) return { ballotOrder: listed };
   const rest = inListing.filter((name) => !order.names.includes(name));
   return {
     ballotOrder: new Map([...order.names, ...rest].map((name, index) => [name, index])),
     basis: order.basis,
-    ...(order.reason ? { note: order.reason } : {}),
+    ...("reason" in order && order.reason ? { note: order.reason } : {}),
   };
 }
 

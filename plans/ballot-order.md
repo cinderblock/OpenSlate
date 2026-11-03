@@ -54,6 +54,10 @@ scripted fetches) and the SoS randomized-alphabet page.
 
 ## Decisions already made (don't re-ask)
 
+0. (2026-11-02, after the first deploy) The user: get every county's drawing
+   ("do them all"), and "everyone should get it in their ballot order, as best
+   we can", local races included, with a drag-to-reorder override.
+
 1. Compute the order on the device from the law, the drawn alphabet and the
    voter's districts. No server, nothing sent anywhere.
 2. Where the order can't be known (multi-county legislative districts,
@@ -73,9 +77,19 @@ scripted fetches) and the SoS randomized-alphabet page.
 4. §13109 office order within a section (`officeRank`, used by
    `compareRaces`). Done.
 5. Deploy. Done: `5722fdf` live on openslate.us 2026-11-02.
-6. Follow-ups (not started) ← next, if wanted: county randomized alphabets for multi-county
-   legislative districts; Civic `orderOnBallot`; check against a printed
-   sample ballot; local offices.
+6. Second round (user asked for all of it):
+   - County drawings for multi-county Senate/Assembly districts:
+     `src/lib/ballotOrderCounties.ts`, filled from six research agents (one
+     per ~10 counties). ← current: adding counties as they report.
+   - Local races (§13111(f)-(h)): city and district offices in the drawn
+     order, countywide offices rotated by AD (≥ 5 ADs in the county) or by
+     supervisorial district. Basis "likely" (charter cities may differ).
+   - Voter override: drag the names into their ballot's order
+     (`components/RaceOrder.tsx`, `lib/orderOverrides.ts`, localStorage
+     `openslate.ballotOrder.v1`); basis "yours". Verified headless in the dev
+     server: mouse drag and keyboard drag (Enter, arrows, Enter) both reorder,
+     save shows "In the order you set from your ballot".
+7. Still open: Civic `orderOnBallot`; check against a printed sample ballot.
 
 ## Findings / gotchas
 
@@ -108,6 +122,10 @@ scripted fetches) and the SoS randomized-alphabet page.
 
 ## Progress log
 
+- [x] Local races and countywide rotation
+- [x] Drag-to-reorder override
+- [ ] County drawings: all 58 searched (8 found in the first two groups back)
+
 - [x] Law and 2026 alphabet confirmed
 - [x] Overlap data
 - [x] ballotOrder.ts + tests
@@ -121,12 +139,23 @@ scripted fetches) and the SoS randomized-alphabet page.
 
 ## Open questions for the user
 
-1. Gather county randomized alphabets (each county posts its own drawing) so
-   multi-county Senate and Assembly races get an order too? Recommended for
-   the biggest counties first; needs the voter's county from the Area.
-2. Order local races by the SoS alphabet (§13111(f)) except in charter cities
-   with their own rules? Needs a per-city check.
+(both earlier questions answered: do all counties; order local races too.)
 
 ## Things not to do
 
 - Don't trust the cert list's order as anyone's ballot order.
+
+## County drawings: where we looked and didn't find one
+
+Counties whose November 2026 drawing we couldn't find get "may differ" on
+their multi-county Senate/Assembly races. Notes from the research agents:
+
+- Santa Barbara: only the June primary's certificate found.
+- Santa Cruz: no County Random Alphabet page for Nov 2026 (2024 had one).
+- Shasta: notice says a drawing was set for Aug 13 (AD 1); result not posted.
+- Sierra, Siskiyou, Sonoma: not posted.
+- Marin: drawing held Aug 13; its page is behind a Cloudflare challenge.
+- Mariposa, Modoc, Mendocino, Napa: handbooks mention a drawing; no result posted.
+- Mono: only the SoS drawing referenced.
+- Every county that said so limits its own drawing to multi-county
+  legislative offices; local contests use the SoS alphabet.

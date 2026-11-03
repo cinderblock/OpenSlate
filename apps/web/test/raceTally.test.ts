@@ -112,10 +112,11 @@ describe("tallyRace", () => {
     expect(tally.followed).toBe(0);
     expect(tally.tones).toEqual({ for: 2, against: 1, neutral: 1 });
     expect(tally.groups).toEqual({ other: 3, labor: 1 });
+    // Ties in ballot order: a local race follows the drawn alphabet, P before R.
     expect(tally.choices.map((c) => [c.group.choice, c.for, c.against])).toEqual([
       ["Barbara Lee", 2, 1],
-      ["Julius Robinson", 0, 0],
       ["Mindy Pechenuk", 0, 0],
+      ["Julius Robinson", 0, 0],
     ]);
   });
 

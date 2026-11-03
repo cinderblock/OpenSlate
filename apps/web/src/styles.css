@@ -1036,6 +1036,27 @@ a.button-link.primary {
 .ranked-list {
   outline: none;
 }
+/* Putting a race's names in the voter's own ballot order (RaceOrder.tsx). */
+.race-order {
+  margin: 0.25rem 0;
+}
+.race-order-editor {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  border: 1px dashed var(--border, currentColor);
+  border-radius: 6px;
+}
+.race-order-editor .choice-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.25rem;
+}
+.race-order-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
 .ranked-list [role="row"] {
   outline: none;
 }

@@ -1,10 +1,22 @@
 import { describe, expect, test } from "bun:test";
-import { ballotOrderFor, compareByAlphabet, sortParts } from "../src/lib/ballotOrder";
+import {
+  ballotOrderFor,
+  compareByAlphabet,
+  countyOfPath,
+  sortParts,
+  voterCounties,
+} from "../src/lib/ballotOrder";
 import { CA_DISTRICTS_2026 } from "../src/lib/ballotOrderCa";
+import { COUNTY_DRAWINGS_2026 } from "../src/lib/ballotOrderCounties";
 import type { Area } from "../src/lib/jurisdictions";
+import { reconcileOrder } from "../src/lib/orderOverrides";
 
 const ALPHABET = "HXKWCPJOZALDNSQBIRYGVEFMTU";
 const ELECTION = "2026-11-03";
+const countyPath = (county: string) =>
+  county === "San Francisco"
+    ? "us/ca/sf"
+    : `us/ca/${county.toLowerCase().replace(/ /g, "-")}-county`;
 const inAd = (ad: string, more: Record<string, string> = {}): Area => ({
   localities: [],
   districts: { "us/ca/ad": ad, ...more },
@@ -122,6 +134,30 @@ describe("ballotOrderFor", () => {
     expect(ballotOrderFor(race(multi), names, undefined)?.basis).toBe("varies");
   });
 
+  test("a multi-county district uses the voter's county's own drawing", () => {
+    const [n, counties] = Object.entries(CA_DISTRICTS_2026.adCounties).find(
+      ([, c]) => c.length > 1 && c.some((county) => COUNTY_DRAWINGS_2026[county]),
+    ) ?? [undefined, []];
+    if (!n) return;
+    const county = counties.find((c) => COUNTY_DRAWINGS_2026[c]) as string;
+    const drawing = COUNTY_DRAWINGS_2026[county] as { alphabet: string };
+    const race = { election: ELECTION, jurisdiction: `us/ca/ad-${n}`, title: "x" };
+    const area: Area = { localities: [countyPath(county)], districts: { "us/ca/ad": n } };
+    const expected = [...names].sort((a, b) => compareByAlphabet(drawing.alphabet, a, b));
+    expect(ballotOrderFor(race, names, area)).toEqual({ basis: "ballot", names: expected });
+  });
+
+  test("the voter's county from their localities", () => {
+    expect(countyOfPath("us/ca/marin-county")).toBe("Marin");
+    expect(countyOfPath("us/ca/marin")).toBe("Marin");
+    expect(countyOfPath("us/ca/fresno")).toBeUndefined(); // the City of Fresno
+    expect(countyOfPath("us/ca/fresno-county")).toBe("Fresno");
+    expect(countyOfPath("us/ca/sf")).toBe("San Francisco");
+    expect(
+      voterCounties({ localities: ["us/ca/oakland", "us/ca/alameda-county"], districts: {} }),
+    ).toEqual(["Alameda"]);
+  });
+
   test("Board of Equalization rotates like Congress", () => {
     const [n, ads] = Object.entries(CA_DISTRICTS_2026.boe)[0] as [string, number[]];
     const race = {
@@ -139,14 +175,87 @@ describe("ballotOrderFor", () => {
     );
   });
 
-  test("no rule: measures, retention questions, local races, other elections", () => {
+  test("no rule: measures, retention questions, other elections", () => {
     expect(ballotOrderFor({ ...governor, kind: "measure" }, names, inAd("1"))).toBeUndefined();
     expect(ballotOrderFor({ ...governor, retention: true }, names, inAd("1"))).toBeUndefined();
     expect(
-      ballotOrderFor({ ...governor, jurisdiction: "us/ca/san-francisco" }, names, inAd("1")),
-    ).toBeUndefined();
-    expect(
       ballotOrderFor({ ...governor, election: "2024-11-05" }, names, inAd("1")),
     ).toBeUndefined();
+  });
+
+  test("a city race: the drawn order, no rotation, as the law's likely default", () => {
+    const race = {
+      election: ELECTION,
+      jurisdiction: "us/ca/oakland",
+      title: "Oakland City Council, District 3",
+    };
+    const order = ballotOrderFor(race, names, inAd("18", {}));
+    expect(order?.basis).toBe("likely");
+    expect(order?.names).toEqual(["Steve Hilton", "Xavier Becerra"]);
+    expect(order?.reason).toBeTruthy();
+  });
+
+  test("a countywide race rotates by Assembly district in a county with five or more", () => {
+    const ads = Object.entries(CA_DISTRICTS_2026.adCounties)
+      .filter(([, c]) => c.includes("Santa Clara"))
+      .map(([n]) => Number(n))
+      .sort((a, b) => a - b);
+    expect(ads.length).toBeGreaterThanOrEqual(5);
+    const race = {
+      election: ELECTION,
+      jurisdiction: "us/ca/santa-clara-county",
+      title: "Santa Clara County Assessor",
+    };
+    const at = (ad: number) =>
+      ballotOrderFor(race, names, {
+        localities: ["us/ca/santa-clara-county"],
+        districts: { "us/ca/ad": String(ad) },
+      })?.names;
+    expect(at(ads[0] as number)).toEqual(["Steve Hilton", "Xavier Becerra"]);
+    expect(at(ads[1] as number)).toEqual(["Xavier Becerra", "Steve Hilton"]);
+  });
+
+  test("a countywide race in a small county rotates by supervisorial district", () => {
+    const race = {
+      election: ELECTION,
+      jurisdiction: "us/ca/marin-county",
+      title: "Marin County Sheriff",
+    };
+    const at = (sup?: string) =>
+      ballotOrderFor(race, names, {
+        localities: ["us/ca/marin-county"],
+        districts: { "us/ca/ad": "12", ...(sup ? { "us/ca/marin-county/sup": sup } : {}) },
+      });
+    expect(at("1")?.names).toEqual(["Steve Hilton", "Xavier Becerra"]);
+    expect(at("2")?.names).toEqual(["Xavier Becerra", "Steve Hilton"]);
+    expect(at()?.basis).toBe("varies");
+  });
+
+  test("a supervisor's own district doesn't rotate", () => {
+    const race = {
+      election: ELECTION,
+      jurisdiction: "us/ca/marin-county",
+      district: "us/ca/marin-county/sup-2",
+      title: "Marin County Supervisor, District 2",
+    };
+    expect(ballotOrderFor(race, names, inAd("12"))?.names).toEqual([
+      "Steve Hilton",
+      "Xavier Becerra",
+    ]);
+  });
+});
+
+describe("reconcileOrder", () => {
+  test("the voter's order, minus names gone, plus new names in the app's order", () => {
+    expect(reconcileOrder(["B", "A", "Gone"], ["A", "B", "C"])).toEqual(["B", "A", "C"]);
+  });
+});
+
+describe("COUNTY_DRAWINGS_2026", () => {
+  test("every drawing is the 26 letters once each, for a real county", () => {
+    for (const [county, drawing] of Object.entries(COUNTY_DRAWINGS_2026)) {
+      expect([...drawing.alphabet].sort().join("")).toBe("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+      expect(countyOfPath(`us/ca/${county.toLowerCase().replace(/ /g, "-")}-county`)).toBe(county);
+    }
   });
 });

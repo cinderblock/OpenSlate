@@ -85,6 +85,7 @@ import {
   parseJurisdiction,
   withFoundLocalities,
 } from "../lib/jurisdictions";
+import { useLocalStore } from "../lib/localStore";
 import {
   localToday,
   useArea,
@@ -93,6 +94,7 @@ import {
   useFollows,
   useMyElection,
 } from "../lib/myVote";
+import { orderOverrideStore } from "../lib/orderOverrides";
 import { usePageSearch } from "../lib/pageSearch";
 import { fitToPage, MIN_PRINT_SCALE, type PrintFit } from "../lib/printFit";
 import { type MyPosition, useMyPositionsByRace } from "../lib/published";
@@ -104,13 +106,14 @@ import { subjectKey } from "../lib/subjects";
 import { isDecided, marksOn, type RaceStatus, raceStatus, stepThrough } from "../lib/triage";
 import { track } from "../lib/usage";
 import { AreaPicker, describeArea } from "./AreaPicker";
-import { BallotProblemsNotice, RaceOrderNote, RaceUnlistedNote } from "./BallotTags";
+import { BallotProblemsNotice, RaceUnlistedNote } from "./BallotTags";
 import { ChoiceRow } from "./ChoiceRow";
 import { CompareStrip } from "./CompareStrip";
 import { electionOptions } from "./electionOptions";
 import { PageSearch } from "./PageSearch";
 import { PrintBallot, type PrintSection } from "./PrintBallot";
 import { QuickFill } from "./QuickFill";
+import { RaceOrderNote } from "./RaceOrder";
 import { RankedChoices } from "./RankedChoices";
 import { Checkbox } from "./ui/Checkbox";
 import { Segmented } from "./ui/Segmented";
@@ -246,6 +249,8 @@ export function MyBallotPanel() {
     setArea(left.length > 0 ? { ...next, recheck: left } : next);
   }
 
+  // The voter's own ballot order, for races they've fixed by hand.
+  const [orderOverrides] = useLocalStore(orderOverrideStore);
   const collated = useMemo(
     () =>
       collateRaces(slates, {
@@ -254,8 +259,9 @@ export function MyBallotPanel() {
         ...(election ? { election } : {}),
         area,
         includeUnfollowed: showUnfollowed,
+        orderOverrides,
       }),
-    [slates, follows, disagree, election, area, showUnfollowed],
+    [slates, follows, disagree, election, area, showUnfollowed, orderOverrides],
   );
   // Articles slates attach to each race (SPEC §3.15): how many, on each card.
   const articleCounts = useMemo(() => {

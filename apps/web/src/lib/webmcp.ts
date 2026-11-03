@@ -41,6 +41,7 @@ import {
   myElectionStore,
   withNicknames,
 } from "./myVote";
+import { orderOverrideStore } from "./orderOverrides";
 import { type AgentTool, track } from "./usage";
 
 /**
@@ -118,7 +119,8 @@ async function currentBallot(asked: string | undefined) {
       `No election on ${election}. Elections: ${elections.map((e) => e.date).join(", ")}.`,
     );
   }
-  const collated = collateRaces(slates, { follows, disagree, election, area });
+  const orderOverrides = orderOverrideStore.get();
+  const collated = collateRaces(slates, { follows, disagree, election, area, orderOverrides });
   const everything = collateRaces(slates, { follows, disagree, election, includeUnfollowed: true });
   return { election, area, collated, everything };
 }
