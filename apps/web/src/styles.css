@@ -2524,9 +2524,19 @@ details.card > summary {
   .print-only {
     display: block !important;
   }
-  /* My ballot prints as the paper ballot alone. */
-  .my-ballot > :not(.print-ballot) {
+  /* My ballot prints as the paper ballot alone. Nothing else may print, not
+     even an empty box: it would start an ordinary page (the browser's
+     margins and header) and push the ballot onto the next one, since the
+     ballot has its own page (`@page ballot`). Its ancestors keep no spacing
+     of their own, so `--print-pad` is the whole margin. */
+  body:has(.print-ballot) :not(:has(.print-ballot), .print-ballot, .print-ballot *) {
     display: none !important;
+  }
+  body:has(.print-ballot) :has(.print-ballot) {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    max-width: none !important;
   }
   .print-ballot {
     display: block;
