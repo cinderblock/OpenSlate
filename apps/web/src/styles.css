@@ -1509,6 +1509,17 @@ button.source-chip {
     sans-serif;
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
+  /* The page itself has no margin (@page ballot), so the print dialog's
+     Margins setting can't move this one and the browser has no room for its
+     header and footer (URL, date). This padding is the margin instead: the
+     same on paper at any zoom, repeated at every page break, and centred on
+     paper wider than the layout. */
+  --print-pad: 0.25in;
+  box-sizing: content-box;
+  padding: calc(var(--print-pad) / var(--print-zoom, 1));
+  margin: 0 auto;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 .print-ballot.measuring {
   display: block;
@@ -1517,6 +1528,7 @@ button.source-chip {
   left: -100000px;
   visibility: hidden;
   zoom: 1;
+  padding: 0;
 }
 /* Columns filled in order to one page's height, as paper fills them (printFit.ts). */
 .print-ballot.measuring .pb-columns {
@@ -1524,20 +1536,7 @@ button.source-chip {
   height: var(--measure-height, auto);
 }
 @page ballot {
-  margin: 0.4in;
-}
-/* More than one page (two-sided, or past the smallest size): number them. */
-.print-ballot[data-pages]:not([data-pages="1"]) {
-  page: ballot-pages;
-}
-@page ballot-pages {
-  margin: 0.4in;
-  @bottom-center {
-    content: "Page " counter(page) " of " counter(pages);
-    font:
-      8pt system-ui,
-      sans-serif;
-  }
+  margin: 0;
 }
 .pb-header {
   border-bottom: 1.5pt solid #000;

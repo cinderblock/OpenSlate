@@ -4,9 +4,14 @@
  * checked in the browser and in headless Chrome's print-to-PDF.
  */
 
-/** Printable area common to US Letter and A4 with the 0.4in margins of `@page ballot`. */
-const PAGE_WIDTH = 7.45 * 96;
-const PAGE_HEIGHT = 10.15 * 96;
+/**
+ * The paper US Letter and A4 have in common (A4's width, 8.27in, less a
+ * hair for rounding; Letter's height), inside the 0.25in `--print-pad` that
+ * stands in for page margins (`.print-ballot` in styles.css).
+ */
+const PRINT_PAD = 0.25 * 96;
+const PAGE_WIDTH = 8.25 * 96 - 2 * PRINT_PAD;
+const PAGE_HEIGHT = 11 * 96 - 2 * PRINT_PAD;
 /**
  * Below this the text gets too small to read; the ballot spills onto more
  * pages instead. Relative to the 10pt print size, so about 7pt.
@@ -32,7 +37,7 @@ export interface PrintFit {
  * Find the largest size at which the printout fits on `maxPages` pages, and
  * apply it. Widening the box (then zooming it back down) lets the columns
  * flow wider and shorter, so a long ballot shrinks evenly instead of being
- * cut off. Records the page count as `data-pages`, which numbers the pages.
+ * cut off.
  *
  * Measured the way paper fills: `.measuring` gives the columns a page's
  * height and fills them in order (`column-fill: auto`), and whatever doesn't
@@ -90,6 +95,5 @@ export function fitToPage(el: HTMLElement, maxPages = 1): PrintFit {
   }
   el.style.setProperty("--print-width", `${PAGE_WIDTH / fit.scale}px`);
   el.style.setProperty("--print-zoom", String(fit.scale));
-  el.dataset.pages = String(fit.pages);
   return fit;
 }

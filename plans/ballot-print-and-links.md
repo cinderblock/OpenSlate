@@ -297,6 +297,18 @@ The app stores a catalog slate's token once and never looks again
   Chrome print-to-PDF on mock ballots of 8–120 races, one- and two-sided:
   never more pages than the card says; on long ballots it can say one page
   more than it needs. A 49-race ballot fits two-sided at 76%.
+- [x] D2 (2026-11-03, user chose option C): edges no longer cut off.
+  `@page ballot { margin: 0 }`; the ballot's own `--print-pad` (0.25in,
+  divided by the zoom so it stays 0.25in on paper, `box-decoration-break:
+  clone` so it repeats at every page break) is the margin. The print
+  dialog's Margins setting can't move it, and the browser's URL/date header
+  and footer have no room. Page numbers dropped (user doesn't want them).
+  Layout area now 7.75 × 10.5in (A4 width, Letter height, less the pad),
+  was 7.45 × 10.15in; centred on Letter. Headless Chrome, Letter and A4,
+  8–120 races, one- and two-sided: edges exactly 0.25in (Letter sides
+  0.38in), never more pages than the card says; 30 races 87.5% (was 84%),
+  60 races now print on one sheet (was two). User accepts printers that
+  can't print that close to the edge shrinking the page to fit.
 - [x] Security (2026-10-25, `0503c96`, pushed): zod's `.url()` accepted
   `javascript:` / `data:` URLs and React 18 runs a `javascript:` href on
   click (keys live in this origin). SPEC §3.13: links MUST be http(s);
@@ -453,6 +465,10 @@ The app stores a catalog slate's token once and never looks again
   because the printer lays text out a hair wider than the screen (a name
   that just fit on screen wrapped on paper). The search steps down from
   100% by 5% and then halves, since height still jumps where names wrap.
+- The app sets `box-sizing: border-box` globally, so `.print-ballot` needs
+  `content-box` or its padding comes out of `--print-width`: text wrapped
+  more on paper than when measured, and a 30-race ballot printed on two
+  Letter pages while the card said one.
 - Testing print without a dialog: build a mock page with the real
   styles.css and `fitToPage` (`bun build --format iife`), then
   `chrome --headless=new --print-to-pdf` with a fresh `--user-data-dir`
