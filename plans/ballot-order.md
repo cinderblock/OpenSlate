@@ -72,8 +72,8 @@ scripted fetches) and the SoS randomized-alphabet page.
    ballot says when the order may differ. Done.
 4. §13109 office order within a section (`officeRank`, used by
    `compareRaces`). Done.
-5. Deploy. ← current
-6. Follow-ups (not started): county randomized alphabets for multi-county
+5. Deploy. Done: `5722fdf` live on openslate.us 2026-11-02.
+6. Follow-ups (not started) ← next, if wanted: county randomized alphabets for multi-county
    legislative districts; Civic `orderOnBallot`; check against a printed
    sample ballot; local offices.
 
@@ -113,7 +113,7 @@ scripted fetches) and the SoS randomized-alphabet page.
 - [x] ballotOrder.ts + tests
 - [x] collate wiring + UI note
 - [x] §13109 race order
-- [ ] Deploy
+- [x] Deploy (`5722fdf`)
 - [ ] Follow-up: county alphabets for multi-county SD/AD
 - [ ] Follow-up: Civic `orderOnBallot`
 - [ ] Follow-up: sample-ballot check
