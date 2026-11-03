@@ -338,6 +338,12 @@ subjects and names, and `check` reports anything in a `positions.json` that
 doesn't line up with them. Sources → Add endorsements has the message to give
 the agent.
 
+No agent? The same card works with any AI chat, such as ChatGPT. It copies a
+message holding your own ballot, the chat reads the guide and answers in JSON,
+and you paste that back. The app shows what matched, then signs with a throwaway
+key, so nobody has to think about keys. The slate says it's your report of your
+friend's guide, and pasting a corrected reply replaces it.
+
 Other useful scripts: `bun test`, `bun run typecheck`, `bun run schema`
 (emits `packages/core/schema/openslate.schema.json`), `bun run lint` (Biome:
 format, imports and lint; line endings follow the OS, so CRLF checkouts on

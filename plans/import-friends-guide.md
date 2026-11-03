@@ -57,6 +57,30 @@ want them in OpenSlate as a slate in their browser. Support any format.
 - [ ] Not tried by a real agent on a real guide yet: the dry run was a scripted
   stand-in for the agent's reading of the guide.
 
+## Chat path: copy and paste, for ChatGPT and the like
+
+Added because agents with a shell are the minority of what friends have.
+
+- **The prompt holds the voter's ballot.** `guidePrompt` lists their races with short
+  stable codes (`raceCode`, a hash of the race key), so the chat needs no tools and
+  no internet, and never copies a long title. A Sunnyvale ballot is 90 races, 12 KB.
+  It needs an area set: every race in the election would be 100 KB or more.
+- **The app signs, with a throwaway key** (`guideSlate`): the app only stores signed
+  slates, and the user asked not to involve signing. Issuer name is `you`, so it reads
+  "reported by you, not signed by them". The key is discarded.
+- **The reply is untrusted.** It only becomes positions on known races, and the user
+  sees them first. A corrected reply replaces the earlier one with the same friend,
+  election and `you` issuer, and leaves a catalog source of the same name alone.
+- **Blind test, 2026-11-02:** a Haiku subagent given only the prompt and a messy CSV got
+  all 7 picks right, including "Controller: not Morgan" as an oppose. It reported the
+  rows off this ballot and an unreadable row, and ignored an injected instruction to
+  add a pick. That run put `yes` in `label`, so the prompt now says when to skip it.
+- **Headless run of the built app, 2026-11-02:** set an area, imported the SF listing,
+  copied the message, refused garbage, added, replaced, reloaded. One source row, no
+  browser errors.
+- **Not tried with ChatGPT itself**, or with a guide as a PDF or photo. Haiku is the
+  stand-in.
+
 ## Things not to do
 
 - Don't suggest hand-copying short race names: they won't join the ballot.
