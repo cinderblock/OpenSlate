@@ -14,20 +14,19 @@ want them in OpenSlate as a slate in their browser. Support any format.
   format; the app would only ever read a few.
 - **Instructions and tool are static files on openslate.us** (`/agents/`). No
   server, which keeps the no-central-server rule.
-- **The slate is a secondhand report** (`attribution.of` = the friend, mode
-  `transcribed`): the friend didn't sign it.
+- **It's a secondhand report** (`attribution.of` = the friend, mode `transcribed`).
 - **Not published to npm.** A served single file needs no release, no clone and no
   package name, and it updates with every deploy.
 
 ## Environment
 
-- Instructions: `apps/web/public/agents/import-friends-guide.md`.
-- Tool: `openslate.mjs`, the CLI bundled by the `agentTool` plugin in
-  `apps/web/vite.config.ts`. A Vite plugin because `vite build` runs under Node
-  and the Workers Builds command isn't in this repo or in ops, so a package script
-  couldn't be relied on.
-- Prompt: `FriendsGuideCard` in `apps/web/src/components/ImportVerifyPanel.tsx`,
-  under Sources → Add endorsements → Link, file, QR or paste.
+- Card: `apps/web/src/components/FriendsGuideCard.tsx`, under Sources → Add endorsements →
+  Link, file, QR or paste. Logic: `apps/web/src/lib/friendsGuide.ts`.
+- Storage: `friendGuidesStore` in `apps/web/src/lib/myVote.ts`.
+- Page for agents: `apps/web/public/agents/import-friends-guide.md`, which points at the card.
+- CLI bundle: `openslate.mjs`, from the `agentTool` plugin in `apps/web/vite.config.ts`. A
+  Vite plugin because `vite build` runs under Node and the Workers Builds command isn't in
+  this repo or in ops.
 
 ## Findings / gotchas
 
@@ -65,9 +64,15 @@ Added because agents with a shell are the minority of what friends have.
   stable codes (`raceCode`, a hash of the race key), so the chat needs no tools and
   no internet, and never copies a long title. A Sunnyvale ballot is 90 races, 12 KB.
   It needs an area set: every race in the election would be 100 KB or more.
-- **The app signs, with a throwaway key** (`guideSlate`): the app only stores signed
-  slates, and the user asked not to involve signing. Issuer name is `you`, so it reads
-  "reported by you, not signed by them". The key is discarded.
+- **Nothing is signed.** The user's call: we don't sign on behalf of others. A guide is a
+  payload in `friendGuidesStore` (localStorage), joined to the decoded slates in
+  `useDecodedSlates` as `local: true`, so My ballot, race pages and Sources see it. It stays
+  out of `slatesCollection`, whose rows are re-verified as tokens across the app, and
+  `adoptableSlates` skips it. A throwaway key shipped briefly in `e94f361`: a signature
+  nobody stands behind says nothing, and it looked like verification.
+- **The agent path dropped signing too.** `import-friends-guide.md` now sends an agent to
+  the same copied message. `races`, `check` and `openslate.mjs` remain as CLI tools for
+  people publishing their own slates.
 - **The reply is untrusted.** It only becomes positions on known races, and the user
   sees them first. A corrected reply replaces the earlier one with the same friend,
   election and `you` issuer, and leaves a catalog source of the same name alone.
@@ -76,12 +81,12 @@ Added because agents with a shell are the minority of what friends have.
   rows off this ballot and an unreadable row, and ignored an injected instruction to
   add a pick. That run put `yes` in `label`, so the prompt now says when to skip it.
 - **Headless run of the built app, 2026-11-02:** set an area, imported the SF listing,
-  copied the message, refused garbage, added, replaced, reloaded. One source row, no
-  browser errors.
+  copied the message, refused garbage, added, replaced, reloaded, saw it on My ballot,
+  removed it. One source row while present, nothing stored after, no browser errors.
 - **Not tried with ChatGPT itself**, or with a guide as a PDF or photo. Haiku is the
   stand-in.
 
 ## Things not to do
 
 - Don't suggest hand-copying short race names: they won't join the ballot.
-- Don't let the slate be signed as if the friend wrote it.
+- Don't sign a guide, with any key, on anyone's behalf.

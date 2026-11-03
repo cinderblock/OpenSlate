@@ -3,19 +3,20 @@ import { useMemo, useState } from "react";
 import { shownElection } from "../lib/ballotAgent";
 import { listingOf } from "../lib/ballotCheck";
 import { collateRaces, electionsOf } from "../lib/collate";
-import { slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
-import { GUIDE_REPORTER, guidePrompt, guideSlate, readGuideReply } from "../lib/friendsGuide";
+import { guidePayload, guidePrompt, readGuideReply } from "../lib/friendsGuide";
 import { isAreaSet } from "../lib/jurisdictions";
-import { localToday, useArea, useDecodedSlates, useFollows, useMyElection } from "../lib/myVote";
-import { sourceIdOf } from "../lib/sources";
+import {
+  localToday,
+  saveFriendGuide,
+  useArea,
+  useDecodedSlates,
+  useFollows,
+  useMyElection,
+} from "../lib/myVote";
 import { track } from "../lib/usage";
 import { STANCE_LABEL } from "./stanceOptions";
 import { TextArea, TextField } from "./ui/TextField";
-
-/** For an agent that can run commands. Its instructions are public/agents/import-friends-guide.md. */
-const AGENT_PROMPT =
-  "Read https://openslate.us/agents/import-friends-guide.md and follow it to turn my friend's voter guide (attached) into a slate I can import into OpenSlate.";
 
 /**
  * A guide that isn't a slate yet: any AI chat can read it, whatever its format,
@@ -26,7 +27,7 @@ export function FriendsGuideCard() {
   const [follows] = useFollows();
   const [area] = useArea();
   const [chosenElection] = useMyElection();
-  const [copied, setCopied] = useState<"chat" | "agent" | null>(null);
+  const [copied, setCopied] = useState(false);
   const [reply, setReply] = useState("");
   const [name, setName] = useState<string | null>(null);
   const [added, setAdded] = useState<string | null>(null);
@@ -34,16 +35,12 @@ export function FriendsGuideCard() {
   const elections = useMemo(() => electionsOf(slates, follows), [slates, follows]);
   const election = shownElection(elections, chosenElection, localToday());
 
-  async function copy(which: "chat" | "agent", text: string) {
-    await navigator.clipboard.writeText(text);
-    setCopied(which);
-    setTimeout(() => setCopied(null), 1500);
-  }
-
-  function copyChatMessage() {
+  async function copyChatMessage() {
     if (!election) return;
     const races = collateRaces(slates, { follows, election, area, includeUnfollowed: true });
-    void copy("chat", guidePrompt(races, election));
+    await navigator.clipboard.writeText(guidePrompt(races, election));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   }
 
   // Every race of the election, not just this area's: the area may have changed
@@ -58,23 +55,12 @@ export function FriendsGuideCard() {
 
   function add() {
     if (!parsed || !friend || !election) return;
-    const token = guideSlate(friend, parsed.picks, listingOf(slates), election);
-    // A corrected reply replaces the guide it fixes, not the friend's other sources.
-    const id = sourceIdOf({
-      issuer: { key: "" },
-      attribution: { of: { name: friend } },
-    });
-    const earlier = slates.filter(
-      (slate) =>
-        slate.source.id === id &&
-        slate.payload.issuer.name === GUIDE_REPORTER &&
-        slate.payload.context?.election === election,
+    const replaced = saveFriendGuide(
+      guidePayload(friend, parsed.picks, listingOf(slates), election),
     );
-    slatesCollection.insert({ token, importedAt: new Date().toISOString() });
-    for (const slate of earlier) slatesCollection.delete(slate.token);
     track({ name: "slate.import", dims: { source: "paste" } });
     setAdded(
-      `${earlier.length > 0 ? "Updated" : "Added"} ${friend}'s guide: ${parsed.picks.length} pick${parsed.picks.length === 1 ? "" : "s"}. They're on My ballot now, marked as reported by you.`,
+      `${replaced ? "Updated" : "Added"} ${friend}'s guide: ${parsed.picks.length} pick${parsed.picks.length === 1 ? "" : "s"}. They're on My ballot now, marked as reported by you.`,
     );
     setReply("");
     setName(null);
@@ -84,8 +70,8 @@ export function FriendsGuideCard() {
     <div className="card">
       <h3>Have a friend's voter guide?</h3>
       <p className="hint">
-        A spreadsheet, PDF, doc or photo isn't a slate yet, but any AI chat, such as ChatGPT, Claude
-        or Gemini, can read it for you.
+        A spreadsheet, PDF, doc or photo isn't a slate yet, but any AI, such as ChatGPT, Claude or
+        Gemini, can read it for you.
       </p>
       {!isAreaSet(area) || !election ? (
         <p className="hint">
@@ -101,7 +87,7 @@ export function FriendsGuideCard() {
           </p>
           <div className="row">
             <button type="button" onClick={copyChatMessage}>
-              {copied === "chat" ? "Copied!" : "Copy message for the chat"}
+              {copied ? "Copied!" : "Copy message for the chat"}
             </button>
           </div>
           <p className="hint">
@@ -167,19 +153,6 @@ export function FriendsGuideCard() {
           {added && <p className="hint">{added}</p>}
         </>
       )}
-      <details>
-        <summary>Use an agent that can run commands instead</summary>
-        <p className="hint">
-          Claude Code, Codex and the like can make a slate file themselves. Give one the guide and
-          this message, then add the file above.
-        </p>
-        <pre className="token">{AGENT_PROMPT}</pre>
-        <div className="row">
-          <button type="button" onClick={() => void copy("agent", AGENT_PROMPT)}>
-            {copied === "agent" ? "Copied!" : "Copy message"}
-          </button>
-        </div>
-      </details>
     </div>
   );
 }

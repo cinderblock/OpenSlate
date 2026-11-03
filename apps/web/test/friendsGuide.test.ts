@@ -1,15 +1,18 @@
 import { describe, expect, test } from "bun:test";
-import { ballotListing, verifySlate } from "@openslate/core";
-import type { ChoiceGroup, Race } from "../src/lib/collate";
+import { ballotListing, slatePayloadSchema } from "@openslate/core";
 import {
-  GUIDE_REPORTER,
+  type ChoiceGroup,
+  decodeLocalGuides,
+  LOCAL_GUIDE_KEY,
+  type Race,
+} from "../src/lib/collate";
+import {
   type GuideReply,
+  guidePayload,
   guidePrompt,
-  guideSlate,
   raceCode,
   readGuideReply,
 } from "../src/lib/friendsGuide";
-import { sourceOf } from "../src/lib/sources";
 
 const E = "2026-11-03";
 
@@ -140,21 +143,31 @@ describe("readGuideReply", () => {
   });
 });
 
-describe("guideSlate", () => {
-  test("is a valid slate naming the friend as the source, not the signer", () => {
-    const { picks } = read(reply([pick(prop, "Yes", "endorse", { statement: "Housing." })]));
-    const result = verifySlate(guideSlate("Sam Rivera", picks, ballotListing([]), E));
-    expect(result.valid).toBe(true);
-    const payload = result.payload;
-    if (!payload) throw new Error("no payload");
-    expect(payload.issuer.name).toBe(GUIDE_REPORTER);
+describe("guidePayload", () => {
+  const { picks } = read(reply([pick(prop, "Yes", "endorse", { statement: "Housing." })]));
+  const payload = guidePayload("Sam Rivera", picks, ballotListing([]), E);
+
+  test("is a slate's payload with no key behind it", () => {
+    expect(slatePayloadSchema.safeParse(payload).success).toBe(true);
+    expect(payload.issuer).toEqual({ key: LOCAL_GUIDE_KEY, name: "you" });
     expect(payload.context?.election).toBe(E);
     expect(payload.positions[0]?.subject.title).toBe(prop.subject.title);
-    expect(sourceOf(payload)).toMatchObject({
+  });
+
+  test("reads as the friend's, reported by you, and marked local", () => {
+    const [slate] = decodeLocalGuides([payload]);
+    expect(slate).toMatchObject({ valid: true, local: true });
+    expect(slate?.source).toMatchObject({
       id: "of:sam rivera",
       name: "Sam Rivera",
       secondhand: true,
-      signerName: GUIDE_REPORTER,
+      signerName: "you",
     });
+  });
+
+  test("names one guide per friend per election", () => {
+    const later = guidePayload("sam rivera", picks, ballotListing([]), E);
+    const [first, second] = decodeLocalGuides([payload, later]);
+    expect(first?.token).toBe(second?.token);
   });
 });

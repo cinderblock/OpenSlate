@@ -1,21 +1,19 @@
 import {
   type BallotListing,
   buildSlate,
-  createIdentity,
-  identityToIssuer,
   matchBallotName,
   type Position,
-  signSlate,
+  type SlatePayload,
 } from "@openslate/core";
 import { z } from "zod";
 import { withBallotIds } from "./ballotCheck";
 import { instructionLine } from "./ballotView";
-import { optionsOf, type Race } from "./collate";
+import { LOCAL_GUIDE_KEY, optionsOf, type Race } from "./collate";
 
 /**
  * A friend's voter guide, through any AI chat: the app writes a prompt holding
  * the voter's own ballot, the chat reads the guide (in whatever format) and
- * answers in JSON, and the app turns that into a slate. The chat needs no tools
+ * answers in JSON, and the app keeps that as an unsigned, local source. The chat needs no tools
  * and never has to copy a race's long title, which a race has to match exactly:
  * it answers with short codes. Pure, so test/friendsGuide.test.ts covers it.
  *
@@ -202,25 +200,20 @@ export function readGuideReply(
   };
 }
 
-/** The signer's name on a guide added here, so the app reads "Reported by you". */
-export const GUIDE_REPORTER = "you";
-
 /**
- * The picks as a signed slate. The app only holds signed slates, so this signs
- * with a throwaway key: nobody needs to know about keys to add a friend's guide,
- * and the key proves nothing but that the slate hasn't changed since. It's a
- * report, so the friend is named as the source and never as the signer.
+ * The picks as a slate's payload, never signed: nobody who could sign it did. It
+ * stays in this browser (`friendGuidesStore`) as what the user read from their
+ * friend's guide, with the friend as the source and "you" as who reported it.
  */
-export function guideSlate(
+export function guidePayload(
   friend: string,
   picks: GuidePick[],
   listing: BallotListing,
   election: string,
   now = new Date(),
-): string {
-  const identity = createIdentity({ name: GUIDE_REPORTER, kind: "researcher" });
-  const payload = buildSlate({
-    issuer: identityToIssuer(identity),
+): SlatePayload {
+  return buildSlate({
+    issuer: { key: LOCAL_GUIDE_KEY, name: "you" },
     issuedAt: now,
     context: { election, title: `${friend}'s voter guide` },
     attribution: {
@@ -230,5 +223,4 @@ export function guideSlate(
     },
     positions: picks.map((pick) => withBallotIds(pick.position, listing, election)),
   });
-  return signSlate(payload, identity.keyPair.secretKey);
 }

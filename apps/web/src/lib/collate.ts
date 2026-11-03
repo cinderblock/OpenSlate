@@ -56,6 +56,30 @@ export interface DecodedSlate {
   adoptedFrom?: Array<string | undefined>;
   /** Adoptions whose slate isn't imported, so their positions aren't here. */
   unresolved?: Adoption[];
+  /**
+   * Not a signed slate: a friend's guide kept in this browser (lib/friendsGuide.ts).
+   * `valid` only says nothing's wrong with it. `token` is just its name here, so
+   * it can't be shared, adopted or verified.
+   */
+  local?: true;
+}
+
+/** The issuer key of a local guide, which has no key: never a real `ed25519:` one. */
+export const LOCAL_GUIDE_KEY = "local";
+
+/** Local guides as the rest of the app reads slates. */
+export function decodeLocalGuides(payloads: SlatePayload[]): DecodedSlate[] {
+  return payloads.map((payload) => {
+    const source = sourceOf(payload);
+    return {
+      token: `guide:${source.id}|${payload.context?.election ?? ""}`,
+      importedAt: payload.issued_at,
+      payload,
+      valid: true,
+      source,
+      local: true,
+    };
+  });
 }
 
 /**

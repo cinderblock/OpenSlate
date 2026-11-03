@@ -1,8 +1,10 @@
+import { type SlatePayload, slatePayloadSchema } from "@openslate/core";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useMemo } from "react";
+import { z } from "zod";
 import { expandAdoptions } from "./adoptions";
 import { translateSlates } from "./ballotCheck";
-import { type DecodedSlate, type DisagreeMode, decodeSlates } from "./collate";
+import { type DecodedSlate, type DisagreeMode, decodeLocalGuides, decodeSlates } from "./collate";
 import { slatesCollection } from "./collections";
 import type { KnownIdentity } from "./db";
 import { useKnownIdentities } from "./identities";
@@ -129,6 +131,38 @@ export const areaStore = createLocalStore<Area>("openslate.area.v1", EMPTY_AREA,
 
 export const useArea = () => useLocalStore(areaStore);
 
+/** Friends' guides read by an AI chat: unsigned, and never leaving this browser. */
+export const friendGuidesStore = createLocalStore<SlatePayload[]>(
+  "openslate.friendGuides.v1",
+  [],
+  (raw) => {
+    const parsed = z.array(slatePayloadSchema).safeParse(raw);
+    return parsed.success ? parsed.data : undefined;
+  },
+);
+
+/** Keep a guide, in place of any earlier one from that friend for that election. Says if it did. */
+export function saveFriendGuide(payload: SlatePayload): boolean {
+  const [{ token, source }] = decodeLocalGuides([payload]) as [DecodedSlate];
+  const replaced = decodeLocalGuides(friendGuidesStore.get()).some((g) => g.token === token);
+  friendGuidesStore.set((guides) => [
+    ...decodeLocalGuides(guides)
+      .filter((g) => g.token !== token)
+      .map((g) => g.payload),
+    payload,
+  ]);
+  setRemoved(source.id, false);
+  return replaced;
+}
+
+export function removeFriendGuide(token: string): void {
+  friendGuidesStore.set((guides) =>
+    decodeLocalGuides(guides)
+      .filter((g) => g.token !== token)
+      .map((g) => g.payload),
+  );
+}
+
 /** The election My ballot shows, as a date (`2026-11-03`). Empty = pick a default. */
 export const myElectionStore = createLocalStore<string>("openslate.myElection.v1", "", (raw) =>
   isString(raw) ? raw : undefined,
@@ -151,7 +185,11 @@ export function localToday(): string {
 export function useDecodedSlates(): { slates: DecodedSlate[]; isReady: boolean } {
   const { data, isReady } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
   const contacts = useKnownIdentities();
-  const decoded = useMemo(() => translateSlates(expandAdoptions(decodeSlates(data))), [data]);
+  const guides = useLocalStore(friendGuidesStore)[0];
+  const decoded = useMemo(
+    () => translateSlates(expandAdoptions([...decodeSlates(data), ...decodeLocalGuides(guides)])),
+    [data, guides],
+  );
   const slates = useMemo(() => withNicknames(decoded, contacts), [decoded, contacts]);
   return { slates, isReady };
 }

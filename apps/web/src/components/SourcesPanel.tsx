@@ -17,6 +17,7 @@ import { slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
 import {
   followsStore,
+  removeFriendGuide,
   setCount,
   setRemoved,
   setStanding,
@@ -352,7 +353,10 @@ function SourceRow({ group }: { group: SourceGroup }) {
   const { source } = group;
 
   function remove() {
-    for (const slate of group.slates) slatesCollection.delete(slate.token);
+    for (const slate of group.slates) {
+      if (slate.local) removeFriendGuide(slate.token);
+      else slatesCollection.delete(slate.token);
+    }
     setRemoved(source.id, true);
     // Forget the follow choice too, so importing it again starts fresh.
     followsStore.set((current) => {

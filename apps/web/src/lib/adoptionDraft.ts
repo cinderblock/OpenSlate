@@ -20,7 +20,7 @@ export function adoptableSlates(
 ): DecodedSlate[] {
   const newest = new Map<string, DecodedSlate>();
   for (const slate of slates) {
-    if (!slate.valid || isBallotSource(slate.source)) continue;
+    if (!slate.valid || slate.local || isBallotSource(slate.source)) continue;
     if (!slate.source.secondhand && slate.source.signerKey === ownKey) continue;
     if (positionsFor(slate, election).length === 0) continue;
     const current = newest.get(slate.source.id);

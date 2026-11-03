@@ -330,19 +330,16 @@ bun run --filter '@openslate/cli' start -- adopt https://example.org/party.slate
 ```
 
 Every build of the web app also serves the CLI as one dependency-free file,
-<https://openslate.us/agents/openslate.mjs>, which runs on Node 20+ or Bun.
-Beside it, [`import-friends-guide.md`](./apps/web/public/agents/import-friends-guide.md)
-tells an AI agent how to turn a friend's voter guide, in any format, into a
-slate. Two commands exist for that: `races` prints the official ballot's exact
-subjects and names, and `check` reports anything in a `positions.json` that
-doesn't line up with them. Sources → Add endorsements has the message to give
-the agent.
+<https://openslate.us/agents/openslate.mjs>, which runs on Node 20+ or Bun. Its
+`races` command prints the official ballot's exact subjects and names, and
+`check` reports anything in a `positions.json` that doesn't line up with them.
 
-No agent? The same card works with any AI chat, such as ChatGPT. It copies a
-message holding your own ballot, the chat reads the guide and answers in JSON,
-and you paste that back. The app shows what matched, then signs with a throwaway
-key, so nobody has to think about keys. The slate says it's your report of your
-friend's guide, and pasting a corrected reply replaces it.
+To use a friend's voter guide, Sources → Add endorsements copies a message
+holding your own ballot. Any AI, such as ChatGPT, reads the guide with it and
+answers in JSON, and you paste that back and check the picks. Nothing is signed:
+nobody who could sign it did. The guide stays in your browser as an unsigned
+source, reported by you, so it can't be shared or adopted as a slate. Pasting a
+corrected reply replaces it.
 
 Other useful scripts: `bun test`, `bun run typecheck`, `bun run schema`
 (emits `packages/core/schema/openslate.schema.json`), `bun run lint` (Biome:

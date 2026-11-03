@@ -22,13 +22,21 @@ import {
   rankingKeyFor,
   rankingStore,
 } from "./ballotDraft";
-import { collateRaces, type DecodedSlate, decodeSlates, electionsOf, type Race } from "./collate";
+import {
+  collateRaces,
+  type DecodedSlate,
+  decodeLocalGuides,
+  decodeSlates,
+  electionsOf,
+  type Race,
+} from "./collate";
 import { knownIdentitiesCollection, slatesCollection } from "./collections";
 import { isAreaSet } from "./jurisdictions";
 import {
   areaStore,
   disagreeModeStore,
   followsStore,
+  friendGuidesStore,
   localToday,
   myElectionStore,
   withNicknames,
@@ -78,14 +86,19 @@ async function currentSlates(): Promise<DecodedSlate[]> {
     slatesCollection.toArrayWhenReady(),
     knownIdentitiesCollection.toArrayWhenReady(),
   ]);
+  const guides = friendGuidesStore.get();
   const key = JSON.stringify([
     rows.map((r) => r.token),
+    guides,
     contacts.map((c) => [c.publicKey, c.displayName]),
   ]);
   if (decoded?.key !== key) {
     decoded = {
       key,
-      slates: withNicknames(translateSlates(expandAdoptions(decodeSlates(rows))), contacts),
+      slates: withNicknames(
+        translateSlates(expandAdoptions([...decodeSlates(rows), ...decodeLocalGuides(guides)])),
+        contacts,
+      ),
     };
   }
   return decoded.slates;
