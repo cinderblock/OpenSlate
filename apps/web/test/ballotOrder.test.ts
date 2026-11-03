@@ -255,7 +255,7 @@ describe("COUNTY_DRAWINGS_2026", () => {
   test("every drawing is the 26 letters once each, for a real county", () => {
     for (const [county, drawing] of Object.entries(COUNTY_DRAWINGS_2026)) {
       expect([...drawing.alphabet].sort().join("")).toBe("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-      expect(countyOfPath(`us/ca/${county.toLowerCase().replace(/ /g, "-")}-county`)).toBe(county);
+      expect(countyOfPath(countyPath(county))).toBe(county);
     }
   });
 });

@@ -80,7 +80,7 @@ scripted fetches) and the SoS randomized-alphabet page.
 6. Second round (user asked for all of it):
    - County drawings for multi-county Senate/Assembly districts:
      `src/lib/ballotOrderCounties.ts`, filled from six research agents (one
-     per ~10 counties). ← current: adding counties as they report.
+     per ~10 counties). Done: 31 of 58.
    - Local races (§13111(f)-(h)): city and district offices in the drawn
      order, countywide offices rotated by AD (≥ 5 ADs in the county) or by
      supervisorial district. Basis "likely" (charter cities may differ).
@@ -124,7 +124,7 @@ scripted fetches) and the SoS randomized-alphabet page.
 
 - [x] Local races and countywide rotation
 - [x] Drag-to-reorder override
-- [ ] County drawings: all 58 searched (8 found in the first two groups back)
+- [x] County drawings: all 58 searched, 31 found
 
 - [x] Law and 2026 alphabet confirmed
 - [x] Overlap data
@@ -147,15 +147,33 @@ scripted fetches) and the SoS randomized-alphabet page.
 
 ## County drawings: where we looked and didn't find one
 
-Counties whose November 2026 drawing we couldn't find get "may differ" on
-their multi-county Senate/Assembly races. Notes from the research agents:
+All 58 counties searched 2026-11-02/03 by six research agents. 31 found and
+in `ballotOrderCounties.ts`, each with its source URL. Many were scanned or
+handwritten and read from page images; every one has the 26 letters once
+(a unit test checks).
 
-- Santa Barbara: only the June primary's certificate found.
-- Santa Cruz: no County Random Alphabet page for Nov 2026 (2024 had one).
-- Shasta: notice says a drawing was set for Aug 13 (AD 1); result not posted.
-- Sierra, Siskiyou, Sonoma: not posted.
-- Marin: drawing held Aug 13; its page is behind a Cloudflare challenge.
-- Mariposa, Modoc, Mendocino, Napa: handbooks mention a drawing; no result posted.
-- Mono: only the SoS drawing referenced.
+Not found (their multi-county Senate/Assembly races say "may differ"):
+
+- Drawing held or announced, result never posted: Contra Costa, Inyo, Lake,
+  Mariposa, Modoc, Napa, San Diego, Shasta, Ventura, Yuba.
+- Site unreachable from scripts: Glenn (403/timeouts), Marin (Cloudflare).
+- Nothing posted for November 2026: Alpine, Calaveras, Del Norte, Humboldt,
+  Imperial, Mendocino, Mono, Plumas, Santa Barbara (June primary only),
+  Santa Cruz, Sierra, Siskiyou, Sonoma, Sutter, Trinity.
+
+Notes:
+
 - Every county that said so limits its own drawing to multi-county
-  legislative offices; local contests use the SoS alphabet.
+  legislative offices; local contests use the SoS alphabet (Kings, Yolo,
+  Stanislaus, San Bernardino, Nevada spell this out). So no county is
+  `local: true`.
+- Yolo's page says countywide, Senate and Assembly contests also rotate by
+  supervisorial district. §13111(e) says legislative offices don't rotate;
+  not modelled. Worth checking against a Yolo sample ballot.
+- San Francisco's own drawing covers AD 19 only (AD 17 is all in SF, so it
+  uses the SoS alphabet, as the app does). An older SF pamphlet says
+  citywide offices rotate by supervisorial district (unverified for 2026;
+  §13111(g) says the same for a county with ≤ 4 ADs, and the app does that
+  when the area knows the supervisorial district).
+- Madera drew on August 14, not 13. San Joaquin's older URL still serves the
+  2022 drawing; Santa Barbara's findable certificate is June's.
