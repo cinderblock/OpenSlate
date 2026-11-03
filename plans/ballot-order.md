@@ -125,6 +125,7 @@ scripted fetches) and the SoS randomized-alphabet page.
 - [x] Local races and countywide rotation
 - [x] Drag-to-reorder override
 - [x] County drawings: all 58 searched, 31 found
+- [x] Second round deployed (`71fe172`, `618334b`, live on openslate.us)
 
 - [x] Law and 2026 alphabet confirmed
 - [x] Overlap data
