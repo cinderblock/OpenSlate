@@ -44,10 +44,11 @@ export async function importCatalogEntry(
   queryClient: QueryClient,
 ): Promise<ImportOutcome> {
   try {
-    const outcome = verifyCatalogSlate(
-      await fetchCatalogSlate(entry, catalogUrl, queryClient),
-      knownTokens,
-    );
+    // `knownTokens` is the caller's snapshot, which a bulk import or the
+    // background queue may have overtaken since: ask the store too.
+    const outcome = verifyCatalogSlate(await fetchCatalogSlate(entry, catalogUrl, queryClient), {
+      has: (token) => knownTokens.has(token) || slatesCollection.has(token),
+    });
     if (outcome.kind !== "verified") return outcome;
     storeSlates([outcome.slate]);
     return { kind: "imported", token: outcome.slate.token };
@@ -123,9 +124,17 @@ export function verifyCatalogSlate(
 
 /**
  * Store verified slates in one transaction, so a bulk import makes the ballot
- * re-collate once instead of once per slate.
+ * re-collate once instead of once per slate. Slates already stored (or listed
+ * twice) are skipped: the collection refuses a duplicate key, and imports run
+ * from several places at once (the catalog browser, the background queue).
  */
 export function storeSlates(slates: VerifiedSlate[], kind: "import" | "update" = "import"): void {
+  const seen = new Set<string>();
+  slates = slates.filter(({ token }) => {
+    if (seen.has(token) || slatesCollection.has(token)) return false;
+    seen.add(token);
+    return true;
+  });
   if (slates.length === 0) return;
   const importedAt = new Date().toISOString();
   slatesCollection.insert(slates.map(({ token }) => ({ token, importedAt })));
