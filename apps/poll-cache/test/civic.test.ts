@@ -64,6 +64,29 @@ describe("handleCivicVoterInfo", () => {
     expect(url.searchParams.get("key")).toBe("KEY");
   });
 
+  test("keeps the feed's ballot order: contest placement and each name's place", async () => {
+    stubGoogle({
+      normalizedInput: { state: "CA" },
+      contests: [
+        {
+          type: "General",
+          office: "GOVERNOR",
+          ballotPlacement: "3",
+          candidates: [
+            { name: "STEVE HILTON", orderOnBallot: "2" },
+            { name: "XAVIER BECERRA", orderOnBallot: "1" },
+          ],
+        },
+      ],
+    });
+    const res = await handleCivicVoterInfo(post({ address: "x" }), { key: "KEY" }, {});
+    const ballot = (await res.json()) as {
+      contests: Array<{ ballotPlacement?: number; candidates: Array<{ orderOnBallot?: number }> }>;
+    };
+    expect(ballot.contests[0]?.ballotPlacement).toBe(3);
+    expect(ballot.contests[0]?.candidates.map((c) => c.orderOnBallot)).toEqual([2, 1]);
+  });
+
   test("501 without a key, and nothing sent", async () => {
     const seen = stubGoogle(voterInfo);
     const res = await handleCivicVoterInfo(post({ address: "x" }), {}, {});

@@ -83,6 +83,28 @@ describe("normalizeVoterInfo", () => {
   test("omits the state when the address wasn't normalized", () => {
     expect(normalizeVoterInfo({ contests: [] })).toEqual({ contests: [] });
   });
+
+  test("keeps ballotPlacement and orderOnBallot as numbers, and drops junk", () => {
+    const [contest] = normalizeVoterInfo({
+      contests: [
+        {
+          office: "Mayor",
+          ballotPlacement: "12",
+          candidates: [
+            { name: "A", orderOnBallot: "2" },
+            { name: "B", orderOnBallot: 1 },
+            { name: "C", orderOnBallot: "x" },
+          ],
+        },
+      ],
+    }).contests;
+    expect(contest?.ballotPlacement).toBe(12);
+    expect(contest?.candidates).toEqual([
+      { name: "A", orderOnBallot: 2 },
+      { name: "B", orderOnBallot: 1 },
+      { name: "C" },
+    ]);
+  });
 });
 
 describe("civicUrl", () => {

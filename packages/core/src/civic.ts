@@ -26,6 +26,8 @@ export interface CivicElection {
 export interface CivicChoice {
   name: string;
   party?: string;
+  /** Where the ballot prints the name (1 first), when the election office's feed says. */
+  orderOnBallot?: number;
 }
 
 export interface CivicContest {
@@ -40,6 +42,8 @@ export interface CivicContest {
    * and `id` is the district number relative to that scope ("34").
    */
   district?: { name?: string; scope?: string; id?: string };
+  /** Where the ballot prints the contest (1 first), when the election office's feed says. */
+  ballotPlacement?: number;
 }
 
 /** The contests on one address's ballot. */
@@ -108,7 +112,8 @@ interface VipContest {
   office?: string;
   referendumTitle?: string;
   district?: { name?: string; id?: string; scope?: string };
-  candidates?: Array<{ name?: string; party?: string }>;
+  candidates?: Array<{ name?: string; party?: string; orderOnBallot?: string | number }>;
+  ballotPlacement?: string | number;
   numberElected?: number;
   numberVotingFor?: number;
   referendumBallotResponses?: string[];
@@ -152,10 +157,17 @@ function normalizeContests(data: VipVoterInfo): CivicContest[] {
 
     const candidates: CivicChoice[] = (contest.candidates ?? [])
       .filter(
-        (c): c is { name: string; party?: string } =>
+        (c): c is { name: string; party?: string; orderOnBallot?: string | number } =>
           typeof c.name === "string" && c.name.length > 0,
       )
-      .map((c) => (c.party ? { name: c.name, party: c.party } : { name: c.name }));
+      .map((c) => {
+        const order = position(c.orderOnBallot);
+        return {
+          name: c.name,
+          ...(c.party ? { party: c.party } : {}),
+          ...(order !== undefined ? { orderOnBallot: order } : {}),
+        };
+      });
 
     // For referendums, the ballot responses ("Yes"/"No"/etc.) are the choices,
     // so each can be given a stance like a race's candidates.
@@ -170,6 +182,8 @@ function normalizeContests(data: VipVoterInfo): CivicContest[] {
     if (typeof contest.numberVotingFor === "number" && contest.numberVotingFor > 0) {
       result.voteFor = contest.numberVotingFor;
     }
+    const placement = position(contest.ballotPlacement);
+    if (placement !== undefined) result.ballotPlacement = placement;
     if (contest.district) {
       const { name, scope, id } = contest.district;
       result.district = {
@@ -180,6 +194,12 @@ function normalizeContests(data: VipVoterInfo): CivicContest[] {
     }
     return result;
   });
+}
+
+/** A feed's 1-based position (Google sends them as strings): a positive integer, else nothing. */
+function position(value: string | number | undefined): number | undefined {
+  const n = typeof value === "string" ? Number(value.trim()) : value;
+  return typeof n === "number" && Number.isInteger(n) && n > 0 ? n : undefined;
 }
 
 function slug(text: string): string {
