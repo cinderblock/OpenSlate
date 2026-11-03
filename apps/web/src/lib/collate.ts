@@ -8,6 +8,7 @@ import {
   verifySlate,
 } from "@openslate/core";
 import type { ChoiceCheck } from "./ballotCheck";
+import { ballotOrderFor, type OrderBasis, officeRank } from "./ballotOrder";
 import {
   type Area,
   answerFor,
@@ -258,6 +259,14 @@ export interface Race {
   answered?: true;
   /** Ballot order when a ballot source lists the race, else most-backed first. */
   choices: ChoiceGroup[];
+  /**
+   * How `ballotIndex` relates to this voter's ballot (`ballotOrderFor`):
+   * "ballot", worked out from the law, the drawn alphabet and their districts;
+   * "varies", the order changes across the race's area and theirs can't be
+   * told (`orderNote` says why). Absent: as the ballot source lists it.
+   */
+  orderBasis?: OrderBasis;
+  orderNote?: string;
   /** A ballot source lists this race, so `choices` is the whole field. */
   onBallot: boolean;
   /** A ballot source covers this race's jurisdiction but doesn't list it. */
@@ -461,8 +470,14 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
       for (const group of race.choices) Object.assign(group, tallyPositions(group.positions));
       return { race, followedIds, sourceIds, ballotOrder };
     })
-    .map(({ race, followedIds, sourceIds, ballotOrder }) => ({
+    .map(({ race, followedIds, sourceIds, ballotOrder: listed }) => {
+      const { ballotOrder, basis, note } = printedOrder(race, listed, options.area);
+      return { race, followedIds, sourceIds, ballotOrder, basis, note };
+    })
+    .map(({ race, followedIds, sourceIds, ballotOrder, basis, note }) => ({
       ...race,
+      ...(basis ? { orderBasis: basis } : {}),
+      ...(note ? { orderNote: note } : {}),
       followedSources: followedIds.size,
       totalSources: sourceIds.size,
       choices: race.choices
@@ -481,6 +496,40 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
         ),
     }))
     .sort(compareRaces);
+}
+
+/**
+ * The order the voter's ballot prints a race's listed names in: the ballot
+ * source's order, rotated per California law where it applies (`ballotOrderFor`).
+ * Write-ins, which the ballot doesn't print, stay after the printed names.
+ */
+function printedOrder(
+  race: Pick<Race, "election" | "jurisdiction" | "subject" | "ballot" | "choices">,
+  listed: Map<string, number>,
+  area: Area | undefined,
+): { ballotOrder: Map<string, number>; basis?: OrderBasis; note?: string } {
+  if (listed.size === 0) return { ballotOrder: listed };
+  const writeIns = new Set(race.choices.filter((c) => c.writeIn).map((c) => c.choice));
+  const inListing = [...listed.keys()].sort((a, b) => (listed.get(a) ?? 0) - (listed.get(b) ?? 0));
+  const printed = inListing.filter((name) => name !== "" && !writeIns.has(name));
+  const order = ballotOrderFor(
+    {
+      ...(race.election ? { election: race.election } : {}),
+      ...(race.jurisdiction ? { jurisdiction: race.jurisdiction } : {}),
+      title: race.subject.title,
+      ...(race.subject.kind ? { kind: race.subject.kind } : {}),
+      ...(race.ballot?.retention ? { retention: true } : {}),
+    },
+    printed,
+    area,
+  );
+  if (!order) return { ballotOrder: listed };
+  const rest = inListing.filter((name) => !order.names.includes(name));
+  return {
+    ballotOrder: new Map([...order.names, ...rest].map((name, index) => [name, index])),
+    basis: order.basis,
+    ...(order.reason ? { note: order.reason } : {}),
+  };
 }
 
 /**
@@ -520,16 +569,28 @@ export function contestGroup(race: Pick<Race, "subject" | "ballot">): ContestGro
   return race.subject.kind === "measure" ? "measure" : "office";
 }
 
+function officeOrder(race: Race): number {
+  return officeRank({
+    ...(race.jurisdiction ? { jurisdiction: race.jurisdiction } : {}),
+    title: race.subject.title,
+  });
+}
+
 function contestRank(race: Race): number {
   return CONTEST_GROUPS.indexOf(contestGroup(race));
 }
 
-/** Ballot order: by jurisdiction (statewide, districts, local), offices, retention questions, measures, then title. */
+/**
+ * Ballot order: by jurisdiction (statewide, districts, local), offices,
+ * retention questions, measures; offices in the order California's Elections
+ * Code lists them (`officeRank`), then title.
+ */
 export function compareRaces(a: Race, b: Race): number {
   return (
     jurisdictionRank(a.jurisdiction) - jurisdictionRank(b.jurisdiction) ||
     collator.compare(jurisdictionLabel(a.jurisdiction), jurisdictionLabel(b.jurisdiction)) ||
     contestRank(a) - contestRank(b) ||
+    (contestGroup(a) === "office" ? officeOrder(a) - officeOrder(b) : 0) ||
     collator.compare(a.subject.title, b.subject.title)
   );
 }

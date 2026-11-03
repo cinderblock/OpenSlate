@@ -104,7 +104,7 @@ import { subjectKey } from "../lib/subjects";
 import { isDecided, marksOn, type RaceStatus, raceStatus, stepThrough } from "../lib/triage";
 import { track } from "../lib/usage";
 import { AreaPicker, describeArea } from "./AreaPicker";
-import { BallotProblemsNotice, RaceUnlistedNote } from "./BallotTags";
+import { BallotProblemsNotice, RaceOrderNote, RaceUnlistedNote } from "./BallotTags";
 import { ChoiceRow } from "./ChoiceRow";
 import { CompareStrip } from "./CompareStrip";
 import { electionOptions } from "./electionOptions";
@@ -1485,6 +1485,7 @@ function RaceCardInner({
         </p>
       )}
       <RaceUnlistedNote race={race} />
+      <RaceOrderNote race={race} />
       {mine && mine.length > 0 && (
         <p className="my-slate hint no-print">
           <PenLine className="icon" /> You {mine.map(describeMine).join("; ")} · signed{" "}

@@ -111,6 +111,18 @@ export function RaceUnlistedNote({ race }: { race: Race }) {
 }
 
 /**
+ * When the voter's ballot may print the names in another order: California
+ * rotates some offices from one district to the next, and the app can't
+ * always tell which order the voter gets (`ballotOrderFor`).
+ */
+export function RaceOrderNote({ race, className = "hint" }: { race: Race; className?: string }) {
+  if (race.orderBasis !== "varies") return null;
+  return (
+    <p className={className}>Your ballot may list these names in another order. {race.orderNote}</p>
+  );
+}
+
+/**
  * The detector's summary: endorsements that name something the ballot listing
  * doesn't have, so probably didn't import cleanly. Write-ins aren't counted:
  * they're meant to be off the printed ballot.

@@ -20,6 +20,7 @@ import {
 import type { Race } from "../lib/collate";
 import { formatElectionDate, formatLocalDate } from "../lib/dates";
 import { isRanked, marksFor, rankingOf } from "../lib/ranking";
+import { RaceOrderNote } from "./BallotTags";
 
 /**
  * My ballot on paper: every race as the ballot prints it, a bubble per
@@ -130,6 +131,7 @@ function PrintRace({
       )}
       {title.label && <div className="pb-race-detail">{title.label}</div>}
       {title.measureType && <div className="pb-race-detail pb-kind">{title.measureType}</div>}
+      <RaceOrderNote race={race} className="pb-race-detail" />
       <ul>
         {ballotChoices(race).map((group) => {
           const stance = rows[rowIdFor(election, race.subject, group.choice || undefined)]?.stance;

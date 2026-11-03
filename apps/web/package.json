@@ -40,6 +40,7 @@
   },
   "devDependencies": {
     "@react-aria/optimize-locales-plugin": "^2.1.0",
+    "@turf/area": "^7.4.0",
     "@types/geojson": "^7946.0.16",
     "@types/polylabel": "^2.0.0",
     "@types/qrcode": "^1.5.6",
@@ -50,6 +51,7 @@
     "@types/topojson-simplify": "^3.0.3",
     "@vitejs/plugin-react": "^4.3.4",
     "esbuild": "^0.25.0",
+    "polygon-clipping": "0.15.7",
     "telemetry-collector-core": "^0.1.0",
     "topojson-server": "^3.0.1",
     "topojson-simplify": "^3.0.3",

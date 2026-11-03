@@ -8,6 +8,7 @@ import {
   type LabelDefinition,
   type Stance,
 } from "@openslate/core";
+import { ballotChoices } from "../src/lib/ballotView";
 import {
   areaOptionsOf,
   collateRaces,
@@ -412,6 +413,68 @@ describe("collateRaces", () => {
     const treasurer = races.find((r) => r.subject.title === "Treasurer");
     expect(treasurer?.choices.map((c) => c.choice)).toEqual(["T1", "T2"]);
     expect(treasurer?.followedSources).toBe(0);
+  });
+
+  test("California's drawn order, rotated for the voter's Assembly district", () => {
+    // The certified list is alphabetical; the 2026 drawing puts H first in AD 1.
+    const listing = decodeSlates([
+      slate({
+        of: "Secretary of State",
+        ofKind: "election-authority",
+        election: E,
+        positions: ["Xavier Becerra", "Steve Hilton"].map((choice) => ({
+          title: "Governor of California",
+          choice,
+          stance: "neutral" as const,
+          election: E,
+          jurisdiction: "us/ca",
+        })),
+      }),
+    ]);
+    const order = (ad?: string) => {
+      const race = collateRaces(listing, {
+        follows: {},
+        ...(ad ? { area: { localities: [], districts: { "us/ca/ad": ad } } } : {}),
+      })[0];
+      return {
+        basis: race?.orderBasis,
+        names: race ? ballotChoices(race).map((c) => c.choice) : [],
+      };
+    };
+    expect(order("1")).toEqual({ basis: "ballot", names: ["Steve Hilton", "Xavier Becerra"] });
+    expect(order("2")).toEqual({ basis: "ballot", names: ["Xavier Becerra", "Steve Hilton"] });
+    // No district: the listing's order, flagged as maybe not the voter's.
+    expect(order()).toEqual({ basis: "varies", names: ["Xavier Becerra", "Steve Hilton"] });
+  });
+
+  test("offices in the Elections Code's order, not by title", () => {
+    const listing = decodeSlates([
+      slate({
+        of: "Secretary of State",
+        ofKind: "election-authority",
+        election: E,
+        positions: [
+          "California Controller",
+          "Attorney General of California",
+          "Governor of California",
+          "California Superintendent of Public Instruction",
+          "Lieutenant Governor of California",
+        ].map((title) => ({
+          title,
+          choice: "X Y",
+          stance: "neutral" as const,
+          election: E,
+          jurisdiction: "us/ca",
+        })),
+      }),
+    ]);
+    expect(collateRaces(listing, { follows: {} }).map((r) => r.subject.title)).toEqual([
+      "Governor of California",
+      "Lieutenant Governor of California",
+      "California Controller",
+      "Attorney General of California",
+      "California Superintendent of Public Instruction",
+    ]);
   });
 
   test("offices sort before measures", () => {
