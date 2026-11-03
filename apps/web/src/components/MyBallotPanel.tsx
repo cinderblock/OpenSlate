@@ -185,6 +185,9 @@ export function MyBallotPanel() {
   const [printOptions, setPrintOptions] = useState(false);
   const [printScope, setPrintScope] = useState<PrintScope>("ballot");
   const [printNotes, setPrintNotes] = useState(false);
+  /** Fit onto the front and back of one sheet, rather than one side. */
+  const [printBothSides, setPrintBothSides] = useState(false);
+  const printPages = printBothSides ? 2 : 1;
   /** The browser is printing (Ctrl+P as well as the Print button). */
   const [printing, setPrinting] = useState(false);
   const [fit, setFit] = useState<PrintFit | null>(null);
@@ -526,15 +529,15 @@ export function MyBallotPanel() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when what's printed changes
   useEffect(() => {
     if (!printOptions || !printRef.current) return;
-    setFit(fitToPage(printRef.current));
-  }, [printOptions, printSections, printNotes]);
+    setFit(fitToPage(printRef.current, printPages));
+  }, [printOptions, printSections, printNotes, printPages]);
 
   // Ctrl+P prints the same ballot as the Print button. `beforeprint` runs
   // before the browser lays out the pages, so render and fit synchronously.
   useEffect(() => {
     const before = () => {
       flushSync(() => setPrinting(true));
-      if (printRef.current) fitToPage(printRef.current);
+      if (printRef.current) fitToPage(printRef.current, printPages);
       track({ name: "ballot.print", dims: { scope: printScope } });
     };
     const after = () => setPrinting(false);
@@ -544,7 +547,7 @@ export function MyBallotPanel() {
       window.removeEventListener("beforeprint", before);
       window.removeEventListener("afterprint", after);
     };
-  }, [printScope]);
+  }, [printScope, printPages]);
 
   function exportBallot(format: "json" | "csv") {
     const input = {
@@ -747,21 +750,14 @@ export function MyBallotPanel() {
             <Checkbox isSelected={printNotes} onChange={setPrintNotes}>
               Include my private notes
             </Checkbox>
+            <Checkbox isSelected={printBothSides} onChange={setPrintBothSides}>
+              Both sides of the sheet
+            </Checkbox>
           </div>
           <p className="print-fit" aria-live="polite">
             {printSections.length === 0
               ? "Nothing to print yet: mark a race, or print the whole ballot."
-              : !fit
-                ? ""
-                : fit.pages === 1
-                  ? fit.scale >= 0.995
-                    ? "Fits on one page."
-                    : `Fits on one page, printed at ${Math.round(fit.scale * 100)}% size.`
-                  : `About ${fit.pages} pages, even at the smallest readable size (${Math.round(MIN_PRINT_SCALE * 100)}%). ${
-                      isAreaSet(area)
-                        ? "For one page, print only the races you've marked."
-                        : "For one page, set where you vote, or print only the races you've marked."
-                    }`}
+              : fit && printFitText(fit, printPages, isAreaSet(area))}
           </p>
           <div className="row">
             <button
@@ -1060,6 +1056,22 @@ export function MyBallotPanel() {
       )}
     </section>
   );
+}
+
+/** The print card's readout of how the paper ballot fits (`fitToPage`). */
+function printFitText(fit: PrintFit, maxPages: number, areaSet: boolean): string {
+  const size = fit.scale >= 0.995 ? "" : `, printed at ${Math.round(fit.scale * 100)}% size`;
+  if (fit.pages === 1) return `Fits on one page${size}.`;
+  if (fit.pages <= maxPages) {
+    return `Fits on the front and back of one sheet${size}. Turn on two-sided printing in the print dialog.`;
+  }
+  const fewer = [
+    maxPages === 1 && "print on both sides",
+    !areaSet && "set where you vote",
+    "print only the races you've marked",
+  ].filter(Boolean);
+  const sheets = maxPages === 2 ? `, ${Math.ceil(fit.pages / 2)} sheets two-sided` : "";
+  return `About ${fit.pages} pages${sheets}, even at the smallest readable size (${Math.round(MIN_PRINT_SCALE * 100)}%). For fewer pages, ${fewer.slice(0, -1).join(", ")}${fewer.length > 1 ? " or " : ""}${fewer.at(-1)}.`;
 }
 
 type Patch = ReturnType<typeof useBallotDraft>["patch"];

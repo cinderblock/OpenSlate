@@ -290,6 +290,13 @@ The app stores a catalog slate's token once and never looks again
   `ballotCheck.ts`); verified at 1280 and iPhone 12 Pro; print fits one page
   at 79%.
 - [ ] B2 — news per ballot item: see Part C
+- [x] D1 (2026-11-02, user): no alpha banner on paper; bigger print (10pt,
+  was 8pt; floor 70%, about 7pt); "Both sides of the sheet" fits onto two
+  pages; pages numbered when there's more than one. `fitToPage` rewritten
+  to measure the way paper fills (see Findings). Checked with headless
+  Chrome print-to-PDF on mock ballots of 8–120 races, one- and two-sided:
+  never more pages than the card says; on long ballots it can say one page
+  more than it needs. A 49-race ballot fits two-sided at 76%.
 - [x] Security (2026-10-25, `0503c96`, pushed): zod's `.url()` accepted
   `javascript:` / `data:` URLs and React 18 runs a `javascript:` href on
   click (keys live in this origin). SPEC §3.13: links MUST be http(s);
@@ -434,6 +441,23 @@ The app stores a catalog slate's token once and never looks again
   none (its offices are single-seat), so: "N seats" note → N; listed by a
   ballot source → 1; no ballot source → unknown, no line (local boards are
   often multi-seat, so guessing "one" would mislead).
+
+- The old fit under-measured: it measured balanced columns, whose height
+  jumps up and down with the size (a race never splits; at 20 mock races,
+  1399px at 100%, 1514 at 90%, 1138 at 85%, 799 at 80%), so a binary search
+  could land on a size that printed onto a second page. Headless Chrome
+  print-to-PDF proved it ("fits on one page" at 85%, printed 2 pages).
+  Now `.measuring` fills columns in order to a page's height
+  (`column-fill: auto`) and counts the overflow columns; the count is fixed
+  from the full width (`--print-columns`) and measured 3% narrower,
+  because the printer lays text out a hair wider than the screen (a name
+  that just fit on screen wrapped on paper). The search steps down from
+  100% by 5% and then halves, since height still jumps where names wrap.
+- Testing print without a dialog: build a mock page with the real
+  styles.css and `fitToPage` (`bun build --format iife`), then
+  `chrome --headless=new --print-to-pdf` with a fresh `--user-data-dir`
+  each run (a reused profile serves a cached script). Chrome returns before
+  the PDF is written; read page counts and text with PyMuPDF.
 
 ## Things not to do
 
