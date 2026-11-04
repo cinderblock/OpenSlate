@@ -36,7 +36,7 @@ export function countyCaUpstream(pathname: string): CountyUpstream | null {
   if (!feed) return null;
   const rest = inner.slice(slash + 1);
   const ttl = feedPathTtl(feed, rest);
-  return ttl === null ? null : { url: `${feed.base}/${rest}`, ttl };
+  return ttl === null ? null : { url: `${feed.base}/${rest}${feed.query ?? ""}`, ttl };
 }
 
 interface Answer {

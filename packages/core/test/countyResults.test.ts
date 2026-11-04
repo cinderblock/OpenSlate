@@ -8,6 +8,7 @@ import {
   lvtSummaryPath,
   parseClaritySummary,
   parseClarityVersion,
+  parseLaVote,
   parseLvtCsv,
   parseResultsApi,
 } from "../src/countyResults";
@@ -209,4 +210,39 @@ test("Sacramento's results API reads as contests, with its publish time", () => 
   if (!sac) throw new Error("Sacramento missing");
   expect(feedPathTtl(sac, "data")).toBe(60);
   expect(feedPathTtl(sac, "stats")).toBeNull();
+});
+
+test("Los Angeles' results JSON reads as contests, keyed by group and title", () => {
+  const raw = JSON.parse(
+    readFileSync(join(import.meta.dir, "fixtures/lavote-los-angeles.json"), "utf8"),
+  );
+  const contests = parseLaVote(raw);
+  expect(contests.map((c) => [c.category, c.title])).toEqual([
+    [
+      "Cities",
+      "CITY OF ALHAMBRA GENERAL MUNICIPAL ELECTION Member of the City Council, Fifth District",
+    ],
+    ["Cities", "CITY OF BELL GARDENS GENERAL MUNICIPAL ELECTION - MEASURE W"],
+    ["Governor", "GOVERNOR"],
+    ["State Measures", "STATE MEASURE 1"],
+  ]);
+  const [council, measure, governor, prop] = contests;
+  expect(council?.key).toBe(
+    "cities-city-of-alhambra-general-municipal-election-member-of-the-city-council-fifth-district",
+  );
+  expect(council?.choices[0]?.party).toBeUndefined();
+  expect(measure?.measure).toBe(true);
+  expect(governor?.choices.map((c) => [c.votes, c.percent])).toEqual([
+    [300, 75],
+    [100, 25],
+  ]);
+  if (!governor || !prop || !council) throw new Error("fixture lost a contest");
+  expect(isStateContest(governor)).toBe(true);
+  expect(isStateContest(prop)).toBe(true);
+  expect(isStateContest(council)).toBe(false);
+  expect(() => parseLaVote({ Election: {} })).toThrow();
+  const la = CA_COUNTY_FEEDS["los-angeles"];
+  if (!la) throw new Error("Los Angeles missing");
+  expect(feedPathTtl(la, "json")).toBe(60);
+  expect(feedPathTtl(la, "json?electionid=1")).toBeNull();
 });

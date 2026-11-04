@@ -17,9 +17,10 @@ export const COUNTY_RESULTS_USER_AGENT = "OpenSlate election-results relay (+htt
  * `clarity`: Clarity ENR (Scytl). `lvt`: livevoterturnout.com, whose
  * `summary_<n>.csv` holds every contest, one row per choice. `results-api`:
  * the `results/public/api/elections/<county>/<id>/data` JSON Sacramento
- * publishes (every ballot item with its options' votes).
+ * publishes (every ballot item with its options' votes). `lavote`: Los
+ * Angeles' `electionresults/json?electionid=<n>` (contest groups → contests).
  */
-export type CountyFeedKind = "clarity" | "lvt" | "results-api";
+export type CountyFeedKind = "clarity" | "lvt" | "results-api" | "lavote";
 
 export interface CountyFeed {
   /** The county's name, without "County" (`Santa Clara`). */
@@ -31,6 +32,8 @@ export interface CountyFeed {
   page: string;
   /** False when the feed sends no CORS header: a browser can only read it through a relay. */
   cors: boolean;
+  /** Appended to every upstream URL (`?electionid=4348`): a relay passes paths only. */
+  query?: string;
 }
 
 /** livevoterturnout.com's election folder and its number: `https://www.livevoterturnout.com/ENR/orangecaenr/24`. */
@@ -117,6 +120,14 @@ export const CA_COUNTY_FEEDS: Record<string, CountyFeed> = {
     21,
     "https://www.livevoterturnout.com/ENR/solanocaenr/21/en/Index_21.html",
   ),
+  "los-angeles": {
+    name: "Los Angeles",
+    kind: "lavote",
+    base: "https://results.lavote.gov/electionresults",
+    query: "?electionid=4348",
+    page: "https://results.lavote.gov/",
+    cors: false,
+  },
   sacramento: {
     name: "Sacramento",
     kind: "results-api",
@@ -130,6 +141,7 @@ export const CA_COUNTY_FEEDS: Record<string, CountyFeed> = {
 export function feedPathTtl(feed: CountyFeed, inner: string): number | null {
   if (feed.kind === "lvt") return inner === lvtSummaryPath(feed) ? 60 : null;
   if (feed.kind === "results-api") return inner === "data" ? 60 : null;
+  if (feed.kind === "lavote") return inner === "json" ? 60 : null;
   if (!/^(current_ver\.txt|\d{1,9}\/json\/en\/summary\.json)$/.test(inner)) return null;
   // The version pointer moves; a versioned file never does.
   return inner === "current_ver.txt" ? 60 : 60 * 60;
@@ -392,6 +404,58 @@ export function parseResultsApi(raw: unknown): { contests: CountyContest[]; asOf
   return Number.isFinite(asOf) ? { contests, asOf } : { contests };
 }
 
+interface WireLaContest {
+  Title?: string;
+  Type?: string;
+  VoteFor?: string;
+  Candidates?: { Name?: string; Party?: string; Votes?: number | string }[];
+}
+
+/**
+ * Los Angeles' `electionresults/json?electionid=<n>`:
+ * `Election.ContestGroups[].{Name, Contests[].{Title, Type, VoteFor, Candidates[]}}`.
+ * No contest ids, no precincts, no time: contests are keyed by group and title.
+ */
+export function parseLaVote(raw: unknown): CountyContest[] {
+  const groups = (raw as { Election?: { ContestGroups?: unknown } } | null)?.Election
+    ?.ContestGroups;
+  if (!Array.isArray(groups)) throw new Error("Unexpected answer from the county (no contests)");
+  const keys = new Set<string>();
+  return (groups as { Name?: string; Contests?: WireLaContest[] }[]).flatMap((g) =>
+    (g.Contests ?? []).flatMap((c): CountyContest[] => {
+      const title = c.Title?.replace(/\s+/g, " ").trim();
+      if (!title) return [];
+      let key = nameKey(`${g.Name ?? ""} ${title}`);
+      for (let i = 2; keys.has(key); i++) key = `${nameKey(`${g.Name ?? ""} ${title}`)}-${i}`;
+      keys.add(key);
+      const options = c.Candidates ?? [];
+      const total = options.reduce((s, o) => s + n(o.Votes), 0);
+      const choices: CountyChoice[] = options.map((o) => {
+        const party = o.Party?.trim();
+        const votes = n(o.Votes);
+        return {
+          name: (o.Name ?? "").replace(/\s+/g, " ").trim(),
+          ...(party && !/^non[\s-]?partisan$/i.test(party) ? { party } : {}),
+          votes,
+          percent: total > 0 ? Math.round((votes / total) * 10000) / 100 : 0,
+        };
+      });
+      const measure =
+        c.Type === "Measure" || (choices.length > 0 && choices.every((x) => YES_NO.test(x.name)));
+      return [
+        {
+          key,
+          title,
+          ...(g.Name ? { category: g.Name } : {}),
+          measure,
+          voteFor: measure ? 0 : n(c.VoteFor?.match(/\d+/)?.[0]),
+          choices,
+        },
+      ];
+    }),
+  );
+}
+
 /** Whether a contest is one the Secretary of State already reports (state and federal offices, statewide propositions). */
 export function isStateContest(c: CountyContest): boolean {
   // Judges are on the ballot statewide but the Secretary of State's results
@@ -416,4 +480,4 @@ const JUDGE_TITLE = /justice|judge|court of appeal|supreme court|superior court|
 
 /** Titles of the contests the Secretary of State reports, however a county words them. */
 const STATE_TITLE =
-  /^(governor|lieutenant governor|secretary of state|controller|treasurer(?![\s-]*tax)|attorney general|insurance commissioner|(state )?superintendent of public instruction)\b|united states (senator|representative)|u\.? ?s\.? (senator|representative)|representative in congress|congressional district|state senat|state assembly|member of (the )?assembly|assembly member|board (of )?equalization|^\d+(st|nd|rd|th) (assembly|senate|state senate|congressional) district\b|^(state |[a-z ]+ county )?prop(osition)?\.? ?\d+\b/i;
+  /^(governor|lieutenant governor|secretary of state|controller|treasurer(?![\s-]*tax)|attorney general|insurance commissioner|(state )?superintendent of public instruction)\b|united states (senator|representative)|u\.? ?s\.? (senator|representative)|representative in congress|congressional district|state senat|state assembly|member of (the )?assembly|assembly member|board (of )?equalization|^\d+(st|nd|rd|th) (assembly|senate|state senate|congressional) district\b|^(state |[a-z ]+ county )?prop(osition)?\.? ?\d+\b|^state measure \d+\b/i;

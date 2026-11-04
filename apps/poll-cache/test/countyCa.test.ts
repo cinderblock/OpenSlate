@@ -98,3 +98,14 @@ test("a livevoterturnout county's summary CSV is relayed with a minute's cache",
   expect(countyCaUpstream("/api/county-ca/orange/summary_24.xml")).toBeNull();
   expect(countyCaUpstream("/api/county-ca/orange/current_ver.txt")).toBeNull();
 });
+
+test("Los Angeles' feed is asked for with its election id, which the client can't change", () => {
+  expect(countyCaUpstream("/api/county-ca/los-angeles/json")).toEqual({
+    url: "https://results.lavote.gov/electionresults/json?electionid=4348",
+    ttl: 60,
+  });
+  expect(countyCaUpstream("/api/county-ca/sacramento/data")).toEqual({
+    url: "https://results.saccounty.gov/results/public/api/elections/sacramento-county-ca/69/data",
+    ttl: 60,
+  });
+});

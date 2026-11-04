@@ -1,0 +1,109 @@
+{
+  "Election": {
+    "ID": 4348,
+    "Date": "2026-11-03T00:00:00-08:00",
+    "Title": "General Election",
+    "ContestGroups": [
+      {
+        "Name": "Cities",
+        "Contests": [
+          {
+            "Title": "CITY OF ALHAMBRA GENERAL MUNICIPAL ELECTION Member of the City Council, Fifth District",
+            "Type": "Candidate",
+            "AdditionalText": "",
+            "MeasureText": "",
+            "MeasurePassRate": "",
+            "VoteFor": "",
+            "Candidates": [
+              {
+                "Name": "ADELE ANDRADE STADLER",
+                "Party": "Non Partisan",
+                "Votes": 0
+              },
+              {
+                "Name": "ALEJANDRO COVARRUBIAS",
+                "Party": "Non Partisan",
+                "Votes": 0
+              },
+              {
+                "Name": "MELISSA MICHELSON",
+                "Party": "Non Partisan",
+                "Votes": 0
+              }
+            ]
+          },
+          {
+            "Title": "CITY OF BELL GARDENS GENERAL MUNICIPAL ELECTION - MEASURE W",
+            "Type": "Measure",
+            "AdditionalText": "",
+            "MeasureText": "Shall the measure permitting the City of Bell Gardens to sell the Bell Gardens M",
+            "MeasurePassRate": "Majority of votes cast",
+            "VoteFor": "",
+            "Candidates": [
+              {
+                "Name": "YES",
+                "Party": "Non Partisan",
+                "Votes": 0
+              },
+              {
+                "Name": "NO",
+                "Party": "Non Partisan",
+                "Votes": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "Governor",
+        "Contests": [
+          {
+            "Title": "GOVERNOR",
+            "Type": "Candidate",
+            "AdditionalText": "Los Angeles County Results Only",
+            "MeasureText": "",
+            "MeasurePassRate": "",
+            "VoteFor": "",
+            "Candidates": [
+              {
+                "Name": "STEVE HILTON",
+                "Party": "Republican",
+                "Votes": 300
+              },
+              {
+                "Name": "XAVIER BECERRA",
+                "Party": "Democratic",
+                "Votes": 100
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "State Measures",
+        "Contests": [
+          {
+            "Title": "STATE MEASURE 1",
+            "Type": "Measure",
+            "AdditionalText": "Los Angeles County Results Only",
+            "MeasureText": "AUTHORIZES BONDS FOR HOUSING AFFORDABILITY PROGRAMS. LEGISLATIVE STATUTE. Author",
+            "MeasurePassRate": "Majority of votes cast",
+            "VoteFor": "",
+            "Candidates": [
+              {
+                "Name": "YES",
+                "Party": "Non Partisan",
+                "Votes": 0
+              },
+              {
+                "Name": "NO",
+                "Party": "Non Partisan",
+                "Votes": 0
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

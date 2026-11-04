@@ -164,3 +164,13 @@ describe("the county's own contests", () => {
     expect(own("City of Santa Clara Council, District 2", "santa clara")).toBe(false);
   });
 });
+
+describe("districts in Los Angeles' wording", () => {
+  test("ordinals and 'No.'", () => {
+    expect(titleDistrict("CITY OF ALHAMBRA Member of the City Council, Fifth District")).toBe("5");
+    expect(titleDistrict("LOS ANGELES CITY Member of the City Council, 3rd District")).toBe("3");
+    expect(
+      titleDistrict("ABC UNIFIED SCHOOL DISTRICT Governing Board Member, Trustee Area No. 2"),
+    ).toBe("2");
+  });
+});

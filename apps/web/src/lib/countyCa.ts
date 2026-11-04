@@ -7,6 +7,7 @@ import {
   lvtSummaryPath,
   parseClaritySummary,
   parseClarityVersion,
+  parseLaVote,
   parseLvtCsv,
   parseResultsApi,
 } from "@openslate/core";
@@ -150,11 +151,34 @@ export function titleWords(title: string): string {
 
 /** The district a seat is for, however the county words it: "District 3", "D2", "TA 4", "Ward 1". */
 export function titleDistrict(title: string): string | undefined {
-  const m = titleWords(title).match(
-    / (?:district|d|trustee area|ta|ward|division|seat) ?([a-z]|\d+) /,
-  );
-  return m?.[1];
+  const words = titleWords(title);
+  const m = words.match(/ (?:district|d|trustee area|ta|ward|division|seat) ?(?:no )?([a-z]|\d+) /);
+  if (m?.[1]) return m[1];
+  // "3rd District", "Fifth District" (Los Angeles).
+  const ordinal = words.match(/ (\d+)(?:st|nd|rd|th) district /);
+  if (ordinal?.[1]) return String(Number(ordinal[1]));
+  const word = words.match(/ ([a-z]+) district /)?.[1];
+  const at = word ? ORDINALS.indexOf(word) : -1;
+  return at >= 0 ? String(at + 1) : undefined;
 }
+
+const ORDINALS = [
+  "first",
+  "second",
+  "third",
+  "fourth",
+  "fifth",
+  "sixth",
+  "seventh",
+  "eighth",
+  "ninth",
+  "tenth",
+  "eleventh",
+  "twelfth",
+  "thirteenth",
+  "fourteenth",
+  "fifteenth",
+];
 
 /**
  * The names a place answers to: its city and its districts' names. Not its
@@ -266,6 +290,27 @@ async function fetchLvt(slug: string, feed: CountyFeed): Promise<CountyResults> 
 }
 
 /** Sacramento's results API: every ballot item in one JSON, its time in `election.asOf`. */
+/** Los Angeles: every contest in one JSON (through the relay: no CORS, and a query the relay adds). */
+async function fetchLaVote(slug: string, feed: CountyFeed): Promise<CountyResults> {
+  const res = await fetch(`${baseFor(slug, feed)}/json`, {
+    headers: { accept: "application/json" },
+  });
+  if (!res.ok) throw new Error(`The county answered ${res.status}`);
+  const text = await res.text();
+  const updated = updatedOf(res);
+  const version = `${updated.updated ?? ""}:${text.length}:${text.slice(-64)}`;
+  const previous = lastRead.get(slug);
+  if (previous?.version === version) return previous;
+  const out: CountyResults = {
+    county: slug,
+    version,
+    ...updated,
+    contests: parseLaVote(JSON.parse(text)),
+  };
+  lastRead.set(slug, out);
+  return out;
+}
+
 async function fetchResultsApi(slug: string, feed: CountyFeed): Promise<CountyResults> {
   const res = await fetch(`${baseFor(slug, feed)}/data`, {
     headers: { accept: "application/json" },
@@ -299,6 +344,7 @@ export async function fetchCountyResults(slug: string): Promise<CountyResults> {
   if (!hit) throw new Error(`No results feed for ${slug}`);
   if (hit.kind === "lvt") return fetchLvt(slug, hit);
   if (hit.kind === "results-api") return fetchResultsApi(slug, hit);
+  if (hit.kind === "lavote") return fetchLaVote(slug, hit);
   const base = baseFor(slug, hit);
   const verRes = await fetch(`${base}/current_ver.txt`);
   if (!verRes.ok) throw new Error(`The county answered ${verRes.status}`);
