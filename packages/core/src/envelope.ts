@@ -1,5 +1,5 @@
 import { canonicalize, fromUtf8, utf8 } from "./canonical";
-import { b64url, sign as edSign, verify as edVerify } from "./crypto";
+import { b64url, sign as edSign, verify as edVerify, verifyAsync as edVerifyAsync } from "./crypto";
 import type { JwsHeader } from "./schema";
 
 export interface DecodedSlate<T = unknown> {
@@ -51,4 +51,12 @@ export function decodeToken<T = unknown>(token: string): DecodedSlate<T> {
 
 export function verifySignature(decoded: DecodedSlate, publicKey: Uint8Array): boolean {
   return edVerify(decoded.signature, decoded.signingInput, publicKey);
+}
+
+/** `verifySignature`, through the runtime's own Ed25519 where it has one (`verifyAsync`). */
+export function verifySignatureAsync(
+  decoded: DecodedSlate,
+  publicKey: Uint8Array,
+): Promise<boolean> {
+  return edVerifyAsync(decoded.signature, decoded.signingInput, publicKey);
 }

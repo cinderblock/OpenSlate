@@ -33,6 +33,72 @@ export function verify(signature: Uint8Array, message: Uint8Array, publicKey: Ui
   }
 }
 
+/**
+ * `verify`, through the runtime's own Ed25519 (WebCrypto) where it has one:
+ * about ten times faster than noble's JavaScript, and more with many at
+ * once. The outcome is always noble's: WebCrypto's check is RFC 8032's, which
+ * accepts a subset of what noble's (ZIP 215) does, so its yes is noble's yes,
+ * and anything it doesn't accept goes to noble to decide.
+ */
+export async function verifyAsync(
+  signature: Uint8Array,
+  message: Uint8Array,
+  publicKey: Uint8Array,
+): Promise<boolean> {
+  const key = await webCryptoKey(publicKey);
+  if (key) {
+    try {
+      const subtle = globalThis.crypto.subtle;
+      if (await subtle.verify({ name: "Ed25519" }, key, buffer(signature), buffer(message)))
+        return true;
+    } catch {
+      // noble decides.
+    }
+  }
+  return verify(signature, message, publicKey);
+}
+
+/** RFC 8032's first test key: importing it says whether the runtime has Ed25519. */
+const PROBE_KEY = Uint8Array.from(
+  "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a".match(/../g) ?? [],
+  (hex) => Number.parseInt(hex, 16),
+);
+let webCryptoEd25519: Promise<boolean> | undefined;
+/** Imported keys, by their bytes: a catalog's slates come from a handful of signers. */
+const importedKeys = new Map<string, Promise<CryptoKey | undefined>>();
+
+function buffer(bytes: Uint8Array): ArrayBuffer {
+  return bytes.buffer instanceof ArrayBuffer &&
+    bytes.byteOffset === 0 &&
+    bytes.byteLength === bytes.buffer.byteLength
+    ? bytes.buffer
+    : (bytes.slice().buffer as ArrayBuffer);
+}
+
+function importEd25519(publicKey: Uint8Array): Promise<CryptoKey> {
+  return globalThis.crypto.subtle.importKey("raw", buffer(publicKey), { name: "Ed25519" }, false, [
+    "verify",
+  ]);
+}
+
+async function webCryptoKey(publicKey: Uint8Array): Promise<CryptoKey | undefined> {
+  if (!globalThis.crypto?.subtle) return undefined;
+  webCryptoEd25519 ??= importEd25519(PROBE_KEY).then(
+    () => true,
+    () => false,
+  );
+  if (!(await webCryptoEd25519)) return undefined;
+  const id = b64url.encode(publicKey);
+  let key = importedKeys.get(id);
+  if (!key) {
+    // A key WebCrypto won't take (not a point, say) goes to noble.
+    key = importEd25519(publicKey).catch(() => undefined);
+    if (importedKeys.size > 1000) importedKeys.clear();
+    importedKeys.set(id, key);
+  }
+  return key;
+}
+
 export function encodePublicKey(publicKey: Uint8Array): string {
   return KEY_PREFIX + base58.encode(publicKey);
 }

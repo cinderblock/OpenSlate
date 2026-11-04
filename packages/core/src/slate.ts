@@ -1,5 +1,11 @@
 import { decodePublicKey, encodePublicKey, type KeyPair } from "./crypto";
-import { type DecodedSlate, decodeToken, encodeToken, verifySignature } from "./envelope";
+import {
+  type DecodedSlate,
+  decodeToken,
+  encodeToken,
+  verifySignature,
+  verifySignatureAsync,
+} from "./envelope";
 import {
   type Adoption,
   type Article,
@@ -81,6 +87,39 @@ export interface VerifyOptions {
 
 /** Parse, schema-validate, and cryptographically verify a token. */
 export function verifySlate(token: string, options: VerifyOptions = {}): VerifyResult {
+  const checked = checkSlate(token);
+  if ("result" in checked) return checked.result;
+  return finishSlate(checked, verifySignature(checked.decoded, checked.publicKey), options);
+}
+
+/**
+ * `verifySlate`, with the signature checked by the runtime's own Ed25519
+ * where it has one (`verifyAsync`): the same result, many times faster in a
+ * browser checking a whole catalog.
+ */
+export async function verifySlateAsync(
+  token: string,
+  options: VerifyOptions = {},
+): Promise<VerifyResult> {
+  const checked = checkSlate(token);
+  if ("result" in checked) return checked.result;
+  return finishSlate(
+    checked,
+    await verifySignatureAsync(checked.decoded, checked.publicKey),
+    options,
+  );
+}
+
+interface CheckedSlate {
+  decoded: DecodedSlate;
+  payload: SlatePayload;
+  publicKey: Uint8Array;
+  errors: string[];
+  warnings: string[];
+}
+
+/** Everything `verifySlate` checks but the signature, or the result when it can't get that far. */
+function checkSlate(token: string): CheckedSlate | { result: VerifyResult } {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -88,7 +127,7 @@ export function verifySlate(token: string, options: VerifyOptions = {}): VerifyR
   try {
     decoded = decodeToken(token);
   } catch (err) {
-    return { valid: false, errors: [errorMessage(err)], warnings };
+    return { result: { valid: false, errors: [errorMessage(err)], warnings } };
   }
 
   if (decoded.header.alg !== "EdDSA") errors.push(`unsupported alg: ${String(decoded.header.alg)}`);
@@ -101,7 +140,7 @@ export function verifySlate(token: string, options: VerifyOptions = {}): VerifyR
     for (const issue of result.error.issues) {
       errors.push(`payload ${issue.path.join(".") || "(root)"}: ${issue.message}`);
     }
-    return { valid: false, errors, warnings };
+    return { result: { valid: false, errors, warnings } };
   }
   const payload = result.data;
 
@@ -114,10 +153,19 @@ export function verifySlate(token: string, options: VerifyOptions = {}): VerifyR
     publicKey = decodePublicKey(payload.issuer.key);
   } catch (err) {
     errors.push(`invalid issuer key: ${errorMessage(err)}`);
-    return { valid: false, payload, issuerKey: payload.issuer.key, errors, warnings };
+    return {
+      result: { valid: false, payload, issuerKey: payload.issuer.key, errors, warnings },
+    };
   }
+  return { decoded, payload, publicKey, errors, warnings };
+}
 
-  if (!verifySignature(decoded, publicKey)) errors.push("signature verification failed");
+function finishSlate(
+  { payload, errors, warnings }: CheckedSlate,
+  signed: boolean,
+  options: VerifyOptions,
+): VerifyResult {
+  if (!signed) errors.push("signature verification failed");
 
   const now = options.now ?? new Date();
   if (payload.expires_at && new Date(payload.expires_at).getTime() < now.getTime()) {
