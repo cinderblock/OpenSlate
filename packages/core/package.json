@@ -6,7 +6,8 @@
   "license": "MIT",
   "exports": {
     ".": "./src/index.ts",
-    "./civic": "./src/civic.ts"
+    "./civic": "./src/civic.ts",
+    "./countyResults": "./src/countyResults.ts"
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",

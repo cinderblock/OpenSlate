@@ -3,6 +3,7 @@ export * from "./ballot";
 export * from "./canonical";
 export * from "./catalog";
 export * from "./civic";
+export * from "./countyResults";
 export * from "./crypto";
 export * from "./envelope";
 export * from "./forecasts";

@@ -7,6 +7,7 @@ import {
   handleCivicElections,
   handleCivicVoterInfo,
 } from "@openslate/poll-cache/civic";
+import { handleCountyCa } from "@openslate/poll-cache/countyCa";
 import { GEOCODE_PATH, handleGeocode } from "@openslate/poll-cache/geocode";
 import { handleSosCa } from "@openslate/poll-cache/sosCa";
 import { Hono } from "hono";
@@ -70,6 +71,10 @@ app.post("/api/verify", async (c) => {
 // public worker runs (apps/poll-cache/src/sosCa.ts): a minute's cache, one
 // upstream request per contest at a time. CORS comes from the /api/* middleware.
 app.get("/api/sos-ca/returns/*", (c) => handleSosCa(c.req.path, {}));
+
+// Counties' own election-night feeds (apps/poll-cache/src/countyCa.ts): only
+// the counties and files @openslate/core/countyResults lists, cached and shared.
+app.get("/api/county-ca/*", (c) => handleCountyCa(c.req.path, {}));
 
 // Address → districts via the Census geocoder, the same relay the public
 // worker runs (apps/poll-cache/src/geocode.ts): opt-in in the web app, the

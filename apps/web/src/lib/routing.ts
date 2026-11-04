@@ -91,6 +91,20 @@ export const PROVIDERS: Record<string, ProviderInfo> = {
     privacyNote:
       "The Secretary of State's results API allows browser-direct access. Through our backend, a crowd of browsers costs them one request a minute, and they see us instead of you.",
   },
+  "county-ca": {
+    key: "county-ca",
+    name: "California county election offices",
+    homepage: "https://www.sos.ca.gov/elections/voting-resources/county-elections-offices",
+    canDirect: true,
+    // Same reasoning as the Secretary of State: through the relay a crowd costs
+    // a county one request a minute. Never switched to direct on failure.
+    defaultMode: configured("VITE_COUNTY_CA_BASE", "VITE_API_BASE") ? "proxy" : "direct",
+    // Shown in Settings; each county's own feed root is in @openslate/core/countyResults.
+    directUrl: "https://results.enr.clarityelections.com",
+    proxyUrl: envBase("VITE_COUNTY_CA_BASE", `${apiBase()}/api/county-ca`),
+    privacyNote:
+      "Counties' results feeds allow browser-direct access. Through our backend, a crowd of browsers costs a county one request a minute, and the county sees us instead of you.",
+  },
   votehub: {
     key: "votehub",
     name: "VoteHub",

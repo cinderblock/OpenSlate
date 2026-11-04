@@ -17,6 +17,40 @@ export interface WatchGroup {
   county?: string;
   /** The place's districts with no race this election (odd State Senate seats in 2026). */
   skipped?: string[];
+  /** Where the place is, when it came from a lookup: to pick its local races from a county's count. */
+  area?: PlaceArea;
+}
+
+/** The parts of an `Area` that say which local races are a place's. */
+export type PlaceArea = Pick<Area, "localities" | "districts" | "labels">;
+
+function isStringRecord(raw: unknown): raw is Record<string, string> {
+  return (
+    typeof raw === "object" &&
+    raw !== null &&
+    Object.values(raw).every((v) => typeof v === "string")
+  );
+}
+
+function isPlaceArea(raw: unknown): raw is PlaceArea {
+  if (typeof raw !== "object" || raw === null) return false;
+  const a = raw as Partial<PlaceArea>;
+  return (
+    Array.isArray(a.localities) &&
+    a.localities.every((l) => typeof l === "string") &&
+    isStringRecord(a.districts) &&
+    (a.labels === undefined || isStringRecord(a.labels))
+  );
+}
+
+/** The parts of an area worth keeping with a place. */
+export function placeArea(area: Area): PlaceArea | undefined {
+  if (area.localities.length === 0 && Object.keys(area.districts).length === 0) return undefined;
+  return {
+    localities: [...new Set([...area.localities, ...(area.found ?? [])])],
+    districts: { ...area.districts },
+    ...(area.labels ? { labels: { ...area.labels } } : {}),
+  };
 }
 
 /** The group single races land in. */
@@ -34,7 +68,8 @@ function isGroup(raw: unknown): raw is WatchGroup {
     g.contests.every((c) => typeof c === "string") &&
     (g.county === undefined || typeof g.county === "string") &&
     (g.skipped === undefined ||
-      (Array.isArray(g.skipped) && g.skipped.every((c) => typeof c === "string")))
+      (Array.isArray(g.skipped) && g.skipped.every((c) => typeof c === "string"))) &&
+    (g.area === undefined || isPlaceArea(g.area))
   );
 }
 
@@ -75,7 +110,7 @@ function newId(): string {
  */
 export function addPlace(
   groups: readonly WatchGroup[],
-  place: { label: string; districts: PlaceDistricts; county?: string },
+  place: { label: string; districts: PlaceDistricts; county?: string; area?: PlaceArea },
   statewide: readonly string[],
   id: string = newId(),
 ): WatchGroup[] {
@@ -85,6 +120,7 @@ export function addPlace(
     label: place.label.trim() || "A place",
     contests: placeContests(place.districts),
     ...(place.county ? { county: place.county } : {}),
+    ...(place.area ? { area: place.area } : {}),
   };
   next.push(group);
   if (!next.some((g) => g.id === STATEWIDE_ID) && statewide.length > 0) {
@@ -101,6 +137,19 @@ export function addSingle(groups: readonly WatchGroup[], contest: string): Watch
   return groups.map((g) =>
     g.id === SINGLES_ID ? { ...g, contests: [...g.contests, contest] } : g,
   );
+}
+
+/** Add contests to a group, after its own, skipping ones it has. */
+export function addToGroup(
+  groups: readonly WatchGroup[],
+  groupId: string,
+  contests: readonly string[],
+): WatchGroup[] {
+  return groups.map((g) => {
+    if (g.id !== groupId) return g;
+    const fresh = contests.filter((c, i) => !g.contests.includes(c) && contests.indexOf(c) === i);
+    return fresh.length ? { ...g, contests: [...g.contests, ...fresh] } : g;
+  });
 }
 
 /** Drop a contest from a group; a group left empty goes too. */

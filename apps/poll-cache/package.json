@@ -7,6 +7,7 @@
   "license": "MIT",
   "exports": {
     "./civic": "./src/civic.ts",
+    "./countyCa": "./src/countyCa.ts",
     "./geocode": "./src/geocode.ts",
     "./sosCa": "./src/sosCa.ts"
   },

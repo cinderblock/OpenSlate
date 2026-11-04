@@ -5,6 +5,7 @@ import {
   handleCivicElections,
   handleCivicVoterInfo,
 } from "./civic";
+import { COUNTY_CA_PREFIX, handleCountyCa } from "./countyCa";
 import { GEOCODE_PATH, handleGeocode } from "./geocode";
 import { handleSosCa, SOS_CA_PREFIX, SOS_CA_UPSTREAM } from "./sosCa";
 
@@ -105,6 +106,7 @@ export default {
           polls_upstream: POLLS_UPSTREAM,
           results_upstream: RESULTS_UPSTREAM,
           sos_ca_upstream: SOS_CA_UPSTREAM,
+          county_ca: COUNTY_CA_PREFIX,
           geocode: GEOCODE_PATH,
           // Whether this relay can ask Google (it has a key): the web app
           // offers "Google (via OpenSlate)" only then.
@@ -124,6 +126,9 @@ export default {
     }
     if (url.pathname.startsWith(SOS_CA_PREFIX)) {
       return handleSosCa(url.pathname, corsHeaders());
+    }
+    if (url.pathname.startsWith(COUNTY_CA_PREFIX)) {
+      return handleCountyCa(url.pathname, corsHeaders());
     }
 
     return new Response("Not Found", { status: 404, headers: corsHeaders() });

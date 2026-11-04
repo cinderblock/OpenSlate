@@ -1,6 +1,15 @@
 import { useIsFetching, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  contestsForPlace,
+  countyContestId,
+  countyContestResult,
+  countyFeed,
+  countyQueryOptions,
+  localContests,
+  parseCountyContestId,
+} from "../lib/countyCa";
 import type { Area } from "../lib/jurisdictions";
 import { EMPTY_AREA, isAreaSet } from "../lib/jurisdictions";
 import { useArea } from "../lib/myVote";
@@ -23,8 +32,11 @@ import {
 import {
   addPlace,
   addSingle,
+  addToGroup,
   districtsOfArea,
+  type PlaceArea,
   type PlaceDistricts,
+  placeArea,
   removeFromGroups,
   removeGroup,
   setGroupCounty,
@@ -131,9 +143,10 @@ export function LivePanel() {
         <a href="https://electionresults.sos.ca.gov" target="_blank" rel="noreferrer">
           California Secretary of State ↗
         </a>
-        . Semi-official election-night results; counties keep counting for weeks. Local races (city,
-        county, school) are counted by each county: see its elections office. Races you follow from
-        a race page are under <Link to="/races">All races → Following</Link>.
+        , and for local races (city, county, school, special districts, local measures) the county's
+        own count where OpenSlate reads it (Santa Clara so far: give a place its county, then "Local
+        races"). Semi-official election-night results; counties keep counting for weeks. Races you
+        follow from a race page are under <Link to="/races">All races → Following</Link>.
       </p>
     </section>
   );
@@ -229,6 +242,7 @@ function PlacesBar({ groups }: { groups: WatchGroup[] }) {
           >
             Stop watching
           </button>
+          <LocalRaces group={group} />
           {group.skipped && group.skipped.length > 0 && (
             <span className="hint live-skipped">
               No race this election for {group.skipped.map(contestLabel).join(", ")}.
@@ -237,6 +251,92 @@ function PlacesBar({ groups }: { groups: WatchGroup[] }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+/** A place's local races, from its county's own count, when OpenSlate reads that county's feed. */
+function LocalRaces({ group }: { group: WatchGroup }) {
+  const found = countyFeed(group.county);
+  const [open, setOpen] = useState(false);
+  if (!found) return null;
+  return (
+    <>
+      <button type="button" className="link" onClick={() => setOpen(!open)} aria-expanded={open}>
+        {open ? "Close local races" : "+ Local races"}
+      </button>
+      {open && (
+        <LocalRacesPicker
+          group={group}
+          slug={found.slug}
+          countyName={found.feed.name}
+          onDone={() => setOpen(false)}
+        />
+      )}
+    </>
+  );
+}
+
+function LocalRacesPicker({
+  group,
+  slug,
+  countyName,
+  onDone,
+}: {
+  group: WatchGroup;
+  slug: string;
+  countyName: string;
+  onDone: () => void;
+}) {
+  const query = useQuery(countyQueryOptions(slug));
+  const contests = useMemo(() => localContests(query.data?.contests ?? []), [query.data]);
+  const mine = useMemo(
+    () => (group.area ? contestsForPlace(contests, group.area, countyName) : []),
+    [contests, group.area, countyName],
+  );
+  const options = useMemo<SelectOption[]>(
+    () =>
+      contests.map((c) => ({
+        id: countyContestId(slug, c.key),
+        label: c.title,
+        ...(c.category ? { description: c.category } : {}),
+      })),
+    [contests, slug],
+  );
+  const add = (ids: string[]) => watchStore.set((gs) => addToGroup(gs, group.id, ids));
+  if (query.isError && !query.data)
+    return (
+      <p className="error live-local">
+        Couldn't get {countyName} County's count: {query.error.message}.
+      </p>
+    );
+  if (!query.data) return <p className="hint live-local">Getting {countyName} County's races…</p>;
+  return (
+    <div className="card-inset live-local">
+      {mine.length > 0 && (
+        <p>
+          <button
+            type="button"
+            className="primary"
+            onClick={() => {
+              add(mine.map((c) => countyContestId(slug, c.key)));
+              onDone();
+            }}
+          >
+            Add all {mine.length} local races for {group.label}
+          </button>{" "}
+          <span className="hint">Matched by name: remove any that aren't on your ballot.</span>
+        </p>
+      )}
+      <ComboBox
+        label={`${countyName} County local race or measure`}
+        options={options}
+        value={null}
+        placeholder="Type to find: council, school board, Measure A…"
+        onChange={(id) => {
+          if (id) add([id]);
+        }}
+      />
+    </div>
   );
 }
 
@@ -258,6 +358,79 @@ function Section({ section }: { section: WatchSection }) {
 }
 
 function ContestCard({
+  id,
+  groupIds,
+  counties,
+}: {
+  id: string;
+  groupIds: string[];
+  counties: string[];
+}) {
+  const county = parseCountyContestId(id);
+  if (county)
+    return (
+      <CountyContestCard id={id} slug={county.county} contestKey={county.key} groupIds={groupIds} />
+    );
+  return <StateContestCard id={id} groupIds={groupIds} counties={counties} />;
+}
+
+/** A local race, from its county's own count. */
+function CountyContestCard({
+  id,
+  slug,
+  contestKey,
+  groupIds,
+}: {
+  id: string;
+  slug: string;
+  contestKey: string;
+  groupIds: string[];
+}) {
+  const query = useQuery(countyQueryOptions(slug));
+  const remove = () => watchStore.set((gs) => removeFromGroups(gs, groupIds, id));
+  const contest = query.data?.contests.find((c) => c.key === contestKey);
+  const result = contest ? countyContestResult(contest, query.data?.updated) : undefined;
+  const changed = useChanged(query.data?.version);
+  const feed = countyFeed(slug)?.feed;
+  const title = contest?.title ?? "Local race";
+  return (
+    <li className={`live-contest card${changed ? " live-changed" : ""}`}>
+      <div className="live-contest-head">
+        <strong>{title}</strong>
+        {result && <ReportingLine result={result} />}
+        <button
+          type="button"
+          className="link live-remove"
+          onClick={remove}
+          aria-label={`Stop watching ${title}`}
+        >
+          ✕
+        </button>
+      </div>
+      {query.isError && !query.data ? (
+        <p className="error">
+          Couldn't get the county's count: {query.error.message}. Trying again.
+        </p>
+      ) : !query.data ? (
+        <p className="hint">Loading…</p>
+      ) : result ? (
+        <ResultBody result={result} />
+      ) : (
+        <p className="hint">The county's count doesn't list this race any more.</p>
+      )}
+      {feed && (
+        <p className="hint live-county-source">
+          {feed.name} County's own count ·{" "}
+          <a href={feed.page} target="_blank" rel="noreferrer">
+            county results ↗
+          </a>
+        </p>
+      )}
+    </li>
+  );
+}
+
+function StateContestCard({
   id,
   groupIds,
   counties,
@@ -401,7 +574,7 @@ function MeasureRow({ m }: { m: MeasureResult }) {
   const passing = counted && m.yesPercent > 50;
   return (
     <div className="live-measure">
-      <div className="hint live-measure-name">{m.name}</div>
+      {m.name && <div className="hint live-measure-name">{m.name}</div>}
       <div className="live-yesno">
         <span className={counted ? (passing ? "ok" : "bad") : "hint"}>
           {counted ? (passing ? "Passing" : "Failing") : "No votes counted yet"}
@@ -493,7 +666,12 @@ function AddPlace({ measures, onDone }: { measures: MeasureResult[]; onDone: () 
   const [county, setCounty] = useState<string>("");
   const [found, setFound] = useState<Area>(EMPTY_AREA);
 
-  function add(place: { label: string; districts: PlaceDistricts; county?: string }) {
+  function add(place: {
+    label: string;
+    districts: PlaceDistricts;
+    county?: string;
+    area?: PlaceArea;
+  }) {
     watchStore.set((gs) => addPlace(gs, place, statewideContests(measures)));
     onDone();
   }
@@ -510,6 +688,7 @@ function AddPlace({ measures, onDone }: { measures: MeasureResult[]; onDone: () 
     ...counties.map((c) => ({ id: c, label: `${c} County` })),
   ];
   const hasAny = Object.values(districts).some(Boolean);
+  const foundArea = isAreaSet(found) ? placeArea(found) : undefined;
 
   return (
     <div className="card-inset live-add">
@@ -520,7 +699,13 @@ function AddPlace({ measures, onDone }: { measures: MeasureResult[]; onDone: () 
             className="primary"
             onClick={() => {
               const c = countyOfArea(myArea, counties);
-              add({ label: "Where I vote", districts: mine, ...(c ? { county: c } : {}) });
+              const area = placeArea(myArea);
+              add({
+                label: "Where I vote",
+                districts: mine,
+                ...(c ? { county: c } : {}),
+                ...(area ? { area } : {}),
+              });
             }}
           >
             Add where I vote
@@ -574,6 +759,7 @@ function AddPlace({ measures, onDone }: { measures: MeasureResult[]; onDone: () 
               label: label || describe(districts) || `${county} County`,
               districts,
               ...(county ? { county } : {}),
+              ...(foundArea ? { area: foundArea } : {}),
             })
           }
         >
