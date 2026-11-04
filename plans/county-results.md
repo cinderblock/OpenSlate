@@ -57,15 +57,15 @@ Wired up (11 counties):
 | San Mateo | `…/sanmateocaenr/20/summary_20.csv` | CSV | none |
 | Solano | `…/solanocaenr/21/summary_21.csv` | CSV | none |
 
+| Sacramento | `results.saccounty.gov/results/public/api/elections/sacramento-county-ca/69/data` | own JSON (`ballotItems[]`, `election.asOf`), 374 KB | none |
+| Los Angeles | `results.lavote.gov/electionresults/json?electionid=4348` | own JSON (`Election.ContestGroups[].Contests[]`), 193 KB, no ids/precincts/time | none |
+
+(13 counties. LA answered our honest User-Agent at 7:39 PM PST, despite the
+survey's Imperva note; Sacramento's `/data` has no CORS header, though the
+survey thought so.)
+
 Not yet (by value):
 
-- **Los Angeles**: `https://results.lavote.gov/electionresults/json?electionid=4348`
-  (`Data.Election.ContestGroups[].Contests[].Candidates[]`, `Timestamp`). Behind an
-  Imperva bot check for non-browser clients: a worker fetch may be blocked too. Untested.
-- **Sacramento**: own JSON API, CORS `*`:
-  `https://results.saccounty.gov/results/public/api/elections/sacramento-county-ca/69/data`
-  (~31 KB; metadata at the bare URL: `asOf`, `nextUpdateAt`). Structure
-  `results.ballotItems[].{name,voteFor,precinctsReporting,ballotOptions[]}`.
 - **San Francisco**: Dominion `summary.xml` in a new folder per report under
   `sfelections.org/results/20261103/data/<folder>/`; site blocks non-browser UAs.
 - **San Joaquin**: `sanjoaquincaenr/22/summary_22.csv` answered HTML; recheck.
@@ -111,10 +111,16 @@ Formats:
 - [x] county measure cards don't repeat the title: `1095a34`
 - [x] Contra Costa, Marin, Sonoma, Ventura + title-based matching: `2775d2f`, pushed 7:31 PM PST
 - [x] San Diego, Orange, Riverside, San Bernardino, San Mateo, Solano (CSV): `63583f0`, pushed 7:35 PM PST
-- [ ] live check of the LVT counties through the worker
-- [ ] after 8 PM: confirm counts move (Clarity version bumps; CSV `Last-Modified`)
-- [ ] Sacramento (JSON API), then Los Angeles (if the worker gets past Imperva)
-- [ ] link county contests to catalog races (My ballot / race pages)
+- [x] live check 7:37 PM PST: all 11 county paths 200 through api.openslate.us (`max-age=60`, upstream `Last-Modified`)
+- [x] Irvine place on the live site: found "NORTH ORANGE COUNTY COMMUNITY COLLEGE DISTRICT" taken as the county's own; fixed `63ce4bc`
+- [x] Sacramento: `a850540`; Los Angeles: `63f24e7` (relay adds `?electionid=4348`; client can't change it)
+- [x] LA place on the live site: own council district only (3rd), city measures/offices, courts; county measures and sheriff were missing, fixed `f918124`
+- [x] README: `1dd52d1`
+- [x] catalog link: `catalogRaceFor` (same people, or measure letter + place) and a "endorsements for this race" link on county cards when the catalog is already on the device: `a260890` (also carried peers' `b2bd99d`, `3b71dfb` to origin)
+- [ ] headless check of the catalog link on the live site
+- [ ] after 8 PM: confirm counts move (Clarity version bumps; CSV `Last-Modified`; Sacramento `asOf`)
+- [ ] My ballot / race pages showing a race's county count (reuse `catalogRaceFor`): not started
+- [ ] San Francisco, San Joaquin (recheck the feed number), Alameda (HTML): not started
 
 ## Things not to do
 
