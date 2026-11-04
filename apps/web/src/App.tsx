@@ -9,7 +9,6 @@ import {
   type LucideIcon,
   MessageSquare,
   PenLine,
-  Radio,
   Scale,
   Settings,
   ShieldCheck,
@@ -40,7 +39,6 @@ interface NavItem {
     | "/sources"
     | "/compare"
     | "/results"
-    | "/live"
     | "/publish"
     | "/publish/identities"
     | "/publish/elections"
@@ -70,7 +68,6 @@ const MODES: Record<
       { to: "/races", label: "All races", icon: Globe },
       { to: "/sources", label: "Sources", icon: Users },
       { to: "/compare", label: "Compare", icon: Scale },
-      { to: "/live", label: "Live", icon: Radio },
       { to: "/results", label: "Results", icon: ChartColumn, prefixes: ["/results/"] },
     ],
   },

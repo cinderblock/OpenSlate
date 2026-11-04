@@ -77,6 +77,7 @@ plus single races. The user asked for it to be working within 1.5 h of
 - [x] `ba0eb2f`: civicAPI through the relay by default (when the build has one); no auto-fallback to direct for the state; county list through the relay; relay moved to `apps/poll-cache/src/sosCa.ts`, shared with apps/server, coalesces concurrent requests; civicAPI errors kept 15 s
 - [x] Results/race pages/followed races/outcome chips: the state's count for every race it covers this election (`sos:` race ids, `lib/sosResults.ts`); civicAPI only for the rest (backup)
 - [x] County results (local races) handed to its own thread: "County election-night results (local races) for Live"
+- [x] Live and Results combined (user, 2026-11-03 evening): one Results tab, live count on top, slate scorecards below; `/live` redirects to `/results`
 - [ ] after polls close (8 PM PST): confirm counts appear
 
 ## Follow-ups (not tonight)

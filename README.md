@@ -103,11 +103,13 @@ for it. Its two sides:
   with the rest of the field, who's new since you last looked, the latest poll
   where one exists, and once polls close the count from civicAPI, which covers
   statewide and legislative races but not local ones (a local race says so and
-  points you to the county). What you follow stays in this browser. *Live*
-  watches election night in California: add the races for a place (where you
-  vote, an address, or district numbers; several places at once) or single races
-  and measures, and it shows the Secretary of State's count, checked every
-  minute, with a county's own count beside each race if you pick one. *Sources* is
+  points you to the county). What you follow stays in this browser. *Results*
+  opens on the live count for California: add the races for a place (where
+  you vote, an address, or district numbers; several places at once, a race
+  they share shown once) or single races and measures, and it shows the
+  Secretary of State's count, checked every minute, with a county's own count
+  beside each race if you pick one. Below that, any slate's picks next to the
+  outcomes. *Sources* is
   where you follow sources, follow them to *disagree* (their picks count the
   other way on My ballot: what they back counts against it, what they oppose
   counts for it; in a Yes/No measure or a two-name race you can have it count

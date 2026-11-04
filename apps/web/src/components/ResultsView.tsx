@@ -10,6 +10,7 @@ import { usePageSearch } from "../lib/pageSearch";
 import { matchesSearch, searchTextOf } from "../lib/search";
 import { firsthandSubjectKeys, supersessionFor } from "../lib/supersession";
 import { Leaderboard } from "./Leaderboard";
+import { LivePanel } from "./LivePanel";
 import { matchCount, PageSearch } from "./PageSearch";
 import { ProgressBar } from "./ui/ProgressBar";
 import { TokenField } from "./ui/Token";
@@ -90,112 +91,113 @@ export function ResultsView() {
   }, [trimmed]);
 
   return (
-    <section className="panel">
-      <h2>Election results</h2>
-      <p className="hint">
-        Compare any slate's endorsements against the actual election outcomes pulled live from{" "}
-        <a href="https://civicapi.org" target="_blank" rel="noreferrer">
-          civicAPI
-        </a>
-        . This view is read-only — it never edits the slate.
-      </p>
+    <>
+      <LivePanel />
+      <section className="panel">
+        <h2>How your slates did</h2>
+        <p className="hint">
+          Pick a slate to see each of its picks next to the outcome: the California Secretary of
+          State's count for the races it counts, civicAPI's for the rest. Read-only: it never edits
+          the slate.
+        </p>
 
-      <div className="card">
-        <h3>Paste a slate</h3>
-        <TokenField
-          label="Block"
-          rows={4}
-          placeholder="paste any OpenSlate block to view its results…"
-          value={pasted}
-          onChange={setPasted}
-        />
-        <div className="row">
-          <button
-            type="button"
-            className="primary"
-            disabled={!trimmed || pastedValid === false}
-            onClick={() => {
-              navigate({ to: "/results/$token", params: { token: trimmed } });
-            }}
-          >
-            View results
-          </button>
-          {pastedValid === false && <span className="error">Token didn't verify.</span>}
+        <div className="card">
+          <h3>Paste a slate</h3>
+          <TokenField
+            label="Block"
+            rows={4}
+            placeholder="paste any OpenSlate block to view its results…"
+            value={pasted}
+            onChange={setPasted}
+          />
+          <div className="row">
+            <button
+              type="button"
+              className="primary"
+              disabled={!trimmed || pastedValid === false}
+              onClick={() => {
+                navigate({ to: "/results/$token", params: { token: trimmed } });
+              }}
+            >
+              View results
+            </button>
+            {pastedValid === false && <span className="error">Token didn't verify.</span>}
+          </div>
         </div>
-      </div>
 
-      {loading ? (
-        <div className="card">
-          {isReady && !decoded.slates ? (
-            <ProgressBar
-              label="Checking the signatures on your slates"
-              value={decoded.done}
-              maxValue={decoded.total}
-            />
-          ) : (
-            <ProgressBar label="Listing your slates" value={0} />
-          )}
-        </div>
-      ) : rows.length === 0 ? (
-        <div className="card">
-          <p className="hint">Nothing imported yet. Add some on the Sources page.</p>
-        </div>
-      ) : (
-        <div className="card">
-          <h3>Your imported slates</h3>
-          <PageSearch
-            search={search}
-            label="Search your imported slates"
-            placeholder="Search by who signed it, who it reports on, or election…"
-          >
-            {matchCount(shown.length, rows.length, "slates", search.query)}
-          </PageSearch>
-          <ul className="position-list slate-grid">
-            {shown.map((row) => {
-              const signerName = row.issuer.name?.trim() || shortKey(row.issuer.key);
-              return (
-                <li key={row.token}>
-                  <span className="position-subject">
-                    {row.attribution ? (
-                      <>
-                        <strong>{row.attribution.of.name}</strong>
-                        <span className="tag" title="Secondhand report (SPEC §3.9)">
-                          secondhand
-                        </span>
-                        {row.supersession && row.supersession.coveredFirsthand > 0 && (
-                          <span
-                            className="tag warning"
-                            title="SPEC §3.9: a firsthand slate covers some of these subjects — prefer it for those positions."
-                          >
-                            {row.supersession.coveredFirsthand}/{row.supersession.total} also
-                            firsthand
+        {loading ? (
+          <div className="card">
+            {isReady && !decoded.slates ? (
+              <ProgressBar
+                label="Checking the signatures on your slates"
+                value={decoded.done}
+                maxValue={decoded.total}
+              />
+            ) : (
+              <ProgressBar label="Listing your slates" value={0} />
+            )}
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="card">
+            <p className="hint">Nothing imported yet. Add some on the Sources page.</p>
+          </div>
+        ) : (
+          <div className="card">
+            <h3>Your imported slates</h3>
+            <PageSearch
+              search={search}
+              label="Search your imported slates"
+              placeholder="Search by who signed it, who it reports on, or election…"
+            >
+              {matchCount(shown.length, rows.length, "slates", search.query)}
+            </PageSearch>
+            <ul className="position-list slate-grid">
+              {shown.map((row) => {
+                const signerName = row.issuer.name?.trim() || shortKey(row.issuer.key);
+                return (
+                  <li key={row.token}>
+                    <span className="position-subject">
+                      {row.attribution ? (
+                        <>
+                          <strong>{row.attribution.of.name}</strong>
+                          <span className="tag" title="Secondhand report (SPEC §3.9)">
+                            secondhand
                           </span>
-                        )}
-                        <div className="hint">
-                          reported by {signerName} · {row.attribution.mode} · retrieved{" "}
-                          {row.attribution.retrieved_at.slice(0, 10)}
-                        </div>
-                      </>
-                    ) : (
-                      <strong>{signerName}</strong>
-                    )}
-                    {!row.valid && <span className="warning"> (unverified)</span>}
-                    <div className="hint">
-                      {row.positions.length} position{row.positions.length === 1 ? "" : "s"} ·
-                      imported {row.importedAt.slice(0, 10)}
-                    </div>
-                  </span>
-                  <Link to="/results/$token" params={{ token: row.token }} className="link">
-                    View results →
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
+                          {row.supersession && row.supersession.coveredFirsthand > 0 && (
+                            <span
+                              className="tag warning"
+                              title="SPEC §3.9: a firsthand slate covers some of these subjects — prefer it for those positions."
+                            >
+                              {row.supersession.coveredFirsthand}/{row.supersession.total} also
+                              firsthand
+                            </span>
+                          )}
+                          <div className="hint">
+                            reported by {signerName} · {row.attribution.mode} · retrieved{" "}
+                            {row.attribution.retrieved_at.slice(0, 10)}
+                          </div>
+                        </>
+                      ) : (
+                        <strong>{signerName}</strong>
+                      )}
+                      {!row.valid && <span className="warning"> (unverified)</span>}
+                      <div className="hint">
+                        {row.positions.length} position{row.positions.length === 1 ? "" : "s"} ·
+                        imported {row.importedAt.slice(0, 10)}
+                      </div>
+                    </span>
+                    <Link to="/results/$token" params={{ token: row.token }} className="link">
+                      View results →
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
-      {!loading && rows.length >= 2 && <Leaderboard slates={rows} />}
-    </section>
+        {!loading && rows.length >= 2 && <Leaderboard slates={rows} />}
+      </section>
+    </>
   );
 }

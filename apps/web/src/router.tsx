@@ -102,11 +102,6 @@ const resultsIndexRoute = createRoute({
   validateSearch: validateQuerySearch,
   component: lazyRouteComponent(() => import("./components/ResultsView"), "ResultsView"),
 });
-const liveRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/live",
-  component: lazyRouteComponent(() => import("./components/LivePanel"), "LivePanel"),
-});
 const resultsForSlateRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/results/$token",
@@ -155,7 +150,13 @@ const settingsRoute = createRoute({
 
 // --- Pre-refactor paths, kept so bookmarks and shared links still land somewhere sensible ---
 
-type LegacyTarget = "/" | "/sources" | "/publish" | "/publish/elections" | "/publish/viewer";
+type LegacyTarget =
+  | "/"
+  | "/sources"
+  | "/results"
+  | "/publish"
+  | "/publish/elections"
+  | "/publish/viewer";
 
 function legacy<const From extends string>(from: From, to: LegacyTarget) {
   return createRoute({
@@ -174,6 +175,8 @@ const legacyRoutes = [
   legacy("/import", "/sources"),
   legacy("/elections", "/publish/elections"),
   legacy("/viewer", "/publish/viewer"),
+  // The live count joined Results on election night 2026.
+  legacy("/live", "/results"),
 ] as const;
 
 const routeTree = rootRoute.addChildren([
@@ -185,7 +188,6 @@ const routeTree = rootRoute.addChildren([
   raceByKeyRoute,
   resultsIndexRoute,
   resultsForSlateRoute,
-  liveRoute,
   composeRoute,
   identitiesRoute,
   electionsRoute,

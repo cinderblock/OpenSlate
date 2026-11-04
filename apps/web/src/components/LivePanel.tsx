@@ -100,7 +100,7 @@ export function LivePanel() {
 
   return (
     <section className="panel live-panel">
-      <h2>Live results</h2>
+      <h2>Live count</h2>
       <p className="hint">
         The California Secretary of State's count for the places and races you watch, checked every
         minute while this page is open. Kept in this browser.
@@ -193,7 +193,7 @@ function RefreshBar() {
   );
 }
 
-/** civicAPI feeds race pages and slate results; say when it's down, so blanks there make sense. */
+/** civicAPI backs up the state's count; say when it's down, so blanks it leaves make sense. */
 function CivicApiStatus() {
   const query = useQuery({
     queryKey: ["results", "civicapi-status"] as const,
@@ -208,8 +208,8 @@ function CivicApiStatus() {
   if (query.data !== false && !query.isError) return null;
   return (
     <p className="hint warning-line">
-      civicAPI, the source behind results on race pages and slate results, isn't answering right
-      now. This page doesn't depend on it.
+      civicAPI, the backup source for races the Secretary of State doesn't count (past elections),
+      isn't answering right now. This year's California races don't depend on it.
     </p>
   );
 }

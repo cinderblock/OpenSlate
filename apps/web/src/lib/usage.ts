@@ -35,7 +35,6 @@ export const ROUTE_TEMPLATES = [
   "/race/$key",
   "/results",
   "/results/$token",
-  "/live",
   // Publish
   "/publish",
   "/publish/identities",
@@ -51,6 +50,7 @@ export const ROUTE_TEMPLATES = [
   "/collate",
   "/viewer",
   "/elections",
+  "/live",
 ] as const;
 
 export const SLATE_IMPORT_SOURCES = ["catalog", "url", "file", "qr", "paste"] as const;
