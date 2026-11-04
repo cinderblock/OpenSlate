@@ -1,7 +1,10 @@
+import type { CountyContest } from "@openslate/core";
 import { useIsFetching, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useAllRaces, useCatalogCopyReady } from "../lib/allSlates";
 import {
+  catalogRaceFor,
   contestsForPlace,
   countyContestId,
   countyContestResult,
@@ -30,7 +33,7 @@ import {
   propContest,
   STATEWIDE_OFFICES,
 } from "../lib/sosCa";
-import { parseSosTime } from "../lib/sosResults";
+import { parseSosTime, SOS_ELECTION } from "../lib/sosResults";
 import {
   addPlace,
   addSingle,
@@ -60,6 +63,7 @@ import {
   watchViewStore,
 } from "../lib/watchSort";
 import { FindDistricts } from "./FindDistricts";
+import { RaceLink } from "./RaceLink";
 import { ComboBox, Select, type SelectOption } from "./ui/Select";
 import { Switch } from "./ui/Switch";
 import { TextField } from "./ui/TextField";
@@ -598,9 +602,30 @@ function CountyContestCard({
           <a href={feed.page} target="_blank" rel="noreferrer">
             county results ↗
           </a>
+          {contest && <CatalogRaceLink contest={contest} countyName={feed.name} />}
         </p>
       )}
     </li>
+  );
+}
+
+/**
+ * The catalog's page for a county contest, when the catalog is already on this
+ * device and one of its races is clearly this one (same people, or the same
+ * measure in the same place). Never downloads the catalog just for this.
+ */
+function CatalogRaceLink({ contest, countyName }: { contest: CountyContest; countyName: string }) {
+  const { all } = useAllRaces(useCatalogCopyReady());
+  const race = useMemo(
+    () => (all ? catalogRaceFor(contest, all.races, countyName, SOS_ELECTION) : undefined),
+    [all, contest, countyName],
+  );
+  if (!race) return null;
+  return (
+    <>
+      {" · "}
+      <RaceLink raceKey={race.key}>endorsements for this race</RaceLink>
+    </>
   );
 }
 

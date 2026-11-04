@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { type CountyContest, parseClaritySummary } from "@openslate/core";
 import {
+  catalogRaceFor,
   contestsForPlace,
   coreName,
   countyContestId,
@@ -8,6 +9,7 @@ import {
   countyFeed,
   countyOwn,
   localContests,
+  measureLetter,
   parseCountyContestId,
   titleDistrict,
   titleWords,
@@ -189,5 +191,77 @@ describe("countywide contests in Los Angeles' wording", () => {
       "Los Angeles",
     ).map((c) => c.key);
     expect(keys).toEqual(["a", "s", "t"]);
+  });
+});
+
+describe("the catalog's race for a county contest", () => {
+  const race = (
+    key: string,
+    jurisdiction: string,
+    title: string,
+    choices: string[],
+    number?: string,
+  ) => ({
+    key,
+    subject: {
+      title,
+      jurisdiction,
+      election: "2026-11-03",
+      ...(number ? { ballot: { number } } : {}),
+    },
+    election: "2026-11-03",
+    jurisdiction,
+    choices: choices.map((choice) => ({ choice })),
+  });
+  const races = [
+    race("council3", "us/ca/sunnyvale/council-3", "City Council District 3", ["Murali Srinivasan"]),
+    race("sd3", "us/ca/sunnyvale-sd", "Trustee Area 3", ["Rommy Kushner", "Michelle Maginot"]),
+    race("measG", "us/ca/sunnyvale", "Measure G", [""], "G"),
+    race("measGelsewhere", "us/ca/gilroy", "Measure G", [""], "G"),
+    race("countyA", "us/ca/los-angeles-county", "Measure A", [""], "A"),
+    race("old", "us/ca/sunnyvale/council-3", "City Council District 3", ["Murali Srinivasan"]),
+  ];
+  races[5] = {
+    ...races[5],
+    election: "2024-11-05",
+    subject: { ...races[5].subject, election: "2024-11-05" },
+  } as (typeof races)[number];
+
+  test("the same people", () => {
+    const seat = contest("94", "City of Sunnyvale Council, District 3", "Local", [
+      "MURALI SRINIVASAN",
+      "Write-in",
+    ]);
+    expect(catalogRaceFor(seat, races, "Santa Clara", "2026-11-03")?.key).toBe("council3");
+    const board = contest("67", "Sunnyvale SD, Trustee Area 3", "School", [
+      "Rommy Kushner",
+      "Michelle Maginot",
+      "Write-in",
+    ]);
+    expect(catalogRaceFor(board, races, "Santa Clara", "2026-11-03")?.key).toBe("sd3");
+    const nobody = contest("9", "City of Cupertino Council", "Local", [
+      "Someone Else",
+      "Another Person",
+    ]);
+    expect(catalogRaceFor(nobody, races, "Santa Clara", "2026-11-03")).toBeUndefined();
+  });
+
+  test("a measure by its letter in its place", () => {
+    const g = contest("122", "Measure G - City of Sunnyvale, Charter Amendment", "Measures", [
+      "YES",
+      "NO",
+    ]);
+    expect(catalogRaceFor(g, races, "Santa Clara", "2026-11-03")?.key).toBe("measG");
+    const la = contest("a", "COUNTY MEASURE A", "County Measures", ["YES", "NO"]);
+    expect(catalogRaceFor(la, races, "Los Angeles", "2026-11-03")?.key).toBe("countyA");
+    expect(measureLetter("A – Laguna Beach Unified School District, Bond Measure")).toBe("A");
+    expect(measureLetter("CITY OF BELL GARDENS GENERAL MUNICIPAL ELECTION - MEASURE W")).toBe("W");
+    expect(
+      measureLetter("San Mateo County Community College District, Measure V (55 Percent)"),
+    ).toBe("V");
+    expect(
+      measureLetter("D – City of Irvine, Measure Directing the Use of Ranked Choice Voting"),
+    ).toBe("D");
+    expect(measureLetter("Regional Transit Measure (Majority Approval Required)")).toBeUndefined();
   });
 });

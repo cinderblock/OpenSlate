@@ -10,6 +10,8 @@ import {
   parseLaVote,
   parseLvtCsv,
   parseResultsApi,
+  type Subject,
+  samePerson,
 } from "@openslate/core";
 import type { Area } from "./jurisdictions";
 import { getRoutingMode, PROVIDERS } from "./routing";
@@ -266,6 +268,72 @@ export function contestsForPlace(
       return false;
     return true;
   });
+}
+
+// ---- The catalog's race for a county contest ---------------------------------
+
+/** What a catalog race needs to be matched: its key, identity, how the ballot prints it, and its choices. */
+export interface CatalogRace {
+  key: string;
+  subject: Pick<Subject, "title" | "jurisdiction" | "election" | "ballot">;
+  ballot?: { number?: string };
+  election?: string;
+  jurisdiction?: string;
+  choices: readonly { choice: string }[];
+}
+
+/** A measure's letter as the county titles it: "Measure K - …", "… - MEASURE W", "A – Laguna Beach…". */
+export function measureLetter(title: string): string | undefined {
+  const m =
+    title.match(/\bmeasure\s+([a-z]{1,3})\b(?!\s*[a-z])/i) ??
+    title.match(/^([a-z]{1,3})\s*[–-]\s/i);
+  return m?.[1]?.toUpperCase();
+}
+
+const NOT_A_PERSON = /^(yes|no|write[\s-]*in|bonds?\s*-?\s*(yes|no))$/i;
+
+/**
+ * The catalog race a county contest is, when one clearly is: the same people
+ * on it (at least two of the county's candidates, or all of them when there
+ * are fewer), or for a measure the same letter in the same place. Only this
+ * election's California races are considered.
+ */
+export function catalogRaceFor<R extends CatalogRace>(
+  contest: CountyContest,
+  races: readonly R[],
+  countyName: string,
+  election: string,
+): R | undefined {
+  const here = races.filter((r) => {
+    const e = r.election ?? r.subject.election;
+    const j = r.jurisdiction ?? r.subject.jurisdiction ?? "";
+    return e === election && j.startsWith("us/ca/");
+  });
+  if (contest.measure) {
+    const letter = measureLetter(contest.title);
+    if (!letter) return undefined;
+    const words = titleWords(contest.title);
+    const county = coreName(countyName);
+    return here.find((r) => {
+      const number = (r.ballot?.number ?? r.subject.ballot?.number ?? "").toUpperCase();
+      if (number !== letter) return false;
+      const leaf = (r.jurisdiction ?? r.subject.jurisdiction ?? "").split("/").at(-1) ?? "";
+      if (leaf.endsWith("-county")) return coreName(leaf.replace(/-/g, " ")) === county;
+      const name = coreName(leaf.replace(/-/g, " "));
+      return name !== "" && words.includes(` ${name} `);
+    });
+  }
+  const people = contest.choices.map((c) => c.name).filter((n) => !NOT_A_PERSON.test(n));
+  if (people.length === 0) return undefined;
+  const need = Math.min(2, people.length);
+  let best: { race: R; hits: number } | undefined;
+  for (const race of here) {
+    const names = race.choices.map((c) => c.choice).filter(Boolean);
+    if (names.length === 0) continue;
+    const hits = people.filter((p) => names.some((n) => samePerson(p, n))).length;
+    if (hits >= need && (!best || hits > best.hits)) best = { race, hits };
+  }
+  return best?.race;
 }
 
 // ---- Fetching ----------------------------------------------------------------
