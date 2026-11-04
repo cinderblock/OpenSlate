@@ -33,6 +33,30 @@ export const CA_COUNTY_FEEDS: Record<string, CountyFeed> = {
     base: "https://results.enr.clarityelections.com/CA/Santa_Clara/127570",
     page: "https://results.enr.clarityelections.com/CA/Santa_Clara/127570/web.345435/#/summary",
   },
+  "contra-costa": {
+    name: "Contra Costa",
+    kind: "clarity",
+    base: "https://results.enr.clarityelections.com/CA/Contra_Costa/127405",
+    page: "https://www.contracostavote.gov/november-3-2026-election-results/",
+  },
+  marin: {
+    name: "Marin",
+    kind: "clarity",
+    base: "https://results.enr.clarityelections.com/CA/Marin/127071",
+    page: "https://www.marincounty.gov/departments/elections/november-3-2026-general-election/election-results-110326",
+  },
+  sonoma: {
+    name: "Sonoma",
+    kind: "clarity",
+    base: "https://results.enr.clarityelections.com/CA/Sonoma/127275",
+    page: "https://results.enr.clarityelections.com/CA/Sonoma/127275/",
+  },
+  ventura: {
+    name: "Ventura",
+    kind: "clarity",
+    base: "https://results.enr.clarityelections.com/CA/Ventura/127362",
+    page: "https://clerkrecorder.venturacounty.gov/elections/november-3-2026-general-election/",
+  },
 };
 
 /** The paths under a feed's base a client may ask for (the relay's allowlist). */
@@ -132,6 +156,21 @@ export function parseClaritySummary(raw: unknown): CountyContest[] {
 
 /** Whether a contest is one the Secretary of State already reports (state and federal offices, statewide propositions). */
 export function isStateContest(c: CountyContest): boolean {
-  if (c.category && /state\s*(and|&)\s*federal|proposition/i.test(c.category)) return true;
-  return /^(state\s+)?proposition\b/i.test(c.title);
+  // Judges are on the ballot statewide but the Secretary of State's results
+  // don't carry them: the county's count is the place to see them.
+  if (JUDGE_TITLE.test(c.title)) return false;
+  // Counties name their groups differently: "State and Federal", "Federal",
+  // "State", "State Propositions"; Marin files everything under "Results".
+  if (
+    c.category &&
+    /^(state|federal|state\s*(and|&)\s*federal|(state\s+)?propositions?)$/i.test(c.category.trim())
+  )
+    return true;
+  return STATE_TITLE.test(c.title.replace(/\s+/g, " ").trim());
 }
+
+const JUDGE_TITLE = /justice|judge|court of appeal|supreme court|superior court|app\.? dist/i;
+
+/** Titles of the contests the Secretary of State reports, however a county words them. */
+const STATE_TITLE =
+  /^(governor|lieutenant governor|secretary of state|controller|treasurer(?![\s-]*tax)|attorney general|insurance commissioner|(state )?superintendent of public instruction)\b|united states (senator|representative)|u\.? ?s\.? (senator|representative)|representative in congress|congressional district|state senat|state assembly|member of (the )?assembly|assembly member|board (of )?equalization|^(state )?prop(osition)?\.? ?\d+\b/i;

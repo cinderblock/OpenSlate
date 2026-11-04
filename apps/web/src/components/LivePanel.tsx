@@ -7,6 +7,7 @@ import {
   countyContestResult,
   countyFeed,
   countyQueryOptions,
+  feedCountyNames,
   localContests,
   parseCountyContestId,
 } from "../lib/countyCa";
@@ -144,9 +145,10 @@ export function LivePanel() {
           California Secretary of State ↗
         </a>
         , and for local races (city, county, school, special districts, local measures) the county's
-        own count where OpenSlate reads it (Santa Clara so far: give a place its county, then "Local
-        races"). Semi-official election-night results; counties keep counting for weeks. Races you
-        follow from a race page are under <Link to="/races">All races → Following</Link>.
+        own count where OpenSlate reads it ({feedCountyNames().join(", ")} so far: give a place its
+        county, then "Local races"). Semi-official election-night results; counties keep counting
+        for weeks. Races you follow from a race page are under{" "}
+        <Link to="/races">All races → Following</Link>.
       </p>
     </section>
   );

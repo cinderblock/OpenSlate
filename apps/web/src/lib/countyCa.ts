@@ -47,6 +47,13 @@ export function countyFeed(county: string | undefined): { slug: string; feed: Co
   return feed ? { slug, feed } : null;
 }
 
+/** The counties whose own count OpenSlate reads, by name, sorted. */
+export function feedCountyNames(): string[] {
+  return Object.values(CA_COUNTY_FEEDS)
+    .map((f) => f.name)
+    .sort();
+}
+
 export interface CountyResults {
   county: string;
   /** The feed's own version (Clarity's), so an unchanged count isn't parsed twice. */
@@ -128,17 +135,22 @@ export function coreName(name: string): string {
     .trim();
 }
 
-/** What a contest is for, and its district: "City of Sunnyvale Council, District 3" → Sunnyvale, 3. */
-export function contestEntity(title: string): { entity: string; district?: string } {
-  let t = title;
-  const measure = t.match(/^measure\s+[a-z0-9-]+\s+-\s+(.*)$/i);
-  if (measure?.[1]) return { entity: measure[1].split(",")[0] ?? "" };
-  t = t.replace(/^mayor,\s*/i, "");
-  const [entity = "", ...rest] = t.split(",");
-  const d = rest
-    .join(",")
-    .match(/\b(?:district|d|trustee area|ta|ward|division|seat)\s*([a-z0-9]+)\b/i);
-  return d?.[1] ? { entity, district: d[1].toLowerCase() } : { entity };
+/** A title as plain words, padded so a name can be found whole: " city of san jose council district 3 ". */
+export function titleWords(title: string): string {
+  return ` ${title
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()} `;
+}
+
+/** The district a seat is for, however the county words it: "District 3", "D2", "TA 4", "Ward 1". */
+export function titleDistrict(title: string): string | undefined {
+  const m = titleWords(title).match(
+    / (?:district|d|trustee area|ta|ward|division|seat) ?([a-z]|\d+) /,
+  );
+  return m?.[1];
 }
 
 /**
@@ -179,20 +191,23 @@ export function contestsForPlace(
   const councilCity = council
     ? coreName(council[0].split("/").at(-2)?.replace(/-/g, " ") ?? "")
     : "";
+  const has = (words: string, name: string) => name !== "" && words.includes(` ${name} `);
   return localContests(contests).filter((c) => {
-    if (c.category && /judicial/i.test(c.category)) return true;
-    const { entity, district } = contestEntity(c.title);
-    const core = coreName(entity);
-    if (!core) return false;
-    // The county's own ("Santa Clara County BOE"), not its namesake city's.
-    if (core === county && /\bcounty\b/i.test(entity)) return true;
-    if (!names.has(core)) return false;
+    const words = titleWords(c.title);
+    // The courts, and the county's own offices and measures ("Santa Clara County BOE",
+    // "County of Marin Measure"), not its namesake city's.
+    if (c.category && /judicial|^county$/i.test(c.category.trim())) return true;
+    if (/ (superior court|court of appeal|supreme court) /.test(words)) return true;
+    if (has(words, `${county} county`) || has(words, `county of ${county}`)) return true;
+    if (![...names].some((n) => has(words, n))) return false;
+    // Another council district of the place's own city.
+    const district = titleDistrict(c.title);
     if (
-      district &&
       council &&
-      /council/i.test(c.title) &&
-      core === councilCity &&
-      district !== council[1].toLowerCase()
+      district &&
+      / council /.test(words) &&
+      has(words, councilCity) &&
+      district !== council[1].toLowerCase().replace(/^0+/, "")
     )
       return false;
     return true;

@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { type CountyContest, parseClaritySummary } from "@openslate/core";
 import {
-  contestEntity,
   contestsForPlace,
   coreName,
   countyContestId,
@@ -9,6 +8,8 @@ import {
   countyFeed,
   localContests,
   parseCountyContestId,
+  titleDistrict,
+  titleWords,
 } from "../src/lib/countyCa";
 
 function contest(key: string, title: string, category = "Local", choices = ["A", "B"]) {
@@ -91,15 +92,34 @@ describe("county results", () => {
     expect(coreName("San José Unified SD")).toBe("san jose");
     expect(coreName("San Jose Unified School District")).toBe("san jose");
     expect(coreName("City of Sunnyvale Council")).toBe("sunnyvale");
-    expect(contestEntity("City of Sunnyvale Council, District 3")).toEqual({
-      entity: "City of Sunnyvale Council",
-      district: "3",
-    });
-    expect(contestEntity("Mayor, City of Santa Clara")).toEqual({ entity: "City of Santa Clara" });
-    expect(contestEntity("Fremont Union HSD, TA 3").district).toBe("3");
-    expect(contestEntity("Measure G - City of Sunnyvale, Charter Amendment").entity).toBe(
-      "City of Sunnyvale",
-    );
+    expect(titleWords("City of San José Council, D2")).toBe(" city of san jose council d2 ");
+    expect(titleDistrict("City of Sunnyvale Council, District 3")).toBe("3");
+    expect(titleDistrict("City of Los Altos Council, D2")).toBe("2");
+    expect(titleDistrict("Fremont Union HSD, TA 3")).toBe("3");
+    expect(titleDistrict("CITY OF ANTIOCH  MEMBER  CITY COUNCIL  DISTRICT 1")).toBe("1");
+    expect(titleDistrict("City of Morgan Hill Council, District B")).toBe("b");
+    expect(titleDistrict("Mayor, City of Santa Clara")).toBeUndefined();
+  });
+
+  test("other counties' wordings match too", () => {
+    const contests = [
+      contest("1", "CITY OF ANTIOCH  MEMBER  CITY COUNCIL  DISTRICT 1", "City"),
+      contest("2", "CITY OF ANTIOCH  MEMBER  CITY COUNCIL  DISTRICT 4", "City"),
+      contest("3", "Member, Santa Rosa City Council, District 2", "Results"),
+      contest("4", "Camarillo City Council District 1", "Cities"),
+      contest("5", "Ventura County Supervisor, District 2", "County"),
+      contest("6", "Governor", "Results"),
+      contest("7", "United States Representative, 26th Congressional District", "Federal"),
+      contest("8", "Member of the State Assembly, 42nd District", "State"),
+      contest("9", "County Treasurer-Tax Collector", "Results"),
+    ];
+    expect(localContests(contests).map((c) => c.key)).toEqual(["1", "2", "3", "4", "5", "9"]);
+    const antioch = contestsForPlace(
+      contests,
+      { localities: ["us/ca/antioch"], districts: { "us/ca/antioch/council": "4" } },
+      "Contra Costa",
+    ).map((c) => c.key);
+    expect(antioch).toEqual(["2", "5"]);
   });
 
   test("a Sunnyvale voter's local contests", () => {
