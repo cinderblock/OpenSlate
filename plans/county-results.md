@@ -192,11 +192,47 @@ Formats:
 
 ## Open questions for the user
 
-1. Where should the relay keep race history? Recommendation: a Durable Object
-   (or D1) bound to the openslate-poll-cache worker, written when the relay
-   fetches a new county/state report (no extra county requests), served from a
-   `/api/history/...` route. Needs a new Cloudflare binding, so it needs the
-   user's yes. Public results only, no user data.
+1. Where should the relay keep race history? (Asked 2026-11-04; user: cost is
+   fine, wants options compared.) Recommendation: one SQLite-backed Durable
+   Object per feed in openslate-poll-cache, the "recorder". Needs a DO binding
+   and migration in `apps/poll-cache/wrangler.toml`; an R2 bucket for raw
+   report copies is optional. Not built until the user says yes to that change.
+
+   What the user asked for (2026-11-04):
+   - Checks once a minute from the first county release on election night,
+     slowing to hourly by morning, until the count is done.
+   - Clients get a new report as soon as the server has it: checks lined up
+     with the server's, or pushed.
+   - Checks faster than once a minute around a county's announced release time.
+   - No backfill from the user's browsers (more trouble than it's worth).
+
+   Design:
+   - DO alarms run the checks (sub-minute is possible; Cron Triggers stop at
+     1 min). After a change: once a minute for an hour, then slowing to hourly.
+   - In a window around an announced release (a hand-kept list in the repo),
+     check every 10–15 s. Use only the small pointer (Clarity
+     `current_ver.txt`) or a conditional GET; whether LVT and the others
+     answer 304 is not yet checked.
+   - Store one row per contest per change.
+   - Push new reports to open pages over hibernating WebSockets (outgoing
+     messages are free). Pages without a socket poll our relay just after
+     its next check. Never fall back to a county.
+   - Stop: "100% of precincts" is NOT the end in California. Governor showed
+     100% at 8:08 AM on Nov 4 while counting goes on for weeks. Keep checking
+     hourly until the county certifies or marks its results final. Counties
+     must finish the canvass by Dec 3, 2026; the Secretary of State certifies
+     by Dec 11, 2026, a hard stop.
+
+   Estimated use (Nov 3 – Dec 11):
+   - About 185 sources × about 1,500 checks = about 280k alarms.
+   - About 130k rows written; about 20 MB stored.
+   - All within the plan's included amounts.
+   - Worst case: crowded-night relay misses reaching the DO could reach a
+     few million requests a day, at $0.15 per million.
+
+   Found 2026-11-04: ops `openslate.yaml` sets `tiered_cache: smart` on the
+   zone, but `apps/poll-cache/wrangler.toml` says Tiered Cache is off. One of
+   them is stale; not checked which.
 
 ## Things not to do
 
