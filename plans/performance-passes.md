@@ -78,8 +78,12 @@ page by page, and cut it, measuring before and after.
    noble's) (`68615b0`, `837b04d`).
 7. [x] Swept My ballot, All races, Compare, Results, Sources, race page.
    Sources fixed (`e24ec10`).
-8. [x] Pushed (deploys). ← current: check it live.
-9. [ ] Next round, each its own job (ask first):
+8. [x] Pushed and live. Workers Builds failed on `583403f`, though the same
+   commit built cleanly on Windows and Linux (Bun 1.4.2, frozen lockfile);
+   the empty commit `3a800cc` redeployed it (entry `index-Ch5w33CZ.js`).
+   Live Governor page at 4x: cold full content 45 s -> 11.4 s (long tasks
+   34 s -> 8.5 s); warm 3.4 s (long tasks 3.0 s).
+9. [ ] ← current, waiting on the user: next round, each its own job:
    - All races / race page with `?all`: collate in a worker.
    - Keep catalog-check progress across reloads (save verified tokens as
      they're checked, not only at the end).
@@ -90,6 +94,12 @@ page by page, and cut it, measuring before and after.
 - [x] Harness built; Governor race page profiled.
 - [x] Steps 1-6 and the Sources fix committed; 1,198 tests, typecheck clean;
   local build smoke-checked on six pages with no page errors.
+
+## Open questions for the user
+
+1. Go ahead with the next round (step 9)? Recommended order: collate in a
+   worker (All races and `?all` race pages, the largest freeze left), then
+   keeping catalog-check progress across reloads.
 
 ## Things not to do
 
