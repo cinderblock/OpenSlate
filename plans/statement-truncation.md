@@ -77,8 +77,8 @@ not acceptable. So:
 - [x] App: source link (headless Chrome check on the Prop 44 race page: links render under every
   statement)
 - [x] ISSUES.md: June slates with no sources; statements the check can't see
-- [ ] Commit + push OpenSlate (app, SPEC, skill, ISSUES, plan)
-- [ ] After the OpenSlate push: bump `.openslate-version` in the endorsements repo? Not needed. The
+- [x] Commit + push OpenSlate (`9c16e86` app, `e011618` SPEC + skill, `f1fe913` ISSUES + plan). Checks run 41747142548 green
+- [x] `.openslate-version` bump in the endorsements repo: not needed. The
   guard lives in that repo and doesn't use the app or SPEC code.
 
 ## Findings / gotchas
