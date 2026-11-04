@@ -66,8 +66,8 @@ USD, all caps county titles) all work.
    real titles.
 2. [x] ComboBox: optional `search` (input → ranked options), items controlled.
 3. [x] AddRace uses it; aliases for state contests (CD/AD/SD, congress, …).
-4. [ ] (current) Checks, commit, push (check `origin/master..HEAD` for ride-alongs).
-5. [ ] Live check on openslate.us at phone width (headless Playwright): Measure O,
+4. [x] Checks, commit, push (check `origin/master..HEAD` for ride-alongs).
+5. [x] Live check on openslate.us at phone width (headless Playwright): Measure O,
    Jamie Joyce, Prop 5, CD 12, a county council title.
 
 ## Progress log
@@ -83,6 +83,19 @@ USD, all caps county titles) all work.
   "controller" all right; choosing the top hit adds
   `county-ca/san-mateo/city-of-east-palo-alto-measure-o-2-3-approval-required`.
 - [x] `72a983b`: "No matches" says to pick a county when none is picked.
+- [x] Pushed 12:24 PM PST (20:24Z) with peers' `d09fab3` and `e7e5240` riding
+  along; Workers Builds green.
+- [x] Live check, 402 px, 12:26 PM PST: San Mateo "Measure O" → only EPA
+  Measure O, choosing it adds it; "Jamie Joyce", "joyce", "Prop 5",
+  "Proposition 5", "CD 12", "12th congressional", "east palo alto council",
+  "RTM", "controller" all first. No page errors. (The user's original "Jamie
+  Joyce" on mobile report is now verified live.)
+- [x] Found live: with no county, the "pick its county above" message never
+  showed: react-aria closes an empty list (so the old "No matches" never showed
+  either). `de96a21`: a ComboBox given `emptyText` keeps the list open to say
+  it (`allowsEmptyCollection`); others unchanged. Pushed 12:29 PM PST (20:29Z),
+  checked live: the message shows; "prop5" → Proposition 5; "alvord" with San
+  Mateo picked → "No matches" (it's Riverside's).
 - Checked against every county's real titles (script below): "trustee area 4"
   (Riverside "TA 4"), "council district 5" (LA "Fifth District", "5th District"),
   "mt san jacinto", "measure c" (Orange "C – …"), "irvine", "costa mesa".
@@ -100,6 +113,9 @@ headless at 402 px (`FORWARD=1` sends `/api/county-ca` to the public relay, for
 - Other ComboBoxes (SubjectPicker, …) keep react-aria's substring filter; the
   same single-letter noise applies there. Not this task.
 - All-caps county titles are shown as the county prints them.
+- The race list fades in about half a second after the first typed text in
+  headless Chromium (county picker: at once). Not investigated; seen only in
+  headless, typing key by key it shows normally.
 - Searching every county at once would mean fetching all 13 feeds; the picker
   keeps one county.
 
