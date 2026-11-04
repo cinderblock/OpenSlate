@@ -15,9 +15,11 @@ export const COUNTY_RESULTS_USER_AGENT = "OpenSlate election-results relay (+htt
 
 /**
  * `clarity`: Clarity ENR (Scytl). `lvt`: livevoterturnout.com, whose
- * `summary_<n>.csv` holds every contest, one row per choice.
+ * `summary_<n>.csv` holds every contest, one row per choice. `results-api`:
+ * the `results/public/api/elections/<county>/<id>/data` JSON Sacramento
+ * publishes (every ballot item with its options' votes).
  */
-export type CountyFeedKind = "clarity" | "lvt";
+export type CountyFeedKind = "clarity" | "lvt" | "results-api";
 
 export interface CountyFeed {
   /** The county's name, without "County" (`Santa Clara`). */
@@ -115,11 +117,19 @@ export const CA_COUNTY_FEEDS: Record<string, CountyFeed> = {
     21,
     "https://www.livevoterturnout.com/ENR/solanocaenr/21/en/Index_21.html",
   ),
+  sacramento: {
+    name: "Sacramento",
+    kind: "results-api",
+    base: "https://results.saccounty.gov/results/public/api/elections/sacramento-county-ca/69",
+    page: "https://results.saccounty.gov/results/public/sacramento-county-ca/elections/69",
+    cors: false,
+  },
 };
 
 /** Whether a path under the feed's base is one OpenSlate reads, and how long its answer stays good. */
 export function feedPathTtl(feed: CountyFeed, inner: string): number | null {
   if (feed.kind === "lvt") return inner === lvtSummaryPath(feed) ? 60 : null;
+  if (feed.kind === "results-api") return inner === "data" ? 60 : null;
   if (!/^(current_ver\.txt|\d{1,9}\/json\/en\/summary\.json)$/.test(inner)) return null;
   // The version pointer moves; a versioned file never does.
   return inner === "current_ver.txt" ? 60 : 60 * 60;
@@ -313,6 +323,73 @@ export function parseClaritySummary(raw: unknown): CountyContest[] {
     if (c.TP !== undefined) contest.precincts = { total: n(c.TP), reporting: n(c.PR) };
     return [contest];
   });
+}
+
+interface WireText {
+  languageId?: string;
+  text?: string;
+}
+
+interface WireBallotItem {
+  id?: string;
+  name?: WireText[];
+  voteFor?: WireText[];
+  contestType?: string;
+  reportingStatus?: { reportingUnits?: number; totalUnits?: number } | null;
+  summaryResults?: {
+    ballotOptions?: {
+      name?: WireText[];
+      voteCount?: number;
+      party?: { abbreviation?: string | null } | null;
+    }[];
+  } | null;
+}
+
+function english(texts: WireText[] | undefined): string {
+  return (texts?.find((t) => t.languageId === "en") ?? texts?.[0])?.text?.trim() ?? "";
+}
+
+/**
+ * Sacramento's `…/elections/<county>/<id>/data`: `ballotItems[]`, each with
+ * its name (per language), "Vote for N", reporting units, and options with
+ * their votes. `election.asOf` says when the count was published.
+ */
+export function parseResultsApi(raw: unknown): { contests: CountyContest[]; asOf?: number } {
+  const data = raw as { ballotItems?: WireBallotItem[]; election?: { asOf?: string } } | null;
+  if (!data || !Array.isArray(data.ballotItems))
+    throw new Error("Unexpected answer from the county (no ballot items)");
+  const contests = data.ballotItems.flatMap((item): CountyContest[] => {
+    const title = english(item.name);
+    if (!item.id || !title) return [];
+    const options = item.summaryResults?.ballotOptions ?? [];
+    const total = options.reduce((s, o) => s + n(o.voteCount), 0);
+    const choices: CountyChoice[] = options.map((o) => {
+      const party = o.party?.abbreviation?.trim();
+      const votes = n(o.voteCount);
+      return {
+        name: english(o.name),
+        ...(party ? { party } : {}),
+        votes,
+        percent: total > 0 ? Math.round((votes / total) * 10000) / 100 : 0,
+      };
+    });
+    const measure = choices.length > 0 && choices.every((c) => YES_NO.test(c.name));
+    const status = item.reportingStatus;
+    return [
+      {
+        key: item.id,
+        title,
+        measure,
+        voteFor: measure ? 0 : n(english(item.voteFor).match(/\d+/)?.[0]),
+        ...(status
+          ? { precincts: { total: n(status.totalUnits), reporting: n(status.reportingUnits) } }
+          : {}),
+        choices,
+      },
+    ];
+  });
+  const asOf = Date.parse(data.election?.asOf ?? "");
+  return Number.isFinite(asOf) ? { contests, asOf } : { contests };
 }
 
 /** Whether a contest is one the Secretary of State already reports (state and federal offices, statewide propositions). */

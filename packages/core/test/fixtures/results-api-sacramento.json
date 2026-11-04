@@ -1,0 +1,169 @@
+{
+  "election": {
+    "asOf": "2026-10-30T16:44:30.5323957Z"
+  },
+  "ballotItems": [
+    {
+      "id": "01000000-953c-d91e-c491-08df23c4bbbb",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Governor"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "reportingStatus": {
+        "reportingUnits": 0,
+        "totalUnits": 719,
+        "asOf": "2026-10-30T16:44:30.5323957Z",
+        "reportingStatusDetails": null
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "STEVE HILTON"
+              }
+            ],
+            "voteCount": 600,
+            "party": {
+              "abbreviation": "REP"
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "XAVIER BECERRA"
+              }
+            ],
+            "voteCount": 400,
+            "party": {
+              "abbreviation": "DEM"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-953c-d91e-d578-08df23c4bbbb",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Associate Justice of the Supreme Court (Groban)"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "BallotMeasure",
+      "reportingStatus": {
+        "reportingUnits": 0,
+        "totalUnits": 719,
+        "asOf": "2026-10-30T16:44:30.5323957Z",
+        "reportingStatusDetails": null
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "YES"
+              }
+            ],
+            "voteCount": 0,
+            "party": {
+              "abbreviation": ""
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "NO"
+              }
+            ],
+            "voteCount": 0,
+            "party": {
+              "abbreviation": ""
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-953c-d91e-ddbe-08df23c4bbbb",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Elk Grove Unified School District Trustee Area 2"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "reportingStatus": {
+        "reportingUnits": 0,
+        "totalUnits": 23,
+        "asOf": "2026-10-30T16:44:30.5323957Z",
+        "reportingStatusDetails": null
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "MICHAEL VARGAS"
+              }
+            ],
+            "voteCount": 0,
+            "party": {
+              "abbreviation": ""
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "KIRK THOMSON"
+              }
+            ],
+            "voteCount": 0,
+            "party": {
+              "abbreviation": ""
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Write-in"
+              }
+            ],
+            "voteCount": 0,
+            "party": {
+              "abbreviation": ""
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

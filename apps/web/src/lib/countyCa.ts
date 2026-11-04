@@ -8,6 +8,7 @@ import {
   parseClaritySummary,
   parseClarityVersion,
   parseLvtCsv,
+  parseResultsApi,
 } from "@openslate/core";
 import type { Area } from "./jurisdictions";
 import { getRoutingMode, PROVIDERS } from "./routing";
@@ -245,6 +246,27 @@ async function fetchLvt(slug: string, feed: CountyFeed): Promise<CountyResults> 
   return out;
 }
 
+/** Sacramento's results API: every ballot item in one JSON, its time in `election.asOf`. */
+async function fetchResultsApi(slug: string, feed: CountyFeed): Promise<CountyResults> {
+  const res = await fetch(`${baseFor(slug, feed)}/data`, {
+    headers: { accept: "application/json" },
+  });
+  if (!res.ok) throw new Error(`The county answered ${res.status}`);
+  const text = await res.text();
+  const { contests, asOf } = parseResultsApi(JSON.parse(text));
+  const updated = asOf ? { updated: asOf } : updatedOf(res);
+  const out: CountyResults = {
+    county: slug,
+    version: `${updated.updated ?? ""}:${text.length}`,
+    ...updated,
+    contests,
+  };
+  const previous = lastRead.get(slug);
+  if (previous?.version === out.version) return previous;
+  lastRead.set(slug, out);
+  return out;
+}
+
 /** The last count read per county: a version seen before isn't fetched again. */
 const lastRead = new Map<string, CountyResults>();
 
@@ -257,6 +279,7 @@ export async function fetchCountyResults(slug: string): Promise<CountyResults> {
   const hit = Object.hasOwn(CA_COUNTY_FEEDS, slug) ? CA_COUNTY_FEEDS[slug] : undefined;
   if (!hit) throw new Error(`No results feed for ${slug}`);
   if (hit.kind === "lvt") return fetchLvt(slug, hit);
+  if (hit.kind === "results-api") return fetchResultsApi(slug, hit);
   const base = baseFor(slug, hit);
   const verRes = await fetch(`${base}/current_ver.txt`);
   if (!verRes.ok) throw new Error(`The county answered ${verRes.status}`);

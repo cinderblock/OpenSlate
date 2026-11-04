@@ -9,6 +9,7 @@ import {
   parseClaritySummary,
   parseClarityVersion,
   parseLvtCsv,
+  parseResultsApi,
 } from "../src/countyResults";
 import summary from "./fixtures/clarity-summary-santa-clara.json";
 
@@ -179,4 +180,33 @@ test("a livevoterturnout county reads only its summary file, and never directly"
       choices: [],
     }),
   ).toBe(false);
+});
+
+test("Sacramento's results API reads as contests, with its publish time", () => {
+  const raw = JSON.parse(
+    readFileSync(join(import.meta.dir, "fixtures/results-api-sacramento.json"), "utf8"),
+  );
+  const { contests, asOf } = parseResultsApi(raw);
+  expect(asOf).toBe(Date.parse("2026-10-30T16:44:30.5323957Z"));
+  expect(contests.map((c) => c.title)).toEqual([
+    "Governor",
+    "Associate Justice of the Supreme Court (Groban)",
+    "Elk Grove Unified School District Trustee Area 2",
+  ]);
+  const [governor, justice, school] = contests;
+  expect(governor?.voteFor).toBe(1);
+  expect(governor?.precincts).toEqual({ total: 719, reporting: 0 });
+  expect(governor?.choices.map((c) => [c.name, c.party, c.votes, c.percent])).toEqual([
+    ["STEVE HILTON", "REP", 600, 60],
+    ["XAVIER BECERRA", "DEM", 400, 40],
+  ]);
+  expect(justice?.measure).toBe(true);
+  expect(justice?.voteFor).toBe(0);
+  expect(school?.key).toMatch(/^[0-9a-f-]{36}$/);
+  expect(isStateContest(school as NonNullable<typeof school>)).toBe(false);
+  expect(() => parseResultsApi({ nope: true })).toThrow();
+  const sac = CA_COUNTY_FEEDS.sacramento;
+  if (!sac) throw new Error("Sacramento missing");
+  expect(feedPathTtl(sac, "data")).toBe(60);
+  expect(feedPathTtl(sac, "stats")).toBeNull();
 });
