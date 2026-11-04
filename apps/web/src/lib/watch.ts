@@ -15,6 +15,8 @@ export interface WatchGroup {
   contests: string[];
   /** County name, for that county's own count beside each race. */
   county?: string;
+  /** The place's districts with no race this election (odd State Senate seats in 2026). */
+  skipped?: string[];
 }
 
 /** The group single races land in. */
@@ -30,7 +32,9 @@ function isGroup(raw: unknown): raw is WatchGroup {
     typeof g.label === "string" &&
     Array.isArray(g.contests) &&
     g.contests.every((c) => typeof c === "string") &&
-    (g.county === undefined || typeof g.county === "string")
+    (g.county === undefined || typeof g.county === "string") &&
+    (g.skipped === undefined ||
+      (Array.isArray(g.skipped) && g.skipped.every((c) => typeof c === "string")))
   );
 }
 
@@ -126,4 +130,55 @@ export function setGroupCounty(
     const { county: _, ...rest } = g;
     return county ? { ...rest, county } : rest;
   });
+}
+
+/**
+ * A contest that isn't on this ballot leaves every group, and places note it
+ * as skipped so they can say why it's missing. The same list when no group has it.
+ */
+export function skipContest(groups: readonly WatchGroup[], contest: string): WatchGroup[] {
+  if (!groups.some((g) => g.contests.includes(contest))) return groups as WatchGroup[];
+  return groups.map((g) => {
+    if (!g.contests.includes(contest)) return g;
+    const skipped = g.skipped?.includes(contest) ? g.skipped : [...(g.skipped ?? []), contest];
+    return { ...g, contests: g.contests.filter((c) => c !== contest), skipped };
+  });
+}
+
+/** Drop a contest from several groups at once (a section shared by places). */
+export function removeFromGroups(
+  groups: readonly WatchGroup[],
+  groupIds: readonly string[],
+  contest: string,
+): WatchGroup[] {
+  return groupIds.reduce<WatchGroup[]>((gs, id) => removeContest(gs, id, contest), [...groups]);
+}
+
+/** Contests shown together: the ones watched by exactly the same groups. */
+export interface WatchSection {
+  key: string;
+  groups: WatchGroup[];
+  contests: string[];
+}
+
+/**
+ * Each contest once, under every group watching it: a race two places share
+ * shows once, in a section named for both. Sections come in the order their
+ * first contest appears.
+ */
+export function watchSections(groups: readonly WatchGroup[]): WatchSection[] {
+  const sections = new Map<string, WatchSection>();
+  const seen = new Set<string>();
+  for (const group of groups) {
+    for (const contest of group.contests) {
+      if (seen.has(contest)) continue;
+      seen.add(contest);
+      const owners = groups.filter((g) => g.contests.includes(contest));
+      const key = owners.map((g) => g.id).join("+");
+      const section = sections.get(key);
+      if (section) section.contests.push(contest);
+      else sections.set(key, { key, groups: owners, contests: [contest] });
+    }
+  }
+  return [...sections.values()];
 }

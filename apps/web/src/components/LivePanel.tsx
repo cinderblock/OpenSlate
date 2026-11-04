@@ -24,11 +24,14 @@ import {
   addSingle,
   districtsOfArea,
   type PlaceDistricts,
-  removeContest,
+  removeFromGroups,
   removeGroup,
   setGroupCounty,
+  skipContest,
   useWatch,
   type WatchGroup,
+  type WatchSection,
+  watchSections,
   watchStore,
 } from "../lib/watch";
 import { FindDistricts } from "./FindDistricts";
@@ -125,8 +128,9 @@ export function LivePanel() {
         </p>
       )}
 
-      {groups.map((group) => (
-        <GroupSection key={group.id} group={group} />
+      <PlacesBar groups={groups} />
+      {watchSections(groups).map((section) => (
+        <Section key={section.key} section={section} />
       ))}
 
       <p className="hint live-source">
@@ -202,53 +206,85 @@ function CivicApiStatus() {
   );
 }
 
-function GroupSection({ group }: { group: WatchGroup }) {
+/** The places watched: each with its county pick, a way to stop, and what it skipped. */
+function PlacesBar({ groups }: { groups: WatchGroup[] }) {
   const counties = useCounties();
   const countyOptions: SelectOption[] = [
     { id: "", label: "No county breakdown" },
     ...counties.map((c) => ({ id: c, label: `${c} County` })),
   ];
+  if (groups.length === 0) return null;
+  return (
+    <ul className="live-places">
+      {groups.map((group) => (
+        <li key={group.id} className="live-place">
+          <strong>{group.label}</strong>
+          <ComboBox
+            aria-label={`County count for ${group.label}`}
+            className="live-county"
+            options={countyOptions}
+            value={group.county ?? ""}
+            placeholder="Add a county's count"
+            onChange={(county) =>
+              watchStore.set((gs) => setGroupCounty(gs, group.id, county || undefined))
+            }
+          />
+          <button
+            type="button"
+            className="link"
+            onClick={() => watchStore.set((gs) => removeGroup(gs, group.id))}
+          >
+            Stop watching
+          </button>
+          {group.skipped && group.skipped.length > 0 && (
+            <span className="hint live-skipped">
+              No race this election for {group.skipped.map(contestLabel).join(", ")}.
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function Section({ section }: { section: WatchSection }) {
+  const names = section.groups.map((g) => g.label);
+  const title = names.length > 1 ? `${names.slice(0, -1).join(", ")} & ${names.at(-1)}` : names[0];
+  const counties = [...new Set(section.groups.flatMap((g) => (g.county ? [g.county] : [])))];
+  const groupIds = section.groups.map((g) => g.id);
   return (
     <section className="live-group">
-      <div className="live-group-head">
-        <h3>{group.label}</h3>
-        <ComboBox
-          aria-label={`County count for ${group.label}`}
-          className="live-county"
-          options={countyOptions}
-          value={group.county ?? ""}
-          placeholder="Add a county's count"
-          onChange={(county) =>
-            watchStore.set((gs) => setGroupCounty(gs, group.id, county || undefined))
-          }
-        />
-        <button
-          type="button"
-          className="link"
-          onClick={() => watchStore.set((gs) => removeGroup(gs, group.id))}
-        >
-          Stop watching
-        </button>
-      </div>
+      <h3>{title}</h3>
       <ul className="live-contests">
-        {group.contests.map((id) => (
-          <ContestCard key={id} id={id} group={group} />
+        {section.contests.map((id) => (
+          <ContestCard key={id} id={id} groupIds={groupIds} counties={counties} />
         ))}
       </ul>
     </section>
   );
 }
 
-function ContestCard({ id, group }: { id: string; group: WatchGroup }) {
+function ContestCard({
+  id,
+  groupIds,
+  counties,
+}: {
+  id: string;
+  groupIds: string[];
+  counties: string[];
+}) {
   const query = useQuery(contestQueryOptions(id));
-  const county = useQuery({
-    ...contestQueryOptions(id, group.county),
-    enabled: Boolean(group.county) && query.data !== undefined,
-  });
-  const remove = () => watchStore.set((gs) => removeContest(gs, group.id, id));
+  const remove = () => watchStore.set((gs) => removeFromGroups(gs, groupIds, id));
   const result = query.data;
   const notOnBallot = query.error instanceof NotOnBallot;
   const changed = useChanged(result?.reporting.time);
+
+  // A district with no race this election (odd State Senate seats in 2026)
+  // leaves the list; its place says so.
+  useEffect(() => {
+    if (notOnBallot) watchStore.set((gs) => skipContest(gs, id));
+  }, [notOnBallot, id]);
+  if (notOnBallot) return null;
 
   return (
     <li className={`live-contest card${changed ? " live-changed" : ""}`}>
@@ -264,27 +300,31 @@ function ContestCard({ id, group }: { id: string; group: WatchGroup }) {
           ✕
         </button>
       </div>
-      {notOnBallot ? (
-        <p className="hint">Not on this election's ballot.</p>
-      ) : query.isError && !result ? (
+      {query.isError && !result ? (
         <p className="error">Couldn't get this count: {query.error.message}. Trying again.</p>
       ) : !result ? (
         <p className="hint">Loading…</p>
       ) : (
         <ResultBody result={result} />
       )}
-      {group.county && county.data && (
-        <div className="live-county-count">
-          <span className="hint">
-            {group.county} County
-            {county.data.reporting.percent !== undefined &&
-              ` (${county.data.reporting.percent}% of precincts)`}
-            :
-          </span>{" "}
-          <CompactLine result={county.data} />
-        </div>
-      )}
+      {result && counties.map((county) => <CountyCount key={county} id={id} county={county} />)}
     </li>
+  );
+}
+
+function CountyCount({ id, county }: { id: string; county: string }) {
+  const query = useQuery(contestQueryOptions(id, county));
+  if (!query.data) return null;
+  return (
+    <div className="live-county-count">
+      <span className="hint">
+        {county} County
+        {query.data.reporting.percent !== undefined &&
+          ` (${query.data.reporting.percent}% of precincts)`}
+        :
+      </span>{" "}
+      <CompactLine result={query.data} />
+    </div>
   );
 }
 

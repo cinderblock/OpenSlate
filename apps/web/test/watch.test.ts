@@ -5,9 +5,13 @@ import {
   districtsOfArea,
   placeContests,
   removeContest,
+  removeFromGroups,
   SINGLES_ID,
   STATEWIDE_ID,
   setGroupCounty,
+  skipContest,
+  type WatchGroup,
+  watchSections,
 } from "../src/lib/watch";
 
 describe("the watch list", () => {
@@ -70,5 +74,44 @@ describe("the watch list", () => {
       "us-rep/district/1",
       "board-of-equalization/district/2",
     ]);
+  });
+
+  const two: WatchGroup[] = [
+    { id: STATEWIDE_ID, label: "Statewide", contests: ["governor"] },
+    {
+      id: "a",
+      label: "Home",
+      contests: ["us-rep/district/16", "state-senate/district/13", "state-assembly/district/24"],
+    },
+    {
+      id: "b",
+      label: "Mom",
+      contests: ["us-rep/district/16", "state-senate/district/13", "state-assembly/district/26"],
+    },
+  ];
+
+  test("a race two places share shows once, under both", () => {
+    expect(watchSections(two).map((s) => [s.groups.map((g) => g.label), s.contests])).toEqual([
+      [["Statewide"], ["governor"]],
+      [
+        ["Home", "Mom"],
+        ["us-rep/district/16", "state-senate/district/13"],
+      ],
+      [["Home"], ["state-assembly/district/24"]],
+      [["Mom"], ["state-assembly/district/26"]],
+    ]);
+  });
+
+  test("a race not on the ballot leaves every place, which notes it", () => {
+    const next = skipContest(two, "state-senate/district/13");
+    expect(next.flatMap((g) => g.contests)).not.toContain("state-senate/district/13");
+    expect(next[1]?.skipped).toEqual(["state-senate/district/13"]);
+    expect(next[2]?.skipped).toEqual(["state-senate/district/13"]);
+    expect(skipContest(next, "state-senate/district/13")).toBe(next);
+  });
+
+  test("removing a shared race removes it from both places", () => {
+    const next = removeFromGroups(two, ["a", "b"], "us-rep/district/16");
+    expect(next.flatMap((g) => g.contests)).not.toContain("us-rep/district/16");
   });
 });
