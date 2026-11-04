@@ -1064,6 +1064,11 @@ function AddRace({ measures, onDone }: { measures: MeasureResult[]; onDone: () =
         label="Race or measure"
         options={options}
         search={search}
+        emptyText={
+          found
+            ? "No matches"
+            : "No matches. For a city, county or school race or measure, pick its county above."
+        }
         value={null}
         placeholder="A race, measure or candidate: Governor, Prop 3, Measure A, a name…"
         onChange={(id) => {

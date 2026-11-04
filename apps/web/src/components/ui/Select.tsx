@@ -162,6 +162,8 @@ export interface ComboBoxProps<K extends string> extends CommonProps<K> {
    * of the default filter (every typed word anywhere, in the list's order).
    */
   search?: (text: string) => SelectOption<K>[];
+  /** What the list says when nothing matches (default "No matches"). */
+  emptyText?: ReactNode;
 }
 
 /** A Select you can type into to filter a long list. */
@@ -176,6 +178,7 @@ export function ComboBox<K extends string>({
   alwaysShow,
   onInputChange,
   search,
+  emptyText = "No matches",
   "aria-label": ariaLabel,
 }: ComboBoxProps<K>) {
   const { contains } = useFilter({ sensitivity: "base" });
@@ -213,7 +216,7 @@ export function ComboBox<K extends string>({
         </Button>
       </div>
       <Popover className="ui-popover" offset={4}>
-        <ListBox<SelectOption<K>> className="ui-listbox" renderEmptyState={() => "No matches"}>
+        <ListBox<SelectOption<K>> className="ui-listbox" renderEmptyState={() => emptyText}>
           {(option) => (
             <ListBoxItem
               id={option.id}
