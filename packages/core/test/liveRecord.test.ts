@@ -5,7 +5,13 @@ import { type FeedFile, type FileValidators, readCountyReport } from "../src/cou
 import { CA_COUNTY_FEEDS, parseClaritySummary } from "../src/countyResults";
 import { countyEntries, sosEntries, sosRecordedPaths, sosReportTime } from "../src/liveRecord";
 import { appendChoices, mergeHistories, type RaceHistory } from "../src/raceHistory";
-import { CA_2026_GENERAL, nextCheck, QUICK_CHECK_MS } from "../src/recordSchedule";
+import {
+  CA_2026_GENERAL,
+  nextCheck,
+  QUICK_CHECK_MS,
+  RELEASE_TIMES,
+  releaseTimes,
+} from "../src/recordSchedule";
 
 const fixture = (name: string) => readFileSync(join(import.meta.dir, "fixtures", name), "utf8");
 const json = (name: string) => JSON.parse(fixture(name));
@@ -147,6 +153,15 @@ describe("when to check next", () => {
     expect(nextCheck(release + min, release, [release], c)?.quick).toBe(false);
     // Waiting hourly: wakes for the window.
     expect(nextCheck(release - 30 * min, c.nightEnd, [release], c)?.at).toBe(release - 5 * min);
+  });
+
+  test("announced release times are for feeds that exist, inside the canvass", () => {
+    for (const [feed, times] of Object.entries(RELEASE_TIMES)) {
+      expect(Object.hasOwn(CA_COUNTY_FEEDS, feed) || feed === "sos-ca").toBe(true);
+      const parsed = releaseTimes(feed);
+      expect(parsed).toHaveLength(times.length);
+      for (const t of parsed) expect(t > c.nightEnd && t < c.stop).toBe(true);
+    }
   });
 
   test("stops once the count is certified, not at 100% of precincts", () => {

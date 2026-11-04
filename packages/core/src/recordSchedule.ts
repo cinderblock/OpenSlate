@@ -37,7 +37,28 @@ export const CA_2026_GENERAL: ElectionClock = {
  * (`sos-ca` or a county slug), ms since epoch. Hand-kept: add one when a county
  * posts its schedule. See plans/live-recorder.md for sources.
  */
-export const RELEASE_TIMES: Record<string, string[]> = {};
+export const RELEASE_TIMES: Record<string, string[]> = {
+  // "Updates every Tuesday and Friday until certification", each "by 4:15 pm",
+  // the first Friday Nov 6, and one Monday Nov 16 (time not given: taken as the
+  // same). Checked 2026-11-04 on
+  // elections.saccounty.gov/…/november-3--2026--general-election-results-schedule.html.
+  // Listed at 4:05 PM PST (00:05Z next day), so the window spans 4:00–4:25.
+  sacramento: [
+    "2026-11-07T00:05:00Z",
+    "2026-11-11T00:05:00Z",
+    "2026-11-14T00:05:00Z",
+    "2026-11-17T00:05:00Z",
+    "2026-11-18T00:05:00Z",
+    "2026-11-21T00:05:00Z",
+    "2026-11-25T00:05:00Z",
+    "2026-11-28T00:05:00Z",
+    "2026-12-02T00:05:00Z",
+  ],
+  // 6 PM Thu Nov 5 and Fri Nov 6, then "by 6 p.m." Mon Nov 9 (Times of San
+  // Diego's report of the Registrar's schedule, 2026-11-03; sdvote.com posts
+  // none). Listed at 5:55 PM PST (01:55Z next day): window 5:50–6:15.
+  "san-diego": ["2026-11-06T01:55:00Z", "2026-11-07T01:55:00Z", "2026-11-10T01:55:00Z"],
+};
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
