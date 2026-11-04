@@ -117,8 +117,9 @@ Formats:
 - [x] LA place on the live site: own council district only (3rd), city measures/offices, courts; county measures and sheriff were missing, fixed `f918124`
 - [x] README: `1dd52d1`
 - [x] catalog link: `catalogRaceFor` (same people, or measure letter + place) and a "endorsements for this race" link on county cards when the catalog is already on the device: `a260890` (also carried peers' `b2bd99d`, `3b71dfb` to origin)
-- [ ] headless check of the catalog link on the live site
-- [ ] after 8 PM: confirm counts move (Clarity version bumps; CSV `Last-Modified`; Sacramento `asOf`)
+- [x] headless check of the catalog link on the live site (7:52 PM PST): Sunnyvale place, 8 links, all to the right races (council 3, school boards, Measures G/H/I)
+- [x] first real counts through the relay at 8:07 PM PST (04:07Z): Santa Clara (version 384997), San Diego, Orange and San Bernardino carry votes in every local contest; parsed with the same code the site runs
+- [ ] still at their zero report at 8:07 PM: Contra Costa, Marin, Sonoma, Ventura, Riverside, San Mateo, Solano, Sacramento, Los Angeles. Recheck later tonight; for Sacramento, check that `election.asOf` in `/data` moves (its `Last-Modified` did, its `asOf` still said Oct 30), since cards use `asOf` for "updated"
 - [ ] My ballot / race pages showing a race's county count (reuse `catalogRaceFor`): not started
 - [ ] San Francisco, San Joaquin (recheck the feed number), Alameda (HTML): not started
 
