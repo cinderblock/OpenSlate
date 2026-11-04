@@ -44,12 +44,33 @@ plus single races. The user asked for it to be working within 1.5 h of
   of contest ids. "Add a place" from where-you-vote, an address lookup, or
   district numbers; "Add a race" from a list of every contest.
 - Checks every 60 s while the tab is visible, with a "Check now" button.
-- Existing civicAPI follows still show (the Following list), with a banner when civicAPI is down.
+- civicAPI follows stay on All races → Following (linked from /live); /live shows a banner when civicAPI is down.
+
+## Findings / gotchas
+
+- The hosted app reaches civicAPI **directly** by default (`routing.ts`
+  `defaultMode: "direct"`), so the worker's civicAPI cache only covers people who
+  switched to the proxy in Settings. Not changed tonight; the SOS provider
+  defaults to the proxy instead.
+- Every proposition is one SOS document (`ballot-measures`): `fetchContest`
+  shares requests for 10 s, otherwise 14 cards made 14+ identical requests.
+- In `vite` dev there's no `/api/sos-ca` (404), so the client falls back to SOS
+  directly. Expected.
+- Another session amended my commit with its staged `styles.css` lines. Pushed
+  history has `9e08466` (mine) between its `f16f18d` and `6b6188c`.
 
 ## Progress log
 
-- [ ] lib/sosCa.ts (contests, fetch, normalize) + tests
-- [ ] lib/watch.ts store + area → contests + tests
-- [ ] LivePanel page, route, nav
-- [ ] worker route + test
-- [ ] checks, commit, push (deploys), live check
+- [x] lib/sosCa.ts (contests, fetch, normalize) + tests
+- [x] lib/watch.ts store + area to contests + tests
+- [x] LivePanel page (`/live`, nav "Live"), route, nav
+- [x] worker route `/api/sos-ca/returns/*` + test
+- [x] checks (1009 tests, typecheck), headless browser check, commit `9e08466`, pushed 6:45 PM PST (02:45Z)
+- [x] live check 6:55 PM PST (02:55Z): openslate.us/#/live loads every contest through api.openslate.us/api/sos-ca (`Cache-Control: public, max-age=60`)
+- [ ] after polls close (8 PM PST): confirm counts appear
+
+## Follow-ups (not tonight)
+
+- `apps/server` has no `/api/sos-ca` route (self-hosters fall back to direct).
+- Hide or auto-drop contests that aren't on the ballot (odd Senate districts show "Not on this election's ballot").
+- Consider defaulting civicAPI to the proxy so the edge cache protects it.
