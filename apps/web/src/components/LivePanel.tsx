@@ -1023,13 +1023,46 @@ function AddPlace({ measures, onDone }: { measures: MeasureResult[]; onDone: () 
   );
 }
 
+/** The county "Add one race" starts on: a watched place's, else the voter's own, when OpenSlate reads it. */
+function useDefaultFeedCounty(): string {
+  const [groups] = useWatch();
+  const [myArea] = useArea();
+  for (const g of groups) {
+    const found = countyFeed(g.county);
+    if (found) return found.feed.name;
+  }
+  return feedCountyOfArea(myArea) ?? "";
+}
+
 function AddRace({ measures, onDone }: { measures: MeasureResult[]; onDone: () => void }) {
+  const startCounty = useDefaultFeedCounty();
+  const [county, setCounty] = useState(startCounty);
+  const found = countyFeed(county || undefined);
+  const local = useQuery({ ...countyQueryOptions(found?.slug ?? ""), enabled: Boolean(found) });
+  const countyOptions = useMemo<SelectOption[]>(
+    () => [
+      { id: "", label: "None" },
+      ...feedCountyNames().map((name) => ({ id: name, label: `${name} County` })),
+    ],
+    [],
+  );
   const options = useMemo<SelectOption[]>(() => {
-    const out: SelectOption[] = STATEWIDE_OFFICES.map((o) => ({
-      id: o.id,
-      label: o.label,
-      description: "Statewide",
-    }));
+    // The county's own races and measures first: what the state's lists don't have.
+    const out: SelectOption[] =
+      found && local.data
+        ? localContests(local.data.contests).map((c) => ({
+            id: countyContestId(found.slug, c.key),
+            label: c.title,
+            description: `${found.feed.name} County${c.category ? ` · ${c.category}` : ""}`,
+          }))
+        : [];
+    out.push(
+      ...STATEWIDE_OFFICES.map((o) => ({
+        id: o.id,
+        label: o.label,
+        description: "Statewide",
+      })),
+    );
     for (const m of measures) {
       out.push({
         id: propContest(m.number),
@@ -1045,15 +1078,30 @@ function AddRace({ measures, onDone }: { measures: MeasureResult[]; onDone: () =
       }
     }
     return out;
-  }, [measures]);
+  }, [measures, found, local.data]);
   return (
     <div className="card-inset live-add">
+      <ComboBox
+        label="County, for its local races and measures"
+        options={countyOptions}
+        value={county}
+        onChange={(c) => setCounty(c ?? "")}
+      />
+      {found && local.isPending && (
+        <p className="hint">Getting {found.feed.name} County's races and measures…</p>
+      )}
+      {found && local.isError && (
+        <p className="error">
+          Couldn't get {found.feed.name} County's count: {local.error.message}.
+        </p>
+      )}
       <ComboBox
         label="Race or measure"
         options={options}
         value={null}
-        placeholder="Type to find: Governor, Prop 50, Assembly 24…"
+        placeholder="Type to find: Measure O, city council, Governor, Prop 50…"
         onChange={(id) => {
+          if (!id) return;
           watchStore.set((gs) => addSingle(gs, id));
           onDone();
         }}
