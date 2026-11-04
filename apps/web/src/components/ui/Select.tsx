@@ -162,7 +162,10 @@ export interface ComboBoxProps<K extends string> extends CommonProps<K> {
    * of the default filter (every typed word anywhere, in the list's order).
    */
   search?: (text: string) => SelectOption<K>[];
-  /** What the list says when nothing matches (default "No matches"). */
+  /**
+   * Keep the list open when nothing matches, saying this. Without it the list
+   * just closes (react-aria's default).
+   */
   emptyText?: ReactNode;
 }
 
@@ -178,7 +181,7 @@ export function ComboBox<K extends string>({
   alwaysShow,
   onInputChange,
   search,
-  emptyText = "No matches",
+  emptyText,
   "aria-label": ariaLabel,
 }: ComboBoxProps<K>) {
   const { contains } = useFilter({ sensitivity: "base" });
@@ -205,6 +208,7 @@ export function ComboBox<K extends string>({
         (alwaysShow != null && options.some((o) => textOf(o) === text && alwaysShow(o)))
       }
       menuTrigger="focus"
+      allowsEmptyCollection={emptyText !== undefined}
       isDisabled={isDisabled}
       aria-label={ariaLabel}
     >
@@ -216,7 +220,10 @@ export function ComboBox<K extends string>({
         </Button>
       </div>
       <Popover className="ui-popover" offset={4}>
-        <ListBox<SelectOption<K>> className="ui-listbox" renderEmptyState={() => emptyText}>
+        <ListBox<SelectOption<K>>
+          className="ui-listbox"
+          renderEmptyState={() => emptyText ?? "No matches"}
+        >
           {(option) => (
             <ListBoxItem
               id={option.id}
