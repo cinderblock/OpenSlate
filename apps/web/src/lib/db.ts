@@ -166,3 +166,57 @@ export async function putPublished(record: PublishedSlate): Promise<void> {
 export async function deletePublished(token: string): Promise<void> {
   await (await db()).delete("published", token);
 }
+
+/** Every object store, for Settings → Your data's backup, restore and reset. */
+export const STORE_NAMES = [
+  "slates",
+  "identities",
+  "knownIdentities",
+  "published",
+  "subjectRaceMap",
+] as const;
+
+export type StoreName = (typeof STORE_NAMES)[number];
+
+export type StoreDump = Record<StoreName, unknown[]>;
+
+export async function dumpStores(): Promise<StoreDump> {
+  const database = await db();
+  const entries = await Promise.all(
+    STORE_NAMES.map(async (name) => [name, await database.getAll(name)] as const),
+  );
+  return Object.fromEntries(entries) as StoreDump;
+}
+
+export async function countStores(): Promise<Record<StoreName, number>> {
+  const database = await db();
+  const entries = await Promise.all(
+    STORE_NAMES.map(async (name) => [name, await database.count(name)] as const),
+  );
+  return Object.fromEntries(entries) as Record<StoreName, number>;
+}
+
+/**
+ * Write records into the stores in one transaction. With `replace`, each store
+ * named in `records` is emptied first; others are left alone.
+ */
+export async function writeStores(
+  records: Partial<StoreDump>,
+  { replace }: { replace: boolean },
+): Promise<void> {
+  const names = STORE_NAMES.filter((name) => records[name] !== undefined);
+  if (names.length === 0) return;
+  const tx = (await db()).transaction(names, "readwrite");
+  for (const name of names) {
+    const store = tx.objectStore(name);
+    if (replace) await store.clear();
+    for (const record of records[name] ?? []) await store.put(record);
+  }
+  await tx.done;
+}
+
+/** Empty every store. Clears rather than deleting the database, which an open connection would block. */
+export async function clearStores(): Promise<void> {
+  const tx = (await db()).transaction([...STORE_NAMES], "readwrite");
+  await Promise.all([...STORE_NAMES.map((name) => tx.objectStore(name).clear()), tx.done]);
+}

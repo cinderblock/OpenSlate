@@ -148,6 +148,12 @@ const settingsRoute = createRoute({
   component: lazyRouteComponent(() => import("./components/SettingsPage"), "SettingsPage"),
 });
 
+const browserDataRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings/data",
+  component: lazyRouteComponent(() => import("./components/BrowserDataPage"), "BrowserDataPage"),
+});
+
 // --- Pre-refactor paths, kept so bookmarks and shared links still land somewhere sensible ---
 
 type LegacyTarget =
@@ -194,6 +200,7 @@ const routeTree = rootRoute.addChildren([
   verifyRoute,
   viewerRoute,
   settingsRoute,
+  browserDataRoute,
   ...legacyRoutes,
 ]);
 

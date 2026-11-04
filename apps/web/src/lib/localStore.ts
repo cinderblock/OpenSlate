@@ -9,7 +9,12 @@ export interface LocalStore<T> {
   get(): T;
   set(next: T | ((current: T) => T)): void;
   subscribe(listener: () => void): () => void;
+  /** Forget the stored value: readers go back to the fallback. */
+  reset(): void;
 }
+
+/** Every store created so far, by key, so Settings → Your data can reset one live. */
+const registry = new Map<string, LocalStore<unknown>>();
 
 export function createLocalStore<T>(
   key: string,
@@ -64,7 +69,36 @@ export function createLocalStore<T>(
     };
   }
 
-  return { get, set, subscribe };
+  function reset(): void {
+    memory = null;
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Storage unavailable: forgetting memory is all there is.
+    }
+    for (const listener of listeners) listener();
+  }
+
+  const store: LocalStore<T> = { get, set, subscribe, reset };
+  registry.set(key, store as LocalStore<unknown>);
+  return store;
+}
+
+/**
+ * Remove a localStorage key, through its store when one is live (a raw removal
+ * would leave the store serving its in-memory copy).
+ */
+export function removeLocalKey(key: string): void {
+  const store = registry.get(key);
+  if (store) {
+    store.reset();
+    return;
+  }
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Storage unavailable: nothing stored to remove.
+  }
 }
 
 export function useLocalStore<T>(store: LocalStore<T>): [T, LocalStore<T>["set"]] {

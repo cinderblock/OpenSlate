@@ -2341,6 +2341,51 @@ button.source-chip {
 .catalog-list li {
   flex-wrap: wrap;
 }
+
+/* Settings → Your data (BrowserDataPage) */
+.browser-data h1 {
+  margin-bottom: 0.25rem;
+}
+.data-list {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+}
+.data-list > li {
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--border);
+}
+.data-sublist {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0 0 0 1.75rem;
+}
+.data-sublist > li {
+  padding: 0.2rem 0;
+}
+.data-slate {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.data-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.data-group h3 {
+  margin: 1rem 0 0.25rem;
+  font-size: 1rem;
+}
+.data-actions {
+  margin-top: 0.5rem;
+}
+.data-restore {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
 .source-row > .grow,
 .catalog-list li > .grow {
   min-width: min(100%, 13rem);

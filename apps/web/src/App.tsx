@@ -87,7 +87,7 @@ const MODES: Record<
 
 function modeOf(pathname: string): Mode | null {
   if (pathname === "/publish" || pathname.startsWith("/publish/")) return "publish";
-  if (pathname === "/settings") return null;
+  if (pathname === "/settings" || pathname.startsWith("/settings/")) return null;
   return "vote";
 }
 
@@ -155,7 +155,7 @@ export function RootLayout() {
             )}
             <Link
               to="/settings"
-              className={`header-link${pathname === "/settings" ? " active" : ""}`}
+              className={`header-link${pathname === "/settings" || pathname.startsWith("/settings/") ? " active" : ""}`}
               activeProps={{}}
             >
               <Settings className="icon" /> Settings

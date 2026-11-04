@@ -115,6 +115,30 @@ export function setRemoved(sourceId: string, removed: boolean): void {
   });
 }
 
+/**
+ * Remove slates from this browser. A source left with none of its slates is
+ * marked removed, so nothing adds it back on its own, and its follow choice is
+ * forgotten, so importing it again starts fresh. `all` is every slate there is,
+ * to tell whether a source has any left.
+ */
+export function removeSlates(slates: readonly DecodedSlate[], all: readonly DecodedSlate[]): void {
+  const going = new Set(slates.map((slate) => slate.token));
+  for (const slate of slates) {
+    if (slate.local) removeFriendGuide(slate.token);
+    else slatesCollection.delete(slate.token);
+  }
+  const emptied = [...new Set(slates.map((slate) => slate.source.id))].filter((id) =>
+    all.every((slate) => slate.source.id !== id || going.has(slate.token)),
+  );
+  if (emptied.length === 0) return;
+  for (const id of emptied) setRemoved(id, true);
+  followsStore.set((current) => {
+    const next = { ...current };
+    for (const id of emptied) delete next[id];
+    return next;
+  });
+}
+
 /** Where the user votes. */
 export const areaStore = createLocalStore<Area>("openslate.area.v1", EMPTY_AREA, (raw) => {
   if (typeof raw !== "object" || raw === null) return undefined;

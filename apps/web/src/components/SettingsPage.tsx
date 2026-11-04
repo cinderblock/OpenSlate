@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { PenLine } from "lucide-react";
+import { Database, PenLine } from "lucide-react";
 import { AddressLookupsPanel } from "./AddressLookupsPanel";
 import { AppearancePanel } from "./AppearancePanel";
 import { BallotSettingsPanel } from "./BallotSettingsPanel";
@@ -10,6 +10,7 @@ import { UsageStatsPanel } from "./UsageStatsPanel";
 export function SettingsPage() {
   return (
     <div className="card-columns">
+      <YourDataPanel />
       <BallotSettingsPanel />
       <AddressLookupsPanel />
       <GoogleKeyPanel />
@@ -18,6 +19,22 @@ export function SettingsPage() {
       <AppearancePanel />
       <PublishPanel />
     </div>
+  );
+}
+
+/** The way into Settings → Your data (BrowserDataPage). */
+function YourDataPanel() {
+  return (
+    <section className="panel">
+      <h2>Your data</h2>
+      <p className="hint">
+        Everything OpenSlate keeps is in this browser: imported slates, your picks, sources, area,
+        identities and settings. See it all, remove what you don't want, back it up or start over.
+      </p>
+      <Link to="/settings/data" className="button-link">
+        <Database className="icon" /> Manage browser data
+      </Link>
+    </section>
   );
 }
 

@@ -13,13 +13,10 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { adoptedCounts } from "../lib/adoptions";
 import { type DecodedSlate, electionOf } from "../lib/collate";
-import { slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
 import {
-  followsStore,
-  removeFriendGuide,
+  removeSlates,
   setCount,
-  setRemoved,
   setStanding,
   useDecodedSlates,
   useDisagreeMode,
@@ -353,17 +350,7 @@ function SourceRow({ group }: { group: SourceGroup }) {
   const { source } = group;
 
   function remove() {
-    for (const slate of group.slates) {
-      if (slate.local) removeFriendGuide(slate.token);
-      else slatesCollection.delete(slate.token);
-    }
-    setRemoved(source.id, true);
-    // Forget the follow choice too, so importing it again starts fresh.
-    followsStore.set((current) => {
-      const next = { ...current };
-      delete next[source.id];
-      return next;
-    });
+    removeSlates(group.slates, group.slates);
   }
 
   return (

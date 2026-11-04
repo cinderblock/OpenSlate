@@ -42,6 +42,7 @@ export const ROUTE_TEMPLATES = [
   "/publish/verify",
   "/publish/viewer",
   "/settings",
+  "/settings/data",
   // Pre-refactor paths. They only redirect, so they never resolve, but the
   // route-id union includes them.
   "/compose",

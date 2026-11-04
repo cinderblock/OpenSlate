@@ -255,6 +255,13 @@ Or skip all that and choose your city and district numbers from lists
 yourself. The app is light or dark to match your device; Settings →
 Appearance picks one for this browser instead.
 
+Settings → *Your data* lists everything the app keeps in this browser:
+imported slates (select past-election or unnamed ones in one go and remove
+them), identities, contacts, and each saved setting with a reset, plus
+leftovers from older versions. It downloads all of it as one backup file,
+restores one (added to what's there, or replacing it), clears downloaded
+copies of the catalog and results, or erases everything to start over.
+
 ### Your Own Servers
 
 Two pieces you can run yourself: the **static web app** (`apps/web`) and one
@@ -631,7 +638,8 @@ different package manager; `BUN_VERSION` should match the Bun that wrote
 1. **Decentralized-first.** A slate is fully verifiable offline. Servers are
    optional discovery/convenience, never required for trust.
 2. **No server-side user data.** Your identity and imported slates live in your
-   browser (localStorage) or files you control. The backend stores nothing.
+   browser (IndexedDB and localStorage) or files you control, all of it listed
+   under Settings → *Your data*. The backend stores nothing.
    **Usage statistics are opt-in.** A switch in Settings and in the footer
    (off until you turn it on) shares anonymous counts: which screen was opened
    and which features were used, never a candidate, race, measure,
