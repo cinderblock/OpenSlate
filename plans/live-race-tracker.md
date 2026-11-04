@@ -67,10 +67,12 @@ plus single races. The user asked for it to be working within 1.5 h of
 - [x] worker route `/api/sos-ca/returns/*` + test
 - [x] checks (1009 tests, typecheck), headless browser check, commit `9e08466`, pushed 6:45 PM PST (02:45Z)
 - [x] live check 6:55 PM PST (02:55Z): openslate.us/#/live loads every contest through api.openslate.us/api/sos-ca (`Cache-Control: public, max-age=60`)
+- [x] `c88792f`: a race shared by places shows once (section named for all of them); seats not up (empty 500) leave the list and the place notes them
 - [ ] after polls close (8 PM PST): confirm counts appear
 
 ## Follow-ups (not tonight)
 
+- Proposed, awaiting the user's pick: county list through the worker; worker not caching civicAPI errors; civicAPI through the worker by default.
+
 - `apps/server` has no `/api/sos-ca` route (self-hosters fall back to direct).
-- Hide or auto-drop contests that aren't on the ballot (odd Senate districts show "Not on this election's ballot").
 - Consider defaulting civicAPI to the proxy so the edge cache protects it.
