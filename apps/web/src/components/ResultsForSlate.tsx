@@ -2,19 +2,23 @@ import { verifySlate } from "@openslate/core";
 import { useLiveQuery } from "@tanstack/react-db";
 import { Link, useParams } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { useBallotCounts } from "../lib/ballotResults";
+import { collateRaces, decodeSlates } from "../lib/collate";
 import { slatesCollection } from "../lib/collections";
 import { useDecodedSlates } from "../lib/decodedSlates";
 import { shortKey } from "../lib/identities";
+import { useArea, useFollows } from "../lib/myVote";
 import { usePageSearch } from "../lib/pageSearch";
 import { useResolvedRaces } from "../lib/results";
 import { slateToCsv, suggestCsvFilename } from "../lib/results-csv";
 import { slateToMarkdown } from "../lib/results-markdown";
 import { matchesSearch, positionSearchText } from "../lib/search";
-import { positionOutcome, summarizeSlate } from "../lib/slate-summary";
+import { positionOutcome, standingOutcome, summarizeOutcomes } from "../lib/slate-summary";
 import { subjectKey } from "../lib/subjects";
 import { firsthandSubjectKeys } from "../lib/supersession";
 import { track } from "../lib/usage";
 import { PageSearch } from "./PageSearch";
+import { RaceCountyCount } from "./RaceCountyCount";
 import { ResultsPanel } from "./ResultsPanel";
 import { SecondhandBanner } from "./SecondhandBanner";
 import { type OutcomeFilter, SlateSummaryHeadline } from "./SlateSummaryHeadline";
@@ -47,8 +51,6 @@ export function ResultsForSlate() {
   // queries too, but they share cache so there's no extra fetch.
   const races = useResolvedRaces(subjects);
 
-  const summary = useMemo(() => summarizeSlate(positions, races), [positions, races]);
-
   // The search box narrows the positions shown, never the summary or exports.
   const search = usePageSearch("/results/$token");
   const positionText = useMemo(() => positions.map(positionSearchText), [positions]);
@@ -65,6 +67,35 @@ export function ResultsForSlate() {
       firsthandSubjectKeys((decoded ?? []).filter((s) => s.token !== token).map((s) => s.payload)),
     [decoded, token],
   );
+
+  // The same counts as How my ballot is doing: the state's, the county's own
+  // for local races, civicAPI for the rest. Each subject's race is collated
+  // from every slate here that names it, so a county contest can be matched
+  // by the whole field, not only the one name this slate picks.
+  const [follows] = useFollows();
+  const [area] = useArea();
+  const ballotRaces = useMemo(() => {
+    const keys = new Set(subjects.map(subjectKey));
+    const touching = [...(decoded ?? []), ...decodeSlates([{ token, importedAt: "" }])].filter(
+      (s) => s.payload.positions.some((p) => keys.has(subjectKey(p.subject))),
+    );
+    return collateRaces(touching, { follows, includeUnfollowed: true }).filter((r) =>
+      keys.has(r.key),
+    );
+  }, [decoded, token, subjects, follows]);
+  const raceByKey = useMemo(() => new Map(ballotRaces.map((r) => [r.key, r])), [ballotRaces]);
+  const counts = useBallotCounts(ballotRaces, area);
+  const outcomes = useMemo(
+    () =>
+      positions.map((position, i) => {
+        const count = counts.get(subjectKey(position.subject));
+        return count?.status === "found"
+          ? standingOutcome(position, count.standing)
+          : positionOutcome(position, races[i]);
+      }),
+    [positions, counts, races],
+  );
+  const summary = useMemo(() => summarizeOutcomes(outcomes), [outcomes]);
 
   if (!verified.payload) {
     return (
@@ -93,11 +124,7 @@ export function ResultsForSlate() {
   // Apply the outcome filter using the per-position outcomes derived from `races`.
   const underFilter = positions
     .map((position, i) => ({ position, race: races[i], index: i }))
-    .filter(({ position, race }) => {
-      if (filter === "all") return true;
-      const outcome = positionOutcome(position, race);
-      return outcome === filter;
-    });
+    .filter(({ index }) => filter === "all" || outcomes[index] === filter);
   // Then the search.
   const visiblePositions = underFilter.filter(({ index }) =>
     matchesSearch(positionText[index] ?? "", search.terms),
@@ -229,12 +256,22 @@ export function ResultsForSlate() {
                   </span>
                 )}
               </p>
-              <ResultsPanel
-                subject={position.subject}
-                stance={position.stance}
-                choice={position.choice}
-                attributedTo={attributedTo}
-              />
+              {(() => {
+                // A local race the county's own count carries: that count, not civicAPI's search.
+                const key = subjectKey(position.subject);
+                const count = counts.get(key);
+                const race = raceByKey.get(key);
+                return count?.status === "found" && count.standing.source === "county" && race ? (
+                  <RaceCountyCount race={race} card />
+                ) : (
+                  <ResultsPanel
+                    subject={position.subject}
+                    stance={position.stance}
+                    choice={position.choice}
+                    attributedTo={attributedTo}
+                  />
+                );
+              })()}
             </div>
           );
         })

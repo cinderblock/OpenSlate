@@ -1,5 +1,5 @@
 import type { Position, Race } from "@openslate/core";
-import { civicStanding, type MyMarks, raceOutcome } from "./ballotOutcome";
+import { civicStanding, type MyMarks, raceOutcome, type Standing } from "./ballotOutcome";
 
 /**
  * Pure helpers for the slate-level outcome headline ("you picked 12/15 winners").
@@ -35,10 +35,24 @@ export interface SlateSummary {
   winRate: number | null;
 }
 
-/** Categorise a single position given its (optional) resolved race (`raceOutcome`'s rules). */
+/** Categorise a single position given its (optional) resolved civicAPI-shaped race. */
 export function positionOutcome(position: Position, race: Race | undefined): PositionOutcome {
+  if (!race) return standingOutcome(position, undefined);
+  const yesNo =
+    race.candidates.length === 2 && race.candidates.every((c) => /^\s*(yes|no)\b/i.test(c.name));
+  return standingOutcome(position, civicStanding(race, yesNo));
+}
+
+/**
+ * Categorise a single position given its count from any source (`raceOutcome`'s
+ * rules): a called race is a win or loss, one with votes in leading or trailing.
+ */
+export function standingOutcome(
+  position: Position,
+  standing: Standing | undefined,
+): PositionOutcome {
   if (position.stance === "neutral" || position.stance === "abstain") return "na";
-  if (!race) return "unresolved";
+  if (!standing) return "unresolved";
   const tone =
     position.stance === "endorse" || position.stance === "lean_for"
       ? 1
@@ -47,10 +61,8 @@ export function positionOutcome(position: Position, race: Race | undefined): Pos
         : 0;
   if (tone === 0) return "na";
 
-  const yesNo =
-    race.candidates.length === 2 && race.candidates.every((c) => /^\s*(yes|no)\b/i.test(c.name));
   const marks: MyMarks = { picks: [], leaning: false, against: [], ranked: false };
-  if (yesNo) {
+  if (standing.kind === "measure") {
     // A stance on the measure with no choice named is a stance on Yes.
     const side = position.choice && /^\s*no\b/i.test(position.choice) ? -1 : 1;
     marks.measure = side * tone > 0 ? "yes" : "no";
@@ -60,7 +72,7 @@ export function positionOutcome(position: Position, race: Race | undefined): Pos
     if (tone > 0) marks.picks.push(position.choice);
     else marks.against.push(position.choice);
   }
-  const outcome = raceOutcome(marks, civicStanding(race, yesNo));
+  const outcome = raceOutcome(marks, standing);
   if (!outcome) return "na";
   switch (outcome.outcome) {
     case "your-way":
@@ -83,6 +95,13 @@ export function summarizeSlate(
   positions: Position[],
   raceByPosition: (Race | undefined)[],
 ): SlateSummary {
+  return summarizeOutcomes(
+    positions.map((position, i) => positionOutcome(position, raceByPosition[i])),
+  );
+}
+
+/** The headline summary of outcomes already worked out, one per position. */
+export function summarizeOutcomes(outcomes: readonly PositionOutcome[]): SlateSummary {
   let wins = 0;
   let losses = 0;
   let leading = 0;
@@ -91,10 +110,7 @@ export function summarizeSlate(
   let na = 0;
   let unresolved = 0;
 
-  for (let i = 0; i < positions.length; i++) {
-    const position = positions[i];
-    if (!position) continue;
-    const outcome = positionOutcome(position, raceByPosition[i]);
+  for (const outcome of outcomes) {
     switch (outcome) {
       case "win":
         wins++;
@@ -124,7 +140,7 @@ export function summarizeSlate(
   const winRate = decided > 0 ? wins / decided : null;
 
   return {
-    total: positions.length,
+    total: outcomes.length,
     wins,
     losses,
     leading,

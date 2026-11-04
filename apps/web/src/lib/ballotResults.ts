@@ -103,11 +103,7 @@ export function matchCountyContests(
 }
 
 /** Every race's count, by race key. */
-export function useBallotCounts(
-  races: readonly Race[],
-  area: Area,
-  election: string | undefined,
-): Map<string, RaceCount> {
+export function useBallotCounts(races: readonly Race[], area: Area): Map<string, RaceCount> {
   // 1. The Secretary of State, for the races it counts.
   const sosOf = useMemo(() => {
     const out = new Map<string, string>();
@@ -123,14 +119,13 @@ export function useBallotCounts(
   // 2. The counties' own files, for local races: one file per county covers them all.
   const countyOf = useMemo(() => {
     const out = new Map<string, string>();
-    if (election !== SOS_ELECTION) return out;
     for (const race of races) {
       if (sosOf.has(race.key)) continue;
       const slug = countyFeed(localRaceCounty(race, area, SOS_ELECTION))?.slug;
       if (slug) out.set(race.key, slug);
     }
     return out;
-  }, [races, sosOf, area, election]);
+  }, [races, sosOf, area]);
   const slugs = useMemo(() => [...new Set(countyOf.values())].sort(), [countyOf]);
   const counties = useQueries({ queries: slugs.map((slug) => countyQueryOptions(slug)) });
   const countyData = counties.map((q) => q.data);

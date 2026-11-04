@@ -123,7 +123,7 @@ export function BallotResultsPanel() {
     collated.filter((r) => !r.maybe).length - marked.filter((m) => !m.race.maybe).length;
 
   const markedRaces = useMemo(() => marked.map((m) => m.race), [marked]);
-  const counts = useBallotCounts(markedRaces, area, election);
+  const counts = useBallotCounts(markedRaces, area);
 
   const all = useMemo((): Row[] => {
     return marked.map(({ race, marks }) => {
