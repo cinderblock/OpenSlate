@@ -322,6 +322,11 @@ The app stores a catalog slate's token once and never looks again
   tinted). Areas grouped more clearly in both modes: a rail down each
   area's races repeats in every column the area reaches
   (`box-decoration-break: clone`). Checked in the mock, Letter, both modes.
+- [x] D2–D4 deployed (2026-11-03 ~7:05 PM PST, pushed with another
+  thread's commits; live `index-BgaHBIx1.css` carries `--print-pad` and
+  `.pb-color`).
+- [ ] User to confirm on paper: one page, edges intact, color and counts
+  options; Safari/Firefox untested.
 - [x] Security (2026-10-25, `0503c96`, pushed): zod's `.url()` accepted
   `javascript:` / `data:` URLs and React 18 runs a `javascript:` href on
   click (keys live in this origin). SPEC §3.13: links MUST be http(s);
