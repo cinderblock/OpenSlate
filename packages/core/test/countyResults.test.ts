@@ -1,10 +1,14 @@
 import { expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   CA_COUNTY_FEEDS,
   feedPathTtl,
   isStateContest,
+  lvtSummaryPath,
   parseClaritySummary,
   parseClarityVersion,
+  parseLvtCsv,
 } from "../src/countyResults";
 import summary from "./fixtures/clarity-summary-santa-clara.json";
 
@@ -82,4 +86,97 @@ test("state contests are known however a county words them; judges stay local", 
   expect(state("Associate Justice of The Supreme Court-Kelli M Evans", "Results")).toBe(false);
   expect(state("Treasurer-Tax Collector", "County")).toBe(false);
   expect(state("Measure A - City of Novato", "Local Measures")).toBe(false);
+});
+
+test("a livevoterturnout.com summary CSV reads as contests", () => {
+  const text = readFileSync(join(import.meta.dir, "fixtures/lvt-summary-orange.csv"), "utf8");
+  const contests = parseLvtCsv(text);
+  expect(contests.map((c) => c.title)).toEqual([
+    "Governor",
+    "A – Laguna Beach Unified School District, Bond Measure",
+    "CITY OF ALISO VIEJO Member, City Council District 2",
+    "CITY OF ALISO VIEJO Member, City Council District 3, Short Term",
+  ]);
+  const [governor, bond, council] = contests;
+  expect(governor?.key).toBe("governor");
+  expect(governor?.choices.map((c) => [c.name, c.party])).toEqual([
+    ["XAVIER BECERRA", "DEM"],
+    ["STEVE HILTON", "REP"],
+  ]);
+  expect(governor?.precincts).toEqual({ total: 2377, reporting: 0 });
+  expect(governor?.voteFor).toBe(1);
+  expect(bond?.measure).toBe(true);
+  expect(bond?.voteFor).toBe(0);
+  expect(bond?.key).toBe("a-laguna-beach-unified-school-district-bond-measure");
+  expect(council?.choices[1]).toEqual({
+    name: "MAX DUNCAN",
+    votes: 0,
+    percent: 0,
+    incumbent: true,
+  });
+});
+
+test("livevoterturnout votes become percents of the contest; columns are found by name", () => {
+  const text = [
+    "Unofficial Election Results",
+    "San Mateo",
+    "Contest Name,Candidate Name,Party,Vote by Mail Ballots Votes,Total Votes,Number Of Precincts,Precincts Reported",
+    '"Total Precincts Reported","3"',
+    '"Measure X, ""quoted""","YES","","-","300","10","3"',
+    '"Measure X, ""quoted""","NO","","-","100","10","3"',
+  ].join("\r\n");
+  const [m] = parseLvtCsv(text);
+  expect(m?.title).toBe('Measure X, "quoted"');
+  expect(m?.choices.map((c) => [c.name, c.votes, c.percent])).toEqual([
+    ["YES", 300, 75],
+    ["NO", 100, 25],
+  ]);
+  expect(m?.precincts).toEqual({ total: 10, reporting: 3 });
+  expect(() => parseLvtCsv("<html>Not found</html>")).toThrow();
+});
+
+test("a livevoterturnout county reads only its summary file, and never directly", () => {
+  const orange = CA_COUNTY_FEEDS.orange;
+  if (!orange) throw new Error("Orange missing");
+  expect(orange.cors).toBe(false);
+  expect(lvtSummaryPath(orange)).toBe("summary_24.csv");
+  expect(feedPathTtl(orange, "summary_24.csv")).toBe(60);
+  expect(feedPathTtl(orange, "summary_23.csv")).toBeNull();
+  expect(feedPathTtl(orange, "current_ver.txt")).toBeNull();
+  expect(
+    isStateContest({
+      key: "x",
+      title: "State of California Governor",
+      measure: false,
+      voteFor: 1,
+      choices: [],
+    }),
+  ).toBe(true);
+  expect(
+    isStateContest({
+      key: "x",
+      title: "San Bernardino County PROPOSITION 42",
+      measure: true,
+      voteFor: 0,
+      choices: [],
+    }),
+  ).toBe(true);
+  expect(
+    isStateContest({
+      key: "x",
+      title: "11th Assembly District",
+      measure: false,
+      voteFor: 1,
+      choices: [],
+    }),
+  ).toBe(true);
+  expect(
+    isStateContest({
+      key: "x",
+      title: "City of Fontana City Treasurer",
+      measure: false,
+      voteFor: 1,
+      choices: [],
+    }),
+  ).toBe(false);
 });

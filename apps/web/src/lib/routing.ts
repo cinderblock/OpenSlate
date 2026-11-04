@@ -103,7 +103,7 @@ export const PROVIDERS: Record<string, ProviderInfo> = {
     directUrl: "https://results.enr.clarityelections.com",
     proxyUrl: envBase("VITE_COUNTY_CA_BASE", `${apiBase()}/api/county-ca`),
     privacyNote:
-      "Counties' results feeds allow browser-direct access. Through our backend, a crowd of browsers costs a county one request a minute, and the county sees us instead of you.",
+      "Clarity counties' feeds (Santa Clara, Contra Costa, Marin, Sonoma, Ventura) allow browser-direct access; the livevoterturnout.com counties' (San Diego, Orange, Riverside, San Bernardino, San Mateo, Solano) don't, so those always go through our backend. Through it, a crowd of browsers costs a county one request a minute, and the county sees us instead of you.",
   },
   votehub: {
     key: "votehub",

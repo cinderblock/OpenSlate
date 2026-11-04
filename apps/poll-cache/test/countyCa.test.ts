@@ -89,3 +89,12 @@ test("an unreachable county answers 502", async () => {
   );
   expect(res.status).toBe(502);
 });
+
+test("a livevoterturnout county's summary CSV is relayed with a minute's cache", () => {
+  expect(countyCaUpstream("/api/county-ca/orange/summary_24.csv")).toEqual({
+    url: "https://www.livevoterturnout.com/ENR/orangecaenr/24/summary_24.csv",
+    ttl: 60,
+  });
+  expect(countyCaUpstream("/api/county-ca/orange/summary_24.xml")).toBeNull();
+  expect(countyCaUpstream("/api/county-ca/orange/current_ver.txt")).toBeNull();
+});

@@ -4,8 +4,10 @@ import {
   type CountyFeed,
   claritySummaryPath,
   isStateContest,
+  lvtSummaryPath,
   parseClaritySummary,
   parseClarityVersion,
+  parseLvtCsv,
 } from "@openslate/core";
 import type { Area } from "./jurisdictions";
 import { getRoutingMode, PROVIDERS } from "./routing";
@@ -107,7 +109,7 @@ export function countyContestResult(c: CountyContest, updated?: number): Contest
         ...(x.party ? { party: x.party } : {}),
         votes: x.votes,
         percent: x.percent,
-        incumbent: false,
+        incumbent: Boolean(x.incumbent),
       }))
       .sort((a, b) => b.votes - a.votes),
   };
@@ -216,10 +218,31 @@ export function contestsForPlace(
 
 // ---- Fetching ----------------------------------------------------------------
 
+/** A feed without CORS (livevoterturnout.com) can only be read through the relay, whatever Settings say. */
 function baseFor(slug: string, feed: CountyFeed): string {
-  return getRoutingMode(PROVIDER) === "direct"
+  return feed.cors && getRoutingMode(PROVIDER) === "direct"
     ? feed.base
     : `${PROVIDERS[PROVIDER]?.proxyUrl ?? ""}/${slug}`;
+}
+
+function updatedOf(res: Response): { updated?: number } {
+  const modified = Date.parse(res.headers.get("Last-Modified") ?? "");
+  return Number.isFinite(modified) ? { updated: modified } : {};
+}
+
+/** livevoterturnout.com: the whole count in one CSV, its time in `Last-Modified`. */
+async function fetchLvt(slug: string, feed: CountyFeed): Promise<CountyResults> {
+  const res = await fetch(`${baseFor(slug, feed)}/${lvtSummaryPath(feed)}`);
+  if (!res.ok) throw new Error(`The county answered ${res.status}`);
+  const text = await res.text();
+  const updated = updatedOf(res);
+  const previous = lastRead.get(slug);
+  // The same file again (same time, same length): keep what was read.
+  const version = `${updated.updated ?? ""}:${text.length}`;
+  if (previous?.version === version) return previous;
+  const out: CountyResults = { county: slug, version, ...updated, contests: parseLvtCsv(text) };
+  lastRead.set(slug, out);
+  return out;
 }
 
 /** The last count read per county: a version seen before isn't fetched again. */
@@ -233,6 +256,7 @@ const lastRead = new Map<string, CountyResults>();
 export async function fetchCountyResults(slug: string): Promise<CountyResults> {
   const hit = Object.hasOwn(CA_COUNTY_FEEDS, slug) ? CA_COUNTY_FEEDS[slug] : undefined;
   if (!hit) throw new Error(`No results feed for ${slug}`);
+  if (hit.kind === "lvt") return fetchLvt(slug, hit);
   const base = baseFor(slug, hit);
   const verRes = await fetch(`${base}/current_ver.txt`);
   if (!verRes.ok) throw new Error(`The county answered ${verRes.status}`);
@@ -244,11 +268,10 @@ export async function fetchCountyResults(slug: string): Promise<CountyResults> {
     headers: { accept: "application/json" },
   });
   if (!res.ok) throw new Error(`The county answered ${res.status}`);
-  const modified = Date.parse(res.headers.get("Last-Modified") ?? "");
   const out: CountyResults = {
     county: slug,
     version,
-    ...(Number.isFinite(modified) ? { updated: modified } : {}),
+    ...updatedOf(res),
     contests: parseClaritySummary(await res.json()),
   };
   lastRead.set(slug, out);
