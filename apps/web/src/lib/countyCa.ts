@@ -81,7 +81,8 @@ export function countyContestResult(c: CountyContest, updated?: number): Contest
       reporting,
       measure: {
         number: "",
-        name: c.title,
+        // The card's heading already says it.
+        name: "",
         yes: yes?.votes ?? 0,
         no: no?.votes ?? 0,
         yesPercent: yes?.percent ?? 0,
