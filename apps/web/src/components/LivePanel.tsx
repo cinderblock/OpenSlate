@@ -20,6 +20,7 @@ import { EMPTY_AREA, isAreaSet } from "../lib/jurisdictions";
 import { useLocalStore } from "../lib/localStore";
 import { useArea } from "../lib/myVote";
 import { type RaceChange, raceChangesStore, useRaceChange } from "../lib/raceChanges";
+import { useRaceHistory } from "../lib/raceHistory";
 import { baseUrlFor } from "../lib/routing";
 import {
   type CandidateResult,
@@ -70,6 +71,7 @@ import {
   watchViewStore,
 } from "../lib/watchSort";
 import { FindDistricts } from "./FindDistricts";
+import { RaceHistoryChart } from "./RaceHistoryChart";
 import { RaceLink } from "./RaceLink";
 import { ComboBox, Select, type SelectOption } from "./ui/Select";
 import { Switch } from "./ui/Switch";
@@ -653,6 +655,7 @@ function CountyContestCard({
       ) : (
         <p className="hint">The county's count doesn't list this race any more.</p>
       )}
+      {result && <RaceHistoryToggle id={id} />}
       {feed && (
         <p className="hint live-county-source">
           {feed.name} County's own count ·{" "}
@@ -736,6 +739,7 @@ function StateContestCard({
       ) : (
         <ResultBody result={result} />
       )}
+      {result && <RaceHistoryToggle id={id} />}
       {result && counties.map((county) => <CountyCount key={county} id={id} county={county} />)}
     </li>
   );
@@ -793,6 +797,22 @@ function Clock({ at }: { at: number }) {
       {today ? "" : `${dayFmt.format(d)}, `}
       {clockFmt.format(d)} <small className="live-utc">({utc})</small>
     </time>
+  );
+}
+
+/** A race's count over time, logged in this browser, behind a button (charts are tall). */
+function RaceHistoryToggle({ id }: { id: string }) {
+  const history = useRaceHistory(id);
+  const [open, setOpen] = useState(false);
+  if (!history || history.points.length === 0) return null;
+  const n = history.points.length;
+  return (
+    <div className="race-history-toggle">
+      <button type="button" className="link" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {open ? "Hide history" : `History (${n} report${n === 1 ? "" : "s"} seen here)`}
+      </button>
+      {open && <RaceHistoryChart history={history} />}
+    </div>
   );
 }
 

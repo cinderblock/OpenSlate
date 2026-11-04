@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createLocalStore, useLocalStore } from "./localStore";
+import { logReport } from "./raceHistory";
 import type { ContestResult } from "./sosCa";
 
 /**
@@ -73,12 +74,16 @@ export function useRaceChange(
 ): RaceChange | undefined {
   const [all] = useLocalStore(raceChangesStore);
   const fp = result ? raceFingerprint(result) : undefined;
+  // The result as of the latest numbers, for the history log (fp stands for it in the deps).
+  const latest = useRef(result);
+  latest.current = result;
   useEffect(() => {
     if (fp === undefined || sourceAt === undefined) return;
     raceChangesStore.set((current) => {
       const next = nextRaceChange(current[id], fp, sourceAt);
       return next === current[id] ? current : { ...current, [id]: next };
     });
+    if (latest.current) logReport(id, latest.current, sourceAt);
   }, [id, fp, sourceAt]);
   const known = all[id];
   return known && known.fp === fp ? known : undefined;
