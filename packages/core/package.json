@@ -7,7 +7,12 @@
   "exports": {
     ".": "./src/index.ts",
     "./civic": "./src/civic.ts",
-    "./countyResults": "./src/countyResults.ts"
+    "./countyReport": "./src/countyReport.ts",
+    "./countyResults": "./src/countyResults.ts",
+    "./liveRecord": "./src/liveRecord.ts",
+    "./names": "./src/names.ts",
+    "./raceHistory": "./src/raceHistory.ts",
+    "./recordSchedule": "./src/recordSchedule.ts"
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
