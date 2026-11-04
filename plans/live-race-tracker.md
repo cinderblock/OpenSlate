@@ -80,7 +80,7 @@ plus single races. The user asked for it to be working within 1.5 h of
 - [x] Live and Results combined (user, 2026-11-03 evening): one Results tab, live count on top, slate scorecards below; `/live` redirects to `/results`
 - [x] `7ffa05e`: Sort picker (ballot, your order with arrows, closest, clearest lead, most counted, newest, A–Z) and a Group by place switch, both kept in this browser
 - [x] `b473b10`: "Add one race" finds a race by a candidate's name (catalog's Secretary of State certified list, one slate; county races from their own count)
-- [ ] after polls close (8 PM PST): confirm counts appear
+- [x] Real counts flow: 2026-11-04, `api.openslate.us/api/sos-ca/returns/governor` shows 100% of precincts, updated 8:08 a.m. PST (16:08Z), Becerra 4,992,161 (63.9%), Hilton 2,815,459 (36.1%)
 
 ## Follow-ups (not tonight)
 
