@@ -108,7 +108,10 @@ the CA ballot guide items (script was `$TEMP/race-slug-survey.ts`):
       2026-11-03 PST: guide race by slug; old key link → slug with `?all`
       kept; All races hrefs are slugs and open fresh; catalog-only race with
       guides blocked; not-found; `#official` scrolls via slug and via old link
-- [x] 7 README paragraph; committed
+- [x] 7 README paragraph; committed (`7c10955`)
+- [x] Deployed: on origin/master (pushed with `ccf0234`); checked on
+      openslate.us 2026-11-03 PST: slug and old key link both land on the slug
+      with `#official` scrolled to, headings underlined
 
 ## Open questions for the user
 
