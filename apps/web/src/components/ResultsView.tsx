@@ -92,6 +92,18 @@ export function ResultsView() {
 
   return (
     <>
+      <section className="panel">
+        <div className="card my-ballot-results-link">
+          <h2>How my ballot is doing</h2>
+          <p className="hint">
+            Every race you marked on My ballot next to the count so far, grouped by whether it's
+            going your way.
+          </p>
+          <Link to="/results/my-ballot" className="button-link">
+            Compare my ballot with the results →
+          </Link>
+        </div>
+      </section>
       <LivePanel />
       <section className="panel">
         <h2>How your slates did</h2>

@@ -34,6 +34,7 @@ export const ROUTE_TEMPLATES = [
   "/race/$",
   "/race/$key",
   "/results",
+  "/results/my-ballot",
   "/results/$token",
   // Publish
   "/publish",

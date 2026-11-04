@@ -3,6 +3,7 @@ import { Link, useSearch } from "@tanstack/react-router";
 import {
   ArrowLeft,
   ArrowRight,
+  ChartColumn,
   CircleCheck,
   CircleX,
   Download,
@@ -650,6 +651,12 @@ export function MyBallotPanel() {
         >
           <Printer className="icon" /> Print
         </button>
+        {/* Once the polls open: the marks next to the count, race by race. */}
+        {election && election <= today && decided > 0 && (
+          <Link to="/results/my-ballot" className="button-link">
+            <ChartColumn className="icon" /> How it's going
+          </Link>
+        )}
       </div>
 
       {collated.length > 0 && (

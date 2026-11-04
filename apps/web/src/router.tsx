@@ -102,6 +102,15 @@ const resultsIndexRoute = createRoute({
   validateSearch: validateQuerySearch,
   component: lazyRouteComponent(() => import("./components/ResultsView"), "ResultsView"),
 });
+// Before `/results/$token` in matching: a static segment wins over a param.
+const ballotResultsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/results/my-ballot",
+  component: lazyRouteComponent(
+    () => import("./components/BallotResultsPanel"),
+    "BallotResultsPanel",
+  ),
+});
 const resultsForSlateRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/results/$token",
@@ -193,6 +202,7 @@ const routeTree = rootRoute.addChildren([
   raceRoute,
   raceByKeyRoute,
   resultsIndexRoute,
+  ballotResultsRoute,
   resultsForSlateRoute,
   composeRoute,
   identitiesRoute,
