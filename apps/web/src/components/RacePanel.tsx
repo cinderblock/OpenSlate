@@ -47,7 +47,7 @@ import { ForecastsPanel } from "./ForecastsPanel";
 import { CandidateGuide, GuideDetails, GuideMeans, GuideOverview } from "./GuideContent";
 import { PollsPanel } from "./PollsPanel";
 import { PositionRow, STANCE_LABEL } from "./PositionRow";
-import { RaceCountyCount } from "./RaceCountyCount";
+import { RaceCountyCount, useRaceCountyCount } from "./RaceCountyCount";
 import { RaceLink } from "./RaceLink";
 import { ResultsPanel } from "./ResultsPanel";
 
@@ -312,6 +312,7 @@ function RaceView({
         : undefined,
     [subject, election, jurisdiction, race, targetKey],
   );
+  const countyCount = useRaceCountyCount(countyRace);
 
   return (
     <section className="panel">
@@ -394,10 +395,13 @@ function RaceView({
 
           <ForecastsPanel subject={pollSubject} />
 
-          {/* A local race's own county count; the state's races have theirs in ResultsPanel. */}
-          {countyRace && <RaceCountyCount race={countyRace} card />}
-
-          <ResultsPanel subject={pollSubject} />
+          {/* A local race's own county count, in place of civicAPI (the backup source);
+              the state's races have theirs in ResultsPanel. */}
+          {countyCount ? (
+            <RaceCountyCount count={countyCount} card />
+          ) : (
+            <ResultsPanel subject={pollSubject} />
+          )}
         </aside>
 
         <div className="race-choices">
