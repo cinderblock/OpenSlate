@@ -4,12 +4,14 @@ import {
   catalogRaceFor,
   contestsForPlace,
   coreName,
+  countyContestFor,
   countyContestId,
   countyContestResult,
   countyFeed,
   countyOwn,
   feedCountyOfArea,
   localContests,
+  localRaceCounty,
   measureLetter,
   parseCountyContestId,
   titleDistrict,
@@ -265,6 +267,74 @@ describe("the catalog's race for a county contest", () => {
       measureLetter("D – City of Irvine, Measure Directing the Use of Ranked Choice Voting"),
     ).toBe("D");
     expect(measureLetter("Regional Transit Measure (Majority Approval Required)")).toBeUndefined();
+  });
+
+  test("the other way: a catalog race's county contest, by the same rule", () => {
+    const contests = [
+      contest("1", "Governor", "State", ["Xavier Becerra", "Steve Hilton"]),
+      contest("94", "City of Sunnyvale Council, District 3", "Local", [
+        "MURALI SRINIVASAN",
+        "Write-in",
+      ]),
+      contest("67", "Sunnyvale SD, Trustee Area 3", "School", [
+        "Rommy Kushner",
+        "Michelle Maginot",
+        "Write-in",
+      ]),
+      contest("122", "Measure G - City of Sunnyvale, Charter Amendment", "Measures", ["YES", "NO"]),
+      contest("123", "Measure G - City of Gilroy, Sales Tax", "Measures", ["YES", "NO"]),
+    ];
+    const by = (key: string) => races.find((r) => r.key === key) as (typeof races)[number];
+    const keyOf = (key: string) =>
+      countyContestFor(by(key), contests, "Santa Clara", "2026-11-03")?.key;
+    expect(keyOf("council3")).toBe("94");
+    expect(keyOf("sd3")).toBe("67");
+    expect(keyOf("measG")).toBe("122");
+    expect(keyOf("measGelsewhere")).toBe("123");
+    // Another election's race, and a race the county doesn't count.
+    expect(keyOf("old")).toBeUndefined();
+    expect(keyOf("countyA")).toBeUndefined();
+    // Each direction agrees with the other.
+    for (const key of ["council3", "sd3", "measG"]) {
+      const c = countyContestFor(by(key), contests, "Santa Clara", "2026-11-03");
+      expect(c && catalogRaceFor(c, races, "Santa Clara", "2026-11-03")?.key).toBe(key);
+    }
+    // Never a contest the Secretary of State reports, even with the same people.
+    const governor = race("gov", "us/ca/sunnyvale", "Governor", ["Xavier Becerra", "Steve Hilton"]);
+    expect(countyContestFor(governor, contests, "Santa Clara", "2026-11-03")).toBeUndefined();
+  });
+});
+
+describe("which county's count may carry a race", () => {
+  const race = (jurisdiction: string, title = "City Council", election = "2026-11-03") => ({
+    key: "k",
+    subject: { title, jurisdiction, election },
+    election,
+    jurisdiction,
+    choices: [],
+  });
+  const epa = { localities: ["us/ca/east-palo-alto", "us/ca/san-mateo-county"] };
+  const nowhere = { localities: [] };
+  test("a local race: the voter's county", () => {
+    expect(localRaceCounty(race("us/ca/east-palo-alto"), epa, "2026-11-03")).toBe("San Mateo");
+    expect(localRaceCounty(race("us/ca/east-palo-alto"), nowhere, "2026-11-03")).toBeUndefined();
+  });
+  test("a county's own race: that county, whoever is looking", () => {
+    expect(localRaceCounty(race("us/ca/santa-clara-county"), epa, "2026-11-03")).toBe(
+      "Santa Clara",
+    );
+    expect(localRaceCounty(race("us/ca/santa-clara-county/sup-3"), nowhere, "2026-11-03")).toBe(
+      "Santa Clara",
+    );
+    // A county without a feed: not the voter's county instead.
+    expect(localRaceCounty(race("us/ca/alameda-county"), epa, "2026-11-03")).toBeUndefined();
+  });
+  test("not the Secretary of State's races, nor another election's", () => {
+    expect(localRaceCounty(race("us/ca", "Governor"), epa, "2026-11-03")).toBeUndefined();
+    expect(localRaceCounty(race("us/ca/cd-16", "U.S. House"), epa, "2026-11-03")).toBeUndefined();
+    expect(
+      localRaceCounty(race("us/ca/east-palo-alto", "Council", "2024-11-05"), epa, "2026-11-03"),
+    ).toBeUndefined();
   });
 });
 

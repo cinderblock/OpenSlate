@@ -13,9 +13,10 @@ import {
   type Subject,
   samePerson,
 } from "@openslate/core";
-import type { Area } from "./jurisdictions";
+import { type Area, parseJurisdiction } from "./jurisdictions";
 import { getRoutingMode, PROVIDERS } from "./routing";
 import { type ContestResult, countySlug, LIVE_REFRESH_MS, measureThreshold } from "./sosCa";
+import { sosContestForSubject } from "./sosResults";
 
 /**
  * California counties' own election-night results (`@openslate/core/countyResults`
@@ -330,11 +331,48 @@ export function measureLetter(title: string): string | undefined {
 
 const NOT_A_PERSON = /^(yes|no|write[\s-]*in|bonds?\s*-?\s*(yes|no))$/i;
 
+function raceElection(race: CatalogRace): string | undefined {
+  return race.election ?? race.subject.election;
+}
+
+function raceJurisdiction(race: CatalogRace): string {
+  return race.jurisdiction ?? race.subject.jurisdiction ?? "";
+}
+
 /**
- * The catalog race a county contest is, when one clearly is: the same people
- * on it (at least two of the county's candidates, or all of them when there
- * are fewer), or for a measure the same letter in the same place. Only this
- * election's California races are considered.
+ * How well a catalog race is a county contest, 0 when it isn't: for a measure,
+ * the same letter in the same place (1); for a race, how many of the county's
+ * candidates the race names (at least two, or all of them when there are
+ * fewer). The one rule both directions use (`catalogRaceFor`, `countyContestFor`).
+ */
+export function raceMatch(contest: CountyContest, race: CatalogRace, countyName: string): number {
+  if (contest.measure) {
+    const letter = measureLetter(contest.title);
+    if (!letter) return 0;
+    const number = (race.ballot?.number ?? race.subject.ballot?.number ?? "").toUpperCase();
+    if (number !== letter) return 0;
+    const leaf = raceJurisdiction(race).split("/").at(-1) ?? "";
+    if (leaf.endsWith("-county"))
+      return coreName(leaf.replace(/-/g, " ")) === coreName(countyName) ? 1 : 0;
+    const name = coreName(leaf.replace(/-/g, " "));
+    return name !== "" && titleWords(contest.title).includes(` ${name} `) ? 1 : 0;
+  }
+  const people = contest.choices.map((c) => c.name).filter((n) => !NOT_A_PERSON.test(n));
+  if (people.length === 0) return 0;
+  const names = race.choices.map((c) => c.choice).filter(Boolean);
+  if (names.length === 0) return 0;
+  const hits = people.filter((p) => names.some((n) => samePerson(p, n))).length;
+  return hits >= Math.min(2, people.length) ? hits : 0;
+}
+
+/** This election's California race? Only those can be in a county's count. */
+function inElection(race: CatalogRace, election: string): boolean {
+  return raceElection(race) === election && raceJurisdiction(race).startsWith("us/ca/");
+}
+
+/**
+ * The catalog race a county contest is, when one clearly is (`raceMatch`):
+ * the best match among this election's California races.
  */
 export function catalogRaceFor<R extends CatalogRace>(
   contest: CountyContest,
@@ -342,36 +380,59 @@ export function catalogRaceFor<R extends CatalogRace>(
   countyName: string,
   election: string,
 ): R | undefined {
-  const here = races.filter((r) => {
-    const e = r.election ?? r.subject.election;
-    const j = r.jurisdiction ?? r.subject.jurisdiction ?? "";
-    return e === election && j.startsWith("us/ca/");
-  });
-  if (contest.measure) {
-    const letter = measureLetter(contest.title);
-    if (!letter) return undefined;
-    const words = titleWords(contest.title);
-    const county = coreName(countyName);
-    return here.find((r) => {
-      const number = (r.ballot?.number ?? r.subject.ballot?.number ?? "").toUpperCase();
-      if (number !== letter) return false;
-      const leaf = (r.jurisdiction ?? r.subject.jurisdiction ?? "").split("/").at(-1) ?? "";
-      if (leaf.endsWith("-county")) return coreName(leaf.replace(/-/g, " ")) === county;
-      const name = coreName(leaf.replace(/-/g, " "));
-      return name !== "" && words.includes(` ${name} `);
-    });
-  }
-  const people = contest.choices.map((c) => c.name).filter((n) => !NOT_A_PERSON.test(n));
-  if (people.length === 0) return undefined;
-  const need = Math.min(2, people.length);
-  let best: { race: R; hits: number } | undefined;
-  for (const race of here) {
-    const names = race.choices.map((c) => c.choice).filter(Boolean);
-    if (names.length === 0) continue;
-    const hits = people.filter((p) => names.some((n) => samePerson(p, n))).length;
-    if (hits >= need && (!best || hits > best.hits)) best = { race, hits };
+  let best: { race: R; score: number } | undefined;
+  for (const race of races) {
+    if (!inElection(race, election)) continue;
+    const score = raceMatch(contest, race, countyName);
+    if (score > 0 && (!best || score > best.score)) best = { race, score };
   }
   return best?.race;
+}
+
+/**
+ * The other way: the county's contest a catalog race is, among the county's
+ * local contests (never one the Secretary of State reports), when one clearly
+ * is (`raceMatch`).
+ */
+export function countyContestFor(
+  race: CatalogRace,
+  contests: readonly CountyContest[],
+  countyName: string,
+  election: string,
+): CountyContest | undefined {
+  if (!inElection(race, election)) return undefined;
+  let best: { contest: CountyContest; score: number } | undefined;
+  for (const contest of localContests(contests)) {
+    const score = raceMatch(contest, race, countyName);
+    if (score > 0 && (!best || score > best.score)) best = { contest, score };
+  }
+  return best?.contest;
+}
+
+/**
+ * The county whose own count may carry a race, by name: only for this
+ * election's local California races (the Secretary of State counts the rest).
+ * The race's own county when it's a county's race, else the voter's county,
+ * when OpenSlate reads that county's feed.
+ */
+export function localRaceCounty(
+  race: CatalogRace,
+  area: Pick<Area, "localities" | "found">,
+  election: string,
+): string | undefined {
+  if (!inElection(race, election)) return undefined;
+  const jurisdiction = raceJurisdiction(race);
+  const subject = {
+    title: race.subject.title,
+    jurisdiction,
+    election,
+  };
+  if (sosContestForSubject(subject)) return undefined;
+  if (parseJurisdiction(jurisdiction).kind !== "local") return undefined;
+  // A county's race (`us/ca/san-mateo-county`, `…/san-mateo-county/sup-3`) is in its own count.
+  const place = jurisdiction.split("/").slice(0, 3).join("/");
+  if (place.endsWith("-county")) return feedCountyOfArea({ localities: [place] });
+  return feedCountyOfArea(area);
 }
 
 // ---- Fetching ----------------------------------------------------------------
@@ -416,7 +477,9 @@ async function fetchLaVote(slug: string, feed: CountyFeed): Promise<CountyResult
   });
   if (!res.ok) throw new Error(`The county answered ${res.status}`);
   const text = await res.text();
-  const updated = updatedOf(res);
+  const { contests, asOf } = parseLaVote(JSON.parse(text));
+  // The county's `Timestamp` when it has one; the server sends no `Last-Modified` today.
+  const updated = asOf ? { updated: asOf } : updatedOf(res);
   const version = `${updated.updated ?? ""}:${text.length}:${text.slice(-64)}`;
   const previous = lastRead.get(slug);
   if (previous?.version === version) return previous;
@@ -425,7 +488,7 @@ async function fetchLaVote(slug: string, feed: CountyFeed): Promise<CountyResult
     version,
     ...updated,
     seenAt: Date.now(),
-    contests: parseLaVote(JSON.parse(text)),
+    contests,
   };
   lastRead.set(slug, out);
   return out;
