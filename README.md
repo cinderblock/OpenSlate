@@ -113,8 +113,13 @@ for it. Its two sides:
   feed where OpenSlate reads one (Los Angeles, San Diego, Orange, Riverside,
   San Bernardino, Santa Clara, Sacramento, Contra Costa, San Mateo, Ventura,
   Sonoma, Solano, Marin): a place's "Local races" adds them one at a time or
-  all at once. Below that, any slate's picks next to the
-  outcomes. *Sources* is
+  all at once. *How my ballot is doing* (from Results, or My ballot's "How
+  it's going" once the polls open) lists every race you marked next to its
+  count (the state's, your county's own for local races, civicAPI for the
+  rest), grouped by whether it's going your way, partly, or not. Nothing
+  there calls a race: it's "leading" or "trailing" on the count so far, with
+  the margin in points, until a source says who won. Below that, any slate's
+  picks next to the outcomes, scored the same way. *Sources* is
   where you follow sources, follow them to *disagree* (their picks count the
   other way on My ballot: what they back counts against it, what they oppose
   counts for it; in a Yes/No measure or a two-name race you can have it count
