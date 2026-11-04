@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { type BallotContest, createSlate, generateKeyPair, type Stance } from "@openslate/core";
 import { type DraftRow, rowIdFor } from "../src/lib/ballotDraft";
-import { myMarks, raceOutcome, type Standing } from "../src/lib/ballotOutcome";
-import { civicStanding, contestStanding } from "../src/lib/ballotResults";
+import { civicStanding, myMarks, raceOutcome, type Standing } from "../src/lib/ballotOutcome";
+import { contestStanding } from "../src/lib/ballotResults";
 import { collateRaces, decodeSlates, type Race } from "../src/lib/collate";
 
 const researcher = generateKeyPair();

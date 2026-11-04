@@ -135,6 +135,8 @@ describe("summarizeSlate", () => {
       total: 5,
       wins: 2,
       losses: 1,
+      leading: 0,
+      trailing: 0,
       pending: 0,
       na: 1,
       unresolved: 1,
@@ -157,10 +159,39 @@ describe("summarizeSlate", () => {
       total: 0,
       wins: 0,
       losses: 0,
+      leading: 0,
+      trailing: 0,
       pending: 0,
       na: 0,
       unresolved: 0,
       winRate: null,
     });
+  });
+});
+
+describe("positionOutcome before a call", () => {
+  const count = (...c: [string, number][]): Race => ({
+    id: 1,
+    election_name: "test",
+    candidates: c.map(([name, votes]) => ({ name, votes })),
+  });
+
+  test("votes in, nobody called: leading or trailing", () => {
+    const jane = makePosition({ title: "Mayor", stance: "endorse", choice: "Jane" });
+    expect(positionOutcome(jane, count(["Jane", 60], ["Bob", 40]))).toBe("leading");
+    expect(positionOutcome(jane, count(["Jane", 40], ["Bob", 60]))).toBe("trailing");
+  });
+
+  test("a measure position with no choice is scored on Yes", () => {
+    const measure = count(["Yes", 30], ["No", 70]);
+    expect(positionOutcome(makePosition({ title: "Prop 1", stance: "oppose" }), measure)).toBe(
+      "leading",
+    );
+    expect(
+      positionOutcome(makePosition({ title: "Prop 1", stance: "endorse", choice: "No" }), measure),
+    ).toBe("leading");
+    expect(positionOutcome(makePosition({ title: "Prop 1", stance: "endorse" }), measure)).toBe(
+      "trailing",
+    );
   });
 });

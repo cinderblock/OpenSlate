@@ -77,7 +77,7 @@ export function Leaderboard({ slates }: LeaderboardProps) {
               <th className="num">Total</th>
               <th className="num">Wins</th>
               <th className="num">Losses</th>
-              <th className="num">Pending</th>
+              <th className="num">Not called</th>
               <th className="num">Win rate</th>
             </tr>
           </thead>
@@ -135,7 +135,9 @@ function LeaderboardRow({ token, payload, onSummary }: LeaderboardRowProps) {
       <td className="num">{summary.total}</td>
       <td className="num">{summary.wins}</td>
       <td className="num">{summary.losses}</td>
-      <td className="num">{summary.pending + summary.unresolved}</td>
+      <td className="num">
+        {summary.leading + summary.trailing + summary.pending + summary.unresolved}
+      </td>
       <td className="num">{winRateText}</td>
     </tr>
   );

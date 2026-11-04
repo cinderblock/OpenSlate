@@ -1,4 +1,4 @@
-import { samePerson } from "@openslate/core";
+import { type Race as CivicRace, samePerson } from "@openslate/core";
 import { type DraftRow, rowIdFor } from "./ballotDraft";
 import { ballotChoices, isYesNo, ranksFor, voteFor } from "./ballotView";
 import { type Race, stanceTone } from "./collate";
@@ -135,6 +135,42 @@ export type Standing = {
       called?: "passed" | "failed";
     }
 );
+
+/** civicAPI's race as a `Standing`; its `winner` flags are real calls. */
+export function civicStanding(race: CivicRace, yesNo: boolean): Standing {
+  const changedAt = Date.parse(race.last_updated ?? "");
+  const base = {
+    source: "civicapi" as const,
+    sourceName: "civicAPI",
+    ...(race.percent_reporting !== undefined
+      ? {
+          percent: race.percent_reporting,
+          reporting: `${race.percent_reporting}% reporting`,
+        }
+      : {}),
+    ...(Number.isFinite(changedAt) ? { changedAt } : {}),
+  };
+  const yes = race.candidates.find((c) => /^\s*yes\b/i.test(c.name));
+  const no = race.candidates.find((c) => /^\s*no\b/i.test(c.name));
+  if (yesNo && yes && no) {
+    const called = yes.winner ? "passed" : no.winner ? "failed" : undefined;
+    return {
+      ...base,
+      kind: "measure",
+      yes: yes.votes ?? 0,
+      no: no.votes ?? 0,
+      ...(called ? { called } : {}),
+    };
+  }
+  const winners = race.candidates.filter((c) => c.winner).map((c) => c.name);
+  return {
+    ...base,
+    kind: "candidates",
+    seats: Math.max(1, winners.length),
+    choices: race.candidates.map((c) => ({ name: c.name, votes: c.votes ?? 0 })),
+    ...(winners.length > 0 ? { called: winners } : {}),
+  };
+}
 
 // ---- Going your way ----------------------------------------------------------
 

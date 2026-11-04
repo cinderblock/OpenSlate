@@ -1,7 +1,14 @@
 import { type Actor, actorPossessive, actorVerbSubject } from "../lib/results-framing";
 import type { SlateSummary } from "../lib/slate-summary";
 
-export type OutcomeFilter = "all" | "win" | "loss" | "pending" | "unresolved";
+export type OutcomeFilter =
+  | "all"
+  | "win"
+  | "loss"
+  | "leading"
+  | "trailing"
+  | "pending"
+  | "unresolved";
 
 interface SlateSummaryHeadlineProps {
   summary: SlateSummary;
@@ -56,6 +63,22 @@ export function SlateSummaryHeadline({
             tone="bad"
           />
         )}
+        {summary.leading > 0 && (
+          <FilterChip
+            label={`Leading (${summary.leading})`}
+            active={filter === "leading"}
+            onClick={() => onFilterChange(filter === "leading" ? "all" : "leading")}
+            tone="ok"
+          />
+        )}
+        {summary.trailing > 0 && (
+          <FilterChip
+            label={`Trailing (${summary.trailing})`}
+            active={filter === "trailing"}
+            onClick={() => onFilterChange(filter === "trailing" ? "all" : "trailing")}
+            tone="bad"
+          />
+        )}
         {summary.pending > 0 && (
           <FilterChip
             label={`Still calling (${summary.pending})`}
@@ -99,7 +122,13 @@ function FilterChip({ label, active, onClick, tone }: FilterChipProps) {
 
 function renderHeadline(summary: SlateSummary, possessive: string, verbSubject: string): string {
   const Possessive = capitalize(possessive);
+  const counted = summary.leading + summary.trailing;
   if (summary.winRate === null) {
+    if (counted > 0) {
+      return `${Possessive} ${summary.leading} of ${counted} picks ${
+        summary.leading === 1 ? "is" : "are"
+      } leading on the count so far. Nothing called yet.`;
+    }
     if (summary.pending > 0) {
       return `${Possessive} ${summary.pending} call${summary.pending === 1 ? "" : "s"} still being counted.`;
     }
@@ -108,7 +137,8 @@ function renderHeadline(summary: SlateSummary, possessive: string, verbSubject: 
     }…`;
   }
   const pct = Math.round(summary.winRate * 100);
-  return `${Possessive} ${summary.wins}/${summary.wins + summary.losses} called picks won (${pct}%).`;
+  const called = `${Possessive} ${summary.wins}/${summary.wins + summary.losses} called picks won (${pct}%).`;
+  return counted > 0 ? `${called} Of the rest, ${summary.leading} of ${counted} lead.` : called;
 }
 
 function capitalize(text: string): string {

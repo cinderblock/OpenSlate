@@ -47,6 +47,10 @@ function formatOutcome(outcome: string): string {
       return "✅ win";
     case "loss":
       return "❌ loss";
+    case "leading":
+      return "↗ leading";
+    case "trailing":
+      return "↘ trailing";
     case "pending":
       return "⏳ pending";
     case "na":
