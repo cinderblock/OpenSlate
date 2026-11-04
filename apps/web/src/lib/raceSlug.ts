@@ -33,9 +33,18 @@ export function subjectSlug(subject: Pick<Subject, "title" | "jurisdiction" | "e
 
 /** The slug for a subject key, or undefined for an `id` key, which doesn't carry the subject. */
 export function raceSlug(key: string): string | undefined {
+  if (slugOfKey.has(key)) return slugOfKey.get(key);
   const subject = subjectFromKey(key);
-  return subject ? subjectSlug(subject) : undefined;
+  const slug = subject ? subjectSlug(subject) : undefined;
+  // A race page looks through every race's slug for its own: remembered, as
+  // a key's slug never changes. Bounded, so a long visit can't grow it forever.
+  if (slugOfKey.size >= SLUG_CACHE_MAX) slugOfKey.clear();
+  slugOfKey.set(key, slug);
+  return slug;
 }
+
+const SLUG_CACHE_MAX = 50_000;
+const slugOfKey = new Map<string, string | undefined>();
 
 /** What a slug says: the election and jurisdiction as written, and the slugged title. */
 export interface ParsedRaceSlug {
