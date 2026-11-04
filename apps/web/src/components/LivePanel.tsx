@@ -950,6 +950,12 @@ function useDefaultFeedCounty(): string {
   return feedCountyOfArea(myArea) ?? "";
 }
 
+/** Every county whose own count OpenSlate reads, by slug and name. */
+const ALL_FEED_COUNTIES = feedCountyNames().flatMap((name) => {
+  const found = countyFeed(name);
+  return found ? [{ slug: found.slug, name: found.feed.name }] : [];
+});
+
 /** Candidates on one short line: the first few, then how many more. */
 function nameList(names: readonly string[]): string {
   return names.length > 4
@@ -969,10 +975,29 @@ function AddRace({ measures, onDone }: { measures: MeasureResult[]; onDone: () =
     ],
     [],
   );
+  // What's typed, so every county's contests are searched when no county is picked.
+  const [typed, setTyped] = useState("");
+  const searchAll = !found && typed.trim() !== "";
+  // Each county's count, fetched once the voter types with no county picked:
+  // only for the contest names, so no polling (the cards poll what's watched).
+  const { data: everyCountyData, pending: everyCountyLoading } = useQueries({
+    queries: ALL_FEED_COUNTIES.map(({ slug }) => ({
+      ...countyQueryOptions(slug),
+      enabled: searchAll,
+      refetchInterval: false as const,
+      staleTime: 10 * 60_000,
+    })),
+    // Structurally shared, so the list below is only rebuilt when a county's answer changes.
+    combine: (results) => ({
+      data: results.map((q) => q.data),
+      pending: results.some((q) => q.isPending),
+    }),
+  });
+  const everyCountyPending = searchAll && everyCountyLoading;
   // Who's running where, so a race can be found by a candidate's name.
   const running = useSosCandidates(true);
   // Each option with what it's found by (lib/raceSearch.ts ranks them as the voter types).
-  const { options, prepared } = useMemo(() => {
+  const { options, browsable, prepared } = useMemo(() => {
     const options: SelectOption[] = [];
     const entries: RaceSearchEntry[] = [];
     const add = (option: SelectOption, entry: RaceSearchEntry) => {
@@ -980,14 +1005,15 @@ function AddRace({ measures, onDone }: { measures: MeasureResult[]; onDone: () =
       entries.push(entry);
     };
     // The county's own races and measures first: what the state's lists don't have.
-    if (found && local.data) {
-      for (const c of localContests(local.data.contests)) {
+    /** One county's own races and measures (not the state's), labelled with the county. */
+    const countyContests = (slug: string, name: string, contests: readonly CountyContest[]) => {
+      for (const c of localContests(contests)) {
         const names = c.measure ? [] : c.choices.map((x) => x.name);
-        const where = `${found.feed.name} County${c.category ? ` · ${c.category}` : ""}`;
+        const where = `${name} County${c.category ? ` · ${c.category}` : ""}`;
         const letter = c.measure ? measureLetter(c.title) : undefined;
         add(
           {
-            id: countyContestId(found.slug, c.key),
+            id: countyContestId(slug, c.key),
             label: c.title,
             textValue: [c.title, ...names].join(" "),
             description: names.length > 0 ? `${where} · ${nameList(names)}` : where,
@@ -995,7 +1021,7 @@ function AddRace({ measures, onDone }: { measures: MeasureResult[]; onDone: () =
           { name: c.title, people: names, detail: where, ...(letter ? { measure: letter } : {}) },
         );
       }
-    }
+    };
     /** A state contest, found by its name, what voters call it, or anyone running in it. */
     const state = (id: string, label: string, where?: string) => {
       const names = running[id] ?? [];
@@ -1017,6 +1043,7 @@ function AddRace({ measures, onDone }: { measures: MeasureResult[]; onDone: () =
         },
       );
     };
+    if (found && local.data) countyContests(found.slug, found.feed.name, local.data.contests);
     for (const o of STATEWIDE_OFFICES) state(o.id, o.label, "Statewide");
     for (const m of measures) {
       const id = propContest(m.number);
@@ -1038,16 +1065,25 @@ function AddRace({ measures, onDone }: { measures: MeasureResult[]; onDone: () =
     for (const { path, count, label } of DISTRICT_FAMILIES) {
       for (let n = 1; n <= count; n++) state(`${path}/district/${n}`, `${label} ${n}`);
     }
-    return { options, prepared: entries.map(prepareRace) };
-  }, [measures, found, local.data, running]);
+    // No county picked: every county's own races and measures, last, found only by what's typed.
+    const browsable = options.length;
+    if (!found) {
+      ALL_FEED_COUNTIES.forEach(({ slug, name }, i) => {
+        const data = everyCountyData[i];
+        if (data) countyContests(slug, name, data.contests);
+      });
+    }
+    return { options, browsable, prepared: entries.map(prepareRace) };
+  }, [measures, found, local.data, running, everyCountyData]);
   const search = useCallback(
-    (text: string) => rankRaces(options, prepared, text),
-    [options, prepared],
+    (text: string) =>
+      text.trim() === "" ? options.slice(0, browsable) : rankRaces(options, prepared, text),
+    [options, browsable, prepared],
   );
   return (
     <div className="card-inset live-add">
       <ComboBox
-        label="County, for its local races and measures"
+        label="County (optional), to browse its local races and measures"
         options={countyOptions}
         value={county}
         onChange={(c) => setCounty(c ?? "")}
@@ -1060,15 +1096,14 @@ function AddRace({ measures, onDone }: { measures: MeasureResult[]; onDone: () =
           Couldn't get {found.feed.name} County's count: {local.error.message}.
         </p>
       )}
+      {everyCountyPending && <p className="hint">Searching every county's races and measures…</p>}
       <ComboBox
         label="Race or measure"
         options={options}
         search={search}
-        emptyText={
-          found
-            ? "No matches"
-            : "No matches. For a city, county or school race or measure, pick its county above."
-        }
+        keepsText
+        onInputChange={setTyped}
+        emptyText={everyCountyPending ? "Searching every county…" : "No matches"}
         value={null}
         placeholder="A race, measure or candidate: Governor, Prop 3, Measure A, a name…"
         onChange={(id) => {

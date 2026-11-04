@@ -167,6 +167,11 @@ export interface ComboBoxProps<K extends string> extends CommonProps<K> {
    * just closes (react-aria's default).
    */
   emptyText?: ReactNode;
+  /**
+   * Keep what's typed when focus leaves without picking anything (to set
+   * another field first), instead of clearing it (react-aria's default).
+   */
+  keepsText?: boolean;
 }
 
 /** A Select you can type into to filter a long list. */
@@ -182,6 +187,7 @@ export function ComboBox<K extends string>({
   onInputChange,
   search,
   emptyText,
+  keepsText,
   "aria-label": ariaLabel,
 }: ComboBoxProps<K>) {
   const { contains } = useFilter({ sensitivity: "base" });
@@ -209,6 +215,7 @@ export function ComboBox<K extends string>({
       }
       menuTrigger="focus"
       allowsEmptyCollection={emptyText !== undefined}
+      allowsCustomValue={keepsText}
       isDisabled={isDisabled}
       aria-label={ariaLabel}
     >
