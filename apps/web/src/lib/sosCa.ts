@@ -1,11 +1,11 @@
-import { baseUrlFor, PROVIDERS } from "./routing";
+import { baseUrlFor } from "./routing";
 
 /**
  * California Secretary of State election-night results
  * (`api.sos.ca.gov/returns/…`): every statewide, congressional, legislative and
  * Board of Equalization contest, and the statewide measures, statewide and per
- * county. No key; CORS open. Fetched through the project's worker (a minute's
- * edge cache) and directly when the worker can't answer.
+ * county. No key; CORS open. Fetched through the project's relay (a minute's
+ * cache) unless the user chose their own connection in Settings.
  *
  * A contest id is its path under `/returns`: `governor`,
  * `us-rep/district/16`, or `prop/37` for one statewide measure (the API serves
@@ -244,16 +244,23 @@ function fetchPath(path: string): Promise<unknown> {
   return raw;
 }
 
-async function fetchPathOnce(path: string): Promise<unknown> {
-  const provider = PROVIDERS[PROVIDER];
-  const first = baseUrlFor(PROVIDER);
-  const other = first === provider?.directUrl ? provider?.proxyUrl : provider?.directUrl;
-  try {
-    return await getJson(first, path);
-  } catch (error) {
-    if (error instanceof NotOnBallot || other === undefined) throw error;
-    return getJson(other, path);
-  }
+/**
+ * Through the route the user chose (Settings → Data routing: OpenSlate's relay
+ * by default, or their own connection). No automatic switch to the other one
+ * on failure: a relay outage must not turn every open page into direct traffic
+ * on the state's servers.
+ */
+function fetchPathOnce(path: string): Promise<unknown> {
+  return getJson(baseUrlFor(PROVIDER), path);
+}
+
+/** Every county's name, from the state's reporting status. */
+export async function fetchCounties(): Promise<string[]> {
+  const data = (await fetchPath("status")) as Record<string, { countyName?: string }>;
+  return Object.values(data)
+    .map((c) => c.countyName)
+    .filter((n): n is string => Boolean(n))
+    .sort();
 }
 
 export const LIVE_REFRESH_MS = 60_000;

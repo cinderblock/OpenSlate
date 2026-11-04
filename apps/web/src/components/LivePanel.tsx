@@ -13,6 +13,7 @@ import {
   countySlug,
   DISTRICT_FAMILIES,
   type DistrictFamily,
+  fetchCounties,
   LIVE_REFRESH_MS,
   type MeasureResult,
   NotOnBallot,
@@ -68,15 +69,7 @@ function useMeasures() {
 function useCounties(): string[] {
   const query = useQuery({
     queryKey: ["sos-ca", "counties"] as const,
-    queryFn: async (): Promise<string[]> => {
-      const res = await fetch("https://api.sos.ca.gov/returns/status");
-      if (!res.ok) throw new Error(`Secretary of State answered ${res.status}`);
-      const data = (await res.json()) as Record<string, { countyName?: string }>;
-      return Object.values(data)
-        .map((c) => c.countyName)
-        .filter((n): n is string => Boolean(n))
-        .sort();
-    },
+    queryFn: fetchCounties,
     staleTime: 1000 * 60 * 60 * 24,
   });
   return query.data ?? [];

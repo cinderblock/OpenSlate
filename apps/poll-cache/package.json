@@ -7,7 +7,8 @@
   "license": "MIT",
   "exports": {
     "./civic": "./src/civic.ts",
-    "./geocode": "./src/geocode.ts"
+    "./geocode": "./src/geocode.ts",
+    "./sosCa": "./src/sosCa.ts"
   },
   "scripts": {
     "dev": "wrangler dev",

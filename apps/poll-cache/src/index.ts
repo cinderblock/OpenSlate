@@ -6,6 +6,7 @@ import {
   handleCivicVoterInfo,
 } from "./civic";
 import { GEOCODE_PATH, handleGeocode } from "./geocode";
+import { handleSosCa, SOS_CA_PREFIX, SOS_CA_UPSTREAM } from "./sosCa";
 
 export interface Env {
   /** Secret: OpenSlate's Google Civic Information API key. Unset → the civic routes answer 501. */
@@ -28,20 +29,7 @@ const RESULTS_LIVE_TTL_SECONDS = 30;
 const RESULTS_LIVE_SWR_SECONDS = 5 * 60;
 const RESULTS_SETTLED_TTL_SECONDS = 15 * 60;
 const RESULTS_SETTLED_SWR_SECONDS = 60 * 60;
-
-// California Secretary of State election-night results. Everyone watching the
-// same contest shares one upstream request per data center per minute.
-const SOS_CA_UPSTREAM = "https://api.sos.ca.gov/returns";
-const SOS_CA_PREFIX = "/api/sos-ca/returns/";
-const SOS_CA_TTL_SECONDS = 60;
-/** Contest paths only: `governor`, `us-rep/district/16`, `ballot-measures/county/santa-clara`. */
-const SOS_CA_PATH = /^[a-z-]+(\/district\/\d{1,2})?(\/county\/[a-z-]+)?$/;
-
-export function sosCaUpstream(pathname: string): string | null {
-  if (!pathname.startsWith(SOS_CA_PREFIX)) return null;
-  const inner = pathname.slice(SOS_CA_PREFIX.length);
-  return SOS_CA_PATH.test(inner) ? `${SOS_CA_UPSTREAM}/${inner}` : null;
-}
+const RESULTS_ERROR_TTL_SECONDS = 15;
 
 const POLLS_PROXY_PATHS = ["/api/polls", "/api/pollsters", "/api/subjects", "/api/poll-types"];
 const RESULTS_PREFIX = "/api/results/v2";
@@ -64,7 +52,7 @@ function isLiveRaceDetailPath(pathname: string): boolean {
   return /^\/race\/[^/]+$/.test(inner) && !inner.startsWith("/race/search");
 }
 
-function corsHeaders(): HeadersInit {
+function corsHeaders(): Record<string, string> {
   return {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, OPTIONS",
@@ -135,9 +123,7 @@ export default {
       return proxyResults(url);
     }
     if (url.pathname.startsWith(SOS_CA_PREFIX)) {
-      const upstream = sosCaUpstream(url.pathname);
-      if (!upstream) return new Response("Not Found", { status: 404, headers: corsHeaders() });
-      return proxySosCa(upstream);
+      return handleSosCa(url.pathname, corsHeaders());
     }
 
     return new Response("Not Found", { status: 404, headers: corsHeaders() });
@@ -179,13 +165,23 @@ async function proxyResults(url: URL): Promise<Response> {
   upstream.pathname += url.pathname.slice(RESULTS_PREFIX.length);
   upstream.search = url.search;
 
+  // An outage's errors are kept seconds, not the success TTL, so the relay
+  // recovers when civicAPI does without every visitor retrying it meanwhile.
   const upstreamRes = await fetch(upstream.toString(), {
-    cf: { cacheTtl: ttl, cacheEverything: true },
+    cf: {
+      cacheEverything: true,
+      cacheTtlByStatus: { "200-299": ttl, "404": ttl, "500-599": RESULTS_ERROR_TTL_SECONDS },
+    },
   });
 
   const headers = new Headers(upstreamRes.headers);
   for (const [key, value] of Object.entries(corsHeaders())) headers.set(key, value);
-  headers.set("Cache-Control", `public, max-age=${ttl}, stale-while-revalidate=${swr}`);
+  headers.set(
+    "Cache-Control",
+    upstreamRes.ok
+      ? `public, max-age=${ttl}, stale-while-revalidate=${swr}`
+      : `public, max-age=${RESULTS_ERROR_TTL_SECONDS}`,
+  );
   headers.set("X-Data-Source", "civicAPI");
   headers.set("X-Data-License", "https://civicapi.org");
   headers.delete("Set-Cookie");
@@ -195,20 +191,4 @@ async function proxyResults(url: URL): Promise<Response> {
     statusText: upstreamRes.statusText,
     headers,
   });
-}
-
-async function proxySosCa(upstream: string): Promise<Response> {
-  const upstreamRes = await fetch(upstream, {
-    // Errors briefly, so an outage upstream isn't repeated by every visitor.
-    cf: {
-      cacheEverything: true,
-      cacheTtlByStatus: { "200-299": SOS_CA_TTL_SECONDS, "400-599": 15 },
-    },
-  });
-  const headers = new Headers();
-  for (const [key, value] of Object.entries(corsHeaders())) headers.set(key, value);
-  headers.set("Content-Type", upstreamRes.headers.get("Content-Type") ?? "application/json");
-  headers.set("Cache-Control", `public, max-age=${SOS_CA_TTL_SECONDS}`);
-  headers.set("X-Data-Source", "California Secretary of State");
-  return new Response(upstreamRes.body, { status: upstreamRes.status, headers });
 }

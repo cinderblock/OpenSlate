@@ -1,9 +1,11 @@
 import { afterEach, expect, test } from "bun:test";
-import worker, { sosCaUpstream } from "../src/index";
+import worker from "../src/index";
+import { clearSosCaCache, sosCaUpstream } from "../src/sosCa";
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
   globalThis.fetch = realFetch;
+  clearSosCaCache();
 });
 
 test("only contest paths reach the Secretary of State", () => {
@@ -47,4 +49,29 @@ test("anything else under the prefix is not found, and never asks upstream", asy
   const res = await worker.fetch(new Request("https://api.example/api/sos-ca/returns/a/b/c/d"));
   expect(res.status).toBe(404);
   expect(asked).toEqual([]);
+});
+
+test("a crowd asking at once costs the state one request, and a minute's reuse", async () => {
+  let asked = 0;
+  globalThis.fetch = (async () => {
+    asked++;
+    await new Promise((r) => setTimeout(r, 20));
+    return new Response("{}", { headers: { "Content-Type": "application/json" } });
+  }) as unknown as typeof fetch;
+  const ask = () =>
+    worker.fetch(new Request("https://api.example/api/sos-ca/returns/us-rep/district/16"));
+  const answers = await Promise.all(Array.from({ length: 25 }, ask));
+  expect(answers.every((r) => r.status === 200)).toBe(true);
+  await ask();
+  expect(asked).toBe(1);
+});
+
+test("an empty 500 (no such contest) passes through, kept briefly", async () => {
+  globalThis.fetch = (async () => new Response("", { status: 500 })) as unknown as typeof fetch;
+  const res = await worker.fetch(
+    new Request("https://api.example/api/sos-ca/returns/state-senate/district/13"),
+  );
+  expect(res.status).toBe(500);
+  expect(await res.text()).toBe("");
+  expect(res.headers.get("Cache-Control")).toBe("public, max-age=15");
 });

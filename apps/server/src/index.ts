@@ -8,6 +8,7 @@ import {
   handleCivicVoterInfo,
 } from "@openslate/poll-cache/civic";
 import { GEOCODE_PATH, handleGeocode } from "@openslate/poll-cache/geocode";
+import { handleSosCa } from "@openslate/poll-cache/sosCa";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createForecastsSource, type ForecastsProxySource } from "./forecasts";
@@ -64,6 +65,11 @@ app.post("/api/verify", async (c) => {
   if (typeof token !== "string") return c.json({ error: "expected { token: string }" }, 400);
   return c.json(verifySlate(token));
 });
+
+// California Secretary of State election-night results, the same relay the
+// public worker runs (apps/poll-cache/src/sosCa.ts): a minute's cache, one
+// upstream request per contest at a time. CORS comes from the /api/* middleware.
+app.get("/api/sos-ca/returns/*", (c) => handleSosCa(c.req.path, {}));
 
 // Address → districts via the Census geocoder, the same relay the public
 // worker runs (apps/poll-cache/src/geocode.ts): opt-in in the web app, the

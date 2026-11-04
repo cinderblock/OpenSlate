@@ -462,8 +462,11 @@ behalf (ballot contests, polls, election results); neither stores
 user data, identity, or positions. Signing and verification always happen in
 the browser.
 
-Election results (civicAPI) already serve permissive CORS without an API key,
-so the SPA hits civicAPI directly by default. Polls (VoteHub) restrict
+Election results (civicAPI and the California Secretary of State) serve
+permissive CORS without an API key, but the SPA reaches both through the
+backend by default: every visitor shares its cache, so a busy election night
+costs those sources one request per race per minute instead of one per
+visitor. A relay outage doesn't switch anyone to direct on its own. Polls (VoteHub) restrict
 cross-origin access, so the SPA *must* go through a proxy for those. So do
 Kalshi's forecasts, which only a self-hosted server relays, and only when
 its operator opts in. The Settings page lets each user pick direct-vs-proxy per provider
@@ -544,7 +547,7 @@ flowchart LR
 
 | Mode | What runs | Sign & verify | Catalog | Polls | Forecasts | Ballot lookup | Results |
 | --- | --- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Pure client** (default) | Web SPA or desktop only | yes | yes (GH Pages) | — | — | map, location, OpenStreetMap; Google with your own key | yes (civicAPI direct) |
+| **Pure client** (default) | Web SPA or desktop only | yes | yes (GH Pages) | — | — | map, location, OpenStreetMap; Google with your own key | yes (civicAPI and the Secretary of State direct) |
 | **+ Self-hosted Hono** | Above + your own `apps/server` | yes | yes | yes (VoteHub) | opt-in (Kalshi, `KALSHI_FORECASTS=true`) | + Census; + Google with `GOOGLE_API_KEY` | yes (cached) |
 | **+ Public Worker** (what `openslate.us` uses) | Above + project-operated Worker | yes | yes | yes (cached) | — | + Census; + Google once the Worker has its key | yes (cached) |
 
@@ -552,7 +555,7 @@ Modes are not mutually exclusive: run your own Hono for ballot lookup **and**
 point `VITE_API_BASE` at the public Worker for cached polls. The web client
 hits `/api/polls/*` on whichever backend the env var resolves to; the response
 shape is identical either way. `VITE_RESULTS_BASE` works the same way for
-civicAPI results (reached directly by default, but configurable). Kalshi
+civicAPI results (through the backend by default, or direct if the user picks it in Settings). Kalshi
 forecasts come from the same backend as `VITE_API_BASE`, when it says
 `forecasts: true` in `/api/health`.
 

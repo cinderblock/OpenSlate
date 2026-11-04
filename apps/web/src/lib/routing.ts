@@ -59,24 +59,33 @@ export function apiBase(): string {
   return envBase("VITE_API_BASE", "");
 }
 
+/** Whether the build names a backend in any of these env vars. */
+function configured(...keys: string[]): boolean {
+  const env = import.meta.env as Record<string, string | undefined>;
+  return keys.some((key) => Boolean(env[key]?.trim()));
+}
+
 export const PROVIDERS: Record<string, ProviderInfo> = {
   civicapi: {
     key: "civicapi",
     name: "civicAPI",
     homepage: "https://civicapi.org",
     canDirect: true,
-    defaultMode: "direct",
+    // Through the relay by default, when the build has one: everyone shares its
+    // cache, so a busy night costs civicAPI one request per race per minute, not
+    // one per visitor. A build with no backend (pure client) can only go direct.
+    defaultMode: configured("VITE_RESULTS_BASE") ? "proxy" : "direct",
     directUrl: "https://civicapi.org/api/v2",
     proxyUrl: envBase("VITE_RESULTS_BASE", "/api/results/v2"),
     privacyNote:
-      "civicAPI's CORS is open, so the SPA can hit them directly. Direct means civicAPI sees your IP; proxy keeps that off their logs but puts our backend in the middle of every request.",
+      "Through our backend, every visitor shares one cache, so civicAPI sees one request per race instead of one per visitor, and sees us instead of you. Direct means civicAPI sees your IP, and adds your traffic to theirs.",
   },
   "sos-ca": {
     key: "sos-ca",
     name: "California Secretary of State",
     homepage: "https://electionresults.sos.ca.gov",
     canDirect: true,
-    defaultMode: "proxy",
+    defaultMode: configured("VITE_SOS_CA_BASE", "VITE_API_BASE") ? "proxy" : "direct",
     directUrl: "https://api.sos.ca.gov",
     proxyUrl: envBase("VITE_SOS_CA_BASE", `${apiBase()}/api/sos-ca`),
     privacyNote:
