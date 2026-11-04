@@ -9,6 +9,7 @@ import {
   saveSubjectRace,
 } from "../lib/results";
 import { type Actor, outcomeLine, pendingLine } from "../lib/results-framing";
+import { isSosRaceId } from "../lib/sosResults";
 import { RegionBreakdown } from "./RegionBreakdown";
 import { ResultsTimeline } from "./ResultsTimeline";
 import { SearchField } from "./ui/TextField";
@@ -179,13 +180,13 @@ export function ResultsPanel({ subject, stance, choice, attributedTo }: ResultsP
         </div>
       )}
 
-      {race.data && (
+      {race.data && !isSosRaceId(race.data.id) && (
         <div className="no-print">
           <ResultsTimeline raceId={race.data.id} hasMap={race.data.has_map ?? false} />
         </div>
       )}
 
-      <SourceFooter />
+      <SourceFooter raceId={race.data?.id} />
     </div>
   );
 }
@@ -439,7 +440,18 @@ function HitList({ hits, onPick, currentRaceId }: HitListProps) {
   );
 }
 
-function SourceFooter() {
+function SourceFooter({ raceId }: { raceId?: string | number } = {}) {
+  if (isSosRaceId(raceId)) {
+    return (
+      <p className="hint attribution">
+        Source:{" "}
+        <a href="https://electionresults.sos.ca.gov" target="_blank" rel="noreferrer">
+          California Secretary of State
+        </a>{" "}
+        · semi-official election-night count; counties keep counting for weeks after.
+      </p>
+    );
+  }
   return (
     <p className="hint attribution">
       Source:{" "}

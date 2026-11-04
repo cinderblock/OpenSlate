@@ -36,6 +36,12 @@ plus single races. The user asked for it to be working within 1.5 h of
 
 ## Decisions
 
+- (User, 7:00 PM PST) Results go through our relay by default; users may pick
+  their own connection in Settings; **never** fall back to direct
+  automatically (no thundering herd on the state or civicAPI).
+- (User) The Secretary of State is primary; civicAPI is backup only. We only
+  have California so far.
+
 - New page `/live` ("Live results"), source CA SOS. Browser fetches through the
   worker (`/api/sos-ca/returns/*`, 60 s edge cache, path allowlist) so a crowd
   of browsers costs SOS one request per data center per minute. The browser
@@ -68,11 +74,13 @@ plus single races. The user asked for it to be working within 1.5 h of
 - [x] checks (1009 tests, typecheck), headless browser check, commit `9e08466`, pushed 6:45 PM PST (02:45Z)
 - [x] live check 6:55 PM PST (02:55Z): openslate.us/#/live loads every contest through api.openslate.us/api/sos-ca (`Cache-Control: public, max-age=60`)
 - [x] `c88792f`: a race shared by places shows once (section named for all of them); seats not up (empty 500) leave the list and the place notes them
+- [x] `ba0eb2f`: civicAPI through the relay by default (when the build has one); no auto-fallback to direct for the state; county list through the relay; relay moved to `apps/poll-cache/src/sosCa.ts`, shared with apps/server, coalesces concurrent requests; civicAPI errors kept 15 s
+- [x] Results/race pages/followed races/outcome chips: the state's count for every race it covers this election (`sos:` race ids, `lib/sosResults.ts`); civicAPI only for the rest (backup)
+- [x] County results (local races) handed to its own thread: "County election-night results (local races) for Live"
 - [ ] after polls close (8 PM PST): confirm counts appear
 
 ## Follow-ups (not tonight)
 
-- Proposed, awaiting the user's pick: county list through the worker; worker not caching civicAPI errors; civicAPI through the worker by default.
 
 - `apps/server` has no `/api/sos-ca` route (self-hosters fall back to direct).
 - Consider defaulting civicAPI to the proxy so the edge cache protects it.

@@ -3,6 +3,7 @@ import {
   type RaceHistoryResult,
   type RaceSearchParams,
   type RaceSearchResult,
+  type RaceSummary,
   type ResultsSource,
   type Subject,
   scoreMatch,
@@ -12,6 +13,14 @@ import { useQueries } from "@tanstack/react-query";
 import { getSubjectRace, putSubjectRace, type SubjectRaceMapping } from "./db";
 import { electionPhase } from "./election-phase";
 import { baseUrlFor } from "./routing";
+import { fetchContest, LIVE_REFRESH_MS } from "./sosCa";
+import {
+  contestOfSosRaceId,
+  contestToRace,
+  isSosRaceId,
+  sosContestForSubject,
+  sosSearchSummary,
+} from "./sosResults";
 import { subjectKey } from "./subjects";
 
 /**
@@ -134,34 +143,51 @@ export function useResolvedRaces(subjects: Subject[]): (Race | undefined)[] {
   return details.map((q) => q.data);
 }
 
+type RankedSearch = RaceSearchResult & { ranked: { race: RaceSummary; score: number }[] };
+
 export function raceSearchQueryOptions(subject: Subject) {
+  // The state counts this race: its own count, and civicAPI isn't asked.
+  const contest = sosContestForSubject(subject);
   const params = subjectToRaceQuery(subject);
   return {
-    queryKey: ["results", "search", params] as const,
-    queryFn: async () => {
+    queryKey: (contest
+      ? ["results", "search", "sos", contest]
+      : ["results", "search", params]) as readonly unknown[],
+    queryFn: async (): Promise<RankedSearch> => {
+      if (contest) {
+        const race = sosSearchSummary(contest, subject);
+        return { count: 1, offset: 0, limit: 1, races: [race], ranked: [{ race, score: 1 }] };
+      }
       const data = await resultsSource.search(params);
       const ranked = [...data.races]
         .map((r) => ({ race: r, score: scoreMatch(subject, r) }))
         .sort((a, b) => b.score - a.score);
       return { ...data, ranked };
     },
-    enabled: shouldFetchForSubject(subject),
-    staleTime: 1000 * 60 * 5,
+    enabled: contest !== undefined || shouldFetchForSubject(subject),
+    staleTime: contest ? Number.POSITIVE_INFINITY : 1000 * 60 * 5,
   };
 }
 
 export function raceQueryOptions(raceId: string | number | undefined) {
+  const sos = isSosRaceId(raceId);
   return {
     queryKey: ["results", "race", raceId] as const,
     queryFn: async (): Promise<Race> => {
       if (raceId === undefined) throw new Error("raceId required");
+      if (isSosRaceId(raceId)) {
+        const contest = contestOfSosRaceId(raceId);
+        return contestToRace(contest, await fetchContest(contest));
+      }
       return resultsSource.get(raceId);
     },
     enabled: raceId !== undefined,
     // Picked dynamically by `refetchInterval` below; staleTime is a floor.
     staleTime: 1000 * 30,
-    refetchInterval: (query: { state: { data?: Race } }) =>
-      isLiveRace(query.state.data) ? 1000 * 30 : false,
+    // The state's count goes on for weeks after the polls close: keep checking
+    // it while the page is open. civicAPI's, while it's under 100% reporting.
+    refetchInterval: (query: { state: { data?: Race } }): number | false =>
+      sos ? LIVE_REFRESH_MS : isLiveRace(query.state.data) ? 1000 * 30 : false,
   };
 }
 
@@ -173,7 +199,8 @@ export function raceHistoryListQueryOptions(raceId: string | number | undefined)
       const result = await resultsSource.history(raceId);
       return result.kind === "timestamps" ? result.timestamps : [];
     },
-    enabled: raceId !== undefined,
+    // The state keeps no history: only civicAPI's races can be replayed.
+    enabled: raceId !== undefined && !isSosRaceId(raceId),
     staleTime: 1000 * 30,
   };
 }
