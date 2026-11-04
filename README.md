@@ -48,8 +48,10 @@ for it. Its two sides:
   attaches to it (news and analysis that anyone can sign and link to a race,
   shown as reading, never counted as endorsements; news coverage from the
   public catalog comes along on its own). *Print* makes a paper copy of your
-  ballot, endorsement counts beside the bubbles and ranks in a ranked-choice
-  contest's bubbles, in 10pt type, shrunk only as far as it needs to fit
+  ballot, endorsement counts beside the bubbles (optional) and ranks in a
+  ranked-choice contest's bubbles, each area's races grouped under its own
+  heading, in black or in color (each area its own colour, support green,
+  opposition red), in 10pt type, shrunk only as far as it needs to fit
   one page, or the front and back of one sheet. Sources imported from the public
   catalog stay current: when the catalog has a newer version, it replaces
   yours. Work through it like an inbox: filter races by

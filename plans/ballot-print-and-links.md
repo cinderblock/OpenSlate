@@ -309,6 +309,19 @@ The app stores a catalog slate's token once and never looks again
   0.38in), never more pages than the card says; 30 races 87.5% (was 84%),
   60 races now print on one sheet (was two). User accepts printers that
   can't print that close to the edge shrinking the page to fit.
+- [x] D3 (2026-11-03, user): a one-page ballot printed on page 2. Cause:
+  anything printed before the ballot, even an empty box, starts an
+  ordinary page (browser margins and header), and the ballot's named page
+  forces a break. Printing it now hides everything but the ballot and its
+  ancestors (`body:has(.print-ballot)`) and clears their spacing.
+  Reproduced and fixed in the headless-Chrome mock; **not confirmed which
+  element did it in the user's real app**.
+- [x] D4 (2026-11-03, user): print options "Show source counts" (default
+  on) and "Print in color" (each area its own colour on the heading band,
+  rail and race boxes; ✓ green, ✗ and against marks red; picked rows
+  tinted). Areas grouped more clearly in both modes: a rail down each
+  area's races repeats in every column the area reaches
+  (`box-decoration-break: clone`). Checked in the mock, Letter, both modes.
 - [x] Security (2026-10-25, `0503c96`, pushed): zod's `.url()` accepted
   `javascript:` / `data:` URLs and React 18 runs a `javascript:` href on
   click (keys live in this origin). SPEC §3.13: links MUST be http(s);
@@ -469,6 +482,9 @@ The app stores a catalog slate's token once and never looks again
   `content-box` or its padding comes out of `--print-width`: text wrapped
   more on paper than when measured, and a 30-race ballot printed on two
   Letter pages while the card said one.
+- Black-and-white grouping can't name an area at the top of a column it
+  continues into (CSS columns have no running headers); the rail and the
+  gap between rails are what mark it.
 - Testing print without a dialog: build a mock page with the real
   styles.css and `fitToPage` (`bun build --format iife`), then
   `chrome --headless=new --print-to-pdf` with a fresh `--user-data-dir`

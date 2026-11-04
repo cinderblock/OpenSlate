@@ -190,6 +190,10 @@ export function MyBallotPanel() {
   const [printNotes, setPrintNotes] = useState(false);
   /** Fit onto the front and back of one sheet, rather than one side. */
   const [printBothSides, setPrintBothSides] = useState(false);
+  /** Colour for each area and for support / opposition, rather than black only. */
+  const [printColor, setPrintColor] = useState(false);
+  /** Beside each bubble, how many followed sources back or oppose it. */
+  const [printCounts, setPrintCounts] = useState(true);
   const printPages = printBothSides ? 2 : 1;
   /** The browser is printing (Ctrl+P as well as the Print button). */
   const [printing, setPrinting] = useState(false);
@@ -536,7 +540,7 @@ export function MyBallotPanel() {
   useEffect(() => {
     if (!printOptions || !printRef.current) return;
     setFit(fitToPage(printRef.current, printPages));
-  }, [printOptions, printSections, printNotes, printPages]);
+  }, [printOptions, printSections, printNotes, printPages, printCounts]);
 
   // Ctrl+P prints the same ballot as the Print button. `beforeprint` runs
   // before the browser lays out the pages, so render and fit synchronously.
@@ -758,6 +762,12 @@ export function MyBallotPanel() {
             </Checkbox>
             <Checkbox isSelected={printBothSides} onChange={setPrintBothSides}>
               Both sides of the sheet
+            </Checkbox>
+            <Checkbox isSelected={printCounts} onChange={setPrintCounts}>
+              Show source counts
+            </Checkbox>
+            <Checkbox isSelected={printColor} onChange={setPrintColor}>
+              Print in color
             </Checkbox>
           </div>
           <p className="print-fit" aria-live="polite">
@@ -1058,6 +1068,8 @@ export function MyBallotPanel() {
           rows={draft.rows}
           followedCount={followedCount}
           notes={printNotes}
+          counts={printCounts}
+          color={printColor}
         />
       )}
     </section>

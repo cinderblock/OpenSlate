@@ -1559,13 +1559,24 @@ button.source-chip {
   column-gap: 10pt;
   column-rule: 0.5pt solid #999;
 }
+/* Each area's races hang off a rail that runs down every column the area
+   reaches, so a column that carries on an area still reads as part of it. */
+.pb-section {
+  border-left: 2.5pt solid var(--pb-rail, #000);
+  padding-left: 3pt;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.pb-section + .pb-section {
+  margin-top: 6pt;
+}
 .pb-section h2 {
-  font-size: 10.5pt;
+  font-size: 11pt;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  margin: 0 0 4pt;
-  padding: 1.25pt 4pt;
-  background: #000;
+  margin: 0 0 4pt -3pt;
+  padding: 1.5pt 4pt;
+  background: var(--pb-band, #000);
   color: #fff;
   break-after: avoid;
 }
@@ -1667,6 +1678,43 @@ button.source-chip {
   margin: 0 4pt 2.5pt;
   font-style: italic;
   max-width: none;
+}
+/* "Print in color": each area its own colour; support green, opposition red. */
+.pb-color .pb-section {
+  --pb-rail: var(--pb-area);
+  --pb-band: var(--pb-area);
+}
+.pb-color .pb-section h3 {
+  border-bottom-color: var(--pb-area);
+}
+.pb-color .pb-race {
+  border-color: var(--pb-area);
+}
+.pb-color .pb-race-title {
+  background: color-mix(in srgb, var(--pb-area) 16%, #fff);
+  border-bottom-color: var(--pb-area);
+}
+.pb-color .pb-picked {
+  background: #dff2e4;
+}
+.pb-color .pb-yes {
+  color: #17703a;
+}
+.pb-color .pb-no {
+  color: #b3261e;
+}
+.pb-color .pb-zero .pb-yes {
+  color: inherit;
+}
+.pb-color .pb-oppose {
+  border-color: #b3261e;
+  background: linear-gradient(
+    to top right,
+    transparent calc(50% - 0.75pt),
+    #b3261e calc(50% - 0.75pt),
+    #b3261e calc(50% + 0.75pt),
+    transparent calc(50% + 0.75pt)
+  );
 }
 .print-disclaimer {
   margin-top: 1.5rem;

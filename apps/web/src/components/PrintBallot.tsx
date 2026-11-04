@@ -1,5 +1,5 @@
 import type { Stance } from "@openslate/core";
-import { forwardRef } from "react";
+import { type CSSProperties, forwardRef } from "react";
 import {
   type DraftRow,
   NOTE_CHOICE,
@@ -34,6 +34,21 @@ export interface PrintSection {
   races: Race[];
 }
 
+/**
+ * One colour per area, in order, for "Print in color": dark enough for white
+ * heading text, and far enough apart to tell neighbours apart on paper.
+ */
+const AREA_COLORS = [
+  "#1f5fa8",
+  "#b5462a",
+  "#2e7d4f",
+  "#6b4aa3",
+  "#9a6400",
+  "#0f7680",
+  "#a8326e",
+  "#4d5b6b",
+];
+
 const BUBBLE_LABEL: Partial<Record<Stance, string>> = {
   endorse: "my pick",
   lean_for: "leaning",
@@ -50,19 +65,31 @@ export const PrintBallot = forwardRef<
     rows: Record<string, DraftRow>;
     followedCount: number;
     notes: boolean;
+    /** Show how many followed sources back or oppose each choice. */
+    counts: boolean;
+    /** Colour each area, and support and opposition, rather than black only. */
+    color: boolean;
   }
->(function PrintBallot({ election, area, sections, rows, followedCount, notes }, ref) {
+>(function PrintBallot(
+  { election, area, sections, rows, followedCount, notes, counts, color },
+  ref,
+) {
   const rankings = useRankings();
   return (
-    <div ref={ref} className="print-ballot">
+    <div ref={ref} className={`print-ballot${color ? " pb-color" : ""}`}>
       <header className="pb-header">
         <h1>
           My ballot{election ? ` · ${formatElectionDate(election)}` : ""}
           {area && <span className="pb-area"> · {area}</span>}
         </h1>
         <p>
-          <strong>Not an official ballot.</strong> Beside each bubble: how many of the{" "}
-          {followedCount} sources I follow back that choice (✓) or oppose it (✗).{" "}
+          <strong>Not an official ballot.</strong>{" "}
+          {counts && (
+            <>
+              Beside each bubble: how many of the {followedCount} sources I follow back that choice
+              (<span className="pb-yes">✓</span>) or oppose it (<span className="pb-no">✗</span>).{" "}
+            </>
+          )}
           <span className="pb-bubble pb-endorse" /> my pick ·{" "}
           <span className="pb-bubble pb-lean_for" /> leaning ·{" "}
           <span className="pb-bubble pb-oppose" /> against. Printed{" "}
@@ -70,10 +97,14 @@ export const PrintBallot = forwardRef<
         </p>
       </header>
       <div className="pb-columns">
-        {sections.map((section) => {
+        {sections.map((section, i) => {
           const groups = contestGroups(section.races);
           return (
-            <section key={section.label} className="pb-section">
+            <section
+              key={section.label}
+              className="pb-section"
+              style={{ "--pb-area": AREA_COLORS[i % AREA_COLORS.length] } as CSSProperties}
+            >
               <h2>{section.label}</h2>
               {groups.map((group) => [
                 // Candidates, judges and measures apart, when the section has more than one kind.
@@ -85,6 +116,7 @@ export const PrintBallot = forwardRef<
                     election={election}
                     rows={rows}
                     notes={notes}
+                    counts={counts}
                     saved={rankings[rankingKeyFor(election, race.subject)]}
                   />
                 )),
@@ -102,12 +134,14 @@ function PrintRace({
   election,
   rows,
   notes,
+  counts,
   saved,
 }: {
   race: Race;
   election: string;
   rows: Record<string, DraftRow>;
   notes: boolean;
+  counts: boolean;
   /** The race's saved ranking (lib/ranking.ts). */
   saved: string[] | undefined;
 }) {
@@ -142,12 +176,16 @@ function PrintRace({
               <span className={`pb-bubble pb-${backup ? "none" : (stance ?? "none")}`}>
                 {numbered && at !== -1 && !backup && at + 1}
               </span>
-              <span
-                className={`pb-count${group.support + group.opposition === 0 ? " pb-zero" : ""}`}
-              >
-                {group.support > 0 || group.opposition === 0 ? `${group.support}✓` : ""}
-                {group.opposition > 0 && ` ${group.opposition}✗`}
-              </span>
+              {counts && (
+                <span
+                  className={`pb-count${group.support + group.opposition === 0 ? " pb-zero" : ""}`}
+                >
+                  {(group.support > 0 || group.opposition === 0) && (
+                    <span className="pb-yes">{group.support}✓</span>
+                  )}
+                  {group.opposition > 0 && <span className="pb-no"> {group.opposition}✗</span>}
+                </span>
+              )}
               <span className="pb-name">
                 {group.choice || "Overall"}
                 {backup ? (
