@@ -109,3 +109,16 @@ test("Los Angeles' feed is asked for with its election id, which the client can'
     ttl: 60,
   });
 });
+
+test("the two counties read from their results pages: that page only", () => {
+  expect(countyCaUpstream("/api/county-ca/san-joaquin/en/Index_22.html")).toEqual({
+    url: "https://www.livevoterturnout.com/ENR/sanjoaquincaenr/22/en/Index_22.html",
+    ttl: 60,
+  });
+  expect(countyCaUpstream("/api/county-ca/alameda/index.htm")).toEqual({
+    url: "https://alamedacountyca.gov/rovresults/260/index.htm",
+    ttl: 60,
+  });
+  expect(countyCaUpstream("/api/county-ca/alameda/")).toBeNull();
+  expect(countyCaUpstream("/api/county-ca/san-joaquin/summary_22.csv")).toBeNull();
+});

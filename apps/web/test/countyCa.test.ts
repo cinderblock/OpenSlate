@@ -327,7 +327,7 @@ describe("which county's count may carry a race", () => {
       "Santa Clara",
     );
     // A county without a feed: not the voter's county instead.
-    expect(localRaceCounty(race("us/ca/alameda-county"), epa, "2026-11-03")).toBeUndefined();
+    expect(localRaceCounty(race("us/ca/fresno-county"), epa, "2026-11-03")).toBeUndefined();
   });
   test("not the Secretary of State's races, nor another election's", () => {
     expect(localRaceCounty(race("us/ca", "Governor"), epa, "2026-11-03")).toBeUndefined();
@@ -344,7 +344,7 @@ describe("an area's county with a feed", () => {
       feedCountyOfArea({ localities: ["us/ca/east-palo-alto", "us/ca/san-mateo-county"] }),
     ).toBe("San Mateo");
     expect(
-      feedCountyOfArea({ localities: ["us/ca/albany"], found: ["us/ca/alameda-county"] }),
+      feedCountyOfArea({ localities: ["us/ca/clovis"], found: ["us/ca/fresno-county"] }),
     ).toBeUndefined();
     expect(feedCountyOfArea({ localities: [], found: ["us/ca/los-angeles-county"] })).toBe(
       "Los Angeles",
@@ -390,6 +390,12 @@ describe("what a local measure needs to pass", () => {
       ["YES", "NO"],
     );
     const r = countyContestResult(o);
+    expect(r.kind === "measure" && r.measure.threshold).toBe("2/3");
+  });
+
+  test("a threshold the county states apart from the title (Alameda) is the card's", () => {
+    const i = contest("i", "Measure I - Dublin USD", "Measures", ["Yes", "No"]);
+    const r = countyContestResult({ ...i, threshold: "2/3" });
     expect(r.kind === "measure" && r.measure.threshold).toBe("2/3");
   });
 });

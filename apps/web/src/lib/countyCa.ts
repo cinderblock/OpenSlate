@@ -1,14 +1,18 @@
 import {
+  ACVOTE_PAGE_PATH,
   CA_COUNTY_FEEDS,
   type CountyContest,
   type CountyFeed,
   claritySummaryPath,
   isStateContest,
+  lvtPagePath,
   lvtSummaryPath,
+  parseAcvoteHtml,
   parseClaritySummary,
   parseClarityVersion,
   parseLaVote,
   parseLvtCsv,
+  parseLvtHtml,
   parseResultsApi,
   type Subject,
   samePerson,
@@ -123,7 +127,7 @@ export function countyContestResult(
     ...changed,
   };
   if (c.measure) {
-    const threshold = measureThreshold(c.title);
+    const threshold = c.threshold ?? measureThreshold(c.title);
     const yes = c.choices.find((x) => /yes/i.test(x.name));
     const no = c.choices.find((x) => /no/i.test(x.name));
     return {
@@ -556,6 +560,45 @@ async function fetchResultsApi(slug: string, feed: CountyFeed): Promise<CountyRe
   return out;
 }
 
+/**
+ * A county with no feed, only a results page (San Joaquin's livevoterturnout
+ * page, Alameda's): through the relay (no CORS), the page's own "updated" time
+ * when it has one, else `Last-Modified`.
+ */
+async function fetchResultsPage(
+  slug: string,
+  feed: CountyFeed,
+  path: string,
+  parse: (html: string) => { contests: CountyContest[]; asOf?: number },
+): Promise<CountyResults> {
+  const res = await fetch(`${baseFor(slug, feed)}/${path}`, { headers: { accept: "text/html" } });
+  if (!res.ok) throw new Error(`The county answered ${res.status}`);
+  const text = await res.text();
+  const previous = lastRead.get(slug);
+  const updatedHeader = updatedOf(res);
+  // The same page again: keep what was read. Alameda sends no `Last-Modified`,
+  // and new numbers can leave the length as it was, so the text itself decides.
+  const version = `${text.length}:${textHash(text)}`;
+  if (previous?.version === version) return previous;
+  const { contests, asOf } = parse(text);
+  const out: CountyResults = {
+    county: slug,
+    version,
+    ...(asOf ? { updated: asOf } : updatedHeader),
+    seenAt: Date.now(),
+    contests,
+  };
+  lastRead.set(slug, out);
+  return out;
+}
+
+/** FNV-1a over the text: tells one page from the next, nothing more. */
+function textHash(text: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
+  return (h >>> 0).toString(36);
+}
+
 /** The last count read per county: a version seen before isn't fetched again. */
 const lastRead = new Map<string, CountyResults>();
 
@@ -570,6 +613,8 @@ export async function fetchCountyResults(slug: string): Promise<CountyResults> {
   if (hit.kind === "lvt") return fetchLvt(slug, hit);
   if (hit.kind === "results-api") return fetchResultsApi(slug, hit);
   if (hit.kind === "lavote") return fetchLaVote(slug, hit);
+  if (hit.kind === "lvt-html") return fetchResultsPage(slug, hit, lvtPagePath(hit), parseLvtHtml);
+  if (hit.kind === "acvote") return fetchResultsPage(slug, hit, ACVOTE_PAGE_PATH, parseAcvoteHtml);
   const base = baseFor(slug, hit);
   const verRes = await fetch(`${base}/current_ver.txt`);
   if (!verRes.ok) throw new Error(`The county answered ${verRes.status}`);

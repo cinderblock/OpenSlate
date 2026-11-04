@@ -1,0 +1,31 @@
+# Two counties publish no results feed, only a results page, which OpenSlate
+# reads as HTML (Alameda, San Joaquin; see packages/core/src/countyResults.ts).
+# This checks daily that those pages still parse: a failed run, and GitHub's
+# notice of it, is how a layout change gets noticed. Fetched through the public
+# relay, so it costs the counties nothing beyond the relay's own requests.
+
+name: county-html
+
+on:
+  schedule:
+    # 8:23 AM PST / 9:23 AM PDT.
+    - cron: "23 16 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BUN_VERSION: "1.4.2"
+
+jobs:
+  check:
+    name: County results pages still parse
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - run: bun install --frozen-lockfile
+      - run: bun run packages/core/scripts/check-county-pages.ts

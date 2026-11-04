@@ -36,7 +36,9 @@
       "!vectors/keys.json",
       "!apps/web/public/geo/*.json",
       // Captured evidence: formatting one byte would break its proofs.
-      "!experiments/signed-source-capture/results"
+      "!experiments/signed-source-capture/results",
+      // Excerpts of county results pages, kept as the county wrote them.
+      "!packages/core/test/fixtures/*.html"
     ]
   }
 }

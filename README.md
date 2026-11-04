@@ -111,8 +111,10 @@ for it. Its two sides:
   beside each race if you pick one. Local races (city, county, school,
   special district, local measures) come from the county's own election-night
   feed where OpenSlate reads one (Los Angeles, San Diego, Orange, Riverside,
-  San Bernardino, Santa Clara, Sacramento, Contra Costa, San Mateo, Ventura,
-  Sonoma, Solano, Marin): a place's "Local races" adds them one at a time or
+  San Bernardino, Santa Clara, Alameda, Sacramento, Contra Costa, San Joaquin,
+  San Mateo, Ventura, Sonoma, Solano, Marin; Alameda and San Joaquin publish no
+  feed, so their results pages are read instead, and a daily CI check says when
+  one stops parsing): a place's "Local races" adds them one at a time or
   all at once. The same county count shows where you already look at a local
   race: under it on My ballot, and on its race page (in place of civicAPI's),
   matched by the people running or the measure's letter and place, from the
@@ -492,7 +494,7 @@ permissive CORS without an API key, but the SPA reaches both through the
 backend by default: every visitor shares its cache, so a busy election night
 costs those sources one request per race per minute instead of one per
 visitor. Counties' own results feeds go the same way; the ones without CORS
-(livevoterturnout.com counties, Los Angeles, Sacramento) only through the
+(livevoterturnout.com counties, Los Angeles, Sacramento, Alameda) only through the
 relay. A relay outage doesn't switch anyone to direct on its own. Polls (VoteHub) restrict
 cross-origin access, so the SPA *must* go through a proxy for those. So do
 Kalshi's forecasts, which only a self-hosted server relays, and only when
