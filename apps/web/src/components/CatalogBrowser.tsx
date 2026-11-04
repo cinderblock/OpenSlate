@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Download, Plus, RefreshCw } from "lucide-react";
-import { useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { adoptedCount } from "../lib/adoptions";
 import { type BallotProblem, ballotProblems, problemReport } from "../lib/ballotCheck";
 import { importCatalogEntry } from "../lib/catalogImport";
@@ -29,6 +29,7 @@ import {
 import { matchesSearch, searchTerms, searchTextOf } from "../lib/search";
 import { ELECTION_AUTHORITY, type Standing, sourceIdOf, standingOf } from "../lib/sources";
 import { track } from "../lib/usage";
+import { useGrowingCount } from "../lib/useGrowingCount";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { electionOptions } from "./electionOptions";
 import { LeanMeter } from "./LeanMeter";
@@ -188,6 +189,13 @@ export function CatalogBrowser() {
   }
 
   const pendingCount = rows.filter((entry) => !isImported(entry)).length;
+  const shownCount = useGrowingCount(rows);
+  // The same function every render, so memoized rows stay put.
+  const followRef = useRef(follow);
+  followRef.current = follow;
+  const onFollow = useCallback((entry: CatalogEntry, standing?: Standing) => {
+    void followRef.current(entry, standing);
+  }, []);
 
   return (
     <div className="catalog-browser">
@@ -226,113 +234,23 @@ export function CatalogBrowser() {
           </div>
 
           <ul className="catalog-list">
-            {rows.map((entry) => {
+            {rows.slice(0, shownCount).map((entry) => {
               const key = entryKey(entry);
               const sourceId = sourceIdOf(entry);
               const has = isImported(entry);
-              const ballot = isBallotEntry(entry);
-              const news = isArticlesEntry(entry);
-              // Reference, not recommendations: added, never followed.
-              const reference = ballot || news;
-              const standing: Standing = has ? standingOf(follows, sourceId) : "off";
-              const name = entry.attribution?.of.name ?? entry.slug;
-              const rowClass =
-                has && (reference || standing === "follow")
-                  ? "following"
-                  : standing === "disagree"
-                    ? "disagreeing"
-                    : "";
               return (
-                <li key={key} className={rowClass}>
-                  <EndorserAvatar
-                    sourceId={sourceId}
-                    name={name}
-                    size="md"
-                    logo={catalogEntryLogoUrl(entry, catalogUrl)}
-                    logoBackground={entry.logo_background}
-                  />
-                  <div className="grow">
-                    {httpHref(entry.attribution?.of.uri) ? (
-                      <a
-                        href={httpHref(entry.attribution?.of.uri)}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {name}
-                      </a>
-                    ) : (
-                      name
-                    )}
-                    {ballot && <span className="tag tag-inline">official candidate list</span>}
-                    {news && <span className="tag tag-inline">news coverage</span>}
-                    <div className="hint">
-                      {news
-                        ? `${entry.articles} ${entry.articles === 1 ? "article" : "articles"}`
-                        : `${entry.positions} ${ballot ? "candidates" : "positions"}`}
-                      {adoptedCount(entry) > 0 && ` + ${adoptedCount(entry)} adopted`} · reported by{" "}
-                      {entry.issuer.name ?? "a researcher"}
-                      {entry.attribution &&
-                        ` · ${entry.attribution.mode} ${formatLocalDate(entry.attribution.retrieved_at)}`}
-                      {catalogEntryEvidenceUrl(entry, catalogUrl) && (
-                        <>
-                          {" · "}
-                          <a
-                            href={catalogEntryEvidenceUrl(entry, catalogUrl)}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            what was captured
-                          </a>
-                        </>
-                      )}
-                    </div>
-                    {!reference && entry.lean && (
-                      <LeanMeter
-                        sourceId={sourceId}
-                        name={name}
-                        lean={{ ...entry.lean, via: "catalog" }}
-                        withWord
-                      />
-                    )}
-                    {errors[key] && <div className="error">{errors[key]}</div>}
-                    {has && (
-                      <OffBallotLine problems={offBallot.get(`${sourceId}|${entry.election}`)} />
-                    )}
-                  </div>
-                  {reference ? (
-                    has ? (
-                      <span className="hint">
-                        <Check className="icon" /> Added
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => follow(entry)}
-                        disabled={busy.has(key) || bulk !== null}
-                      >
-                        {busy.has(key) ? (
-                          "Importing…"
-                        ) : (
-                          <>
-                            <Plus className="icon" /> Add
-                          </>
-                        )}
-                      </button>
-                    )
-                  ) : busy.has(key) ? (
-                    <span className="hint">Importing…</span>
-                  ) : (
-                    // Releasing both keeps the slate imported, just off My ballot.
-                    <StandingToggle
-                      name={name}
-                      value={standing}
-                      isDisabled={bulk !== null}
-                      onChange={(next) =>
-                        next === "off" ? setStanding(sourceId, "off") : follow(entry, next)
-                      }
-                    />
-                  )}
-                </li>
+                <CatalogRow
+                  key={key}
+                  entry={entry}
+                  catalogUrl={catalogUrl}
+                  has={has}
+                  standing={has ? standingOf(follows, sourceId) : "off"}
+                  busy={busy.has(key)}
+                  bulkRunning={bulk !== null}
+                  error={errors[key]}
+                  problems={has ? offBallot.get(`${sourceId}|${entry.election}`) : undefined}
+                  onFollow={onFollow}
+                />
               );
             })}
           </ul>
@@ -403,6 +321,123 @@ export function CatalogBrowser() {
 }
 
 /** Under an imported entry: the names it gives that aren't on the ballot. */
+/**
+ * One catalog entry. Memoized: a page of a few hundred, each with real toggle
+ * buttons, re-rendered whole on every change took seconds on a phone.
+ */
+const CatalogRow = memo(function CatalogRow({
+  entry,
+  catalogUrl,
+  has,
+  standing,
+  busy,
+  bulkRunning,
+  error,
+  problems,
+  onFollow,
+}: {
+  entry: CatalogEntry;
+  catalogUrl: string;
+  has: boolean;
+  standing: Standing;
+  busy: boolean;
+  bulkRunning: boolean;
+  error: string | undefined;
+  problems: BallotProblem[] | undefined;
+  onFollow: (entry: CatalogEntry, standing?: Standing) => void;
+}) {
+  const sourceId = sourceIdOf(entry);
+  const ballot = isBallotEntry(entry);
+  const news = isArticlesEntry(entry);
+  // Reference, not recommendations: added, never followed.
+  const reference = ballot || news;
+  const name = entry.attribution?.of.name ?? entry.slug;
+  const rowClass =
+    has && (reference || standing === "follow")
+      ? "following"
+      : standing === "disagree"
+        ? "disagreeing"
+        : "";
+  return (
+    <li className={rowClass}>
+      <EndorserAvatar
+        sourceId={sourceId}
+        name={name}
+        size="md"
+        logo={catalogEntryLogoUrl(entry, catalogUrl)}
+        logoBackground={entry.logo_background}
+      />
+      <div className="grow">
+        {httpHref(entry.attribution?.of.uri) ? (
+          <a href={httpHref(entry.attribution?.of.uri)} target="_blank" rel="noreferrer">
+            {name}
+          </a>
+        ) : (
+          name
+        )}
+        {ballot && <span className="tag tag-inline">official candidate list</span>}
+        {news && <span className="tag tag-inline">news coverage</span>}
+        <div className="hint">
+          {news
+            ? `${entry.articles} ${entry.articles === 1 ? "article" : "articles"}`
+            : `${entry.positions} ${ballot ? "candidates" : "positions"}`}
+          {adoptedCount(entry) > 0 && ` + ${adoptedCount(entry)} adopted`} · reported by{" "}
+          {entry.issuer.name ?? "a researcher"}
+          {entry.attribution &&
+            ` · ${entry.attribution.mode} ${formatLocalDate(entry.attribution.retrieved_at)}`}
+          {catalogEntryEvidenceUrl(entry, catalogUrl) && (
+            <>
+              {" · "}
+              <a href={catalogEntryEvidenceUrl(entry, catalogUrl)} target="_blank" rel="noreferrer">
+                what was captured
+              </a>
+            </>
+          )}
+        </div>
+        {!reference && entry.lean && (
+          <LeanMeter
+            sourceId={sourceId}
+            name={name}
+            lean={{ ...entry.lean, via: "catalog" }}
+            withWord
+          />
+        )}
+        {error && <div className="error">{error}</div>}
+        {has && <OffBallotLine problems={problems} />}
+      </div>
+      {reference ? (
+        has ? (
+          <span className="hint">
+            <Check className="icon" /> Added
+          </span>
+        ) : (
+          <button type="button" onClick={() => onFollow(entry)} disabled={busy || bulkRunning}>
+            {busy ? (
+              "Importing…"
+            ) : (
+              <>
+                <Plus className="icon" /> Add
+              </>
+            )}
+          </button>
+        )
+      ) : busy ? (
+        <span className="hint">Importing…</span>
+      ) : (
+        // Releasing both keeps the slate imported, just off My ballot.
+        <StandingToggle
+          name={name}
+          value={standing}
+          isDisabled={bulkRunning}
+          onChange={(next) =>
+            next === "off" ? setStanding(sourceId, "off") : onFollow(entry, next)
+          }
+        />
+      )}
+    </li>
+  );
+});
+
 function OffBallotLine({ problems }: { problems: BallotProblem[] | undefined }) {
   if (!problems?.length) return null;
   return (
