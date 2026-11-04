@@ -120,7 +120,7 @@ describe("county results", () => {
       { localities: ["us/ca/antioch"], districts: { "us/ca/antioch/council": "4" } },
       "Contra Costa",
     ).map((c) => c.key);
-    expect(antioch).toEqual(["2", "5"]);
+    expect(antioch).toEqual(["2", "5", "9"]);
   });
 
   test("a Sunnyvale voter's local contests", () => {
@@ -172,5 +172,22 @@ describe("districts in Los Angeles' wording", () => {
     expect(
       titleDistrict("ABC UNIFIED SCHOOL DISTRICT Governing Board Member, Trustee Area No. 2"),
     ).toBe("2");
+  });
+});
+
+describe("countywide contests in Los Angeles' wording", () => {
+  test("county measures and the sheriff are every place's", () => {
+    const contests = [
+      contest("a", "COUNTY MEASURE A", "County Measures", ["YES", "NO"]),
+      contest("s", "SHERIFF", "Sheriff"),
+      contest("t", "Treasurer-Tax Collector", "Results"),
+      contest("c", "CITY OF BURBANK GENERAL MUNICIPAL ELECTION City Treasurer", "Cities"),
+    ];
+    const keys = contestsForPlace(
+      contests,
+      { localities: ["us/ca/pasadena"], districts: {} },
+      "Los Angeles",
+    ).map((c) => c.key);
+    expect(keys).toEqual(["a", "s", "t"]);
   });
 });

@@ -200,6 +200,10 @@ export function placeNames(area: Pick<Area, "localities" | "labels">): string[] 
   return [...out];
 }
 
+/** Offices every voter in the county elects (no district): " sheriff ", " county measure a ". */
+const COUNTYWIDE_OFFICE =
+  /^ (county )?(sheriff|assessor|district attorney|county clerk|clerk recorder|auditor controller|treasurer tax collector|superintendent of schools|public defender|county measure [a-z]+)\b/;
+
 /**
  * A contest for the whole county ("Santa Clara County BOE", "County of Marin
  * Measure"), not one for part of it that carries its name ("NORTH ORANGE
@@ -242,7 +246,11 @@ export function contestsForPlace(
     const words = titleWords(c.title);
     // The courts, and the county's own offices and measures ("Santa Clara County BOE",
     // "County of Marin Measure"), not its namesake city's.
-    if (c.category && /judicial|^county$/i.test(c.category.trim())) return true;
+    // Groups for the whole county ("County", "County Measures", "Sheriff"), and
+    // countywide offices however they're titled.
+    if (c.category && /judicial|^county( measures?)?$|^sheriff$/i.test(c.category.trim()))
+      return true;
+    if (COUNTYWIDE_OFFICE.test(words)) return true;
     if (/ (superior court|court of appeal|supreme court) /.test(words)) return true;
     if (countyOwn(words, county)) return true;
     if (![...names].some((n) => has(words, n))) return false;
