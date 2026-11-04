@@ -38,6 +38,7 @@ import {
   propContest,
   STATEWIDE_OFFICES,
 } from "../lib/sosCa";
+import { useSosCandidates } from "../lib/sosCandidates";
 import { parseSosTime, SOS_ELECTION } from "../lib/sosResults";
 import {
   addLocalOnce,
@@ -1132,6 +1133,13 @@ function useDefaultFeedCounty(): string {
   return feedCountyOfArea(myArea) ?? "";
 }
 
+/** Candidates on one short line: the first few, then how many more. */
+function nameList(names: readonly string[]): string {
+  return names.length > 4
+    ? `${names.slice(0, 3).join(", ")} and ${names.length - 3} more`
+    : names.join(", ");
+}
+
 function AddRace({ measures, onDone }: { measures: MeasureResult[]; onDone: () => void }) {
   const startCounty = useDefaultFeedCounty();
   const [county, setCounty] = useState(startCounty);
@@ -1144,23 +1152,37 @@ function AddRace({ measures, onDone }: { measures: MeasureResult[]; onDone: () =
     ],
     [],
   );
+  // Who's running where, so a race can be found by a candidate's name.
+  const running = useSosCandidates(true);
   const options = useMemo<SelectOption[]>(() => {
     // The county's own races and measures first: what the state's lists don't have.
     const out: SelectOption[] =
       found && local.data
-        ? localContests(local.data.contests).map((c) => ({
-            id: countyContestId(found.slug, c.key),
-            label: c.title,
-            description: `${found.feed.name} County${c.category ? ` · ${c.category}` : ""}`,
-          }))
+        ? localContests(local.data.contests).map((c) => {
+            const names = c.measure ? [] : c.choices.map((x) => x.name);
+            const where = `${found.feed.name} County${c.category ? ` · ${c.category}` : ""}`;
+            return {
+              id: countyContestId(found.slug, c.key),
+              label: c.title,
+              textValue: [c.title, ...names].join(" "),
+              description: names.length > 0 ? `${where} · ${nameList(names)}` : where,
+            };
+          })
         : [];
-    out.push(
-      ...STATEWIDE_OFFICES.map((o) => ({
-        id: o.id,
-        label: o.label,
-        description: "Statewide",
-      })),
-    );
+    /** A state contest, found by its name or anyone running in it. */
+    const state = (id: string, label: string, where?: string): SelectOption => {
+      const names = running[id] ?? [];
+      const description = [where, names.length > 0 ? nameList(names) : undefined]
+        .filter(Boolean)
+        .join(" · ");
+      return {
+        id,
+        label,
+        textValue: [label, ...names].join(" "),
+        ...(description ? { description } : {}),
+      };
+    };
+    out.push(...STATEWIDE_OFFICES.map((o) => state(o.id, o.label, "Statewide")));
     for (const m of measures) {
       out.push({
         id: propContest(m.number),
@@ -1172,11 +1194,11 @@ function AddRace({ measures, onDone }: { measures: MeasureResult[]; onDone: () =
     for (const { family, count, label } of DISTRICT_FAMILIES) {
       for (let n = 1; n <= count; n++) {
         const id = `${DISTRICT_FAMILIES.find((f) => f.family === family)?.path}/district/${n}`;
-        out.push({ id, label: `${label} ${n}` });
+        out.push(state(id, `${label} ${n}`));
       }
     }
     return out;
-  }, [measures, found, local.data]);
+  }, [measures, found, local.data, running]);
   return (
     <div className="card-inset live-add">
       <ComboBox
@@ -1197,7 +1219,7 @@ function AddRace({ measures, onDone }: { measures: MeasureResult[]; onDone: () =
         label="Race or measure"
         options={options}
         value={null}
-        placeholder="Type to find: Measure O, city council, Governor, Prop 50…"
+        placeholder="A race, measure or candidate: Governor, Prop 50, a name…"
         onChange={(id) => {
           if (!id) return;
           watchStore.set((gs) => addSingle(gs, id));

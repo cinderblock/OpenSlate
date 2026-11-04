@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  candidatesByContest,
   contestToRace,
   isSosRaceId,
   parseSosTime,
@@ -95,5 +96,31 @@ describe("the state's count as a results race", () => {
       ["Yes", 3],
       ["No", 1],
     ]);
+  });
+});
+
+describe("finding a race by who's running", () => {
+  test("names by the state's contest, once each, local races left out", () => {
+    const byContest = candidatesByContest([
+      {
+        subject: nov("United States Representative District 12", "us/ca/cd-12"),
+        choice: "Jamie Joyce",
+      },
+      {
+        subject: nov("United States Representative District 12", "us/ca/cd-12"),
+        choice: "Lateefah Simon",
+      },
+      {
+        subject: nov("United States Representative District 12", "us/ca/cd-12"),
+        choice: "Jamie Joyce",
+      },
+      { subject: nov("Governor of California"), choice: "Xavier Becerra" },
+      { subject: nov("Governor of California") },
+      { subject: nov("Mayor", "us/ca/sf"), choice: "Someone" },
+    ]);
+    expect(Object.fromEntries(byContest)).toEqual({
+      "us-rep/district/12": ["Jamie Joyce", "Lateefah Simon"],
+      governor: ["Xavier Becerra"],
+    });
   });
 });

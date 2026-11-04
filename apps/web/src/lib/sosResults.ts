@@ -172,3 +172,23 @@ export function sosSearchSummary(contest: string, subject: Subject): RaceSummary
     candidates: [],
   };
 }
+
+/**
+ * Candidate names by the state's contest id, from a list of positions (the
+ * Secretary of State's certified candidate list in the catalog), so a race
+ * can be found by who's running in it.
+ */
+export function candidatesByContest(
+  positions: readonly { subject: Subject; choice?: string }[],
+): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const { subject, choice } of positions) {
+    if (!choice) continue;
+    const contest = sosContestForSubject(subject);
+    if (!contest) continue;
+    const names = out.get(contest) ?? [];
+    if (!names.includes(choice)) names.push(choice);
+    out.set(contest, names);
+  }
+  return out;
+}
