@@ -86,6 +86,11 @@ Formats:
 
 ## Findings / gotchas
 
+- A push can fail to start Workers Builds (8:30 PM PST, `a1c7349`): check
+  that the commit has "Workers Builds: openslate-web" check runs
+  (`gh api repos/{owner}/{repo}/commits/<sha>/check-runs`). If none after a
+  few minutes, an empty commit starts one; don't touch the Cloudflare dashboard.
+
 - Clarity's `elections.json` lists nothing for CA counties: election ids come
   from each ROV's results link.
 - County titles vary wildly ("CITY OF ANTIOCH  MEMBER  CITY COUNCIL  DISTRICT 1",
@@ -125,6 +130,7 @@ Formats:
 - [x] Two-thirds / 55% measures were called "Passing" past 50%: `b0778c0` reads the threshold from the title, shows "(needs two-thirds)"
 - [x] "0% of precincts" beside counted mail ballots: `8fca2b0` leaves precincts out until one reports
 - [x] User report 8:19 PM PST: "Add one race" didn't offer local measures. `3310cbc`: a county picker (starts on a watched place's county, else the voter's), that county's local races and measures first in the list. Checked live 8:23 PM: "Measure O" → East Palo Alto Measure O added
+- [x] User ask 8:25 PM PST: show both the last check time and the source's last change time. `a1c7349`: "Changed <source's time> · Checked <last fetch>", local first with UTC smaller beside it; LA (no time in its feed) says "New by <first seen>"; the reporting line's `title=` removed (no hover tooltips). Workers Builds never started for `a1c7349` (no Cloudflare check run on it; GitHub's ran); empty commit `4a086f9` triggered it. Live 8:42 PM PST, checked on Governor, EPA Measure O, LA County Measure A
 - [ ] My ballot / race pages showing a race's county count (reuse `catalogRaceFor`): not started
 - [ ] San Francisco, San Joaquin (recheck the feed number), Alameda (HTML): not started
 
