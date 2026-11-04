@@ -120,6 +120,10 @@ Formats:
 - [x] headless check of the catalog link on the live site (7:52 PM PST): Sunnyvale place, 8 links, all to the right races (council 3, school boards, Measures G/H/I)
 - [x] first real counts through the relay at 8:07 PM PST (04:07Z): Santa Clara (version 384997), San Diego, Orange and San Bernardino carry votes in every local contest; parsed with the same code the site runs
 - [ ] still at their zero report at 8:07 PM: Contra Costa, Marin, Sonoma, Ventura, Riverside, San Mateo, Solano, Sacramento, Los Angeles. Recheck later tonight; for Sacramento, check that `election.asOf` in `/data` moves (its `Last-Modified` did, its `asOf` still said Oct 30), since cards use `asOf` for "updated"
+- [x] User report 8:12 PM PST: East Palo Alto voter saw only propositions, no Measure O. Cause: local races appeared only after "+ Local races" → "Add all" (a small link). Fixed `d34a609`: a place's local races and measures are added on their own once its county count is in (once: removed ones stay removed); legacy "Where I vote" places use the voter's area and county; a place with no county is prompted to pick one. Checked live 8:16 PM: an EPA place shows Measure O with no clicks
+- [x] San Mateo's first report 8:15 PM PST: EPA Measure O Yes 1,171 (73.7%), No 418
+- [x] Two-thirds / 55% measures were called "Passing" past 50%: `b0778c0` reads the threshold from the title, shows "(needs two-thirds)"
+- [x] "0% of precincts" beside counted mail ballots: `8fca2b0` leaves precincts out until one reports
 - [ ] My ballot / race pages showing a race's county count (reuse `catalogRaceFor`): not started
 - [ ] San Francisco, San Joaquin (recheck the feed number), Alameda (HTML): not started
 
