@@ -1,5 +1,5 @@
 import { ed25519 } from "@noble/curves/ed25519";
-import { base58, base64urlnopad } from "@scure/base";
+import { base58 } from "@scure/base";
 
 /** Algorithm prefix for encoded keys. */
 export const KEY_PREFIX = "ed25519:";
@@ -60,8 +60,73 @@ function decodeKeyBytes(encoded: string): Uint8Array {
   return base58.decode(encoded.slice(KEY_PREFIX.length));
 }
 
-/** base64url without padding (per RFC 7515). */
+const B64URL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+/** Each char code's 6-bit value, or -1 for one outside the alphabet. */
+const B64URL_VALUE = (() => {
+  const table = new Int8Array(128).fill(-1);
+  for (let i = 0; i < B64URL.length; i++) table[B64URL.charCodeAt(i)] = i;
+  return table;
+})();
+
+/**
+ * base64url without padding (per RFC 7515), as strict as `@scure/base`'s
+ * `base64urlnopad`: no padding, nothing outside the alphabet, no stray bits
+ * in the last character. Table-driven: scure's splits a string into one array
+ * entry per character, and decoding the public catalog's tokens with it took
+ * seconds on a phone.
+ */
 export const b64url = {
-  encode: (bytes: Uint8Array): string => base64urlnopad.encode(bytes),
-  decode: (text: string): Uint8Array => base64urlnopad.decode(text),
+  encode(bytes: Uint8Array): string {
+    let out = "";
+    let i = 0;
+    for (; i + 2 < bytes.length; i += 3) {
+      const n =
+        ((bytes[i] as number) << 16) | ((bytes[i + 1] as number) << 8) | (bytes[i + 2] as number);
+      out +=
+        B64URL.charAt(n >> 18) +
+        B64URL.charAt((n >> 12) & 63) +
+        B64URL.charAt((n >> 6) & 63) +
+        B64URL.charAt(n & 63);
+    }
+    const rest = bytes.length - i;
+    if (rest === 1) {
+      const n = (bytes[i] as number) << 16;
+      out += B64URL.charAt(n >> 18) + B64URL.charAt((n >> 12) & 63);
+    } else if (rest === 2) {
+      const n = ((bytes[i] as number) << 16) | ((bytes[i + 1] as number) << 8);
+      out += B64URL.charAt(n >> 18) + B64URL.charAt((n >> 12) & 63) + B64URL.charAt((n >> 6) & 63);
+    }
+    return out;
+  },
+  decode(text: string): Uint8Array {
+    if (typeof text !== "string") throw new Error("base64url: string expected");
+    const tail = text.length % 4;
+    if (tail === 1) throw new Error("base64url: invalid length");
+    const out = new Uint8Array(((text.length - tail) / 4) * 3 + (tail ? tail - 1 : 0));
+    const value = (at: number): number => {
+      const code = text.charCodeAt(at);
+      const v = code < 128 ? (B64URL_VALUE[code] as number) : -1;
+      if (v < 0) throw new Error(`base64url: invalid character at ${at}`);
+      return v;
+    };
+    let o = 0;
+    let i = 0;
+    for (; i + 3 < text.length; i += 4) {
+      const n = (value(i) << 18) | (value(i + 1) << 12) | (value(i + 2) << 6) | value(i + 3);
+      out[o++] = n >> 16;
+      out[o++] = (n >> 8) & 255;
+      out[o++] = n & 255;
+    }
+    if (tail === 2) {
+      const n = (value(i) << 18) | (value(i + 1) << 12);
+      if (n & 0xffff) throw new Error("base64url: non-zero padding bits");
+      out[o++] = n >> 16;
+    } else if (tail === 3) {
+      const n = (value(i) << 18) | (value(i + 1) << 12) | (value(i + 2) << 6);
+      if (n & 0xff) throw new Error("base64url: non-zero padding bits");
+      out[o++] = n >> 16;
+      out[o++] = (n >> 8) & 255;
+    }
+    return out;
+  },
 };
