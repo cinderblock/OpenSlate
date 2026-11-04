@@ -195,6 +195,8 @@ export interface RacePosition {
   source: Source;
   stance: Stance;
   statement?: string;
+  /** The page the position (and its statement) came from: the position's own `source` (SPEC §3.4). */
+  sourceUrl?: string;
   /** The source's own term for the position, shown in place of a stance word (SPEC §3.17). */
   label?: string;
   /** What the label means, from the slate's `labels`. */
@@ -452,6 +454,7 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
         source: slate.source,
         stance: position.stance,
         ...(position.statement ? { statement: position.statement } : {}),
+        ...(position.source ? { sourceUrl: position.source } : {}),
         ...(position.label ? { label: position.label } : {}),
         ...(position.label && labelDescriptions.get(position.label)
           ? { labelDescription: labelDescriptions.get(position.label) }

@@ -348,6 +348,25 @@ main p {
   padding-left: 0.6rem;
   border-left: 3px solid var(--border);
 }
+.statement-figure {
+  margin: 0.25rem 0;
+}
+.statement-figure > .statement {
+  margin: 0;
+}
+.statement-source {
+  margin: 0.15rem 0 0 calc(0.6rem + 3px);
+  font-size: 0.8rem;
+}
+.statement-source a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.statement-source .icon {
+  width: 0.8rem;
+  height: 0.8rem;
+}
 .error {
   color: var(--bad);
   font-size: 0.9rem;

@@ -329,7 +329,7 @@ const TOOLS: Tool[] = [
   {
     name: "get_race",
     title: "Get a race",
-    description: `One race in full: every choice with every source's position on it (stance, the source's own label for it when it has one, and statement), and the user's marks and note. ${STANDINGS} ${UNTRUSTED}`,
+    description: `One race in full: every choice with every source's position on it (stance, the source's own label for it when it has one, statement, and source_url: the page the statement came from), and the user's marks and note. ${STANDINGS} ${UNTRUSTED}`,
     inputSchema: {
       type: "object",
       properties: { race: RACE_SCHEMA, election: ELECTION_SCHEMA },

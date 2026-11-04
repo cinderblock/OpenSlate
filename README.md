@@ -41,8 +41,9 @@ for it. Its two sides:
   N of a ranked-choice contest, else as many as you vote for; anyone you
   rank after that is a backup. Your sources' own ranks show on their chips,
   and what you publish carries yours. Chips use their own words too: a chapter's
-  "Recommended" reads as theirs, with what it means, not as "leans for". It
-  also keeps your private notes, shows
+  "Recommended" reads as theirs, with what it means, not as "leans for". A
+  chip's statement is the source's whole passage, never cut short, with a link
+  to the page it came from. It also keeps your private notes, shows
   what you've already signed, and links each race to the official voter
   guide, Ballotpedia, CalMatters and a news search, plus any articles a slate
   attaches to it (news and analysis that anyone can sign and link to a race,
@@ -151,7 +152,7 @@ a copy you run yourself keeps it to the badge.
 for you in that browser can use My ballot through tools the page offers:
 `list_elections`, `get_ballot` (a page of races at a time, searchable, with
 your marks and your followed sources' counts), `get_race` (every source's
-position, its own label for it, and statement), `mark_choices` (pick, maybe, against, clear, or
+position, its own label for it, its statement and the page the statement came from), `mark_choices` (pick, maybe, against, clear, or
 write in, applied together or not at all, and never toggling, so a retried
 call can't undo itself), `rank_choices` (a candidate race's whole ranking:
 the first as many as the ballot takes are picked, the rest backups) and

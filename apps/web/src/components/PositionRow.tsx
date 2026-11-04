@@ -3,6 +3,7 @@ import { ordinal } from "../lib/ballotView";
 import type { RacePosition } from "../lib/collate";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { LeanMeter } from "./LeanMeter";
+import { Statement } from "./Statement";
 
 export const STANCE_LABEL: Record<Stance, string> = {
   endorse: "Endorse",
@@ -71,7 +72,11 @@ export function PositionRow({
           </div>
         )}
         {position.statement && (
-          <blockquote className="statement hint">{position.statement}</blockquote>
+          <Statement
+            text={position.statement}
+            source={position.sourceUrl}
+            className="statement hint"
+          />
         )}
       </span>
     </li>

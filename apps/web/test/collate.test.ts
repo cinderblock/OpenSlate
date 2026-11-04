@@ -44,6 +44,7 @@ function slate(input: {
   positions: Array<
     P & {
       statement?: string;
+      source?: string;
       contest?: BallotContest;
       ballot?: BallotChoice;
       rank?: number;
@@ -70,6 +71,7 @@ function slate(input: {
       stance: p.stance ?? "endorse",
       ...(p.choice ? { choice: p.choice } : {}),
       ...(p.statement ? { statement: p.statement } : {}),
+      ...(p.source ? { source: p.source } : {}),
       ...(p.ballot ? { ballot: p.ballot } : {}),
       ...(p.rank ? { rank: p.rank } : {}),
       ...(p.label ? { label: p.label } : {}),
@@ -158,6 +160,28 @@ describe("collateRaces", () => {
       ["A", 2, 1],
       ["B", 1, 0],
     ]);
+  });
+
+  test("a statement keeps the page it came from, so the app can link the whole of it", () => {
+    const quoted = decodeSlates([
+      slate({
+        of: "SVDSA",
+        positions: [
+          {
+            title: "Prop 44",
+            choice: "No",
+            election: E,
+            jurisdiction: "us/ca",
+            kind: "measure",
+            statement: "No recommendation. …",
+            source: "https://example.org/guide",
+          },
+        ],
+      }),
+    ]);
+    const [position] = collateRaces(quoted, { follows: {} })[0]?.choices[0]?.positions ?? [];
+    expect(position?.statement).toBe("No recommendation. …");
+    expect(position?.sourceUrl).toBe("https://example.org/guide");
   });
 
   test("unfollowed sources stay on a race's choices, marked, without counting", () => {

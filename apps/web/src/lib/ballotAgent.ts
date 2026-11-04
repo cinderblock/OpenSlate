@@ -225,6 +225,8 @@ export function raceDetail(race: Race, election: string, draft: Draft) {
         ...(p.valid ? {} : { signature_invalid: true as const }),
         ...(p.named && p.named !== groups[i]?.choice ? { named: p.named } : {}),
         ...(p.statement ? { statement: p.statement } : {}),
+        // Where the statement came from: the whole of what the source said.
+        ...(p.sourceUrl ? { source_url: p.sourceUrl } : {}),
       })),
     })),
   };

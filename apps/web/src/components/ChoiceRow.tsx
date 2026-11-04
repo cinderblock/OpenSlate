@@ -6,6 +6,7 @@ import { type ChoiceGroup, positionTone, type Race, type RacePosition } from "..
 import { ChoiceBallotTags } from "./BallotTags";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { LeanSummary } from "./LeanMeter";
+import { Statement } from "./Statement";
 import { InfoPopover } from "./ui/InfoPopover";
 
 /**
@@ -205,7 +206,7 @@ export function ChoiceRowContent({
                     </p>
                   )}
                   {position.statement && (
-                    <blockquote className="statement">{position.statement}</blockquote>
+                    <Statement text={position.statement} source={position.sourceUrl} />
                   )}
                   {position.written && (
                     <p className="hint">
