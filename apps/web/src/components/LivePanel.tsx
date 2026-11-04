@@ -17,7 +17,9 @@ import {
 } from "../lib/countyCa";
 import type { Area } from "../lib/jurisdictions";
 import { EMPTY_AREA, isAreaSet } from "../lib/jurisdictions";
+import { useLocalStore } from "../lib/localStore";
 import { useArea } from "../lib/myVote";
+import { type RaceChange, raceChangesStore, useRaceChange } from "../lib/raceChanges";
 import { baseUrlFor } from "../lib/routing";
 import {
   type CandidateResult,
@@ -441,23 +443,29 @@ function useContestFacts(ids: string[]): (id: string) => ContestFacts {
   ];
   const state = useQueries({ queries: stateIds.map((id) => contestQueryOptions(id)) });
   const counties = useQueries({ queries: slugs.map((slug) => countyQueryOptions(slug)) });
+  // "Recently updated" goes by when each race's own numbers changed, where
+  // known, not when its source last published (which moves every race in it).
+  const [changes] = useLocalStore(raceChangesStore);
   return (id) => {
+    const own = changes[id]?.at;
     const county = parseCountyContestId(id);
     if (county) {
       const data = counties[slugs.indexOf(county.county)]?.data;
       const contest = data?.contests.find((c) => c.key === county.key);
+      const at = own ?? data?.updated;
       return {
         title: contest?.title ?? "Local race",
         ...(contest ? { result: countyContestResult(contest, data?.updated) } : {}),
-        ...(data?.updated ? { updatedAt: data.updated } : {}),
+        ...(at ? { updatedAt: at } : {}),
       };
     }
     const result = state[stateIds.indexOf(id)]?.data;
     const time = parseSosTime(result?.reporting.time);
+    const at = own ?? (time ? Date.parse(time) : undefined);
     return {
       title: contestLabel(id),
       ...(result ? { result } : {}),
-      ...(time ? { updatedAt: Date.parse(time) } : {}),
+      ...(at ? { updatedAt: at } : {}),
     };
   };
 }
@@ -612,7 +620,9 @@ function CountyContestCard({
   const result = contest
     ? countyContestResult(contest, query.data?.updated, query.data?.seenAt)
     : undefined;
-  const changed = useChanged(query.data?.version);
+  const change = useRaceChange(id, result, result ? sourceTimeOf(result) : undefined);
+  // Lit when this race's numbers move, not whenever the county republishes.
+  const changed = useChanged(change?.fp);
   const feed = countyFeed(slug)?.feed;
   const title = contest?.title ?? "Local race";
   return (
@@ -620,7 +630,9 @@ function CountyContestCard({
       <div className="live-contest-head">
         {move && <MoveButtons move={move} title={title} />}
         <strong>{title}</strong>
-        {result && <ReportingLine result={result} checkedAt={query.dataUpdatedAt} />}
+        {result && (
+          <ReportingLine result={result} checkedAt={query.dataUpdatedAt} change={change} />
+        )}
         <button
           type="button"
           className="link live-remove"
@@ -689,7 +701,9 @@ function StateContestCard({
   const remove = () => watchStore.set((gs) => removeFromGroups(gs, groupIds, id));
   const result = query.data;
   const notOnBallot = query.error instanceof NotOnBallot;
-  const changed = useChanged(result?.reporting.time);
+  const change = useRaceChange(id, result, result ? sourceTimeOf(result) : undefined);
+  // Lit when this race's numbers move, not whenever the state publishes a report.
+  const changed = useChanged(change?.fp);
 
   // A district with no race this election (odd State Senate seats in 2026)
   // leaves the list; its place says so.
@@ -703,7 +717,9 @@ function StateContestCard({
       <div className="live-contest-head">
         {move && <MoveButtons move={move} title={contestLabel(id)} />}
         <strong>{contestLabel(id)}</strong>
-        {result && <ReportingLine result={result} checkedAt={query.dataUpdatedAt} />}
+        {result && (
+          <ReportingLine result={result} checkedAt={query.dataUpdatedAt} change={change} />
+        )}
         <button
           type="button"
           className="link live-remove"
@@ -780,16 +796,31 @@ function Clock({ at }: { at: number }) {
   );
 }
 
+/** The source's time for the report a result came in: a county's file time, the state's reporting time. */
+function sourceTimeOf(result: ContestResult): number | undefined {
+  if (result.reporting.changedAt !== undefined) return result.reporting.changedAt;
+  const sos = parseSosTime(result.reporting.time);
+  return sos ? Date.parse(sos) : undefined;
+}
+
 /**
- * Precincts, when the count says, then two times: when the source last changed
- * its count (its own time; for a county that gives none, when OpenSlate first
- * saw this count), and when OpenSlate last checked it.
+ * Precincts, then three times: when this page last checked, when the source
+ * last published (its whole report: every race in it), and when this race's
+ * own numbers last changed (`useRaceChange`).
  */
-function ReportingLine({ result, checkedAt }: { result: ContestResult; checkedAt: number }) {
+function ReportingLine({
+  result,
+  checkedAt,
+  change,
+}: {
+  result: ContestResult;
+  checkedAt: number;
+  change: RaceChange | undefined;
+}) {
   const { percent } = result.reporting;
   const lead = percent !== undefined ? `${percent}% of precincts` : result.reporting.text;
-  const sosTime = parseSosTime(result.reporting.time);
-  const changedAt = result.reporting.changedAt ?? (sosTime ? Date.parse(sosTime) : undefined);
+  const sourceAt = sourceTimeOf(result);
+  const guessed = result.reporting.changedSeen;
   return (
     <span className="hint live-reporting">
       {lead && <span className="live-precincts">{lead}</span>}
@@ -798,11 +829,18 @@ function ReportingLine({ result, checkedAt }: { result: ContestResult; checkedAt
           Last checked: <Clock at={checkedAt} />
         </span>
       )}
-      {changedAt !== undefined && (
+      {sourceAt !== undefined && (
         <span className="live-time">
-          Last change: {result.reporting.changedSeen && "by "}
-          <Clock at={changedAt} />
-          {result.reporting.changedSeen && " (the county gives no time)"}
+          Source updated: {guessed && "by "}
+          <Clock at={sourceAt} />
+          {guessed && " (the county gives no time)"}
+        </span>
+      )}
+      {change && (
+        <span className="live-time">
+          This race changed: {guessed && "by "}
+          <Clock at={change.at} />
+          {!change.exact && " or earlier"}
         </span>
       )}
     </span>

@@ -62,6 +62,12 @@ export const LOCAL_KEYS: Readonly<Record<string, KeyInfo>> = {
     description: "The places and contests the Live results page watches.",
     group: "ballot",
   },
+  "openslate.raceChanges.v1": {
+    label: "When watched races changed",
+    description:
+      "Each watched race's last numbers and when they changed, so a race says when its own count moved, not just when its source published.",
+    group: "ballot",
+  },
   "openslate.watchView.v1": {
     label: "Live results layout",
     description: "How the Live results page sorts and groups the races you watch.",
