@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useOutOfDate } from "../lib/freshness";
 import type { RaceChange } from "../lib/raceChanges";
 import { useRaceHistory } from "../lib/raceHistory";
 import {
   type CandidateResult,
   type ContestResult,
+  LIVE_REFRESH_MS,
   type MeasureResult,
   measurePasses,
 } from "../lib/sosCa";
@@ -84,17 +86,28 @@ export function ReportingLine({
   result,
   checkedAt,
   change,
+  fetching,
 }: {
   result: ContestResult;
   checkedAt: number;
   change: RaceChange | undefined;
+  /** A check is under way (the query is fetching). */
+  fetching?: boolean;
 }) {
   const { percent } = result.reporting;
   const lead = percent !== undefined ? `${percent}% of precincts` : result.reporting.text;
   const sourceAt = sourceTimeOf(result);
   const guessed = result.reporting.changedSeen;
+  // Overdue for a check (the tab sat in the background, the phone slept, the
+  // network dropped): say so, and the card dims its numbers (styles.css).
+  const outOfDate = useOutOfDate(checkedAt, LIVE_REFRESH_MS);
   return (
     <span className="hint live-reporting">
+      {outOfDate && (
+        <span className="live-stale-note">
+          {fetching ? "Getting the latest count…" : "May be out of date"}
+        </span>
+      )}
       {lead && <span className="live-precincts">{lead}</span>}
       {checkedAt > 0 && (
         <span className="live-time">

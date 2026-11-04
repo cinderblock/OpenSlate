@@ -32,6 +32,8 @@ export interface RaceCount {
   contest: CountyContest;
   result: ContestResult;
   checkedAt: number;
+  /** A check is under way. */
+  fetching: boolean;
   change: RaceChange | undefined;
 }
 
@@ -64,7 +66,15 @@ export function useRaceCountyCount(race: CatalogRace | undefined): RaceCount | u
   const id = found && contest ? countyContestId(found.slug, contest.key) : "";
   const change = useRaceChange(id, result, result ? sourceTimeOf(result) : undefined);
   if (!found || !contest || !result) return undefined;
-  return { id, feed: found.feed, contest, result, checkedAt: query.dataUpdatedAt, change };
+  return {
+    id,
+    feed: found.feed,
+    contest,
+    result,
+    checkedAt: query.dataUpdatedAt,
+    fetching: query.isFetching,
+    change,
+  };
 }
 
 /**
@@ -100,7 +110,12 @@ function CountView({ count, card }: { count: RaceCount; card: boolean }) {
         <Heading id={labelId} className="race-county-count-title">
           Count so far
         </Heading>
-        <ReportingLine result={result} checkedAt={count.checkedAt} change={count.change} />
+        <ReportingLine
+          result={result}
+          checkedAt={count.checkedAt}
+          change={count.change}
+          fetching={count.fetching}
+        />
       </div>
       <ResultBody result={result} />
       <RaceHistoryToggle id={count.id} />

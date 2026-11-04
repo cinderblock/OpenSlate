@@ -16,6 +16,7 @@ import {
   measureLetter,
   parseCountyContestId,
 } from "../lib/countyCa";
+import { isLive, isOutOfDate, useCatchUpOnWake, useNow, useOnline } from "../lib/freshness";
 import type { Area } from "../lib/jurisdictions";
 import { EMPTY_AREA, isAreaSet } from "../lib/jurisdictions";
 import { useLocalStore } from "../lib/localStore";
@@ -73,6 +74,7 @@ import {
 import { FindDistricts } from "./FindDistricts";
 import { RaceHistoryToggle, ReportingLine, ResultBody, sourceTimeOf } from "./LiveResult";
 import { RaceLink } from "./RaceLink";
+import { ProgressBar } from "./ui/ProgressBar";
 import { ComboBox, Select, type SelectOption } from "./ui/Select";
 import { Switch } from "./ui/Switch";
 import { TextField } from "./ui/TextField";
@@ -110,10 +112,12 @@ export function LivePanel() {
 
   return (
     <section className="panel live-panel">
+      <CatchUpBar />
       <h2>Live count</h2>
       <p className="hint">
         The California Secretary of State's count for the places and races you watch, checked every
-        minute while this page is open. Kept in this browser.
+        minute while this page is open. New counts appear here on their own, so there's no need to
+        reload: leave the page open, or come back to it. Kept in this browser.
       </p>
       <RefreshBar />
       <CivicApiStatus />
@@ -163,15 +167,47 @@ export function LivePanel() {
   );
 }
 
+/**
+ * After the page sat in the background, the phone slept or the network
+ * dropped: a progress bar at the top while the counts on screen, now out of
+ * date (and dimmed), are checked again; or, offline, a line saying so. Routine
+ * checks every minute don't show it.
+ */
+function CatchUpBar() {
+  const client = useQueryClient();
+  useIsFetching({ queryKey: ["sos-ca"] });
+  const now = useNow();
+  const online = useOnline();
+  useCatchUpOnWake(["sos-ca"], LIVE_REFRESH_MS);
+  const catchingUp = client
+    .getQueryCache()
+    .findAll({ queryKey: ["sos-ca"], type: "active" })
+    .some(
+      (q) =>
+        q.state.fetchStatus === "fetching" &&
+        isLive(q) &&
+        isOutOfDate(q.state.dataUpdatedAt, now, LIVE_REFRESH_MS),
+    );
+  if (!online)
+    return (
+      <div className="live-catchup live-offline" role="status">
+        You're offline. The counts below are from the last check, and update when you're back
+        online.
+      </div>
+    );
+  if (!catchingUp) return null;
+  return (
+    <div className="live-catchup">
+      <ProgressBar label="Getting the latest count…" value={0} />
+    </div>
+  );
+}
+
 /** When it last checked, and a button to check now. */
 function RefreshBar() {
   const client = useQueryClient();
   const fetching = useIsFetching({ queryKey: ["sos-ca"] });
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 5000);
-    return () => clearInterval(t);
-  }, []);
+  const now = useNow();
   const last = Math.max(
     0,
     ...client
@@ -618,7 +654,12 @@ function CountyContestCard({
         {move && <MoveButtons move={move} title={title} />}
         <strong>{title}</strong>
         {result && (
-          <ReportingLine result={result} checkedAt={query.dataUpdatedAt} change={change} />
+          <ReportingLine
+            result={result}
+            checkedAt={query.dataUpdatedAt}
+            change={change}
+            fetching={query.isFetching}
+          />
         )}
         <button
           type="button"
@@ -706,7 +747,12 @@ function StateContestCard({
         {move && <MoveButtons move={move} title={contestLabel(id)} />}
         <strong>{contestLabel(id)}</strong>
         {result && (
-          <ReportingLine result={result} checkedAt={query.dataUpdatedAt} change={change} />
+          <ReportingLine
+            result={result}
+            checkedAt={query.dataUpdatedAt}
+            change={change}
+            fetching={query.isFetching}
+          />
         )}
         <button
           type="button"

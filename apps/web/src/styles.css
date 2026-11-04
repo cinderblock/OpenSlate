@@ -4845,3 +4845,37 @@ button.tag.active {
   margin: 0 0 0.2rem;
   font-size: 0.85em;
 }
+
+/* Live counts that may be out of date (the tab slept, the network dropped):
+   their numbers dim until the next check lands, and a bar shows it's under way. */
+.live-stale-note {
+  color: var(--warn);
+  font-weight: 600;
+}
+.card:has(.live-stale-note) :is(.live-candidates, .live-measure) {
+  opacity: 0.5;
+  filter: grayscale(0.6);
+  transition:
+    opacity 0.3s,
+    filter 0.3s;
+}
+.live-catchup {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--surface);
+  padding: 0.35rem 0;
+  margin: -0.35rem 0 0.35rem;
+}
+.live-catchup .ui-progress-label {
+  font-size: 0.85rem;
+}
+.live-offline {
+  border-left: 3px solid var(--warn);
+  padding-left: 0.5rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card:has(.live-stale-note) :is(.live-candidates, .live-measure) {
+    transition: none;
+  }
+}
