@@ -32,12 +32,11 @@ about on 2026-10-30.
 2. [x] Rate limit on all of `/api/*`, 60 per 10 s (ops `6983f44`). Live.
 3. [x] Spend breaker, merged (ops `7a29d1f`), token stored, and running hourly.
 
-Budget alerts weren't chosen (the user, 2026-10-30). The catalog move is held
-until after the election: a one-time T3 scheduled task runs it Wednesday
-2026-11-04 at 10:00 AM PST (18:00Z), at the user's request. It publishes to
-Workers static assets at `catalog.openslate.us` from the endorsements repo's CI
-alongside Pages, then points the app at it. The task's prompt holds the checks
-and scope, and that scope is pre-approved. T3 Code must be running at that time.
+Budget alerts weren't chosen (the user, 2026-10-30). The catalog move ran as a
+scheduled task on 2026-11-04 and stopped before changing anything: every
+pre-check passed, but the endorsements repo has no way to deploy to Workers.
+It waits on the user's choice of deploy route. See
+`plans/catalog-domain-move.md`.
 
 ## The spend breaker
 
