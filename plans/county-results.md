@@ -124,6 +124,7 @@ Formats:
 - [x] San Mateo's first report 8:15 PM PST: EPA Measure O Yes 1,171 (73.7%), No 418
 - [x] Two-thirds / 55% measures were called "Passing" past 50%: `b0778c0` reads the threshold from the title, shows "(needs two-thirds)"
 - [x] "0% of precincts" beside counted mail ballots: `8fca2b0` leaves precincts out until one reports
+- [x] User report 8:19 PM PST: "Add one race" didn't offer local measures. `3310cbc`: a county picker (starts on a watched place's county, else the voter's), that county's local races and measures first in the list. Checked live 8:23 PM: "Measure O" → East Palo Alto Measure O added
 - [ ] My ballot / race pages showing a race's county count (reuse `catalogRaceFor`): not started
 - [ ] San Francisco, San Joaquin (recheck the feed number), Alameda (HTML): not started
 
