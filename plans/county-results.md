@@ -135,8 +135,19 @@ Formats:
 - [x] User ask ~9 PM PST: tell the source changing its data apart from this race's data changing. Sources give one time per report (county file, state report). `b0f59b1`: `lib/raceChanges.ts` keeps each watched race's numbers (votes, precincts) and the source's time for the first report they appeared in (localStorage `openslate.raceChanges.v1`, in Your data). Cards: "Last checked", "Source updated", "This race changed" (+ "or earlier" when OpenSlate didn't see the report that set the numbers). Highlight and "Recently updated first" follow the race. Live 10:51 PM PST; a returning visitor (simulated) shows source 9:59 PM vs race 9:00 PM
 - [x] User ask ~11 PM PST: log and chart each race's votes and % reporting over time. `42cb0f2`: `lib/raceHistory.ts` logs a point per report that changes a watched race (source time, votes per choice in first-seen order, precincts %), localStorage `openslate.raceHistory.v1` (Your data), 300 per race; `RaceHistoryChart.tsx`: votes chart + separate precincts chart (no dual axis), readout with Earlier/Later buttons (no hover-only info, no `title=`), table. Colors: dataviz reference palette as `--series-1..8` (validated vs --surface light and dark); Yes/No = blue/orange because the app's green/red fails CVD on dark (ΔE 4.7). Checked live 11:10 PM PST at 402 px, light and dark
   - Limits: history starts when this browser first watched the race, and only reports seen while a page was open are logged (a closed page misses intermediate reports; the next one seen is logged). No source offers past reports to backfill from (Clarity's old versions aren't listed).
-- [ ] My ballot / race pages showing a race's county count (reuse `catalogRaceFor`): not started
-- [ ] San Francisco, San Joaquin (recheck the feed number), Alameda (HTML): not started
+- [ ] My ballot / race pages showing a race's county count (reuse `catalogRaceFor`): handed to its own thread, "County counts on My ballot and race pages" (plan `plans/county-counts-on-ballot.md`), 2026-11-04
+- [ ] San Francisco, San Joaquin (recheck the feed number), Alameda (HTML): handed to thread "County results: add San Francisco, San Joaquin, Alameda", 2026-11-04
+- [ ] Recheck of the zero-report counties above: handed to thread "County results: recheck feeds still at zero", 2026-11-04
+- [ ] Race search ranking ("Measure O" not first for its own name): handed to thread "Results: race search fixes" (plan `plans/race-search.md`), 2026-11-04
+- [ ] Whole-night history stored on our side (user ask, 2026-11-04): waiting on the user's choice of storage, see Open questions
+
+## Open questions for the user
+
+1. Where should the relay keep race history? Recommendation: a Durable Object
+   (or D1) bound to the openslate-poll-cache worker, written when the relay
+   fetches a new county/state report (no extra county requests), served from a
+   `/api/history/...` route. Needs a new Cloudflare binding, so it needs the
+   user's yes. Public results only, no user data.
 
 ## Things not to do
 
