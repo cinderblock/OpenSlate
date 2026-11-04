@@ -68,8 +68,27 @@ Not yet (by value):
 
 - **San Francisco**: Dominion `summary.xml` in a new folder per report under
   `sfelections.org/results/20261103/data/<folder>/`; site blocks non-browser UAs.
-- **San Joaquin**: `sanjoaquincaenr/22/summary_22.csv` answered HTML; recheck.
-- Alameda (HTML only), Kern (HTML app), Fresno / Placer / Santa Cruz / Monterey (PDF).
+  Rechecked 12:13 PM PST 11/4 (20:13Z): CloudFront 403 ("Request blocked") for
+  our honest UA on `/results/20261103/` and `/data/`, for curl's default UA, and
+  for headless Chromium (`HeadlessChrome/156`). So the folder discovery couldn't
+  be seen without posing as a regular browser; stopped there (user's rule).
+- **San Joaquin**: election 22 is right (`<input id="electid" value="22">` on
+  `livevoterturnout.com/ENR/sanjoaquincaenr/22/en/Index_22.html`, linked from
+  sjgov.org/department/rov/results; page "updated 11/4/2026 1:11 AM"). But this
+  county turned LVT's downloads off: its page has no Reports tab (San Diego's has
+  `DownloadReport('summary','csv')` etc.), and `summary_22.csv` is a 404 now
+  (12:10 PM PST 11/4). LVT's `DownloadReport` (`/ENR/shared/scripts/LiveResultsScripts_v4.2.js`)
+  builds `../summary_<id>.csv`, `../contests_<id>.csv`, … so there's no other
+  name to try. Only the HTML index (407 KB) carries the counts.
+- **Alameda**: `alamedacountyca.gov/rovresults/260/` (linked from acvote's
+  elections page, election id 260) is server-rendered HTML, 341 KB, 148 race
+  panels (`racePanelHeading`, `resultsRow`/`resultsCol`), "Last Updated:
+  Wednesday, November 04, 2026; 2:07 AM". Its scripts (`js/results.js`,
+  `refresh.js`) load no data. Only the ranked-choice races (Albany, Berkeley,
+  Oakland, …) have XML: `loadrcv.js` fetches `<race>/RcvDetailedReport.xml`
+  (race like `Oakland/001-Mayor`; base path not confirmed),
+  one file per race. No feed for the whole count.
+- Kern (HTML app), Fresno / Placer / Santa Cruz / Monterey (PDF).
 
 Formats:
 
@@ -136,7 +155,8 @@ Formats:
 - [x] User ask ~11 PM PST: log and chart each race's votes and % reporting over time. `42cb0f2`: `lib/raceHistory.ts` logs a point per report that changes a watched race (source time, votes per choice in first-seen order, precincts %), localStorage `openslate.raceHistory.v1` (Your data), 300 per race; `RaceHistoryChart.tsx`: votes chart + separate precincts chart (no dual axis), readout with Earlier/Later buttons (no hover-only info, no `title=`), table. Colors: dataviz reference palette as `--series-1..8` (validated vs --surface light and dark); Yes/No = blue/orange because the app's green/red fails CVD on dark (ΔE 4.7). Checked live 11:10 PM PST at 402 px, light and dark
   - Limits: history starts when this browser first watched the race, and only reports seen while a page was open are logged (a closed page misses intermediate reports; the next one seen is logged). No source offers past reports to backfill from (Clarity's old versions aren't listed).
 - [ ] My ballot / race pages showing a race's county count (reuse `catalogRaceFor`): handed to its own thread, "County counts on My ballot and race pages" (plan `plans/county-counts-on-ballot.md`), 2026-11-04
-- [ ] San Francisco, San Joaquin (recheck the feed number), Alameda (HTML): handed to thread "County results: add San Francisco, San Joaquin, Alameda", 2026-11-04
+- [x] San Francisco, San Joaquin, Alameda: thread "County results: add San Francisco, San Joaquin, Alameda" surveyed again 12:05–12:20 PM PST 11/4 (20:05–20:20Z). No machine-readable feed reachable with our honest UA in any (see "Not yet")
+- [ ] San Joaquin / Alameda from their HTML pages: only if the user says yes (asked 11/4). SF stays out unless it stops blocking our UA
 - [ ] Recheck of the zero-report counties above: handed to thread "County results: recheck feeds still at zero", 2026-11-04
 - [ ] Race search ranking ("Measure O" not first for its own name): handed to thread "Results: race search fixes" (plan `plans/race-search.md`), 2026-11-04
 - [ ] Whole-night history stored on our side (user ask, 2026-11-04): waiting on the user's choice of storage, see Open questions
