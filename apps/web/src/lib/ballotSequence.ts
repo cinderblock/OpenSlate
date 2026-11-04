@@ -295,20 +295,67 @@ export function compareBallotOrder(
   b: SequencedRace,
   area?: Area | undefined,
 ): number {
-  const pa = ballotPart(a);
-  const pb = ballotPart(b);
-  const byPart = BALLOT_PARTS.indexOf(pa) - BALLOT_PARTS.indexOf(pb);
+  return compareKeyed(a, orderKey(a), b, orderKey(b), area);
+}
+
+/**
+ * Sort into ballot order (`compareBallotOrder`), in place. Each race's part,
+ * place and district are worked out once, not on every comparison: a whole
+ * catalog's races take thousands of comparisons.
+ */
+export function sortByBallotOrder<T>(
+  items: T[],
+  area: Area | undefined,
+  raceOf: (item: T) => SequencedRace,
+): T[] {
+  const keyed = items.map((item) => {
+    const race = raceOf(item);
+    return { item, race, key: orderKey(race) };
+  });
+  keyed.sort((x, y) => compareKeyed(x.race, x.key, y.race, y.key, area));
+  for (const [i, { item }] of keyed.entries()) items[i] = item;
+  return items;
+}
+
+/** What ballot order compares, worked out from one race alone. */
+interface OrderKey {
+  part: BallotPart;
+  partIndex: number;
+  office: number;
+  place: string;
+  district: number;
+}
+
+function orderKey(race: SequencedRace): OrderKey {
+  const part = ballotPart(race);
+  return {
+    part,
+    partIndex: BALLOT_PARTS.indexOf(part),
+    office: officeRankIn(part, race.subject.title),
+    place: jurisdictionLabel(race.jurisdiction),
+    district: districtNumber(race),
+  };
+}
+
+function compareKeyed(
+  a: SequencedRace,
+  ka: OrderKey,
+  b: SequencedRace,
+  kb: OrderKey,
+  area: Area | undefined,
+): number {
+  const byPart = ka.partIndex - kb.partIndex;
   if (byPart) return byPart;
   const within =
-    pa === "judicial"
+    ka.part === "judicial"
       ? compareJudges(a, b)
-      : pa.endsWith("-measures")
+      : ka.part.endsWith("-measures")
         ? compareMeasures(a, b, area)
-        : officeRankIn(pa, a.subject.title) - officeRankIn(pa, b.subject.title);
+        : ka.office - kb.office;
   return (
     within ||
-    collator.compare(jurisdictionLabel(a.jurisdiction), jurisdictionLabel(b.jurisdiction)) ||
-    districtNumber(a) - districtNumber(b) ||
+    collator.compare(ka.place, kb.place) ||
+    ka.district - kb.district ||
     collator.compare(a.subject.title, b.subject.title)
   );
 }

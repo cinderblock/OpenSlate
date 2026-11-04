@@ -12,7 +12,7 @@ import {
   type Standing,
 } from "../lib/ballotOutcome";
 import { type RaceCount, useBallotCounts } from "../lib/ballotResults";
-import { compareBallotOrder } from "../lib/ballotSequence";
+import { sortByBallotOrder } from "../lib/ballotSequence";
 import { raceHeading } from "../lib/ballotView";
 import { collateRaces, defaultElection, electionsOf, type Race } from "../lib/collate";
 import { formatElectionDate } from "../lib/dates";
@@ -117,7 +117,7 @@ export function BallotResultsPanel() {
       );
       if (hasMarks(marks)) out.push({ race, marks });
     }
-    return out.sort((a, b) => compareBallotOrder(a.race, b.race, area));
+    return sortByBallotOrder(out, area, (item) => item.race);
   }, [collated, rows, rankings, election, area]);
   const unmarked =
     collated.filter((r) => !r.maybe).length - marked.filter((m) => !m.race.maybe).length;

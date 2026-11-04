@@ -9,7 +9,7 @@ import {
 } from "@openslate/core";
 import type { ChoiceCheck } from "./ballotCheck";
 import { ballotOrderFor, type OrderBasis } from "./ballotOrder";
-import { compareBallotOrder } from "./ballotSequence";
+import { compareBallotOrder, sortByBallotOrder } from "./ballotSequence";
 import {
   type Area,
   answerFor,
@@ -475,7 +475,7 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
     }
   }
 
-  return [...races.values()]
+  const collated: Race[] = [...races.values()]
     .filter((race) => race.onBallot || race.followedIds.size > 0 || options.includeUnfollowed)
     .map(({ sourceIds, followedIds, ballotOrder, ...race }) => {
       if (options.disagree === "side") moveToOtherSide(race);
@@ -512,8 +512,8 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
               (ballotOrder.get(b.choice) ?? Number.POSITIVE_INFINITY) ||
             collator.compare(a.choice, b.choice),
         ),
-    }))
-    .sort((a, b) => compareRaces(a, b, options.area));
+    }));
+  return sortByBallotOrder(collated, options.area, (race) => race);
 }
 
 /**

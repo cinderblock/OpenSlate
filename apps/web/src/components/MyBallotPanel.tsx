@@ -43,7 +43,7 @@ import {
   useBallotDraft,
 } from "../lib/ballotDraft";
 import { ballotFileName, ballotToCsv, ballotToJson } from "../lib/ballotExport";
-import { ballotSections, compareBallotOrder, type SequencedRace } from "../lib/ballotSequence";
+import { ballotSections, type SequencedRace, sortByBallotOrder } from "../lib/ballotSequence";
 import {
   ballotChoices,
   instructionLine,
@@ -468,7 +468,7 @@ export function MyBallotPanel() {
         noRace: noRaceReason(family, n, present, election),
       });
     }
-    return ballotSections(items.sort((a, b) => compareBallotOrder(a, b, area)));
+    return ballotSections(sortByBallotOrder(items, area, (item) => item));
   }, [shown, filter, search.searching, area, areaOptions, election]);
 
   const myRows = useMemo(
