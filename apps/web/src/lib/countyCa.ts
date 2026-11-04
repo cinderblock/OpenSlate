@@ -18,6 +18,7 @@ import {
   samePerson,
 } from "@openslate/core";
 import { type Area, parseJurisdiction } from "./jurisdictions";
+import { liveRefetchInterval, noteAnswer, withVersion } from "./liveFeed";
 import { getRoutingMode, PROVIDERS } from "./routing";
 import { type ContestResult, countySlug, LIVE_REFRESH_MS, measureThreshold } from "./sosCa";
 import { sosContestForSubject } from "./sosResults";
@@ -495,7 +496,8 @@ function updatedOf(res: Response): { updated?: number } {
 
 /** livevoterturnout.com: the whole count in one CSV, its time in `Last-Modified`. */
 async function fetchLvt(slug: string, feed: CountyFeed): Promise<CountyResults> {
-  const res = await fetch(`${baseFor(slug, feed)}/${lvtSummaryPath(feed)}`);
+  const res = await fetch(withVersion(`${baseFor(slug, feed)}/${lvtSummaryPath(feed)}`, slug));
+  noteAnswer(slug, res);
   if (!res.ok) throw new Error(`The county answered ${res.status}`);
   const text = await res.text();
   const updated = updatedOf(res);
@@ -516,9 +518,10 @@ async function fetchLvt(slug: string, feed: CountyFeed): Promise<CountyResults> 
 
 /** Los Angeles: every contest in one JSON (through the relay: no CORS, and a query the relay adds). */
 async function fetchLaVote(slug: string, feed: CountyFeed): Promise<CountyResults> {
-  const res = await fetch(`${baseFor(slug, feed)}/json`, {
+  const res = await fetch(withVersion(`${baseFor(slug, feed)}/json`, slug), {
     headers: { accept: "application/json" },
   });
+  noteAnswer(slug, res);
   if (!res.ok) throw new Error(`The county answered ${res.status}`);
   const text = await res.text();
   const { contests, asOf } = parseLaVote(JSON.parse(text));
@@ -540,9 +543,10 @@ async function fetchLaVote(slug: string, feed: CountyFeed): Promise<CountyResult
 
 /** Sacramento's results API: every ballot item in one JSON, its time in `election.asOf`. */
 async function fetchResultsApi(slug: string, feed: CountyFeed): Promise<CountyResults> {
-  const res = await fetch(`${baseFor(slug, feed)}/data`, {
+  const res = await fetch(withVersion(`${baseFor(slug, feed)}/data`, slug), {
     headers: { accept: "application/json" },
   });
+  noteAnswer(slug, res);
   if (!res.ok) throw new Error(`The county answered ${res.status}`);
   const text = await res.text();
   const { contests, asOf } = parseResultsApi(JSON.parse(text));
@@ -571,7 +575,10 @@ async function fetchResultsPage(
   path: string,
   parse: (html: string) => { contests: CountyContest[]; asOf?: number },
 ): Promise<CountyResults> {
-  const res = await fetch(`${baseFor(slug, feed)}/${path}`, { headers: { accept: "text/html" } });
+  const res = await fetch(withVersion(`${baseFor(slug, feed)}/${path}`, slug), {
+    headers: { accept: "text/html" },
+  });
+  noteAnswer(slug, res);
   if (!res.ok) throw new Error(`The county answered ${res.status}`);
   const text = await res.text();
   const previous = lastRead.get(slug);
@@ -616,7 +623,8 @@ export async function fetchCountyResults(slug: string): Promise<CountyResults> {
   if (hit.kind === "lvt-html") return fetchResultsPage(slug, hit, lvtPagePath(hit), parseLvtHtml);
   if (hit.kind === "acvote") return fetchResultsPage(slug, hit, ACVOTE_PAGE_PATH, parseAcvoteHtml);
   const base = baseFor(slug, hit);
-  const verRes = await fetch(`${base}/current_ver.txt`);
+  const verRes = await fetch(withVersion(`${base}/current_ver.txt`, slug));
+  noteAnswer(slug, verRes);
   if (!verRes.ok) throw new Error(`The county answered ${verRes.status}`);
   const version = parseClarityVersion(await verRes.text());
   if (!version) throw new Error("The county hasn't published results yet");
@@ -643,7 +651,8 @@ export function countyQueryOptions(slug: string) {
     queryKey: ["sos-ca", "county-ca", slug] as const,
     queryFn: () => fetchCountyResults(slug),
     staleTime: LIVE_REFRESH_MS / 2,
-    refetchInterval: LIVE_REFRESH_MS,
+    // Every minute, or just after the relay's next report is due (liveFeed.ts).
+    refetchInterval: liveRefetchInterval,
     refetchIntervalInBackground: false,
     retry: (count: number) => count < 2,
   };

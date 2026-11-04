@@ -1,7 +1,9 @@
+import { mergeHistories } from "@openslate/core";
 import { useState } from "react";
 import { useOutOfDate } from "../lib/freshness";
+import { useRecorder, viaRelay } from "../lib/liveFeed";
 import type { RaceChange } from "../lib/raceChanges";
-import { useRaceHistory } from "../lib/raceHistory";
+import { historyFeed, useRaceHistory, useRecordedHistory } from "../lib/raceHistory";
 import {
   type CandidateResult,
   type ContestResult,
@@ -54,18 +56,33 @@ export function Clock({ at }: { at: number }) {
   );
 }
 
-/** A race's count over time, logged in this browser, behind a button (charts are tall). */
+/**
+ * A race's count over time, behind a button (charts are tall): the relay
+ * recorder's history of every report, with any earlier reports this browser
+ * saw before it; or, without the relay, what this browser saw.
+ */
 export function RaceHistoryToggle({ id }: { id: string }) {
-  const history = useRaceHistory(id);
+  const local = useRaceHistory(id);
+  const recorder = useRecorder() && viaRelay(historyFeed(id));
   const [open, setOpen] = useState(false);
-  if (!history || history.points.length === 0) return null;
-  const n = history.points.length;
+  const recorded = useRecordedHistory(id, open);
+  const history = mergeHistories(recorded ?? undefined, local);
+  const n = local?.points.length ?? 0;
+  if (!recorder && n === 0) return null;
+  const label = recorder ? "History" : `History (${n} report${n === 1 ? "" : "s"} seen here)`;
   return (
     <div className="race-history-toggle">
       <button type="button" className="link" aria-expanded={open} onClick={() => setOpen(!open)}>
-        {open ? "Hide history" : `History (${n} report${n === 1 ? "" : "s"} seen here)`}
+        {open ? "Hide history" : label}
       </button>
-      {open && <RaceHistoryChart history={history} />}
+      {open &&
+        (history && history.points.length > 0 ? (
+          <RaceHistoryChart history={history} />
+        ) : (
+          <p className="hint">
+            {recorded === undefined ? "Loading the history…" : "No reports recorded yet."}
+          </p>
+        ))}
     </div>
   );
 }

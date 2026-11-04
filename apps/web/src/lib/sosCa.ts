@@ -1,4 +1,5 @@
 import { samePerson } from "@openslate/core";
+import { feedState, liveRefetchInterval, noteAnswer, SOS_FEED, withVersion } from "./liveFeed";
 import { baseUrlFor } from "./routing";
 
 /**
@@ -266,7 +267,11 @@ function justiceName(slug: string): string {
 }
 
 async function getJson(base: string, path: string): Promise<unknown> {
-  const res = await fetch(`${base}/returns/${path}`, { headers: { accept: "application/json" } });
+  // By the relay's newest report, when a new one was announced (liveFeed.ts).
+  const res = await fetch(withVersion(`${base}/returns/${path}`, SOS_FEED), {
+    headers: { accept: "application/json" },
+  });
+  noteAnswer(SOS_FEED, res);
   if (res.status === 500) {
     const body = await res.text().catch(() => "");
     // The API's way of saying "no such contest": a 500 with nothing in it.
@@ -293,11 +298,13 @@ const SHARE_MS = 10_000;
 
 function fetchPath(path: string): Promise<unknown> {
   const now = Date.now();
-  const hit = recent.get(path);
+  // A new report announced since: not the answer shared from before it.
+  const key = `${path}@${feedState(SOS_FEED).version ?? ""}`;
+  const hit = recent.get(key);
   if (hit && now - hit.at < SHARE_MS) return hit.raw;
   const raw = fetchPathOnce(path);
-  recent.set(path, { at: now, raw });
-  raw.catch(() => recent.delete(path));
+  recent.set(key, { at: now, raw });
+  raw.catch(() => recent.delete(key));
   return raw;
 }
 
@@ -327,7 +334,8 @@ export function contestQueryOptions(id: string, county?: string) {
     queryKey: ["sos-ca", id, county ?? null] as const,
     queryFn: () => fetchContest(id, county),
     staleTime: LIVE_REFRESH_MS / 2,
-    refetchInterval: LIVE_REFRESH_MS,
+    // Every minute, or just after the relay's next report is due (liveFeed.ts).
+    refetchInterval: liveRefetchInterval,
     refetchIntervalInBackground: false,
     retry: (count: number, error: Error) => !(error instanceof NotOnBallot) && count < 2,
   };

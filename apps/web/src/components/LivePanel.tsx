@@ -19,6 +19,7 @@ import {
 import { isLive, isOutOfDate, useCatchUpOnWake, useNow, useOnline } from "../lib/freshness";
 import type { Area } from "../lib/jurisdictions";
 import { EMPTY_AREA, isAreaSet } from "../lib/jurisdictions";
+import { SOS_FEED, useLiveFeeds } from "../lib/liveFeed";
 import { useLocalStore } from "../lib/localStore";
 import { useArea } from "../lib/myVote";
 import { raceChangesStore, useRaceChange } from "../lib/raceChanges";
@@ -113,6 +114,7 @@ export function LivePanel() {
   return (
     <section className="panel live-panel">
       <CatchUpBar />
+      <LiveFeeds groups={groups} />
       <h2>Live count</h2>
       <p className="hint">
         The California Secretary of State's count for the places and races you watch, checked every
@@ -165,6 +167,27 @@ export function LivePanel() {
       </p>
     </section>
   );
+}
+
+/**
+ * New reports pushed by the relay (liveFeed.ts): the Secretary of State's, and
+ * each county's whose races are watched here.
+ */
+function LiveFeeds({ groups }: { groups: WatchGroup[] }) {
+  const feeds = useMemo(
+    () => [
+      SOS_FEED,
+      ...groups.flatMap((g) =>
+        g.contests.flatMap((id) => {
+          const county = parseCountyContestId(id)?.county;
+          return county ? [county] : [];
+        }),
+      ),
+    ],
+    [groups],
+  );
+  useLiveFeeds(feeds);
+  return null;
 }
 
 /**

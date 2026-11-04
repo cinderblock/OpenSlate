@@ -1,5 +1,8 @@
 import { appendChoices, isRaceHistory, type RaceHistory } from "@openslate/core";
+import { useQuery } from "@tanstack/react-query";
+import { feedState, SOS_FEED, useFeedStates, useRecorder, viaRelay } from "./liveFeed";
 import { createLocalStore, useLocalStore } from "./localStore";
+import { apiBase } from "./routing";
 import type { ContestResult } from "./sosCa";
 
 /**
@@ -61,4 +64,38 @@ export function logReport(id: string, result: ContestResult, at: number): void {
 export function useRaceHistory(id: string): RaceHistory | undefined {
   const [all] = useLocalStore(raceHistoryStore);
   return all[id];
+}
+
+/** The results feed a race's id belongs to: a county's slug, or the Secretary of State's. */
+export function historyFeed(id: string): string {
+  return id.match(/^county-ca\/([a-z-]+)\//)?.[1] ?? SOS_FEED;
+}
+
+/**
+ * The relay recorder's history of a race (every report since it started, not
+ * just those this browser saw), fetched only when asked for (`enabled`) and
+ * when results come through the relay. Asked again when a new report is
+ * announced. Null when the recorder has none.
+ */
+export function useRecordedHistory(id: string, enabled: boolean): RaceHistory | null | undefined {
+  const recorder = useRecorder();
+  useFeedStates();
+  const feed = historyFeed(id);
+  const version = feedState(feed).version ?? 0;
+  const query = useQuery({
+    queryKey: ["race-history", id, version],
+    queryFn: async (): Promise<RaceHistory | null> => {
+      const path = id.split("/").map(encodeURIComponent).join("/");
+      const res = await fetch(`${apiBase()}/api/history/${feed}/${path}`);
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error(`The relay answered ${res.status}`);
+      const body: unknown = await res.json();
+      return isRaceHistory(body) ? body : null;
+    },
+    enabled: enabled && recorder && viaRelay(feed),
+    staleTime: 60_000,
+    placeholderData: (previous) => previous,
+    retry: 1,
+  });
+  return query.data;
 }
