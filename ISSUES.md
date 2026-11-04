@@ -80,3 +80,19 @@ marks) isn't checked. Neither is a hard wrap just before a capitalised word in u
 Why it matters: these are the gaps left in "a statement can't cut its source short". Listing the
 not-found statements per bundle, as `review/unanchored.md` does for anchoring, would show which
 are quotes.
+
+## Local contest order is guessed outside San Mateo, and San Mateo's is hand-entered
+
+Seen 2026-11-03, checking a San Mateo County ballot (`plans/ballot-order-san-mateo-check.md`).
+Local measures sort by letter, except San Mateo, whose order is typed into
+`apps/web/src/lib/ballotOrderCounties.ts` (`measures`) from the county's drawing PDF. San Mateo's
+ballot printed L, AA, J, U, so letter order is wrong there, and likely in other counties. Local
+offices use §13109 patterns, also unchecked against a real ballot.
+
+Why it matters: the voter copies picks down in this order. The user, as site manager, never wants to
+maintain it by hand: the order should come from official data, carried in the signed ballot
+listings (a contest's place in the county's ballot, SPEC §3.14), not from app code. Candidate
+sources: each county's sample ballots (PDF per ballot type, or the voter-guide lookup), the county's
+election-night results / Statement of Votes Cast (exported from the election system in its contest
+order), and the Civic/VIP feed's `ballotPlacement` (already found wrong for LA: `plans/ballot-order.md`).
+

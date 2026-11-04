@@ -140,6 +140,10 @@ A county with no voters in a district prints no ballot for it.
 
 - Only San Mateo publishes its measure order in a form we have; other
   counties' local measures go by letter, which San Mateo shows can be wrong.
+  The user (2026-11-03): the order must come from official data, never be
+  maintained by hand; low priority tonight, wanted later. Logged in
+  `ISSUES.md` ("Local contest order is guessed…").
+- "Skipped, not hidden": the user confirmed it meant the printout (done).
 - The block-based CD / BOE tables are proven by one ballot (an empty block
   counts). A sample ballot from CD 10, 11 or 52 would confirm the rest.
 - The Supreme Court order (Groban, then Evans) and the State offices section
