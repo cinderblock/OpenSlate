@@ -130,6 +130,24 @@ export interface MeasureResult {
   no: number;
   yesPercent: number;
   noPercent: number;
+  /** The yes share it needs, when more than a majority: local taxes and bonds often need 55% or two-thirds. */
+  threshold?: "55%" | "2/3";
+}
+
+/** The yes share a measure's title says it needs: "2/3rds (66.67%) Vote Required", "55 Percent Approval". */
+export function measureThreshold(title: string): MeasureResult["threshold"] {
+  if (/2\s*\/\s*3|two[\s-]*thirds|66\.67?\s*%/i.test(title)) return "2/3";
+  if (/\b55\s*(%|percent)/i.test(title)) return "55%";
+  return undefined;
+}
+
+/** Whether a measure is passing on the count so far: a majority, 55%, or two-thirds of yes and no. */
+export function measurePasses(m: Pick<MeasureResult, "yes" | "no" | "threshold">): boolean {
+  const total = m.yes + m.no;
+  if (total === 0) return false;
+  if (m.threshold === "2/3") return m.yes * 3 >= total * 2;
+  if (m.threshold === "55%") return m.yes * 100 >= total * 55;
+  return m.yes * 2 > total;
 }
 
 export type ContestResult =

@@ -15,7 +15,7 @@ import {
 } from "@openslate/core";
 import type { Area } from "./jurisdictions";
 import { getRoutingMode, PROVIDERS } from "./routing";
-import { type ContestResult, countySlug, LIVE_REFRESH_MS } from "./sosCa";
+import { type ContestResult, countySlug, LIVE_REFRESH_MS, measureThreshold } from "./sosCa";
 
 /**
  * California counties' own election-night results (`@openslate/core/countyResults`
@@ -100,6 +100,7 @@ export function countyContestResult(c: CountyContest, updated?: number): Contest
     ...(updated ? { time: timeFmt.format(updated) } : {}),
   };
   if (c.measure) {
+    const threshold = measureThreshold(c.title);
     const yes = c.choices.find((x) => /yes/i.test(x.name));
     const no = c.choices.find((x) => /no/i.test(x.name));
     return {
@@ -114,6 +115,7 @@ export function countyContestResult(c: CountyContest, updated?: number): Contest
         no: no?.votes ?? 0,
         yesPercent: yes?.percent ?? 0,
         noPercent: no?.percent ?? 0,
+        ...(threshold ? { threshold } : {}),
       },
     };
   }

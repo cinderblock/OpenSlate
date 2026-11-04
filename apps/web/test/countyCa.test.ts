@@ -15,6 +15,7 @@ import {
   titleDistrict,
   titleWords,
 } from "../src/lib/countyCa";
+import { measurePasses, measureThreshold } from "../src/lib/sosCa";
 
 function contest(key: string, title: string, category = "Local", choices = ["A", "B"]) {
   return parseClaritySummary([
@@ -278,5 +279,47 @@ describe("an area's county with a feed", () => {
     expect(feedCountyOfArea({ localities: [], found: ["us/ca/los-angeles-county"] })).toBe(
       "Los Angeles",
     );
+  });
+});
+
+describe("what a local measure needs to pass", () => {
+  test("two-thirds and 55% are read from the title, and judged on yes and no", () => {
+    expect(measureThreshold("City of East Palo Alto, Measure O (2/3 Approval Required)")).toBe(
+      "2/3",
+    );
+    expect(
+      measureThreshold(
+        "Measure O - Alum Rock Union SD, Parcel Tax - 2/3rds (66.67%) Vote Required",
+      ),
+    ).toBe("2/3");
+    expect(
+      measureThreshold(
+        "San Mateo County Community College District, Measure V (55 Percent Approval Required)",
+      ),
+    ).toBe("55%");
+    expect(
+      measureThreshold(
+        "Measure M - Gilroy Unified School District, School Bond - 55% Vote Required",
+      ),
+    ).toBe("55%");
+    expect(measureThreshold("Measure CC (Majority Approval Required)")).toBeUndefined();
+    expect(measurePasses({ yes: 1171, no: 418, threshold: "2/3" })).toBe(true);
+    expect(measurePasses({ yes: 60, no: 40, threshold: "2/3" })).toBe(false);
+    expect(measurePasses({ yes: 2, no: 1, threshold: "2/3" })).toBe(true);
+    expect(measurePasses({ yes: 54, no: 46, threshold: "55%" })).toBe(false);
+    expect(measurePasses({ yes: 51, no: 49 })).toBe(true);
+    expect(measurePasses({ yes: 50, no: 50 })).toBe(false);
+    expect(measurePasses({ yes: 0, no: 0 })).toBe(false);
+  });
+
+  test("a county measure card carries its threshold", () => {
+    const o = contest(
+      "o",
+      "City of East Palo Alto, Measure O (2/3 Approval Required)",
+      "Measures",
+      ["YES", "NO"],
+    );
+    const r = countyContestResult(o);
+    expect(r.kind === "measure" && r.measure.threshold).toBe("2/3");
   });
 });

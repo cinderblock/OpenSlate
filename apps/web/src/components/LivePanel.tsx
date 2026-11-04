@@ -30,6 +30,7 @@ import {
   fetchCounties,
   LIVE_REFRESH_MS,
   type MeasureResult,
+  measurePasses,
   NotOnBallot,
   propContest,
   STATEWIDE_OFFICES,
@@ -815,13 +816,15 @@ function CandidateRow({ c, counted }: { c: CandidateResult; counted: boolean }) 
 
 function MeasureRow({ m }: { m: MeasureResult }) {
   const counted = m.yes + m.no > 0;
-  const passing = counted && m.yesPercent > 50;
+  const passing = counted && measurePasses(m);
+  const needs = m.threshold === "2/3" ? "two-thirds" : m.threshold;
   return (
     <div className="live-measure">
       {m.name && <div className="hint live-measure-name">{m.name}</div>}
       <div className="live-yesno">
         <span className={counted ? (passing ? "ok" : "bad") : "hint"}>
           {counted ? (passing ? "Passing" : "Failing") : "No votes counted yet"}
+          {needs && <span className="hint"> (needs {needs})</span>}
         </span>
         <span className="live-bar" aria-hidden="true">
           <span
