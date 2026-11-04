@@ -55,3 +55,28 @@ Seen 2026-10-30, about 8:50 PM PDT (2026-10-31 03:50Z), in `gh run list` for
 (22:33Z, 02:37Z). The 4:30, 5:30 and 6:30 PM PDT slots (23:30Z, 00:30Z, 01:30Z) left no run, each
 falling inside another run. The 8:30 PM PDT slot (03:30Z) had none 18 minutes later, with nothing
 running. `plans/archive-org-snapshots.md` forecasts the first pass from hourly runs.
+
+## June primary slates quote nothing and cite nothing
+
+Seen 2026-11-03 in `openslate-public-endorsements`. `orgs/courage-california/2026-06-02`,
+`orgs/la-forward/2026-06-02` and `orgs/reform-california/2026-06-02` have no `evidence/` and no
+`source` on any position (17, 36 and 27). Five of their statements are the researcher's own words
+("Dual endorsement with Chad Bianco.", "Recommended to block Spencer Pratt."). `verify-positions`
+requires a source, and checks quoting, only in bundles with evidence, so these pass.
+
+Why it matters: a statement with no source can't be checked or read in full, which is what
+`plans/statement-truncation.md` set out to rule out. The election is past, but the slates are
+still published.
+
+## Statements the quoting check can't see
+
+Seen 2026-11-03: `verify-positions` with the private store reports 1,345 statements "not found in
+the evidence text". Without it (CI), saved news pages are skipped, and it's 1,829. The
+whole-passage check (`scripts/lib/quote-bounds.ts`) only judges quotes it can find, so a cut quote
+whose words differ slightly from the evidence (a typo, a different capture, a paraphrase in quotation
+marks) isn't checked. Neither is a hard wrap just before a capitalised word in unfenced evidence
+(`scripts/lib/evidence-text.ts`).
+
+Why it matters: these are the gaps left in "a statement can't cut its source short". Listing the
+not-found statements per bundle, as `review/unanchored.md` does for anchoring, would show which
+are quotes.
