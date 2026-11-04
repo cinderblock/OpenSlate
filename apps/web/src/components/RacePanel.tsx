@@ -2,7 +2,7 @@ import type { CandidateInfo, GuideReference, Passage, Subject } from "@openslate
 import { Link, useLocation, useParams, useSearch } from "@tanstack/react-router";
 import { Users } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { useAllRaces } from "../lib/allSlates";
+import { type AllRacesState, useAllRaces } from "../lib/allSlates";
 import {
   type AttachedArticle,
   articleDate,
@@ -25,8 +25,10 @@ import {
   referencePlaceLabel,
   useGuideItem,
   useGuideReferences,
+  useGuideSubjects,
 } from "../lib/guides";
 import { localToday, useDecodedSlates, useFollows } from "../lib/myVote";
+import { type ParsedRaceSlug, parseRaceSlug, raceSlug } from "../lib/raceSlug";
 import {
   type ChoiceTally,
   filterPositions,
@@ -44,6 +46,7 @@ import { ForecastsPanel } from "./ForecastsPanel";
 import { CandidateGuide, GuideDetails, GuideMeans, GuideOverview } from "./GuideContent";
 import { PollsPanel } from "./PollsPanel";
 import { PositionRow, STANCE_LABEL } from "./PositionRow";
+import { RaceLink } from "./RaceLink";
 import { ResultsPanel } from "./ResultsPanel";
 
 /**
@@ -56,11 +59,174 @@ import { ResultsPanel } from "./ResultsPanel";
  * first, then the sources grouped by kind, because a proposition has 100+.
  */
 export function RacePanel() {
-  const { key: routeKey } = useParams({ from: "/race/$key" });
-  // TanStack Router auto-decodes route params, so routeKey is already the raw subject key.
-  const targetKey = routeKey;
-  const { all: everySlate = false } = useSearch({ from: "/race/$key" });
+  // `/race/$` (a slug) or `/race/$key` (an `id` key). TanStack Router decodes params.
+  const params = useParams({ strict: false });
+  const { all: asked = false, k: pin } = useSearch({ strict: false });
+  const target = useRaceTarget(params._splat, params.key, pin);
 
+  if (target.state === "found") {
+    return (
+      <RaceView
+        key={target.key}
+        targetKey={target.key}
+        everySlate={asked || target.viaCatalog}
+        pinned={pin === target.key}
+      />
+    );
+  }
+  return <RaceLookup target={target} />;
+}
+
+type RaceTarget =
+  | { state: "found"; key: string; viaCatalog: boolean }
+  | { state: "several"; keys: string[] }
+  | { state: "searching"; parsed?: ParsedRaceSlug; catalog?: AllRacesState }
+  | { state: "missing"; parsed?: ParsedRaceSlug; catalog?: AllRacesState };
+
+/**
+ * Which race a `/race/...` address names. A slug is looked for in what's here
+ * first: imported slates, my own picks, and the official voter guide for its
+ * election and area. Only when none of those has it does the public catalog
+ * load, so a link to a race only some catalog slate covers still opens.
+ */
+function useRaceTarget(
+  splat: string | undefined,
+  key: string | undefined,
+  pin: string | undefined,
+): RaceTarget {
+  const parsed = useMemo(() => (splat !== undefined ? parseRaceSlug(splat) : undefined), [splat]);
+  // An `id` key, or `?k` naming one of the races at this slug.
+  const direct = key ?? (pin && parsed && raceSlug(pin) === parsed.slug ? pin : undefined);
+  const looking = parsed !== undefined && direct === undefined;
+
+  const { slates, isReady } = useDecodedSlates();
+  const [follows] = useFollows();
+  const draft = useBallotDraft();
+  const guide = useGuideSubjects(looking ? parsed : undefined);
+  const local = useMemo(() => {
+    if (!looking) return [];
+    const keys = [
+      ...collateRaces(slates, { follows, includeUnfollowed: true }).map((r) => r.key),
+      ...Object.values(draft.rows).map((r) => subjectKey(r.subject)),
+      ...guide.subjects.map(subjectKey),
+    ];
+    return [...new Set(keys)].filter((k) => raceSlug(k) === parsed.slug);
+  }, [looking, parsed, slates, follows, draft.rows, guide.subjects]);
+  // Once the local look has finished for this slug, it stays finished: a guide
+  // list that failed goes back to pending each time a new reader of it mounts
+  // (the race page itself, once found), which would otherwise unfind the race.
+  const settledNow = isReady && !guide.pending;
+  const [settledFor, setSettledFor] = useState<string>();
+  useEffect(() => {
+    if (settledNow && parsed) setSettledFor(parsed.slug);
+  }, [settledNow, parsed]);
+  const localDone = settledNow || (parsed !== undefined && settledFor === parsed.slug);
+
+  const needCatalog = looking && localDone && local.length === 0;
+  const catalog = useAllRaces(needCatalog);
+  const fromCatalog = useMemo(
+    () =>
+      needCatalog && catalog.all
+        ? [...catalog.all.byKey.keys()].filter((k) => raceSlug(k) === parsed?.slug)
+        : [],
+    [needCatalog, catalog.all, parsed],
+  );
+
+  if (direct !== undefined) return { state: "found", key: direct, viaCatalog: false };
+  if (!parsed) return { state: "missing" };
+  const [only, ...more] = local.length > 0 ? local : fromCatalog;
+  if (only !== undefined && more.length === 0) {
+    return { state: "found", key: only, viaCatalog: local.length === 0 };
+  }
+  if (only !== undefined) return { state: "several", keys: [only, ...more] };
+  if (!localDone || (needCatalog && !catalog.all && catalog.status.state !== "error")) {
+    return { state: "searching", parsed, ...(needCatalog ? { catalog } : {}) };
+  }
+  return { state: "missing", parsed, ...(needCatalog ? { catalog } : {}) };
+}
+
+/** A slug's title, as near as it can be read back: "board-seat-4" -> "Board seat 4". */
+function titleFromSlug(titleSlug: string): string {
+  const words = titleSlug.replace(/-/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** The race page before (or instead of) a race: looking, which one, or not found. */
+function RaceLookup({ target }: { target: Exclude<RaceTarget, { state: "found" }> }) {
+  const parsed = target.state === "several" ? undefined : target.parsed;
+  const where = [parsed?.jurisdiction, parsed?.election].filter(Boolean);
+  return (
+    <section className="panel">
+      <p>
+        <Link to="/">← My ballot</Link> · <Link to="/races">All races</Link>
+      </p>
+      {target.state === "several" ? (
+        <>
+          <h2>Which race?</h2>
+          <p className="hint">More than one race has this address. Pick one:</p>
+          <ul className="read-up-list">
+            {target.keys.map((key) => {
+              const subject = subjectFromKey(key);
+              return (
+                <li key={key}>
+                  <RaceLink raceKey={key} pin>
+                    {subject?.title ?? key}
+                  </RaceLink>
+                  {subject && (
+                    <div className="hint">
+                      {[subject.jurisdiction, subject.election].filter(Boolean).join(" · ")}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      ) : (
+        <>
+          <h2>{parsed ? titleFromSlug(parsed.titleSlug) : "Race not found"}</h2>
+          {where.length > 0 && <p className="hint">{where.join(" · ")}</p>}
+          {target.state === "searching" ? (
+            target.catalog ? (
+              <>
+                <p className="hint">
+                  Not in your slates or the official voter guide. Looking in the public catalog…
+                </p>
+                <AllSlatesLoading state={target.catalog} />
+              </>
+            ) : (
+              <p className="hint">Looking for this race…</p>
+            )
+          ) : (
+            <>
+              {target.catalog && <AllSlatesLoading state={target.catalog} />}
+              <div className="card">
+                <p className="hint">
+                  No race at this address in your slates, the official voter guide or the public
+                  catalog. Find it in <Link to="/races">All races</Link>, or add endorsements in{" "}
+                  <Link to="/sources">Sources</Link>.
+                </p>
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+/** One race, once the address has named it. */
+function RaceView({
+  targetKey,
+  everySlate,
+  pinned,
+}: {
+  targetKey: string;
+  /** Every slate in the public catalog, not only what's imported. */
+  everySlate: boolean;
+  /** The address names the race exactly (`?k`), so its links keep doing so. */
+  pinned: boolean;
+}) {
   const { slates } = useDecodedSlates();
   const [follows] = useFollows();
   const draft = useBallotDraft();
@@ -217,9 +383,9 @@ export function RacePanel() {
           <div id="all-slates" className="all-slates">
             {!everySlate ? (
               <p>
-                <Link from="/race/$key" to="." search={{ all: true }} className="button-link">
+                <RaceLink raceKey={targetKey} all pin={pinned} className="button-link">
                   <Users className="icon" aria-hidden="true" /> See all slates
-                </Link>{" "}
+                </RaceLink>{" "}
                 <span className="hint">
                   Every slate in the public catalog, not only the ones you've imported.
                 </span>
@@ -334,9 +500,7 @@ function ReferencedBy({ references }: { references: GuideReference[] }) {
       <ul className="read-up-list">
         {references.map(({ from, choice, where }) => (
           <li key={`${from.title}|${choice ?? ""}`}>
-            <Link to="/race/$key" params={{ key: subjectKey(from) }}>
-              {raceName(from.title)}
-            </Link>
+            <RaceLink raceKey={subjectKey(from)}>{raceName(from.title)}</RaceLink>
             <div className="hint">
               {choice && <>Names {choice} · </>}
               {where.map(referencePlaceLabel).join(" · ")}
@@ -377,10 +541,7 @@ function InTheNews({
           {alsoCovers.map((race, i) => (
             <Fragment key={race.key}>
               {i > 0 && ", "}
-              <Link to="/race/$key" params={{ key: race.key }}>
-                {raceName(race.title)}
-              </Link>{" "}
-              ({race.articles})
+              <RaceLink raceKey={race.key}>{raceName(race.title)}</RaceLink> ({race.articles})
             </Fragment>
           ))}
         </p>

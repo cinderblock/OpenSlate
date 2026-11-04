@@ -111,6 +111,7 @@ import { electionOptions } from "./electionOptions";
 import { PageSearch } from "./PageSearch";
 import { PrintBallot, type PrintSection } from "./PrintBallot";
 import { QuickFill } from "./QuickFill";
+import { RaceLink } from "./RaceLink";
 import { RaceOrderNote } from "./RaceOrder";
 import { RankedChoices } from "./RankedChoices";
 import { Checkbox } from "./ui/Checkbox";
@@ -1444,9 +1445,9 @@ function RaceCardInner({
   return (
     <div className="card race-card">
       <div className="ballot-box-header">
-        <Link to="/race/$key" params={{ key: race.key }} className="race-link">
+        <RaceLink raceKey={race.key} className="race-link">
           {title.heading}
-        </Link>
+        </RaceLink>
         {instruction && <div className="vote-for">{instruction}</div>}
         {title.label && <div className="ballot-box-detail">{title.label}</div>}
         {title.measureType && (
@@ -1530,24 +1531,23 @@ function RaceCardInner({
       )}
       {ranked && <WriteInField race={race} election={election} rows={rows} applyRank={applyRank} />}
       <p className="race-all-slates no-print">
-        <Link
-          to="/race/$key"
-          params={{ key: race.key }}
-          search={{ all: true }}
+        <RaceLink
+          raceKey={race.key}
+          all
           hash="all-slates"
           className="button-link"
           aria-label={`All slates on ${race.subject.title}`}
         >
           <Users className="icon" aria-hidden="true" /> All slates
-        </Link>
+        </RaceLink>
       </p>
       <p className="research-links no-print">
         <span className="hint">Read up:</span>{" "}
         {inGuide && (
           <>
-            <Link to="/race/$key" params={{ key: race.key }} hash="official">
+            <RaceLink raceKey={race.key} hash="official">
               {race.subject.kind === "measure" ? "Full text and arguments" : "Candidate statements"}
-            </Link>
+            </RaceLink>
             {links.length > 0 && " · "}
           </>
         )}
@@ -1562,9 +1562,9 @@ function RaceCardInner({
         {articles ? (
           <>
             {" · "}
-            <Link to="/race/$key" params={{ key: race.key }} hash="articles">
+            <RaceLink raceKey={race.key} hash="articles">
               {articles} {articles === 1 ? "article" : "articles"}
-            </Link>
+            </RaceLink>
           </>
         ) : null}
       </p>

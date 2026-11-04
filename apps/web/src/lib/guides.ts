@@ -196,6 +196,27 @@ export function useGuideListed(subject: Subject): boolean {
 }
 
 /**
+ * Every subject the default catalog's voter guides list for an election and
+ * area, from their manifests only: what a race link can name before any slate
+ * is imported. `pending` until the guide list and each manifest has answered
+ * (a failed one counts as answered).
+ */
+export function useGuideSubjects(where: { jurisdiction?: string; election?: string } | undefined): {
+  subjects: Subject[];
+  pending: boolean;
+} {
+  const list = useQuery(guideListQueryOptions(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG));
+  const entries = useMemo(
+    () => (where && list.data ? guidesFor(list.data, { title: "", ...where }) : []),
+    [list.data, where],
+  );
+  const manifests = useQueries({ queries: entries.map((e) => guideManifestQueryOptions(e)) });
+  const pending = Boolean(where) && (list.isPending || manifests.some((m) => m.isPending));
+  const subjects = manifests.flatMap((m) => m.data?.items.map((it) => it.subject) ?? []);
+  return { subjects, pending };
+}
+
+/**
  * The voter guide's item for a subject, from the first guide in the default
  * catalog that lists it (a district can appear in several county guides).
  * `status` separates "nothing to show" from "couldn't load".

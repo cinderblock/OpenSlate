@@ -1,6 +1,5 @@
 import { confidenceBucket, type Race as ResultRace, type Subject } from "@openslate/core";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { raceHeading } from "../lib/ballotView";
 import type { Race } from "../lib/collate";
@@ -21,6 +20,7 @@ import { raceLinks } from "../lib/researchLinks";
 import { raceQueryOptions, raceSearchQueryOptions, resolveSubjectRace } from "../lib/results";
 import { plural } from "./AllSlates";
 import { FollowButton } from "./FollowButton";
+import { RaceLink } from "./RaceLink";
 
 /** How many new sources a card names before "and N more". */
 const NEW_NAMES = 5;
@@ -223,9 +223,9 @@ export function FollowedRaceCard({
       <LatestPoll subject={subject} />
       <FollowedResult subject={subject} {...(choice ? { choice } : {})} />
       <p className="followed-line">
-        <Link to="/race/$key" params={{ key: item.key }} search={{ all: true }}>
+        <RaceLink raceKey={item.key} all>
           All slates, polls and results
-        </Link>
+        </RaceLink>
       </p>
     </li>
   );

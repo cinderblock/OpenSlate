@@ -35,6 +35,7 @@ import { RawInspector } from "./ImportVerifyPanel";
 import { MyLabelsCard } from "./MyLabelsCard";
 import { matchCount, PageSearch } from "./PageSearch";
 import { QrDialog } from "./Qr";
+import { RaceLink } from "./RaceLink";
 import { SigningAs } from "./SigningAs";
 import { SubjectPicker } from "./SubjectPicker";
 import { STANCE_LABEL, STANCE_OPTIONS } from "./stanceOptions";
@@ -487,14 +488,9 @@ function PickRow({
     <li className={`pick-row${included ? "" : " left-out"}`}>
       <Checkbox className="pick-include" isSelected={included} onChange={onToggle}>
         <span>
-          <Link
-            to="/race/$key"
-            params={{ key: subjectKey(row.subject) }}
-            className="race-link"
-            title={place}
-          >
+          <RaceLink raceKey={subjectKey(row.subject)} className="race-link" title={place}>
             {row.subject.title}
-          </Link>
+          </RaceLink>
           {row.choice ? (
             <>
               {" → "}

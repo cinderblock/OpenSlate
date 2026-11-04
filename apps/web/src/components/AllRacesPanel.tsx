@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { memo, useEffect, useMemo, useState } from "react";
 import { type AllRaces, useAllRaces } from "../lib/allSlates";
 import { raceHeading } from "../lib/ballotView";
@@ -32,6 +31,7 @@ import { AllSlatesLoading, CatalogNote, plural } from "./AllSlates";
 import { FollowButton } from "./FollowButton";
 import { FollowedRaceCard } from "./FollowedRaceCard";
 import { PageSearch } from "./PageSearch";
+import { RaceLink } from "./RaceLink";
 import { Segmented } from "./ui/Segmented";
 
 /** Rows opened on their own while searching; past that a section waits to be opened. */
@@ -104,14 +104,9 @@ const RaceRow = memo(function RaceRow({
   return (
     <li className="race-row">
       <div className="race-row-main">
-        <Link
-          to="/race/$key"
-          params={{ key: race.key }}
-          search={{ all: true }}
-          className="race-row-title"
-        >
+        <RaceLink raceKey={race.key} all className="race-row-title">
           {title.heading}
-        </Link>
+        </RaceLink>
         {placement !== "out" && <span className="tag tag-inline">{PLACE_TAG[placement]}</span>}
         {title.label && <div className="hint">{title.label}</div>}
         <div className="race-row-counts">

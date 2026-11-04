@@ -24,6 +24,7 @@ import { catalogQueryOptions, DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG } from "../lib
 import { type Standing, sourceIdOf, standingOf } from "../lib/sources";
 import { AllSlatesLoading } from "./AllSlates";
 import { EndorserAvatar } from "./EndorserAvatar";
+import { RaceLink } from "./RaceLink";
 import { StandingToggle } from "./StandingToggle";
 import { cx } from "./ui/cx";
 import { Segmented } from "./ui/Segmented";
@@ -361,9 +362,9 @@ function RaceList({ results }: { results: RaceResult[] }) {
               <Icon className="icon" aria-hidden="true" /> {label}
             </span>
             <div>
-              <Link to="/race/$key" params={{ key: result.race.key }} className="race-link">
+              <RaceLink raceKey={result.race.key} className="race-link">
                 {result.race.subject.title}
-              </Link>
+              </RaceLink>
               <div className="hint">{raceLine(result)}</div>
             </div>
           </li>

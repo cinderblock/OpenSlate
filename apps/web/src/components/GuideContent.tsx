@@ -8,11 +8,11 @@ import type {
   Passage,
 } from "@openslate/core";
 import { measureMentions, measureNumber } from "@openslate/core";
-import { Link } from "@tanstack/react-router";
 import { Fragment, type ReactNode } from "react";
 import { formatLocalDate } from "../lib/dates";
 import { type GuideForSubject, guideMeasureKeys, useGuideFileUrl } from "../lib/guides";
 import { possessive } from "../lib/results-framing";
+import { RaceLink } from "./RaceLink";
 
 /**
  * A voter guide's material on the race page: what the office or measure is,
@@ -37,9 +37,9 @@ function GuideLine({ line, guide }: { line: string; guide: Guide }) {
     if (!key || number === own) continue;
     parts.push(line.slice(at, start));
     parts.push(
-      <Link key={start} to="/race/$key" params={{ key }}>
+      <RaceLink key={start} raceKey={key}>
         {line.slice(start, end)}
-      </Link>,
+      </RaceLink>,
     );
     at = end;
   }

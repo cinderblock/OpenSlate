@@ -7,6 +7,7 @@ import {
   redirect,
 } from "@tanstack/react-router";
 import { RootLayout } from "./App";
+import { raceSlug } from "./lib/raceSlug";
 import { type RouteTemplate, track } from "./lib/usage";
 
 // Each page is its own chunk, fetched when the page is first opened (and on
@@ -29,9 +30,15 @@ function validateSourcesSearch(search: Record<string, unknown>): { q?: string; a
   return { ...validateQuerySearch(search), ...(search.add === true ? { add: true } : {}) };
 }
 
-/** A race page's `?all`: every slate on the race, not only what's imported. */
-function validateRaceSearch(search: Record<string, unknown>): { all?: true } {
-  return search.all === true ? { all: true } : {};
+/**
+ * A race page's `?all`: every slate on the race, not only what's imported. And
+ * `?k`, the exact subject key, when two races share a slug (lib/raceSlug.ts).
+ */
+function validateRaceSearch(search: Record<string, unknown>): { all?: true; k?: string } {
+  return {
+    ...(search.all === true ? { all: true } : {}),
+    ...(typeof search.k === "string" && search.k !== "" ? { k: search.k } : {}),
+  };
 }
 
 // --- My vote ---
@@ -62,10 +69,31 @@ const compareRoute = createRoute({
     "CompareBallotPanel",
   ),
 });
+// A race's own page, at its readable slug: /race/2026-11-03/us/ca/governor.
 const raceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/race/$",
+  validateSearch: validateRaceSearch,
+  component: lazyRouteComponent(() => import("./components/RacePanel"), "RacePanel"),
+});
+// The first race links, by raw subject key (one segment, so it never matches a
+// slug). A `t:|j:|e:` key moves to its slug; an `id` key has none and stays.
+const raceByKeyRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/race/$key",
   validateSearch: validateRaceSearch,
+  beforeLoad: ({ params, search, location }) => {
+    const slug = raceSlug(params.key);
+    if (slug) {
+      throw redirect({
+        to: "/race/$",
+        params: { _splat: slug },
+        search,
+        ...(location.hash ? { hash: location.hash } : {}),
+        replace: true,
+      });
+    }
+  },
   component: lazyRouteComponent(() => import("./components/RacePanel"), "RacePanel"),
 });
 const resultsIndexRoute = createRoute({
@@ -154,6 +182,7 @@ const routeTree = rootRoute.addChildren([
   sourcesRoute,
   compareRoute,
   raceRoute,
+  raceByKeyRoute,
   resultsIndexRoute,
   resultsForSlateRoute,
   liveRoute,
@@ -167,7 +196,7 @@ const routeTree = rootRoute.addChildren([
 ]);
 
 // Hash history keeps route values (a whole signed slate in /results/$token, the
-// race in /race/$key) in the URL fragment, which browsers never send to a server.
+// race in /race/$) in the URL fragment, which browsers never send to a server.
 // Shared links therefore never reach a host's request logs.
 export const router = createRouter({
   routeTree,

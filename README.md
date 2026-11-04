@@ -228,6 +228,11 @@ and the answers stay with your area (*Undo*, *Not sure after all* and *Show
 them again* take them back).
 A race or measure a voter guide covers links its official text, arguments or
 candidate statements from its card on My ballot.
+Every race has a readable address to bookmark or send, built from its
+election, place and title: `openslate.us/#/race/2026-11-03/us/ca/governor-of-california`.
+It opens for someone with nothing imported, from the voter guide or else the
+public catalog. Like every page's, it sits after the `#`, which browsers never
+send to a server, so no host learns which races anyone reads.
 Race pages show how items connect by rules that run on every race: guide text
 mentioning another numbered measure links to it, *Referenced by* lists what in
 the guide mentions this race, and the news card says which other races its
