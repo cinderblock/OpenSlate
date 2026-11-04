@@ -177,6 +177,25 @@ export function placeNames(area: Pick<Area, "localities" | "labels">): string[] 
 }
 
 /**
+ * A contest for the whole county ("Santa Clara County BOE", "County of Marin
+ * Measure"), not one for part of it that carries its name ("NORTH ORANGE
+ * COUNTY COMMUNITY COLLEGE DISTRICT", "Orange County Water District").
+ */
+export function countyOwn(words: string, county: string): boolean {
+  if (!county) return false;
+  if (words.includes(` county of ${county} `)) return true;
+  const at = words.indexOf(` ${county} county `);
+  if (at < 0) return false;
+  const before = words.slice(0, at);
+  const after = words.slice(at + county.length + 9);
+  if (/ (north|south|east|west|central|northern|southern|eastern|western)$/.test(before))
+    return false;
+  return !/^(water|sanitation|sanitary|fire|cemetery|recreation|park|vector|flood|transit|transportation|community college|junior college|hospital|health) /.test(
+    after,
+  );
+}
+
+/**
  * The county's local contests a place votes on, as far as names tell: its
  * city's and its school districts' seats and measures, the county's own, and
  * the courts. A council seat for another district of the city is left out when
@@ -201,7 +220,7 @@ export function contestsForPlace(
     // "County of Marin Measure"), not its namesake city's.
     if (c.category && /judicial|^county$/i.test(c.category.trim())) return true;
     if (/ (superior court|court of appeal|supreme court) /.test(words)) return true;
-    if (has(words, `${county} county`) || has(words, `county of ${county}`)) return true;
+    if (countyOwn(words, county)) return true;
     if (![...names].some((n) => has(words, n))) return false;
     // Another council district of the place's own city.
     const district = titleDistrict(c.title);

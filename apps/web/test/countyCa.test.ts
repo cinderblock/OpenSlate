@@ -6,6 +6,7 @@ import {
   countyContestId,
   countyContestResult,
   countyFeed,
+  countyOwn,
   localContests,
   parseCountyContestId,
   titleDistrict,
@@ -144,5 +145,22 @@ describe("county results", () => {
     ).map((c) => c.key);
     expect(keys).toContain("93");
     expect(keys).toContain("94");
+  });
+});
+
+describe("the county's own contests", () => {
+  test("the whole county, not a district named for part of it", () => {
+    const own = (title: string, county: string) => countyOwn(titleWords(title), county);
+    expect(own("Santa Clara County BOE, Trustee Area 7", "santa clara")).toBe(true);
+    expect(own("Measure A - County of Marin, Library Tax", "marin")).toBe(true);
+    expect(own("ORANGE COUNTY BOARD OF EDUCATION Trustee Area 2", "orange")).toBe(true);
+    expect(
+      own(
+        "NORTH ORANGE COUNTY COMMUNITY COLLEGE DISTRICT Governing Board Member, Trustee Area 1",
+        "orange",
+      ),
+    ).toBe(false);
+    expect(own("ORANGE COUNTY WATER DISTRICT Director, Division 3", "orange")).toBe(false);
+    expect(own("City of Santa Clara Council, District 2", "santa clara")).toBe(false);
   });
 });
