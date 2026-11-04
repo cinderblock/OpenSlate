@@ -14,13 +14,20 @@ export function formatLocalDate(iso: string | undefined | null): string {
   return `${y}-${m}-${day}`;
 }
 
+/**
+ * Built once: `toLocaleDateString` with options builds a new formatter on every
+ * call, and a page listing a few hundred slates spent ~100 ms doing just that.
+ */
+let electionDateFormat: Intl.DateTimeFormat | undefined;
+
 /** A `YYYY-MM-DD` election date as "Nov 3, 2026" in the viewer's locale (no timezone shift). */
 export function formatElectionDate(date: string): string {
   const [y, m, d] = date.split("-").map(Number);
   if (!y || !m || !d) return date;
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+  electionDateFormat ??= new Intl.DateTimeFormat(undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
+  return electionDateFormat.format(new Date(y, m - 1, d));
 }

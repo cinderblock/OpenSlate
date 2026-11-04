@@ -20,6 +20,7 @@ import {
   rememberVerified,
 } from "./collate";
 import { slatesCollection } from "./collections";
+import { yieldToPage } from "./decodedSlates";
 import { useKnownIdentities } from "./identities";
 import { useFollows, withNicknames } from "./myVote";
 import { catalogQueryOptions, DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG, queryClient } from "./query";
@@ -33,15 +34,6 @@ import type { Follows } from "./sources";
 
 /** Its own key rather than the query cache's: that blob is rewritten on every change. */
 const COPY_KEY = "openslate.catalogCopy.v1";
-
-/** The next task, without `setTimeout`'s once-a-second crawl in a background tab. */
-function yieldToPage(): Promise<void> {
-  return new Promise((resolve) => {
-    const channel = new MessageChannel();
-    channel.port1.onmessage = () => resolve();
-    channel.port2.postMessage(null);
-  });
-}
 
 const loader = createCatalogLoader({
   fetchCatalog: (catalogUrl) => queryClient.fetchQuery(catalogQueryOptions(catalogUrl)),

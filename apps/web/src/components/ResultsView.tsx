@@ -1,15 +1,17 @@
 import { verifySlate } from "@openslate/core";
 import { useLiveQuery } from "@tanstack/react-db";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import { slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
+import { useDecodedSlates } from "../lib/decodedSlates";
 import { shortKey } from "../lib/identities";
 import { usePageSearch } from "../lib/pageSearch";
 import { matchesSearch, searchTextOf } from "../lib/search";
-import { firsthandSubjectKeys, payloadsFromTokens, supersessionFor } from "../lib/supersession";
+import { firsthandSubjectKeys, supersessionFor } from "../lib/supersession";
 import { Leaderboard } from "./Leaderboard";
 import { matchCount, PageSearch } from "./PageSearch";
+import { ProgressBar } from "./ui/ProgressBar";
 import { TokenField } from "./ui/Token";
 
 // Listing page for /results. The user picks an imported slate (or pastes a
@@ -18,7 +20,11 @@ import { TokenField } from "./ui/Token";
 // slate.
 
 export function ResultsView() {
-  const { data: slates } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
+  const { data: stored, isReady } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
+  // Checking a few hundred signatures takes seconds on a phone. Done a slice at
+  // a time, it leaves the page (and its tabs) responsive, with a bar to watch.
+  const decoded = useDecodedSlates(stored);
+
   const navigate = useNavigate();
   const [pasted, setPasted] = useState("");
 
@@ -28,41 +34,49 @@ export function ResultsView() {
     // slate without us auto-hiding the secondhand one (we don't yet have the
     // trust layer to know which firsthand slate actually belongs to the
     // reported entity).
-    const tokens = slates.map((s) => s.token);
-    const payloads = payloadsFromTokens(tokens);
-    const firstKeys = firsthandSubjectKeys(payloads);
+    const slates = decoded.slates ?? [];
+    const firstKeys = firsthandSubjectKeys(slates.map((s) => s.payload));
 
     return slates
-      .map(({ token, importedAt }) => {
-        const result = verifySlate(token);
-        const payload = result.payload;
-        const election = payload?.context?.election;
+      .map(({ token, importedAt, payload, valid }) => {
+        const election = payload.context?.election;
         return {
           token,
           importedAt,
-          issuer: payload?.issuer,
-          attribution: payload?.attribution,
-          positions: payload?.positions ?? [],
-          valid: result.valid,
-          supersession: payload ? supersessionFor(payload, firstKeys) : null,
+          payload,
+          issuer: payload.issuer,
+          attribution: payload.attribution,
+          positions: payload.positions,
+          valid,
+          supersession: supersessionFor(payload, firstKeys),
           // Found by who signed it, who it reports on, and its election.
           searchText: searchTextOf([
-            payload?.issuer.name,
-            payload?.issuer.key,
-            payload?.attribution?.of.name,
-            payload?.attribution?.of.uri,
+            payload.issuer.name,
+            payload.issuer.key,
+            payload.attribution?.of.name,
+            payload.attribution?.of.uri,
             election,
             election && formatElectionDate(election),
           ]),
         };
       })
       .sort((a, b) => (a.importedAt < b.importedAt ? 1 : -1));
-  }, [slates]);
+  }, [decoded.slates]);
+
+  // A few hundred rows (each a link carrying its whole slate) take a while to
+  // render. Rendering them in a transition lets React do it in slices, so the
+  // tab switches at once and stays clickable while the list fills in.
+  const [listed, setListed] = useState<typeof rows>();
+  useEffect(() => {
+    if (decoded.slates) startTransition(() => setListed(rows));
+  }, [decoded.slates, rows]);
+  const loading = !isReady || !decoded.slates || listed !== rows;
 
   const search = usePageSearch("/results");
+  const all = listed ?? [];
   const shown = search.searching
-    ? rows.filter((row) => matchesSearch(row.searchText, search.terms))
-    : rows;
+    ? all.filter((row) => matchesSearch(row.searchText, search.terms))
+    : all;
 
   const trimmed = pasted.trim();
   const pastedValid = useMemo(() => {
@@ -110,7 +124,19 @@ export function ResultsView() {
         </div>
       </div>
 
-      {rows.length === 0 ? (
+      {loading ? (
+        <div className="card">
+          {isReady && !decoded.slates ? (
+            <ProgressBar
+              label="Checking the signatures on your slates"
+              value={decoded.done}
+              maxValue={decoded.total}
+            />
+          ) : (
+            <ProgressBar label="Listing your slates" value={0} />
+          )}
+        </div>
+      ) : rows.length === 0 ? (
         <div className="card">
           <p className="hint">Nothing imported yet. Add some on the Sources page.</p>
         </div>
@@ -126,8 +152,7 @@ export function ResultsView() {
           </PageSearch>
           <ul className="position-list slate-grid">
             {shown.map((row) => {
-              const signerName =
-                row.issuer?.name?.trim() || shortKey(row.issuer?.key ?? "(unknown)");
+              const signerName = row.issuer.name?.trim() || shortKey(row.issuer.key);
               return (
                 <li key={row.token}>
                   <span className="position-subject">
@@ -170,7 +195,7 @@ export function ResultsView() {
         </div>
       )}
 
-      {rows.length >= 2 && <Leaderboard tokens={rows.map((r) => r.token)} />}
+      {!loading && rows.length >= 2 && <Leaderboard slates={rows} />}
     </section>
   );
 }

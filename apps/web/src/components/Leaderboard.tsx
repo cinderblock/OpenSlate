@@ -1,4 +1,4 @@
-import { type SlatePayload, verifySlate } from "@openslate/core";
+import type { SlatePayload } from "@openslate/core";
 import { Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { shortKey } from "../lib/identities";
@@ -6,7 +6,8 @@ import { useResolvedRaces } from "../lib/results";
 import { type SlateSummary, summarizeSlate } from "../lib/slate-summary";
 
 interface LeaderboardProps {
-  tokens: string[];
+  /** Verified already, by the page: verifying here again froze it on every render. */
+  slates: ReadonlyArray<{ token: string; payload: SlatePayload }>;
 }
 
 /**
@@ -20,7 +21,7 @@ interface LeaderboardProps {
  * streams in. Rows whose summary hasn't reported yet sink to the bottom
  * rather than disappearing, so the table doesn't flicker.
  */
-export function Leaderboard({ tokens }: LeaderboardProps) {
+export function Leaderboard({ slates }: LeaderboardProps) {
   const [open, setOpen] = useState(false);
   const [reported, setReported] = useState<Map<string, SlateSummary>>(new Map());
 
@@ -43,12 +44,8 @@ export function Leaderboard({ tokens }: LeaderboardProps) {
     });
   }, []);
 
-  const verified = useMemo(() => {
-    return tokens.map((token) => ({ token, payload: verifySlate(token).payload }));
-  }, [tokens]);
-
-  const sortedTokens = useMemo(() => {
-    return [...tokens].sort((a, b) => {
+  const sorted = useMemo(() => {
+    return [...slates].sort(({ token: a }, { token: b }) => {
       const sa = reported.get(a)?.winRate;
       const sb = reported.get(b)?.winRate;
       if (sa === undefined && sb === undefined) return 0;
@@ -59,15 +56,15 @@ export function Leaderboard({ tokens }: LeaderboardProps) {
       if (sb === null) return -1;
       return sb - sa;
     });
-  }, [tokens, reported]);
+  }, [slates, reported]);
 
-  if (verified.length < 2) return null;
+  if (slates.length < 2) return null;
 
   return (
     <div className="card">
       <div className="card-title">
         <strong>Compare slates</strong>
-        <span className="tag">{verified.length} slates</span>
+        <span className="tag">{slates.length} slates</span>
         <button type="button" className="link" onClick={() => setOpen((v) => !v)}>
           {open ? "Hide" : "Show leaderboard"}
         </button>
@@ -85,18 +82,14 @@ export function Leaderboard({ tokens }: LeaderboardProps) {
             </tr>
           </thead>
           <tbody>
-            {sortedTokens.map((token) => {
-              const row = verified.find((r) => r.token === token);
-              if (!row?.payload) return null;
-              return (
-                <LeaderboardRow
-                  key={token}
-                  token={token}
-                  payload={row.payload}
-                  onSummary={handleSummary}
-                />
-              );
-            })}
+            {sorted.map(({ token, payload }) => (
+              <LeaderboardRow
+                key={token}
+                token={token}
+                payload={payload}
+                onSummary={handleSummary}
+              />
+            ))}
           </tbody>
         </table>
       ) : (

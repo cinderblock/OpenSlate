@@ -109,6 +109,11 @@ export function decodeSlates(rows: Array<{ token: string; importedAt: string }>)
   return out;
 }
 
+/** Whether `decodeSlates` already has this token's result, so it would cost nothing. */
+export function isDecoded(token: string): boolean {
+  return verified.has(token);
+}
+
 /** A slate verified earlier and kept (catalogCopy.ts), so `decodeSlates` needn't again. */
 export function rememberVerified(token: string, payload: SlatePayload): void {
   verified.set(token, { payload, valid: true, source: sourceOf(payload) });

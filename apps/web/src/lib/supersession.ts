@@ -1,4 +1,5 @@
-import { type SlatePayload, type Subject, verifySlate } from "@openslate/core";
+import type { SlatePayload, Subject } from "@openslate/core";
+import { decodeSlates } from "./collate";
 import { subjectKey } from "./subjects";
 
 /**
@@ -14,14 +15,12 @@ import { subjectKey } from "./subjects";
  * Pure helpers — no React, no IndexedDB. Suitable for unit tests.
  */
 
-/** Lift the verifiable payloads out of a list of tokens, discarding unparseable ones. */
+/**
+ * Lift the verifiable payloads out of a list of tokens, discarding unparseable
+ * ones. Shares `decodeSlates`' cache, so tokens seen before aren't checked again.
+ */
 export function payloadsFromTokens(tokens: string[]): SlatePayload[] {
-  const out: SlatePayload[] = [];
-  for (const token of tokens) {
-    const result = verifySlate(token);
-    if (result.payload) out.push(result.payload);
-  }
-  return out;
+  return decodeSlates(tokens.map((token) => ({ token, importedAt: "" }))).map((s) => s.payload);
 }
 
 /** Set of subject keys covered firsthand across the supplied payloads. */

@@ -18,6 +18,7 @@ import {
   Vote,
 } from "lucide-react";
 import { useRef } from "react";
+import { ProgressBar } from "react-aria-components";
 import { AlphaBadge, AlphaBanner } from "./components/AlphaNotice";
 import { CatalogUpdater } from "./components/CatalogUpdater";
 import { DesktopUpdateBanner } from "./components/DesktopUpdate";
@@ -97,6 +98,21 @@ function isActive(item: NavItem, pathname: string): boolean {
   return pathname === item.to || (item.prefixes?.some((p) => pathname.startsWith(p)) ?? false);
 }
 
+/**
+ * A thin bar across the top while the router is between pages (fetching the
+ * next page's code, say), so a tap visibly did something. It fades in after a
+ * moment (styles.css), so quick switches don't flash it.
+ */
+function RouteLoadingBar() {
+  const pending = useRouterState({ select: (s) => s.status === "pending" });
+  if (!pending) return null;
+  return (
+    <ProgressBar isIndeterminate aria-label="Loading the page" className="route-loading">
+      <span className="route-loading-fill" />
+    </ProgressBar>
+  );
+}
+
 export function RootLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const mode = modeOf(pathname);
@@ -107,6 +123,7 @@ export function RootLayout() {
   return (
     <EndorsersContext.Provider value={endorsers}>
       <div className="app">
+        <RouteLoadingBar />
         <DesktopUpdateBanner />
         {alphaOpen && (
           <AlphaBanner

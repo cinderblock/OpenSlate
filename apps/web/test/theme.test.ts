@@ -131,6 +131,7 @@ describe("styles.css theme tokens", () => {
       ".ui-switch[data-selected] .ui-switch-track",
       ".ui-checkbox[data-selected] .ui-checkbox-box",
       ".ui-progress-fill",
+      ".route-loading-fill",
     ]);
     const wrong: string[] = [];
     for (const [, selector = "", body = ""] of rules.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {

@@ -3,6 +3,7 @@ import { useLiveQuery } from "@tanstack/react-db";
 import { Link, useParams } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { slatesCollection } from "../lib/collections";
+import { useDecodedSlates } from "../lib/decodedSlates";
 import { shortKey } from "../lib/identities";
 import { usePageSearch } from "../lib/pageSearch";
 import { useResolvedRaces } from "../lib/results";
@@ -11,7 +12,7 @@ import { slateToMarkdown } from "../lib/results-markdown";
 import { matchesSearch, positionSearchText } from "../lib/search";
 import { positionOutcome, summarizeSlate } from "../lib/slate-summary";
 import { subjectKey } from "../lib/subjects";
-import { firsthandSubjectKeys, payloadsFromTokens } from "../lib/supersession";
+import { firsthandSubjectKeys } from "../lib/supersession";
 import { track } from "../lib/usage";
 import { PageSearch } from "./PageSearch";
 import { ResultsPanel } from "./ResultsPanel";
@@ -56,10 +57,14 @@ export function ResultsForSlate() {
   // can flag individual positions of a secondhand slate that *could* be cross-
   // referenced firsthand. Excludes the slate we're viewing itself so it
   // doesn't self-cover.
-  const firstKeys = useMemo(() => {
-    const tokens = allSlates.map((s) => s.token).filter((t) => t !== token);
-    return firsthandSubjectKeys(payloadsFromTokens(tokens));
-  }, [allSlates, token]);
+  // Verified a slice at a time, so a few hundred slates don't hold up the page;
+  // the flags appear once they're in.
+  const { slates: decoded } = useDecodedSlates(allSlates);
+  const firstKeys = useMemo(
+    () =>
+      firsthandSubjectKeys((decoded ?? []).filter((s) => s.token !== token).map((s) => s.payload)),
+    [decoded, token],
+  );
 
   if (!verified.payload) {
     return (
