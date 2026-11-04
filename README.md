@@ -124,7 +124,8 @@ for it. Its two sides:
   rest), grouped by whether it's going your way, partly, or not. Nothing
   there calls a race: it's "leading" or "trailing" on the count so far, with
   the margin in points, until a source says who won. Below that, any slate's
-  picks next to the outcomes, scored the same way. *Sources* is
+  picks next to the outcomes, scored the same way (local races on the
+  county's own count). *Sources* is
   where you follow sources, follow them to *disagree* (their picks count the
   other way on My ballot: what they back counts against it, what they oppose
   counts for it; in a Yes/No measure or a two-name race you can have it count

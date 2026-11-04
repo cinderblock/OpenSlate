@@ -55,11 +55,20 @@ Asked 2026-11-04 (the day after the Nov 3 general), after the user found no way 
 - Headless check 2026-11-04 (dev server on :5287 against api.openslate.us, East Palo Alto
   area, all 413 catalog entries, 32 races marked): 10 going your way, 19 not, 3 no count;
   state races, props and San Mateo County measures (Measure CC) all scored right.
-- Not found by any source (known gaps, not fixed): California Supreme Court retention
-  votes (the SOS API has no contest for them and civicAPI has none; county feeds carry
-  them but `localContests` drops state contests), and the Bay Area's Regional Measure RTM
-  (not matched in San Mateo's count). Also `/results/$token` still reads SOS + civicAPI
-  only, not county feeds.
+- Gaps found on 2026-11-04, then fixed (user: "fix them"):
+  - Supreme Court retention: the state API has it at `/returns/supreme-court` (every
+    justice in one document; `Name`, `yesVotes`, …). Contest id `supreme-court/<name>`.
+    No appellate-court path exists there (`court-of-appeal`, `appellate-court`, … all 500).
+  - Court of Appeal retention: counties list one Yes/No contest per justice, named in
+    brackets ("… Division 1 (Kathleen M. Banke)"); catalog races are
+    "California Court of Appeal, First District — Retain Justice X" at `us/ca/coa-N`.
+  - Regional Measure RTM: San Mateo titles it "Regional Transit Measure (Majority Approval
+    Required)", no letter; matched by the catalog's bracketed description.
+  - `/results/$token` now uses the same counts (county included).
+- Headless check after the fixes (East Palo Alto, CoA district 1, 74 races marked): every
+  race found a count; Supreme Court from the state, appellate justices and RTM from San
+  Mateo County. San Mateo County Democratic Party's slate: 66 picks scored, county count
+  cards on its local races.
 
 ## Progress log
 
@@ -67,12 +76,12 @@ Asked 2026-11-04 (the day after the Nov 3 general), after the user found no way 
 - [x] `/results/$token` leading/trailing, measures by stance: `df4ca50`
 - [x] README
 - [x] Pushed `ab17ef0` (origin/master)
+- [x] Retention votes (Supreme Court via state, Court of Appeal via county) and RTM: `cdb4960`
+- [x] `/results/$token` scored on county counts too: `c220b78`
 
 ## Open questions for the user
 
-1. Follow-ups worth doing: retention judges from the county feeds, Regional Measure RTM
-   matching, county counts on `/results/$token`. Recommend the first two (they're on
-   most Bay Area ballots).
+(none)
 
 ## Things not to do
 
