@@ -19,6 +19,7 @@ import {
   type RacePosition,
   stanceTone,
 } from "../lib/collate";
+import type { CatalogRace } from "../lib/countyCa";
 import { followedSubject } from "../lib/followedRaces";
 import {
   type GuideForSubject,
@@ -46,6 +47,7 @@ import { ForecastsPanel } from "./ForecastsPanel";
 import { CandidateGuide, GuideDetails, GuideMeans, GuideOverview } from "./GuideContent";
 import { PollsPanel } from "./PollsPanel";
 import { PositionRow, STANCE_LABEL } from "./PositionRow";
+import { RaceCountyCount } from "./RaceCountyCount";
 import { RaceLink } from "./RaceLink";
 import { ResultsPanel } from "./ResultsPanel";
 
@@ -295,6 +297,22 @@ function RaceView({
     [subject, jurisdiction, election, targetKey],
   );
 
+  // What the county's count is matched on: the people running, or the measure's letter.
+  const countyRace = useMemo<CatalogRace | undefined>(
+    () =>
+      subject
+        ? {
+            key: targetKey,
+            subject,
+            ...(election ? { election } : {}),
+            ...(jurisdiction ? { jurisdiction } : {}),
+            ...(race?.ballot ? { ballot: race.ballot } : {}),
+            choices: race?.choices ?? [],
+          }
+        : undefined,
+    [subject, election, jurisdiction, race, targetKey],
+  );
+
   return (
     <section className="panel">
       <p>
@@ -375,6 +393,9 @@ function RaceView({
           <PollsPanel subject={pollSubject} />
 
           <ForecastsPanel subject={pollSubject} />
+
+          {/* A local race's own county count; the state's races have theirs in ResultsPanel. */}
+          {countyRace && <RaceCountyCount race={countyRace} card />}
 
           <ResultsPanel subject={pollSubject} />
         </aside>

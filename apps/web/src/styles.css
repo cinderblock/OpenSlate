@@ -4610,6 +4610,18 @@ button.tag.active {
 .live-yesno > .live-bar {
   flex: 1 1 6rem;
 }
+/* A local race's county count on My ballot's card and the race page. */
+.race-county-count {
+  margin: 0.75rem 0;
+}
+.race-card .race-county-count {
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+.race-county-count-title {
+  margin: 0;
+  font-size: 1rem;
+}
 .live-county-count {
   margin-top: 0.4rem;
   font-size: 0.9em;

@@ -111,6 +111,7 @@ import { electionOptions } from "./electionOptions";
 import { PageSearch } from "./PageSearch";
 import { PrintBallot, type PrintSection } from "./PrintBallot";
 import { QuickFill } from "./QuickFill";
+import { RaceCountyCount } from "./RaceCountyCount";
 import { RaceLink } from "./RaceLink";
 import { RaceOrderNote } from "./RaceOrder";
 import { RankedChoices } from "./RankedChoices";
@@ -1530,6 +1531,7 @@ function RaceCardInner({
         </p>
       )}
       {ranked && <WriteInField race={race} election={election} rows={rows} applyRank={applyRank} />}
+      <RaceCountyCount race={race} />
       <p className="race-all-slates no-print">
         <RaceLink
           raceKey={race.key}
