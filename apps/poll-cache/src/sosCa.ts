@@ -74,7 +74,10 @@ function answerFor(upstream: string): Promise<Answer> {
   return answer;
 }
 
-export async function handleSosCa(pathname: string, cors: Record<string, string>): Promise<Response> {
+export async function handleSosCa(
+  pathname: string,
+  cors: Record<string, string>,
+): Promise<Response> {
   const upstream = sosCaUpstream(pathname);
   if (!upstream) return new Response("Not Found", { status: 404, headers: cors });
   let answer: Answer;
