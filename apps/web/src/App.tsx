@@ -24,6 +24,7 @@ import { DesktopUpdateBanner } from "./components/DesktopUpdate";
 import { FeedbackHost } from "./components/FeedbackHost";
 import { ImportBanner } from "./components/ImportBanner";
 import { Switch } from "./components/ui/Switch";
+import { WebUpdateBanner } from "./components/WebUpdate";
 import { useAlphaBannerOpen } from "./lib/alpha";
 import { useDbStatus } from "./lib/dbStatus";
 import { EndorsersContext, useEndorserDirectory } from "./lib/endorsers";
@@ -122,6 +123,7 @@ export function RootLayout() {
       <div className="app">
         <RouteLoadingBar />
         <DesktopUpdateBanner />
+        <WebUpdateBanner />
         {alphaOpen && (
           <AlphaBanner
             onClose={() => {

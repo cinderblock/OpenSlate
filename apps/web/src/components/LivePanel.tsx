@@ -792,16 +792,17 @@ function ReportingLine({ result, checkedAt }: { result: ContestResult; checkedAt
   const changedAt = result.reporting.changedAt ?? (sosTime ? Date.parse(sosTime) : undefined);
   return (
     <span className="hint live-reporting">
-      {lead && <span>{lead}</span>}
-      {changedAt !== undefined && (
-        <span>
-          {result.reporting.changedSeen ? "New by " : "Changed "}
-          <Clock at={changedAt} />
+      {lead && <span className="live-precincts">{lead}</span>}
+      {checkedAt > 0 && (
+        <span className="live-time">
+          Last checked: <Clock at={checkedAt} />
         </span>
       )}
-      {checkedAt > 0 && (
-        <span>
-          Checked <Clock at={checkedAt} />
+      {changedAt !== undefined && (
+        <span className="live-time">
+          Last change: {result.reporting.changedSeen && "by "}
+          <Clock at={changedAt} />
+          {result.reporting.changedSeen && " (the county gives no time)"}
         </span>
       )}
     </span>
