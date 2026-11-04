@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   CA_COUNTY_FEEDS,
+  californiaTime,
   feedPathTtl,
   isStateContest,
   lvtSummaryPath,
@@ -216,7 +217,11 @@ test("Los Angeles' results JSON reads as contests, keyed by group and title", ()
   const raw = JSON.parse(
     readFileSync(join(import.meta.dir, "fixtures/lavote-los-angeles.json"), "utf8"),
   );
-  const contests = parseLaVote(raw);
+  const { contests, asOf } = parseLaVote(raw);
+  // `Timestamp` has no zone: it's California's clock (3:11 AM PST, 11:11Z),
+  // not UTC (7:11 PM PST election night, before the polls closed).
+  expect(asOf).toBe(Date.parse("2026-11-04T11:11:55.890Z"));
+  expect(parseLaVote({ Election: { ContestGroups: [] } })).toEqual({ contests: [] });
   expect(contests.map((c) => [c.category, c.title])).toEqual([
     [
       "Cities",
@@ -245,4 +250,21 @@ test("Los Angeles' results JSON reads as contests, keyed by group and title", ()
   if (!la) throw new Error("Los Angeles missing");
   expect(feedPathTtl(la, "json")).toBe(60);
   expect(feedPathTtl(la, "json?electionid=1")).toBeNull();
+});
+
+test("a county's time with no zone is California's clock, by the real DST rules", () => {
+  expect(californiaTime("2026-11-04T03:11:55.89")).toBe(Date.parse("2026-11-04T11:11:55.890Z"));
+  expect(californiaTime("2026-07-01T12:00:00")).toBe(Date.parse("2026-07-01T19:00:00Z"));
+  // Either side of the fall-back hour (2026-11-01 2:00 AM PDT → 1:00 AM PST).
+  expect(californiaTime("2026-11-01 00:30")).toBe(Date.parse("2026-11-01T07:30:00Z"));
+  expect(californiaTime("2026-11-01T03:00:00")).toBe(Date.parse("2026-11-01T11:00:00Z"));
+  // Spring forward (2026-03-08 2:00 AM PST → 3:00 AM PDT).
+  expect(californiaTime("2026-03-08T01:59:00")).toBe(Date.parse("2026-03-08T09:59:00Z"));
+  expect(californiaTime("2026-03-08T03:00:00")).toBe(Date.parse("2026-03-08T10:00:00Z"));
+  // With a zone, as it says.
+  expect(californiaTime("2026-11-04T09:36:12.338Z")).toBe(Date.parse("2026-11-04T09:36:12.338Z"));
+  expect(californiaTime("2026-11-03T00:00:00-08:00")).toBe(Date.parse("2026-11-03T08:00:00Z"));
+  expect(californiaTime("")).toBeUndefined();
+  expect(californiaTime("Nov 4")).toBeUndefined();
+  expect(californiaTime(undefined)).toBeUndefined();
 });

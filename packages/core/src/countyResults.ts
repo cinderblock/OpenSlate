@@ -411,17 +411,73 @@ interface WireLaContest {
   Candidates?: { Name?: string; Party?: string; Votes?: number | string }[];
 }
 
+const pacificParts = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/Los_Angeles",
+  hourCycle: "h23",
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+  second: "numeric",
+});
+
+/** California's clock minus UTC at an instant, in ms (−8 h in winter, −7 in summer). */
+function pacificOffset(at: number): number {
+  const p: Record<string, number> = {};
+  for (const x of pacificParts.formatToParts(at)) p[x.type] = Number(x.value);
+  const wall = Date.UTC(
+    p.year ?? 0,
+    (p.month ?? 1) - 1,
+    p.day ?? 1,
+    p.hour ?? 0,
+    p.minute ?? 0,
+    p.second ?? 0,
+  );
+  // The parts carry whole seconds only.
+  return wall - (at - (((at % 1000) + 1000) % 1000));
+}
+
+/**
+ * A time as a county writes it, as ms since epoch. One with no zone
+ * (`2026-11-04T03:11:55.89`, Los Angeles) is California's wall clock, by the
+ * real zone rules; one with a zone or `Z` is read as it says.
+ */
+export function californiaTime(text: string | undefined): number | undefined {
+  const t = text?.trim() ?? "";
+  const m = t.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(\.\d+)?)?$/);
+  if (!m) {
+    const at = Date.parse(t);
+    return t && /(z|[+-]\d{2}:?\d{2})$/i.test(t) && Number.isFinite(at) ? at : undefined;
+  }
+  const [y, mo, d, h, mi, s, frac] = m.slice(1).map((x) => Number(x ?? 0));
+  const wall = Date.UTC(y ?? 0, (mo ?? 1) - 1, d, h, mi, s, Math.round((frac ?? 0) * 1000));
+  // The offset at the wall time read as UTC is right except near a DST
+  // change; taking it again at that first guess settles it.
+  let at = wall - pacificOffset(wall);
+  at = wall - pacificOffset(at);
+  return Number.isFinite(at) ? at : undefined;
+}
+
 /**
  * Los Angeles' `electionresults/json?electionid=<n>`:
- * `Election.ContestGroups[].{Name, Contests[].{Title, Type, VoteFor, Candidates[]}}`.
- * No contest ids, no precincts, no time: contests are keyed by group and title.
+ * `Election.ContestGroups[].{Name, Contests[].{Title, Type, VoteFor, Candidates[]}}`,
+ * and beside `Election` a `Timestamp` with no zone (California time) for when
+ * the count was published. No contest ids, no precincts: contests are keyed
+ * by group and title.
  */
-export function parseLaVote(raw: unknown): CountyContest[] {
-  const groups = (raw as { Election?: { ContestGroups?: unknown } } | null)?.Election
-    ?.ContestGroups;
+export function parseLaVote(raw: unknown): { contests: CountyContest[]; asOf?: number } {
+  const data = raw as { Election?: { ContestGroups?: unknown }; Timestamp?: unknown } | null;
+  const groups = data?.Election?.ContestGroups;
   if (!Array.isArray(groups)) throw new Error("Unexpected answer from the county (no contests)");
+  const asOf = typeof data?.Timestamp === "string" ? californiaTime(data.Timestamp) : undefined;
+  const contests = laContests(groups as { Name?: string; Contests?: WireLaContest[] }[]);
+  return asOf !== undefined ? { contests, asOf } : { contests };
+}
+
+function laContests(groups: { Name?: string; Contests?: WireLaContest[] }[]): CountyContest[] {
   const keys = new Set<string>();
-  return (groups as { Name?: string; Contests?: WireLaContest[] }[]).flatMap((g) =>
+  return groups.flatMap((g) =>
     (g.Contests ?? []).flatMap((c): CountyContest[] => {
       const title = c.Title?.replace(/\s+/g, " ").trim();
       if (!title) return [];
