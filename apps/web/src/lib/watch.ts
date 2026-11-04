@@ -19,6 +19,10 @@ export interface WatchGroup {
   skipped?: string[];
   /** Where the place is, when it came from a lookup: to pick its local races from a county's count. */
   area?: PlaceArea;
+  /** "Where I vote": the voter's own area stands in when the place kept none. */
+  mine?: boolean;
+  /** The county's local races were added once, automatically: not again, so a removed one stays removed. */
+  localAdded?: boolean;
 }
 
 /** The parts of an `Area` that say which local races are a place's. */
@@ -69,7 +73,9 @@ function isGroup(raw: unknown): raw is WatchGroup {
     (g.county === undefined || typeof g.county === "string") &&
     (g.skipped === undefined ||
       (Array.isArray(g.skipped) && g.skipped.every((c) => typeof c === "string"))) &&
-    (g.area === undefined || isPlaceArea(g.area))
+    (g.area === undefined || isPlaceArea(g.area)) &&
+    (g.mine === undefined || typeof g.mine === "boolean") &&
+    (g.localAdded === undefined || typeof g.localAdded === "boolean")
   );
 }
 
@@ -110,7 +116,13 @@ function newId(): string {
  */
 export function addPlace(
   groups: readonly WatchGroup[],
-  place: { label: string; districts: PlaceDistricts; county?: string; area?: PlaceArea },
+  place: {
+    label: string;
+    districts: PlaceDistricts;
+    county?: string;
+    area?: PlaceArea;
+    mine?: boolean;
+  },
   statewide: readonly string[],
   id: string = newId(),
 ): WatchGroup[] {
@@ -121,6 +133,7 @@ export function addPlace(
     contests: placeContests(place.districts),
     ...(place.county ? { county: place.county } : {}),
     ...(place.area ? { area: place.area } : {}),
+    ...(place.mine ? { mine: true } : {}),
   };
   next.push(group);
   if (!next.some((g) => g.id === STATEWIDE_ID) && statewide.length > 0) {
@@ -152,6 +165,23 @@ export function addToGroup(
   });
 }
 
+/**
+ * A place's local races, added automatically the one time: the group notes
+ * it, so a race the voter removes isn't added back. Nothing changes when the
+ * group has already had them.
+ */
+export function addLocalOnce(
+  groups: readonly WatchGroup[],
+  groupId: string,
+  contests: readonly string[],
+): WatchGroup[] {
+  const group = groups.find((g) => g.id === groupId);
+  if (!group || group.localAdded) return [...groups];
+  return addToGroup(groups, groupId, contests).map((g) =>
+    g.id === groupId ? { ...g, localAdded: true } : g,
+  );
+}
+
 /** Drop a contest from a group; a group left empty goes too. */
 export function removeContest(
   groups: readonly WatchGroup[],
@@ -176,7 +206,8 @@ export function setGroupCounty(
 ): WatchGroup[] {
   return groups.map((g) => {
     if (g.id !== groupId) return g;
-    const { county: _, ...rest } = g;
+    // A new county's local races are added automatically again.
+    const { county: _, localAdded: __, ...rest } = g;
     return county ? { ...rest, county } : rest;
   });
 }

@@ -11,6 +11,7 @@ import {
   countyFeed,
   countyQueryOptions,
   feedCountyNames,
+  feedCountyOfArea,
   localContests,
   parseCountyContestId,
 } from "../lib/countyCa";
@@ -35,6 +36,7 @@ import {
 } from "../lib/sosCa";
 import { parseSosTime, SOS_ELECTION } from "../lib/sosResults";
 import {
+  addLocalOnce,
   addPlace,
   addSingle,
   addToGroup,
@@ -44,6 +46,8 @@ import {
   placeArea,
   removeFromGroups,
   removeGroup,
+  SINGLES_ID,
+  STATEWIDE_ID,
   setGroupCounty,
   skipContest,
   useWatch,
@@ -259,7 +263,13 @@ function PlacesBar({ groups }: { groups: WatchGroup[] }) {
           >
             Stop watching
           </button>
+          <AutoLocalRaces group={group} />
           <LocalRaces group={group} />
+          {!group.county && group.id !== STATEWIDE_ID && group.id !== SINGLES_ID && (
+            <span className="hint live-skipped">
+              Pick this place's county to see its local races and measures.
+            </span>
+          )}
           {group.skipped && group.skipped.length > 0 && (
             <span className="hint live-skipped">
               No race this election for {group.skipped.map(contestLabel).join(", ")}.
@@ -271,6 +281,38 @@ function PlacesBar({ groups }: { groups: WatchGroup[] }) {
   );
 }
 
+/** "Where I vote", including places added before groups said so. */
+function isMine(group: WatchGroup): boolean {
+  return group.mine === true || group.label === "Where I vote";
+}
+
+/**
+ * A place's local races and measures, added on their own the first time its
+ * county's count is in (the voter removes any that aren't theirs). "Where I
+ * vote" uses the voter's area when the place kept none, and takes its county
+ * from there when it has none.
+ */
+function AutoLocalRaces({ group }: { group: WatchGroup }) {
+  const [myArea] = useArea();
+  const mine = isMine(group);
+  const area = group.area ?? (mine && isAreaSet(myArea) ? placeArea(myArea) : undefined);
+  const missingCounty = !group.county && mine ? feedCountyOfArea(myArea) : undefined;
+  useEffect(() => {
+    if (missingCounty) watchStore.set((gs) => setGroupCounty(gs, group.id, missingCounty));
+  }, [missingCounty, group.id]);
+  const found = countyFeed(group.county);
+  const want = Boolean(found && area && !group.localAdded);
+  const query = useQuery({ ...countyQueryOptions(found?.slug ?? ""), enabled: want });
+  useEffect(() => {
+    if (!want || !found || !area || !query.data) return;
+    const ids = contestsForPlace(localContests(query.data.contests), area, found.feed.name).map(
+      (c) => countyContestId(found.slug, c.key),
+    );
+    watchStore.set((gs) => addLocalOnce(gs, group.id, ids));
+  }, [want, found, area, query.data, group.id]);
+  return null;
+}
+
 /** A place's local races, from its county's own count, when OpenSlate reads that county's feed. */
 function LocalRaces({ group }: { group: WatchGroup }) {
   const found = countyFeed(group.county);
@@ -278,8 +320,8 @@ function LocalRaces({ group }: { group: WatchGroup }) {
   if (!found) return null;
   return (
     <>
-      <button type="button" className="link" onClick={() => setOpen(!open)} aria-expanded={open}>
-        {open ? "Close local races" : "+ Local races"}
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open}>
+        {open ? "Close local races" : "+ Local races and measures"}
       </button>
       {open && (
         <LocalRacesPicker
@@ -873,6 +915,7 @@ function AddPlace({ measures, onDone }: { measures: MeasureResult[]; onDone: () 
     districts: PlaceDistricts;
     county?: string;
     area?: PlaceArea;
+    mine?: boolean;
   }) {
     watchStore.set((gs) => addPlace(gs, place, statewideContests(measures)));
     onDone();
@@ -904,6 +947,7 @@ function AddPlace({ measures, onDone }: { measures: MeasureResult[]; onDone: () 
               const area = placeArea(myArea);
               add({
                 label: "Where I vote",
+                mine: true,
                 districts: mine,
                 ...(c ? { county: c } : {}),
                 ...(area ? { area } : {}),

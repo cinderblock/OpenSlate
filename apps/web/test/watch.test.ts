@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  addLocalOnce,
   addPlace,
   addSingle,
   districtsOfArea,
@@ -113,5 +114,34 @@ describe("the watch list", () => {
   test("removing a shared race removes it from both places", () => {
     const next = removeFromGroups(two, ["a", "b"], "us-rep/district/16");
     expect(next.flatMap((g) => g.contests)).not.toContain("us-rep/district/16");
+  });
+});
+
+describe("local races added on their own", () => {
+  const place: WatchGroup = {
+    id: "p",
+    label: "Where I vote",
+    contests: ["us-rep/district/16"],
+    county: "San Mateo",
+  };
+  test("once: a race the voter removes isn't added back", () => {
+    const once = addLocalOnce([place], "p", ["county-ca/san-mateo/a", "county-ca/san-mateo/b"]);
+    expect(once[0]?.contests).toEqual([
+      "us-rep/district/16",
+      "county-ca/san-mateo/a",
+      "county-ca/san-mateo/b",
+    ]);
+    expect(once[0]?.localAdded).toBe(true);
+    const removed = removeContest(once, "p", "county-ca/san-mateo/a");
+    expect(addLocalOnce(removed, "p", ["county-ca/san-mateo/a"])[0]?.contests).not.toContain(
+      "county-ca/san-mateo/a",
+    );
+  });
+  test("an empty match still counts as done", () => {
+    expect(addLocalOnce([place], "p", [])[0]?.localAdded).toBe(true);
+  });
+  test("a new county adds its races again", () => {
+    const done = addLocalOnce([place], "p", []);
+    expect(setGroupCounty(done, "p", "Santa Clara")[0]?.localAdded).toBeUndefined();
   });
 });

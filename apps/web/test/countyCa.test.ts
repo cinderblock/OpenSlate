@@ -8,6 +8,7 @@ import {
   countyContestResult,
   countyFeed,
   countyOwn,
+  feedCountyOfArea,
   localContests,
   measureLetter,
   parseCountyContestId,
@@ -263,5 +264,19 @@ describe("the catalog's race for a county contest", () => {
       measureLetter("D – City of Irvine, Measure Directing the Use of Ranked Choice Voting"),
     ).toBe("D");
     expect(measureLetter("Regional Transit Measure (Majority Approval Required)")).toBeUndefined();
+  });
+});
+
+describe("an area's county with a feed", () => {
+  test("from the county among its places", () => {
+    expect(
+      feedCountyOfArea({ localities: ["us/ca/east-palo-alto", "us/ca/san-mateo-county"] }),
+    ).toBe("San Mateo");
+    expect(
+      feedCountyOfArea({ localities: ["us/ca/albany"], found: ["us/ca/alameda-county"] }),
+    ).toBeUndefined();
+    expect(feedCountyOfArea({ localities: [], found: ["us/ca/los-angeles-county"] })).toBe(
+      "Los Angeles",
+    );
   });
 });

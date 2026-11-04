@@ -53,6 +53,20 @@ export function countyFeed(county: string | undefined): { slug: string; feed: Co
   return feed ? { slug, feed } : null;
 }
 
+/**
+ * The county of an area whose own count OpenSlate reads, by name (`San Mateo`),
+ * from the county among its places (`us/ca/san-mateo-county`).
+ */
+export function feedCountyOfArea(area: Pick<Area, "localities" | "found">): string | undefined {
+  for (const path of [...area.localities, ...(area.found ?? [])]) {
+    const leaf = path.split("/").pop() ?? "";
+    if (!leaf.endsWith("-county")) continue;
+    const hit = countyFeed(leaf.slice(0, -"-county".length));
+    if (hit) return hit.feed.name;
+  }
+  return undefined;
+}
+
 /** The counties whose own count OpenSlate reads, by name, sorted. */
 export function feedCountyNames(): string[] {
   return Object.values(CA_COUNTY_FEEDS)
