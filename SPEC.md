@@ -173,6 +173,17 @@ every jurisdiction that votes on it, so that slates agree.
 | `statement` | string | no | Free-text endorsement / rationale. |
 | `source` | string | no | URL backing the position. |
 
+A `statement` that gives someone else's words (an attributed slate's quote of
+its source, §3.9) gives them whole. The quoted words are the source's own,
+verbatim, and where any of the passage they come from is left out, an
+ellipsis (`…`) marks the omission at the point it was made: the start, the
+end or the middle. A quote cut short with nothing to show it changes what
+the source said by leaving the rest out. Publishers MUST NOT cut one that
+way, and SHOULD give `source` with any quoting `statement`. Consumers that
+show a `statement` SHOULD show its `source` link with it, so the whole of
+what was said is one step away, and MUST NOT shorten a statement for display
+without showing that it was shortened and offering the rest.
+
 ### 3.5 `Reference` — a claimed cross-endorsement
 
 Used in `endorsed_by` so a candidate/org can publish who endorsed them.
@@ -771,6 +782,11 @@ version by adding OPTIONAL fields (verifiers must already reject unknown fields,
 such additions ship with a coordinated spec revision). Incompatible changes bump `v`.
 
 ### 10.1 Changelog (within v1)
+
+- **2026-11-03** — A quoting `statement` (§3.4) gives the source's words
+  whole, or marks each omission with an ellipsis. Consumers show a
+  statement's `source` with it and never shorten one silently. No schema
+  change: slates that verified before still verify.
 
 - **2026-10-26** — Added optional `label` to `Position` and `labels` to
   `SlatePayload` (§3.17): the issuer's own term for a position, and what each

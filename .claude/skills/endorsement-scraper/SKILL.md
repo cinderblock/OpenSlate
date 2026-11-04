@@ -84,6 +84,9 @@ Ask the user for whatever you don't already have:
      reviewer can always go back to the bytes.
    - Convert mechanically (the text of the page, in order). Don't drop parts of
      the page by judgement, and don't summarise.
+   - One paragraph, list item or table row per line, inside a ```` ```text ````
+     fence. Never hard-wrap page text. The quoting check reads line breaks as
+     the ends of passages (see `statement` below).
 
 3. **Extract positions.** For each clearly stated endorsement, draft a
    Position object:
@@ -110,9 +113,19 @@ Ask the user for whatever you don't already have:
      it can place. Never make one up for a race no authority lists.
    - `write_in: true` — only for a candidate who isn't printed on the
      ballot and has to be written in (SPEC §3.12). Never `false`; omit it.
-   - `statement` — a short quote (~1–3 sentences) from the source page
-     justifying the position. Quote, don't paraphrase: a statement that isn't
-     in the captured text shows up as unanchored on the evidence page.
+   - `statement` — the source page's own words for the position, quoted
+     **whole**: the entire paragraph, list line or table cell about it, not
+     its first sentence. Quote, don't paraphrase: a statement that isn't in
+     the captured text shows up as unanchored on the evidence page. Never cut
+     a quote short silently. That changes what the source said, and the user
+     treats it as editorializing. If a passage really is too long, quote
+     whole sentences and mark every omission with `…` where it was made.
+     Separate pieces from different lines with ` / ` when they're adjacent
+     and ` … ` when something between them is left out. Nest the source's own
+     double quotes as single ones inside your quotation marks.
+     `verify-positions` fails the build on an unmarked cut (repo README,
+     "Statements quote whole passages"). `bun scripts/requote-statements.ts`
+     widens cut quotes to their whole passage.
    - `source` — the exact URL the position came from. REQUIRED for every
      position; this is the audit trail.
 
