@@ -297,6 +297,7 @@ export function parseLvtCsv(text: string): CountyContest[] {
       ...(raw.startsWith("*") ? { incumbent: true } : {}),
     });
   }
+  countywidePrecincts([...contests.values()], lines.slice(0, headerAt + 2));
   return [...contests.values()].map((c) => {
     const total = c.choices.reduce((s, x) => s + x.votes, 0);
     for (const x of c.choices)
@@ -305,6 +306,32 @@ export function parseLvtCsv(text: string): CountyContest[] {
     if (c.measure) c.voteFor = 0;
     return c;
   });
+}
+
+/**
+ * Riverside's `Precincts Reported` is the county's, on every row (1206 beside
+ * a city ward's 11 precincts), not the contest's. When any contest claims more
+ * precincts reporting than it has, the column is read that way: every contest
+ * is fully reported once the whole county is; before then only contests
+ * across the whole county (as many precincts as the county) keep a figure,
+ * since a part of the county's share isn't in the file.
+ */
+function countywidePrecincts(contests: CountyContest[], head: string[]): void {
+  if (!contests.some((c) => c.precincts && c.precincts.reporting > c.precincts.total)) return;
+  const countyTotal = Math.max(...contests.map((c) => c.precincts?.total ?? 0));
+  const row = head
+    .map(csvFields)
+    .find((f) => /^total precincts reported$/i.test(f[0]?.trim() ?? ""));
+  const countyReporting = row
+    ? n(row[1])
+    : Math.max(...contests.map((c) => c.precincts?.reporting ?? 0));
+  const complete = countyTotal > 0 && countyReporting >= countyTotal;
+  for (const c of contests) {
+    if (!c.precincts) continue;
+    if (complete) c.precincts.reporting = c.precincts.total;
+    else if (c.precincts.total === countyTotal) c.precincts.reporting = countyReporting;
+    else delete c.precincts;
+  }
 }
 
 /** A Clarity `summary.json`: every contest of the election. */

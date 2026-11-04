@@ -268,3 +268,33 @@ test("a county's time with no zone is California's clock, by the real DST rules"
   expect(californiaTime("Nov 4")).toBeUndefined();
   expect(californiaTime(undefined)).toBeUndefined();
 });
+
+test("Riverside's precincts reported are the county's: a contest is complete when the county is", () => {
+  const text = readFileSync(join(import.meta.dir, "fixtures/lvt-summary-riverside.csv"), "utf8");
+  const byTitle = (t: string) => parseLvtCsv(t).map((c) => [c.title.slice(0, 30), c.precincts]);
+  // A real file, the morning after: 1206 of 1206 countywide, so the ward's 11 of 11.
+  expect(byTitle(text)).toEqual([
+    ["Governor", { total: 1206, reporting: 1206 }],
+    ["Riverside City Council, Ward 2", { total: 11, reporting: 11 }],
+    ["Measure A - Riverside County T", { total: 1206, reporting: 1206 }],
+  ]);
+  // Part way: the county's 600 can't be split among a ward's 11.
+  expect(
+    byTitle(
+      text
+        .replace(/"1206","334076"|"1206","333369"|"1206","4732"/g, (m) =>
+          m.replace('"1206"', '"600"'),
+        )
+        .replace('Reported","1206"', 'Reported","600"'),
+    ),
+  ).toEqual([
+    ["Governor", { total: 1206, reporting: 600 }],
+    ["Riverside City Council, Ward 2", undefined],
+    ["Measure A - Riverside County T", { total: 1206, reporting: 600 }],
+  ]);
+  const ward = parseLvtCsv(text)[1];
+  expect(ward?.choices.map((c) => [c.name, c.votes, c.percent])).toEqual([
+    ["GRACIE TORRES", 2244, 52],
+    ["ARAM AYRA", 2071, 48],
+  ]);
+});
