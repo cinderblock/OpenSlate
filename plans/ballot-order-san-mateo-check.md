@@ -89,7 +89,12 @@ Rodriguez (Div. 3); Brown (PJ, Div. 4); Chou, Simons, Burns (Div. 5).
    app). Cause found (below); rebuild `cd` / `boe` from the official block
    equivalency files. Done: `scripts/ca-district-overlaps/block-equivalency.ts`
    writes `cd` / `boe`; the `*Unsure` lists are gone.
-6. Tests, deploy, headless check. Current step.
+6. Tests, deploy, check. Done. `f16f18d` (order), `6b6188c` (skipped line
+   style) went out with the live-tracker thread's push; `2d89f06` (CD / BOE)
+   pushed 2026-11-03 6:49 PM PST (02:49Z). The live bundle has the new
+   sections and `16:[21,23,25,26,28]`. Checked end to end: `collateRaces`
+   over the published SoS and San Mateo listings, for AD 23 / CD 16, gives
+   the user's ballot line for line, Soulé above Liccardo.
 
 ## CD 16: why the names were flipped
 
@@ -125,12 +130,24 @@ A county with no voters in a district prints no ballot for it.
 - [x] Local measure order
 - [x] Skipped races shown, not hidden
 - [x] CD / BOE tables from official block files (12 CDs and BOE 4 changed)
-- [ ] Deploy
+- [x] Deploy and end-to-end check against the real listings
 
 ## Open questions for the user
 
 (none open; the section question was answered: paper ballot order, strictly.)
 
+## Still open (not blocking)
+
+- Only San Mateo publishes its measure order in a form we have; other
+  counties' local measures go by letter, which San Mateo shows can be wrong.
+- The block-based CD / BOE tables are proven by one ballot (an empty block
+  counts). A sample ballot from CD 10, 11 or 52 would confirm the rest.
+- The Supreme Court order (Groban, then Evans) and the State offices section
+  label follow the rules above; the user's list didn't show those names.
+
 ## Things not to do
+
+- Don't amend after another thread may have committed: check HEAD's subject
+  first (this session amended a peer's commit by mistake and undid it).
 
 - Don't sort local measures by letter: San Mateo's ballot doesn't.
