@@ -529,7 +529,7 @@ the web app treats as ballot data, not sources.)
 Still open after round 3:
 - ~~Web app doesn't expand `adopts` yet~~ Done 2026-10-30 (`plans/adopt-by-reference.md`): five
   bundles converted in `607192d` (Ventura Dems 15, LA GOP 7, Alameda GOP 18, Sierra Club SF Bay
-  12, Angeles 11). Left as they are: Sierra Club San Diego's No on 45 (its own statement) and
+  12, Angeles 11; Ventura's later removed, `f8e6453`). Left as they are: Sierra Club San Diego's No on 45 (its own statement) and
   SFPOA/Local 798 (adopting would leave a row with 0 positions).
 - Realtors' six "not real estate related" props stay `abstain` (user said keep going, 2026-10-30).
 - SF Chronicle Governor ("Coming Soon"), SCNG ("More will be published"), Sierra Club SF Bay
@@ -713,4 +713,26 @@ our word, and SPEC 3.10 reads as "is claimed to hold", which is stronger than so
   the reversal, so the user's OK on the Marin decision didn't cover it.
 
 Decided 2026-10-30: the Marin IJ adoption is removed (`3df707d`). No "shares" relationship: the user doesn't want it,
-so Sonoma stays an adoption. The other 16 adopting slates were not re-read for this question.
+so Sonoma stays an adoption.
+
+### Re-check of the other 17 (2026-11-04, the user asked)
+
+Each slate's saved evidence was re-read for two things: does the page claim the group holds the picks, and does it
+say where they come from.
+
+- Holds them, names the source: CPF -> IAFF (51, "Federal recommendations provided by IAFF" under "CPF
+  Recommendations"); Central Coast Labor -> Labor Fed (31; its 18 candidates sit under "Statewide endorsements are
+  determined by a statewide council of labor leaders", the 13 props in a later section with no such note); Sierra
+  Club San Gorgonio (12, "Endorsed by Sierra Club California"); Sierra Club SF Bay (12, links to the state list).
+- Holds them, source not named (we matched them): Contra Costa Labor (18), Kern-Inyo-Mono Labor (4), Sacramento
+  Labor (12), San Bernardino GOP (21), Sierra Club Angeles (11), Redwood (13), Santa Lucia (13). The positions are
+  the group's; only the "via" is ours. Sierra Club chapters are one organization with the state club, so that's
+  safe. For labor councils the direction could even run the other way (councils recommend legislative picks to the
+  Fed).
+- Posted as its voter guide, source named, no "we endorse": Alameda GOP (18, reposts CAGOP's guide image); LA GOP (7,
+  badged "Officially endorsed by the California Republican Party"); Santa Cruz Dems (149, reposts CADEM's list and
+  "cannot take a position contrary to the California Democratic Party"). Kept: fair.
+- Reposted with no claim to hold, like Sonoma: San Diego Green (1, reposts GPCA's Prop 40 press release). Kept, per
+  the Sonoma decision.
+- Wrong, removed (`f8e6453`): Ventura Dems (15; the footnote says "endorsed by the California Democratic Party, not by
+  the Ventura County Democratic Party"), and Press Democrat (1; a BANG editorial under BANG's byline, the Marin case).
