@@ -1,4 +1,4 @@
-import { useIsFetching, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsFetching, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -30,6 +30,7 @@ import {
   propContest,
   STATEWIDE_OFFICES,
 } from "../lib/sosCa";
+import { parseSosTime } from "../lib/sosResults";
 import {
   addPlace,
   addSingle,
@@ -48,8 +49,19 @@ import {
   watchSections,
   watchStore,
 } from "../lib/watch";
+import {
+  type ContestFacts,
+  moveInOrder,
+  SORT_KEYS,
+  SORT_LABELS,
+  type SortKey,
+  sortContests,
+  useWatchView,
+  watchViewStore,
+} from "../lib/watchSort";
 import { FindDistricts } from "./FindDistricts";
-import { ComboBox, type SelectOption } from "./ui/Select";
+import { ComboBox, Select, type SelectOption } from "./ui/Select";
+import { Switch } from "./ui/Switch";
 import { TextField } from "./ui/TextField";
 
 /**
@@ -135,9 +147,8 @@ export function LivePanel() {
       )}
 
       <PlacesBar groups={groups} />
-      {watchSections(groups).map((section) => (
-        <Section key={section.key} section={section} />
-      ))}
+      {!empty && <SortBar />}
+      <Sections groups={groups} />
 
       <p className="hint live-source">
         Source:{" "}
@@ -342,20 +353,168 @@ function LocalRacesPicker({
   );
 }
 
-function Section({ section }: { section: WatchSection }) {
+/** How to order the races, and whether to group them by place. */
+function SortBar() {
+  const [view] = useWatchView();
+  const options: SelectOption<SortKey>[] = SORT_KEYS.map((key) => ({
+    id: key,
+    label: SORT_LABELS[key].label,
+    description: SORT_LABELS[key].description,
+  }));
+  return (
+    <div className="live-sortbar">
+      <Select
+        label="Sort"
+        className="live-sort"
+        options={options}
+        value={view.sort}
+        onChange={(sort) => watchViewStore.set((v) => ({ ...v, sort }))}
+      />
+      <Switch
+        isSelected={view.grouped}
+        onChange={(grouped) => watchViewStore.set((v) => ({ ...v, grouped }))}
+      >
+        Group by place
+      </Switch>
+      {view.sort === "manual" && <span className="hint">Move races with the arrows on each.</span>}
+    </div>
+  );
+}
+
+/** What each race's count says, for sorting: the same queries the cards use, so nothing extra is fetched. */
+function useContestFacts(ids: string[]): (id: string) => ContestFacts {
+  const stateIds = ids.filter((id) => !parseCountyContestId(id));
+  const slugs = [
+    ...new Set(
+      ids.flatMap((id) => {
+        const c = parseCountyContestId(id);
+        return c ? [c.county] : [];
+      }),
+    ),
+  ];
+  const state = useQueries({ queries: stateIds.map((id) => contestQueryOptions(id)) });
+  const counties = useQueries({ queries: slugs.map((slug) => countyQueryOptions(slug)) });
+  return (id) => {
+    const county = parseCountyContestId(id);
+    if (county) {
+      const data = counties[slugs.indexOf(county.county)]?.data;
+      const contest = data?.contests.find((c) => c.key === county.key);
+      return {
+        title: contest?.title ?? "Local race",
+        ...(contest ? { result: countyContestResult(contest, data?.updated) } : {}),
+        ...(data?.updated ? { updatedAt: data.updated } : {}),
+      };
+    }
+    const result = state[stateIds.indexOf(id)]?.data;
+    const time = parseSosTime(result?.reporting.time);
+    return {
+      title: contestLabel(id),
+      ...(result ? { result } : {}),
+      ...(time ? { updatedAt: Date.parse(time) } : {}),
+    };
+  };
+}
+
+function Sections({ groups }: { groups: WatchGroup[] }) {
+  const [view] = useWatchView();
+  const sections = watchSections(groups);
+  const all = sections.flatMap((s) => s.contests);
+  const facts = useContestFacts(all);
+  const shown: WatchSection[] = view.grouped
+    ? sections
+    : all.length > 0
+      ? [{ key: "all", groups: [], contests: all }]
+      : [];
+  return (
+    <>
+      {shown.map((section) => (
+        <Section
+          key={section.key}
+          section={section}
+          groups={groups}
+          sorted={sortContests(section.contests, view.sort, facts, view.order)}
+          manual={view.sort === "manual"}
+        />
+      ))}
+    </>
+  );
+}
+
+function Section({
+  section,
+  groups,
+  sorted,
+  manual,
+}: {
+  section: WatchSection;
+  groups: WatchGroup[];
+  sorted: string[];
+  manual: boolean;
+}) {
   const names = section.groups.map((g) => g.label);
-  const title = names.length > 1 ? `${names.slice(0, -1).join(", ")} & ${names.at(-1)}` : names[0];
-  const counties = [...new Set(section.groups.flatMap((g) => (g.county ? [g.county] : [])))];
-  const groupIds = section.groups.map((g) => g.id);
+  const title =
+    names.length === 0
+      ? "All races"
+      : names.length > 1
+        ? `${names.slice(0, -1).join(", ")} & ${names.at(-1)}`
+        : names[0];
+  const move = (id: string, direction: -1 | 1) =>
+    watchViewStore.set((v) => ({ ...v, order: moveInOrder(v.order, sorted, id, direction) }));
   return (
     <section className="live-group">
       <h3>{title}</h3>
       <ul className="live-contests">
-        {section.contests.map((id) => (
-          <ContestCard key={id} id={id} groupIds={groupIds} counties={counties} />
-        ))}
+        {sorted.map((id, i) => {
+          // The places watching this race: which to remove it from, and their counties' counts.
+          const owners = groups.filter((g) => g.contests.includes(id));
+          const counties = [...new Set(owners.flatMap((g) => (g.county ? [g.county] : [])))];
+          const moves: Move = {
+            ...(i > 0 ? { up: () => move(id, -1) } : {}),
+            ...(i < sorted.length - 1 ? { down: () => move(id, 1) } : {}),
+          };
+          return (
+            <ContestCard
+              key={id}
+              id={id}
+              groupIds={owners.map((g) => g.id)}
+              counties={counties}
+              {...(manual ? { move: moves } : {})}
+            />
+          );
+        })}
       </ul>
     </section>
+  );
+}
+
+interface Move {
+  up?: () => void;
+  down?: () => void;
+}
+
+/** Up and down arrows, for "Your order". */
+function MoveButtons({ move, title }: { move: Move; title: string }) {
+  return (
+    <span className="live-move">
+      <button
+        type="button"
+        className="link"
+        disabled={!move.up}
+        onClick={move.up}
+        aria-label={`Move ${title} up`}
+      >
+        ↑
+      </button>
+      <button
+        type="button"
+        className="link"
+        disabled={!move.down}
+        onClick={move.down}
+        aria-label={`Move ${title} down`}
+      >
+        ↓
+      </button>
+    </span>
   );
 }
 
@@ -363,17 +522,27 @@ function ContestCard({
   id,
   groupIds,
   counties,
+  move,
 }: {
   id: string;
   groupIds: string[];
   counties: string[];
+  move?: Move;
 }) {
   const county = parseCountyContestId(id);
   if (county)
     return (
-      <CountyContestCard id={id} slug={county.county} contestKey={county.key} groupIds={groupIds} />
+      <CountyContestCard
+        id={id}
+        slug={county.county}
+        contestKey={county.key}
+        groupIds={groupIds}
+        {...(move ? { move } : {})}
+      />
     );
-  return <StateContestCard id={id} groupIds={groupIds} counties={counties} />;
+  return (
+    <StateContestCard id={id} groupIds={groupIds} counties={counties} {...(move ? { move } : {})} />
+  );
 }
 
 /** A local race, from its county's own count. */
@@ -382,11 +551,13 @@ function CountyContestCard({
   slug,
   contestKey,
   groupIds,
+  move,
 }: {
   id: string;
   slug: string;
   contestKey: string;
   groupIds: string[];
+  move?: Move;
 }) {
   const query = useQuery(countyQueryOptions(slug));
   const remove = () => watchStore.set((gs) => removeFromGroups(gs, groupIds, id));
@@ -398,6 +569,7 @@ function CountyContestCard({
   return (
     <li className={`live-contest card${changed ? " live-changed" : ""}`}>
       <div className="live-contest-head">
+        {move && <MoveButtons move={move} title={title} />}
         <strong>{title}</strong>
         {result && <ReportingLine result={result} />}
         <button
@@ -436,10 +608,12 @@ function StateContestCard({
   id,
   groupIds,
   counties,
+  move,
 }: {
   id: string;
   groupIds: string[];
   counties: string[];
+  move?: Move;
 }) {
   const query = useQuery(contestQueryOptions(id));
   const remove = () => watchStore.set((gs) => removeFromGroups(gs, groupIds, id));
@@ -457,6 +631,7 @@ function StateContestCard({
   return (
     <li className={`live-contest card${changed ? " live-changed" : ""}`}>
       <div className="live-contest-head">
+        {move && <MoveButtons move={move} title={contestLabel(id)} />}
         <strong>{contestLabel(id)}</strong>
         {result && <ReportingLine result={result} />}
         <button
