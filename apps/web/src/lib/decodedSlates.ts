@@ -29,10 +29,14 @@ export interface SliceOptions {
   signal?: AbortSignal;
   /** How many of `total` are verified so far; called between slices. */
   onProgress?: (done: number, total: number) => void;
+  /** At least this long between progress reports, in ms. */
+  progressMs?: number;
 }
 
 /** About half a frame: long enough to get through a few slates, short enough not to stutter. */
 const SLICE_MS = 8;
+/** How often progress is reported. */
+const PROGRESS_MS = 250;
 
 /**
  * `decodeSlates(rows)`, a slice at a time. Undefined when aborted. Slates
@@ -40,16 +44,28 @@ const SLICE_MS = 8;
  */
 export async function decodeSlatesInSlices(
   rows: Row[],
-  { yieldToPage, now, budgetMs = SLICE_MS, signal, onProgress }: SliceOptions,
+  {
+    yieldToPage,
+    now,
+    budgetMs = SLICE_MS,
+    signal,
+    onProgress,
+    progressMs = PROGRESS_MS,
+  }: SliceOptions,
 ): Promise<DecodedSlate[] | undefined> {
   let sliceStart = now();
+  let progressAt = sliceStart;
   for (let i = 0; i < rows.length; i++) {
     if (signal?.aborted) return undefined;
     const row = rows[i];
     if (!row || isDecoded(row.token)) continue;
     decodeSlates([row]);
     if (now() - sliceStart >= budgetMs) {
-      onProgress?.(i + 1, rows.length);
+      // A few times a second: each report re-renders the page showing the bar.
+      if (now() - progressAt >= progressMs) {
+        onProgress?.(i + 1, rows.length);
+        progressAt = now();
+      }
       await yieldToPage();
       sliceStart = now();
     }

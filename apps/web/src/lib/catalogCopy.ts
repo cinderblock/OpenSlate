@@ -75,6 +75,8 @@ const RECHECK_MS = 5 * 60 * 1000;
 const CONCURRENCY = 6;
 /** Signature-checking between yields: long enough to get on, short enough not to be felt. */
 const SLICE_MS = 12;
+/** How often the progress bar moves. */
+const PROGRESS_MS = 250;
 
 export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
   let status: CopyStatus = { state: "idle" };
@@ -158,9 +160,17 @@ export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
   async function run(catalogUrl: string): Promise<void> {
     const showing = status.state === "ready" ? status.copy : undefined;
     let copy = showing?.catalogUrl === catalogUrl ? showing : undefined;
+    let reported: { label: string; at: number } | undefined;
     const report = (bar: { label: string; value: number; maxValue?: number }) => {
       // Whatever's on screen stays there while a newer copy comes in.
-      if (!copy) set({ state: "loading", ...bar });
+      if (copy) return;
+      // A few times a second: each one re-renders every page reading the
+      // status, and once per 12 ms slice that cost more than the checking.
+      const now = deps.now();
+      const step = reported?.label === bar.label && bar.value !== bar.maxValue;
+      if (step && reported && now - reported.at < PROGRESS_MS) return;
+      reported = { label: bar.label, at: now };
+      set({ state: "loading", ...bar });
     };
     report({ label: "Opening the public catalog", value: 0 });
     copy ??= await deps.readCopy(catalogUrl).catch(() => undefined);

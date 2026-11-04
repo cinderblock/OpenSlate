@@ -176,6 +176,24 @@ describe("createCatalogLoader", () => {
     expect(h.calls.bundle).toBe(1);
   });
 
+  test("the bar moves a few times a second, not once a slice", async () => {
+    const many = Array.from({ length: 60 }, (_, i) => entry(`s${i}.slate`, "Sierra Club"));
+    const h = harness(catalog("v1", many), new Map(many.map((e) => [e.path, A])));
+    const checking: number[] = [];
+    h.loader.subscribe(() => {
+      const status = h.loader.status();
+      if (status.state === "loading" && status.label === "Checking signatures")
+        checking.push(status.value);
+    });
+    await h.loader.load(URL_A);
+    expect(h.loader.status().state).toBe("ready");
+    expect(h.calls.yields).toBeGreaterThan(10);
+    // The first step always shows; after it, one about every 250 ms of the fake clock.
+    expect(checking[0]).toBe(0);
+    expect(checking.length).toBeGreaterThan(1);
+    expect(checking.length).toBeLessThan(h.calls.yields / 2);
+  });
+
   test("a kept copy for another catalog isn't used", async () => {
     const h = harness(catalog("v1", entries), tokens);
     h.keep({

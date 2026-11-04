@@ -29,6 +29,7 @@ describe("decodeSlatesInSlices", () => {
       },
       now: tickingClock(10),
       budgetMs: 8,
+      progressMs: 0,
       onProgress: (done, total) => {
         expect(total).toBe(3);
         progress.push(done);
@@ -39,6 +40,24 @@ describe("decodeSlatesInSlices", () => {
     expect(yields).toBe(3);
     expect(progress).toEqual([1, 2, 3]);
     for (const row of rows) expect(isDecoded(row.token)).toBe(true);
+  });
+
+  test("progress comes a few times a second, not every slice", async () => {
+    const rows = ["F", "G", "H", "I", "J", "K"].map(makeRow);
+    const progress: number[] = [];
+    let yields = 0;
+    await decodeSlatesInSlices(rows, {
+      yieldToPage: async () => {
+        yields++;
+      },
+      now: tickingClock(10),
+      budgetMs: 8,
+      progressMs: 50,
+      onProgress: (done) => progress.push(done),
+    });
+    expect(yields).toBe(6);
+    expect(progress.length).toBeGreaterThan(0);
+    expect(progress.length).toBeLessThan(yields);
   });
 
   test("slates already verified don't cost a slice", async () => {
