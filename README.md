@@ -108,7 +108,12 @@ for it. Its two sides:
   you vote, an address, or district numbers; several places at once, a race
   they share shown once) or single races and measures, and it shows the
   Secretary of State's count, checked every minute, with a county's own count
-  beside each race if you pick one. Below that, any slate's picks next to the
+  beside each race if you pick one. Local races (city, county, school,
+  special district, local measures) come from the county's own election-night
+  feed where OpenSlate reads one (Los Angeles, San Diego, Orange, Riverside,
+  San Bernardino, Santa Clara, Sacramento, Contra Costa, San Mateo, Ventura,
+  Sonoma, Solano, Marin): a place's "Local races" adds them one at a time or
+  all at once. Below that, any slate's picks next to the
   outcomes. *Sources* is
   where you follow sources, follow them to *disagree* (their picks count the
   other way on My ballot: what they back counts against it, what they oppose
@@ -452,7 +457,7 @@ library, so blocks are intercompatible across web, desktop, server, and CLI.
 | [`packages/cli`](./packages/cli) | `@openslate/cli` — `keygen` / `pubkey` / `sign` (incl. `--batch` for research bundles) / `validate` / `races` / `check` (against the official ballot) / `verify` / `inspect` / `adopt` (copy or reference another slate's positions). |
 | [`apps/web`](./apps/web) | React + Vite SPA, voter-first. *My vote*: setup inline on My ballot, My ballot (your followed sources' endorsements by race, for your election and area, with private picks), All races (any race anywhere, with every slate on it, and the races you follow), Compare (who agrees with your picks, across the whole catalog), and Sources (follow, disagree with, or leave off, the [public catalog](https://cinderblock.github.io/openslate-public-endorsements/), import from link/file/QR/paste). *Publish* (a quiet link): identities, sign your picks (or any race) as a slate and share it, verify and inspect slates; view live polls and election results (and Kalshi market forecasts, when a self-hosted server opts in); pick per-provider direct-vs-proxy routing. Data lives in **browser storage only**. |
 | [`apps/server`](./apps/server) | Minimal **stateless** Hono backend. No user data. Verify helper + relays for ballot data ([VIP](https://www.votinginfoproject.org/) via Google Civic, with your `GOOGLE_API_KEY`), opinion polls ([VoteHub](https://votehub.com)), election results ([civicAPI](https://civicapi.org)), and, opt-in with `KALSHI_FORECASTS=true`, market forecasts ([Kalshi](https://kalshi.com)). |
-| [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls and [civicAPI](https://civicapi.org) results behind permissive CORS, relays opt-in address lookups to the [Census geocoder](https://geocoding.geo.census.gov/) (`POST /api/geocode/census`; nothing cached, logged or stored), caches the California Secretary of State's election-night results (`GET /api/sos-ca/returns/*`, a minute per contest), and answers Google Civic Information lookups with the project's key (`GET /api/civic/elections`, `POST /api/civic/voterinfo`; only for openslate.us pages, addresses never cached, logged or stored). Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, `/api/geocode/census` and `/api/civic/*` shapes so the web client treats either backend identically. Runs at `https://api.openslate.us`. |
+| [`apps/poll-cache`](./apps/poll-cache) | `@openslate/poll-cache` — Cloudflare Worker that caches [VoteHub](https://votehub.com) polls and [civicAPI](https://civicapi.org) results behind permissive CORS, relays opt-in address lookups to the [Census geocoder](https://geocoding.geo.census.gov/) (`POST /api/geocode/census`; nothing cached, logged or stored), caches the California Secretary of State's election-night results (`GET /api/sos-ca/returns/*`, a minute per contest) and listed counties' own feeds (`GET /api/county-ca/<county>/<file>`: only the counties and files in `@openslate/core`'s `CA_COUNTY_FEEDS`, a minute each, with an honest User-Agent), and answers Google Civic Information lookups with the project's key (`GET /api/civic/elections`, `POST /api/civic/voterinfo`; only for openslate.us pages, addresses never cached, logged or stored). Mirrors the Hono server's `/api/polls/*`, `/api/results/v2/*`, `/api/geocode/census` and `/api/civic/*` shapes so the web client treats either backend identically. Runs at `https://api.openslate.us`. |
 | [`apps/desktop`](./apps/desktop) | [Electrobun](https://blackboard.sh/electrobun) desktop app around the web build, for Windows, macOS and Linux; standard and offline (catalog built in) editions, built and self-tested in CI, with signed self-updates. |
 
 ## Hosting topologies
@@ -468,7 +473,9 @@ Election results (civicAPI and the California Secretary of State) serve
 permissive CORS without an API key, but the SPA reaches both through the
 backend by default: every visitor shares its cache, so a busy election night
 costs those sources one request per race per minute instead of one per
-visitor. A relay outage doesn't switch anyone to direct on its own. Polls (VoteHub) restrict
+visitor. Counties' own results feeds go the same way; the ones without CORS
+(livevoterturnout.com counties, Los Angeles, Sacramento) only through the
+relay. A relay outage doesn't switch anyone to direct on its own. Polls (VoteHub) restrict
 cross-origin access, so the SPA *must* go through a proxy for those. So do
 Kalshi's forecasts, which only a self-hosted server relays, and only when
 its operator opts in. The Settings page lets each user pick direct-vs-proxy per provider
