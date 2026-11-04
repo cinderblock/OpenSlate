@@ -7,6 +7,15 @@ import {
 } from "./civic";
 import { COUNTY_CA_PREFIX, handleCountyCa } from "./countyCa";
 import { GEOCODE_PATH, handleGeocode } from "./geocode";
+import {
+  HISTORY_PREFIX,
+  LIVE_PREFIX,
+  serveHistory,
+  serveLive,
+  serveRecorded,
+  startRecorders,
+} from "./recorded";
+import type { Recorder } from "./recorder";
 import { handleSosCa, SOS_CA_PREFIX, SOS_CA_UPSTREAM } from "./sosCa";
 
 export interface Env {
@@ -14,6 +23,17 @@ export interface Env {
   GOOGLE_CIVIC_API_KEY?: string;
   /** Comma-separated origins whose pages may use the civic routes (wrangler.toml). */
   CIVIC_ALLOWED_ORIGINS?: string;
+  /** The results recorder (recorder.ts), one per feed. Unset in tests: results pass through. */
+  RECORDER?: DurableObjectNamespace<Recorder>;
+  /** The recorder's audit trail: every report as fetched (R2 bucket openslate-reports). */
+  REPORTS?: R2Bucket;
+}
+
+export { Recorder } from "./recorder";
+
+/** The recorder's bindings, when this deployment has them. */
+function recorderOf(env: Env) {
+  return env.RECORDER && env.REPORTS ? { RECORDER: env.RECORDER, REPORTS: env.REPORTS } : null;
 }
 
 const POLLS_UPSTREAM = "https://api.votehub.com";
@@ -63,7 +83,7 @@ function corsHeaders(): Record<string, string> {
 }
 
 export default {
-  async fetch(req: Request, env: Env = {}): Promise<Response> {
+  async fetch(req: Request, env: Env = {}, ctx?: ExecutionContext): Promise<Response> {
     // Google Civic lookups use the relay's own key (see civic.ts), so they only
     // answer pages from OpenSlate's origins.
     const pathname = new URL(req.url).pathname;
@@ -89,6 +109,12 @@ export default {
       if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
       return handleGeocode(req, cors);
     }
+    // A feed's WebSocket: each new report as the recorder sees it.
+    const recorder = recorderOf(env);
+    if (pathname.startsWith(LIVE_PREFIX)) {
+      if (!recorder) return new Response("Not Found", { status: 404 });
+      return serveLive(recorder, req, pathname);
+    }
     if (req.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders() });
     }
@@ -107,6 +133,8 @@ export default {
           results_upstream: RESULTS_UPSTREAM,
           sos_ca_upstream: SOS_CA_UPSTREAM,
           county_ca: COUNTY_CA_PREFIX,
+          // The recorder: results from its copy, history, and live reports over a WebSocket.
+          recorder: Boolean(recorder),
           geocode: GEOCODE_PATH,
           // Whether this relay can ask Google (it has a key): the web app
           // offers "Google (via OpenSlate)" only then.
@@ -124,6 +152,21 @@ export default {
     if (isResultsProxyPath(url.pathname)) {
       return proxyResults(url);
     }
+    if (url.pathname.startsWith(HISTORY_PREFIX)) {
+      if (!recorder) return new Response("Not Found", { status: 404, headers: corsHeaders() });
+      return serveHistory(recorder, url.pathname, corsHeaders());
+    }
+    // Results the recorder keeps come from its copy; the rest pass through, as
+    // does everything if the recorder can't answer (still one cached request
+    // per file per minute to the source, as before the recorder).
+    if (recorder && ctx) {
+      try {
+        const recorded = await serveRecorded(recorder, url, corsHeaders(), ctx);
+        if (recorded) return recorded;
+      } catch {
+        // Passed through below.
+      }
+    }
     if (url.pathname.startsWith(SOS_CA_PREFIX)) {
       return handleSosCa(url.pathname, corsHeaders());
     }
@@ -132,6 +175,12 @@ export default {
     }
 
     return new Response("Not Found", { status: 404, headers: corsHeaders() });
+  },
+
+  /** The cron (wrangler.toml): keep every feed's recorder checking. */
+  async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    const recorder = recorderOf(env);
+    if (recorder) ctx.waitUntil(startRecorders(recorder));
   },
 };
 

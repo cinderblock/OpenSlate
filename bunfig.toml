@@ -1,0 +1,3 @@
+[test]
+# Cloudflare's runtime modules (`cloudflare:workers`) for the worker's tests.
+preload = ["./apps/poll-cache/test/workersRuntime.ts"]

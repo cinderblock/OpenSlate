@@ -28,3 +28,28 @@ enabled = false
 # from these origins (and localhost) get CORS headers on those routes.
 [vars]
 CIVIC_ALLOWED_ORIGINS = "https://openslate.us"
+
+# The results recorder (src/recorder.ts): one Durable Object per results feed
+# (the Secretary of State, each county). It checks its source on a schedule,
+# keeps each race's history in its SQLite storage, and tells open pages about
+# new reports over WebSockets. Approved by the user 2026-11-04
+# (plans/live-recorder.md).
+[[durable_objects.bindings]]
+name = "RECORDER"
+class_name = "Recorder"
+
+[[migrations]]
+tag = "v1-recorder"
+new_sqlite_classes = ["Recorder"]
+
+# The recorder's audit trail: an exact copy of every report it fetched. The
+# bucket is created by github.com/cinderblock/ops
+# (cloudflare/config/projects/openslate.yaml); it must exist before this deploys.
+[[r2_buckets]]
+binding = "REPORTS"
+bucket_name = "openslate-reports"
+
+# Every 5 minutes: start any recorder not yet running, and restart one whose
+# alarm was lost. The recorders' own alarms set the pace of checks.
+[triggers]
+crons = ["*/5 * * * *"]
