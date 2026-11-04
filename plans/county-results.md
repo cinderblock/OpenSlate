@@ -58,7 +58,7 @@ Wired up (11 counties):
 | Solano | `…/solanocaenr/21/summary_21.csv` | CSV | none |
 
 | Sacramento | `results.saccounty.gov/results/public/api/elections/sacramento-county-ca/69/data` | own JSON (`ballotItems[]`, `election.asOf`), 374 KB | none |
-| Los Angeles | `results.lavote.gov/electionresults/json?electionid=4348` | own JSON (`Election.ContestGroups[].Contests[]`), 193 KB, no ids/precincts/time | none |
+| Los Angeles | `results.lavote.gov/electionresults/json?electionid=4348` | own JSON (`Election.ContestGroups[].Contests[]`, top-level `Timestamp` in California time with no zone), 193 KB, no ids/precincts | none |
 
 (13 counties. LA answered our honest User-Agent at 7:39 PM PST, despite the
 survey's Imperva note; Sacramento's `/data` has no CORS header, though the
@@ -122,6 +122,35 @@ Formats:
   (the Secretary of State's results don't carry them).
 - Several ROV websites (contracostavote.gov, sfelections.org, voteinfo.net,
   kernvote.com, countyofmonterey.gov) 403 our honest UA; the feed hosts don't.
+- Recheck of the 9 late counties, 12:12 PM PST 2026-11-04 (20:12Z), one pass
+  through the relay, parsed with core's parsers: every one carries votes in
+  every local contest (the only zeros: Ventura's Antelope Valley-East Kern
+  Water Division 1 and Sacramento's El Dorado Irrigation Division 4, both 0
+  registered voters in that county). No feed URL or election id changed.
+  Latest reports then: Contra Costa 12:11 AM, Marin 12:35 AM, Sonoma 12:39 AM,
+  Ventura 4:39 AM, Riverside 4:22 AM, San Mateo 2:03 AM, Solano 12:07 AM,
+  Sacramento 1:36 AM, LA 3:11 AM PST (Nov 4).
+- **Sacramento's `election.asOf` does move** (Oct 30 at the zero report → 1:36
+  AM PST, 09:36Z). Its `Last-Modified` is just the response time (20:12:06Z on
+  a 20:12Z fetch), so it "moved" on election night without a new report. Keep
+  `asOf`. The election also has `lastUpdated` (1:35 AM), `publishDate` (1:36
+  AM), and a `customPublicMessages` note "Next Update on 11/6/2026 @ 4:15 p.m."
+  (possible later idea: show a county's next-update note).
+- **LA has a time after all**: top-level `Timestamp` beside `Election`,
+  `"2026-11-04T03:11:55.89"`, no zone. It's California's clock (3:11 AM PST);
+  read as UTC it would be 7:11 PM election night, before the polls closed.
+  `parseLaVote` returns `{ contests, asOf }` (`californiaTime`, real zone
+  rules): `4b306c7`. The hand-made fixture had no `Timestamp`, which is how it
+  was missed.
+- **Riverside's `Precincts Reported` is the county's** (1206 on every row,
+  beside a ward's 11 precincts): "10963.6% of precincts" on the live site. Read
+  as countywide when any row exceeds its contest's total: `44bf816`. San Mateo
+  and Solano report per contest. Contra Costa (Clarity `PR` 0) and Solano still
+  say 0 precincts reporting with all votes in: the cards leave precincts out
+  then (`8fca2b0`), which is right.
+- Solano lists "Unassigned write-ins" and "Rejected write-ins" as choices (0
+  rejected so far). Left alone; rejected ones would count toward percents if
+  they ever have votes.
 
 ## Progress log
 
@@ -143,7 +172,7 @@ Formats:
 - [x] catalog link: `catalogRaceFor` (same people, or measure letter + place) and a "endorsements for this race" link on county cards when the catalog is already on the device: `a260890` (also carried peers' `b2bd99d`, `3b71dfb` to origin)
 - [x] headless check of the catalog link on the live site (7:52 PM PST): Sunnyvale place, 8 links, all to the right races (council 3, school boards, Measures G/H/I)
 - [x] first real counts through the relay at 8:07 PM PST (04:07Z): Santa Clara (version 384997), San Diego, Orange and San Bernardino carry votes in every local contest; parsed with the same code the site runs
-- [ ] still at their zero report at 8:07 PM: Contra Costa, Marin, Sonoma, Ventura, Riverside, San Mateo, Solano, Sacramento, Los Angeles. Recheck later tonight; for Sacramento, check that `election.asOf` in `/data` moves (its `Last-Modified` did, its `asOf` still said Oct 30), since cards use `asOf` for "updated"
+- [x] still at their zero report at 8:07 PM: Contra Costa, Marin, Sonoma, Ventura, Riverside, San Mateo, Solano, Sacramento, Los Angeles. Rechecked 12:12 PM PST Nov 4 (20:12Z): all carry real votes (see Findings). Sacramento's `asOf` moves; its `Last-Modified` is the response time, so `asOf` stays. LA's `Timestamp`: `4b306c7`. Riverside's countywide precincts: `44bf816`. Headless on openslate.us 12:29 PM PST (20:29Z), after both deployed: a place per county (Antioch, San Rafael, Santa Rosa, Oxnard, Riverside, East Palo Alto, Vallejo, Elk Grove, Pasadena) had its local races added on their own and every card counted (e.g. Antioch D1 Motts 1,795 / Torres-Walker 1,519; Elk Grove D4 Robles 3,777; EPA Measure O 1,949 / 741); one or two relay requests per county, no page errors; LA cards say "Source updated: 3:11 AM PST"; Riverside's Ward 2 "100% of precincts". Over-inclusion found (Sonoma's and Ventura's `County` category): logged in ISSUES.md, `3cb93c6`
 - [x] User report 8:12 PM PST: East Palo Alto voter saw only propositions, no Measure O. Cause: local races appeared only after "+ Local races" → "Add all" (a small link). Fixed `d34a609`: a place's local races and measures are added on their own once its county count is in (once: removed ones stay removed); legacy "Where I vote" places use the voter's area and county; a place with no county is prompted to pick one. Checked live 8:16 PM: an EPA place shows Measure O with no clicks
 - [x] San Mateo's first report 8:15 PM PST: EPA Measure O Yes 1,171 (73.7%), No 418
 - [x] Two-thirds / 55% measures were called "Passing" past 50%: `b0778c0` reads the threshold from the title, shows "(needs two-thirds)"
@@ -176,5 +205,6 @@ Formats:
   bun test pass anyway). Export from core's index instead.
 - Don't write regexes through bash heredocs/python in Git Bash: backslashes
   were eaten (`\b` became a backspace). Use the Edit/Write tools.
+- The Results page is `/#/results` (hash router): `https://openslate.us/results` is a 404 with an empty body, so a headless check that goes there sees a blank page.
 - Don't edit LivePanel.tsx's headings/civicAPI wording: another thread has
   uncommitted changes there (7:33 PM PST).
