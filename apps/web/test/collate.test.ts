@@ -583,10 +583,11 @@ describe("collateRaces", () => {
       districts: { "us/ca/elsd": "17880", "us/ca/unsd": "none" },
     };
     const races = collateRaces(slates, { follows: {}, area });
+    // In ballot order: school, county, then special districts.
     expect(races.map((r) => [r.subject.title, r.maybe ?? false])).toEqual([
       ["HB City SD, Trustee Area 4", true],
-      ["Irvine Ranch Water District, Division 5", true],
       ["Orange County Assessor", false],
+      ["Irvine Ranch Water District, Division 5", true],
     ]);
     expect(races[0]?.district).toBe("us/ca/elsd-17880/ta-4");
     // With no area, nothing is a maybe.

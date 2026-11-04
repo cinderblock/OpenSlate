@@ -15,6 +15,14 @@ export interface CountyDrawing {
   source: string;
   /** The county's drawing orders its local contests too. */
   local?: boolean;
+  /**
+   * The county's local measures by letter, in the order its ballot prints
+   * them (`ballotSequence.ts`), where it publishes that order: San Mateo's is
+   * neither by letter nor by contest code.
+   */
+  measures?: string[];
+  /** Where the measure order comes from. */
+  measuresSource?: string;
 }
 
 export const COUNTY_DRAWINGS_2026: Record<string, CountyDrawing> = {
@@ -126,6 +134,16 @@ export const COUNTY_DRAWINGS_2026: Record<string, CountyDrawing> = {
   "San Mateo": {
     alphabet: "UGKXWBYTFMDHSNVJPICREQZALO",
     source:
+      "https://smcacre.gov/system/files/2026-08/52_November%202026%20Random%20Alpha%20Drawing_Redacted.pdf",
+    // The same document lists every measure with its letter: school district
+    // measures, then county, then city. A San Mateo County voter's ballot
+    // (2026-11-03) printed V, then L, AA, J, U, as listed here.
+    measures: [
+      ...["R", "Z", "M", "T", "K", "V", "W"],
+      ...["L", "AA", "J", "U"],
+      ...["H", "F", "Y", "X", "D", "O", "CC", "I", "Q", "P", "BB", "N", "E", "S", "DD", "EE", "G"],
+    ],
+    measuresSource:
       "https://smcacre.gov/system/files/2026-08/52_November%202026%20Random%20Alpha%20Drawing_Redacted.pdf",
   },
   "Santa Clara": {

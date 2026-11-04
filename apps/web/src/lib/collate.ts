@@ -8,7 +8,8 @@ import {
   verifySlate,
 } from "@openslate/core";
 import type { ChoiceCheck } from "./ballotCheck";
-import { ballotOrderFor, type OrderBasis, officeRank } from "./ballotOrder";
+import { ballotOrderFor, type OrderBasis } from "./ballotOrder";
+import { compareBallotOrder } from "./ballotSequence";
 import {
   type Area,
   answerFor,
@@ -507,7 +508,7 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
             collator.compare(a.choice, b.choice),
         ),
     }))
-    .sort(compareRaces);
+    .sort((a, b) => compareRaces(a, b, options.area));
 }
 
 /**
@@ -587,30 +588,12 @@ export function contestGroup(race: Pick<Race, "subject" | "ballot">): ContestGro
   return race.subject.kind === "measure" ? "measure" : "office";
 }
 
-function officeOrder(race: Race): number {
-  return officeRank({
-    ...(race.jurisdiction ? { jurisdiction: race.jurisdiction } : {}),
-    title: race.subject.title,
-  });
-}
-
-function contestRank(race: Race): number {
-  return CONTEST_GROUPS.indexOf(contestGroup(race));
-}
-
 /**
- * Ballot order: by jurisdiction (statewide, districts, local), offices,
- * retention questions, measures; offices in the order California's Elections
- * Code lists them (`officeRank`), then title.
+ * Ballot order (`compareBallotOrder`): the order the voter's paper ballot
+ * prints its contests in, across jurisdictions, so they can copy it down.
  */
-export function compareRaces(a: Race, b: Race): number {
-  return (
-    jurisdictionRank(a.jurisdiction) - jurisdictionRank(b.jurisdiction) ||
-    collator.compare(jurisdictionLabel(a.jurisdiction), jurisdictionLabel(b.jurisdiction)) ||
-    contestRank(a) - contestRank(b) ||
-    (contestGroup(a) === "office" ? officeOrder(a) - officeOrder(b) : 0) ||
-    collator.compare(a.subject.title, b.subject.title)
-  );
+export function compareRaces(a: Race, b: Race, area?: Area): number {
+  return compareBallotOrder(a, b, area);
 }
 
 export interface ElectionSummary {

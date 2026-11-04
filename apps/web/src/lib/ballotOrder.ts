@@ -43,6 +43,30 @@ const CALIFORNIA: Record<string, ElectionOrder> = {
   },
 };
 
+/** The Secretary of State's drawn letters for an election, if we have them. */
+export function alphabetFor(election: string | undefined): string | undefined {
+  return election ? CALIFORNIA[election]?.alphabet : undefined;
+}
+
+/**
+ * The order a county prints its local measures in, by letter, if it says
+ * (`CountyDrawing.measures`): the race's county, else the voter's one county.
+ */
+export function measureOrderOf(
+  race: { election?: string; jurisdiction?: string },
+  area: Area | undefined,
+): string[] | undefined {
+  const order = race.election ? CALIFORNIA[race.election] : undefined;
+  if (!order) return undefined;
+  const where = parseJurisdiction(race.jurisdiction);
+  if (where.kind === "state" || where.kind === "none") return undefined;
+  const counties = voterCounties(area);
+  const county =
+    (where.kind === "local" ? countyOfPath(where.path) : undefined) ??
+    (counties.length === 1 ? counties[0] : undefined);
+  return county ? order.counties[county]?.measures : undefined;
+}
+
 /** Where an order comes from, or why it can't be known. */
 export type OrderBasis =
   /** The law, the drawing and the voter's districts fix it. */
@@ -411,50 +435,4 @@ export function ballotOrderFor(
     names: rotate(drawn, rule.offset),
     ...(rule.reason ? { reason: rule.reason } : {}),
   };
-}
-
-/**
- * Elections Code §13109: the order of offices on a California ballot. State
- * offices, Congress, the Legislature, then judges, then school, county, city
- * and district offices. An office the list doesn't name comes after the ones
- * it does, by title. Counties may reorder the local groups (§13109(o)), so
- * the local part is the code's order, not a promise.
- */
-const STATE_OFFICES: RegExp[] = [
-  /^(?:California )?Governor\b/i,
-  /\bLieutenant Governor\b/i,
-  /\bSecretary of State\b/i,
-  /\bController\b/i,
-  /\bTreasurer\b/i,
-  /\bAttorney General\b/i,
-  /\bInsurance Commissioner\b/i,
-  /\bBoard of Equalization\b/i,
-  /\b(?:US|U\.S\.|United States) Senat/i,
-  /\b(?:House of Representatives|(?:US|U\.S\.|United States) (?:House|Representative)|Congress)/i,
-  /\bState Senate\b|\bState Senator\b/i,
-  /\bAssembly\b/i,
-  /\bSupreme Court\b/i,
-  /\bCourt of Appeal\b/i,
-  /\bSuperior Court\b/i,
-  /\bSuperintendent of Public Instruction\b/i,
-];
-const LOCAL_OFFICES: RegExp[] = [
-  /\bSuperior Court\b/i,
-  /\bSuperintendent of Schools\b/i,
-  /\bBoard of Education\b/i,
-  /\bCollege\b/i,
-  /\bUnified\b/i,
-  /\bHigh School\b/i,
-  /\b(?:Elementary|School)\b/i,
-  /\bSupervisor/i,
-  /\bMayor\b/i,
-  /\bCouncil\b/i,
-];
-
-/** Where an office falls in §13109's order (lower first), for races in one ballot section. */
-export function officeRank(race: { jurisdiction?: string; title: string }): number {
-  const local = parseJurisdiction(race.jurisdiction).kind === "local";
-  const list = local ? LOCAL_OFFICES : STATE_OFFICES;
-  const at = list.findIndex((pattern) => pattern.test(race.title));
-  return at === -1 ? list.length : at;
 }

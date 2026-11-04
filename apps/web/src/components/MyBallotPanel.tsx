@@ -42,11 +42,10 @@ import {
   useBallotDraft,
 } from "../lib/ballotDraft";
 import { ballotFileName, ballotToCsv, ballotToJson } from "../lib/ballotExport";
+import { ballotSections, compareBallotOrder, type SequencedRace } from "../lib/ballotSequence";
 import {
   ballotChoices,
-  contestGroups,
   instructionLine,
-  isMarked,
   isYesNo,
   type PrintScope,
   picksIn,
@@ -78,7 +77,6 @@ import {
   EMPTY_AREA,
   isAreaSet,
   jurisdictionLabel,
-  jurisdictionRank,
   NO_DISTRICT,
   noAnswerCount,
   noRaceReason,
@@ -125,9 +123,6 @@ import { TextArea, TextField } from "./ui/TextField";
 const GetStarted = lazy(() =>
   import("./GetStarted").then((module) => ({ default: module.GetStarted })),
 );
-
-/** Same order as `compareRaces`: numbers in labels sort numerically. */
-const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
 /** First person, for "You endorsed X". */
 const MY_STANCE_WORD: Record<Stance, string> = {
@@ -445,18 +440,14 @@ export function MyBallotPanel() {
     return () => clearTimeout(timer);
   }, [focused, focusedStatus, filter]);
 
+  // The ballot in the order the paper one prints it (`compareBallotOrder`),
+  // under the paper's headings.
   const sections = useMemo(() => {
-    const out: Array<{ label: string; rank: number; races: Race[]; noRace?: string }> = [];
-    for (const race of shown) {
-      const label = jurisdictionLabel(race.jurisdiction);
-      const last = out.at(-1);
-      if (last?.label === label) last.races.push(race);
-      else out.push({ label, rank: jurisdictionRank(race.jurisdiction), races: [race] });
-    }
-    // The user's districts with nothing on this ballot get a section saying so
-    // (e.g. an odd-numbered Senate district in 2026), in ballot order, rather
-    // than silently going missing. Not under a status filter or a search:
-    // nothing to do there, and nothing that was looked for.
+    const items: BallotItem[] = [...shown];
+    // The user's districts with nothing on this ballot get a line saying so
+    // (e.g. an odd-numbered Senate district in 2026), where the race would
+    // print, rather than silently going missing. Not under a status filter or
+    // a search: nothing to do there, and nothing that was looked for.
     const noRaces = filter === "all" && !search.searching ? Object.entries(area.districts) : [];
     for (const [family, n] of noRaces) {
       // Only families races are filed under (not school districts, which only
@@ -466,15 +457,16 @@ export function MyBallotPanel() {
       const present = areaOptions.districts[family] ?? [];
       if (present.includes(n)) continue;
       const path = `${family}-${n}`;
-      out.push({
-        label: jurisdictionLabel(path),
-        rank: jurisdictionRank(path),
-        races: [],
+      items.push({
+        key: `no-race|${path}`,
+        subject: { title: jurisdictionLabel(path) },
+        ...(election ? { election } : {}),
+        jurisdiction: path,
         noRace: noRaceReason(family, n, present, election),
       });
     }
-    return out.sort((a, b) => a.rank - b.rank || collator.compare(a.label, b.label));
-  }, [shown, filter, search.searching, area.districts, areaOptions, election]);
+    return ballotSections(items.sort((a, b) => compareBallotOrder(a, b, area)));
+  }, [shown, filter, search.searching, area, areaOptions, election]);
 
   const myRows = useMemo(
     () => Object.values(draft.rows).filter((row) => row.electionId === election),
@@ -482,7 +474,7 @@ export function MyBallotPanel() {
   );
 
   const maybeShown = useMemo(() => maybeRaces.filter(matches), [maybeRaces, matches]);
-  const maybeSections = useMemo(() => sectionsOf(maybeShown), [maybeShown]);
+  const maybeSections = useMemo(() => ballotSections(maybeShown), [maybeShown]);
   // How many races the search finds, and how many more a status filter hides.
   const found = shown.length + (filter === "all" ? maybeShown.length : 0);
   const foundUnderAll = useMemo(
@@ -524,23 +516,21 @@ export function MyBallotPanel() {
   const printMounted = printOptions || printing;
   const printSections = useMemo((): PrintSection[] => {
     if (!printMounted) return [];
-    return sectionsOf(yours)
-      .map((section) => ({
-        label: section.label,
-        races:
-          printScope === "marked"
-            ? section.races.filter((race) => isMarked(race, election ?? "", draft.rows))
-            : section.races,
-      }))
-      .filter((section) => section.races.length > 0);
-  }, [printMounted, yours, printScope, election, draft.rows]);
+    // Every race prints, in ballot order: with "Only races I've marked", the
+    // rest print as one line saying they're skipped, so a voter copying it
+    // down can see nothing went missing.
+    return ballotSections(yours).map((section) => ({
+      label: section.label,
+      races: section.races,
+    }));
+  }, [printMounted, yours]);
 
   // How it fits on paper, shown on the print card as the options change.
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when what's printed changes
   useEffect(() => {
     if (!printOptions || !printRef.current) return;
     setFit(fitToPage(printRef.current, printPages));
-  }, [printOptions, printSections, printNotes, printPages, printCounts]);
+  }, [printOptions, printSections, printScope, printNotes, printPages, printCounts]);
 
   // Ctrl+P prints the same ballot as the Print button. `beforeprint` runs
   // before the browser lays out the pages, so render and fit synchronously.
@@ -744,8 +734,9 @@ export function MyBallotPanel() {
         <div className="card no-print print-options">
           <p className="hint">
             Prints like the real ballot: every choice with a bubble, filled where you picked, and
-            beside it how many of the sources you follow back it. Take it with you to fill in your
-            ballot.
+            beside it how many of the sources you follow back it, in the order your ballot prints
+            them. With “Only races I've marked”, the rest print as one line saying skipped, so you
+            can see nothing went missing. Take it with you to fill in your ballot.
           </p>
           <div className="row export-options">
             <Segmented
@@ -943,37 +934,32 @@ export function MyBallotPanel() {
         />
       ) : (
         <div className="ballot-sections">
-          {sections.map((section) =>
-            section.noRace ? (
-              <div key={section.label} className="ballot-section ballot-section-empty">
-                <div className="ballot-section-title">
-                  {section.label} <span className="hint">· no race</span>
-                </div>
-                <p className="hint">{section.noRace}</p>
-              </div>
-            ) : (
-              <BallotSection
-                // Remount when the area changes or a search starts or ends, so
-                // "open by default" re-applies.
-                key={`${section.label}|${isAreaSet(area)}|${search.searching}`}
-                label={section.label}
-                races={section.races}
-                // With no area set the ballot covers the whole state: hundreds of
-                // district and local races. Start those closed, unless searching.
-                defaultOpen={search.searching || isAreaSet(area) || section.rank < 2}
-                election={election ?? ""}
-                rows={draft.rows}
-                patch={patch}
-                applyRank={applyRank}
-                mine={mine}
-                articles={articleCounts}
-                // Under a filter, races you've dealt with shrink to a summary.
-                statuses={filter === "all" ? undefined : statuses}
-                filter={filter}
-                onPlace={place}
-              />
-            ),
-          )}
+          {sections.map((section) => (
+            <BallotSection
+              // Remount when the area changes or a search starts or ends, so
+              // "open by default" re-applies.
+              key={`${section.part}|${isAreaSet(area)}|${search.searching}`}
+              label={section.label}
+              items={section.races}
+              // With no area set the ballot covers the whole state: hundreds of
+              // district and local races. Start those closed, unless searching.
+              defaultOpen={
+                search.searching ||
+                isAreaSet(area) ||
+                section.races.every((item) => parseJurisdiction(item.jurisdiction).kind === "state")
+              }
+              election={election ?? ""}
+              rows={draft.rows}
+              patch={patch}
+              applyRank={applyRank}
+              mine={mine}
+              articles={articleCounts}
+              // Under a filter, races you've dealt with shrink to a summary.
+              statuses={filter === "all" ? undefined : statuses}
+              filter={filter}
+              onPlace={place}
+            />
+          ))}
         </div>
       )}
 
@@ -1041,9 +1027,9 @@ export function MyBallotPanel() {
           </p>
           {maybeSections.map((section) => (
             <BallotSection
-              key={`${section.label}|${search.searching}`}
+              key={`${section.part}|${search.searching}`}
               label={section.label}
-              races={section.races}
+              items={section.races}
               defaultOpen={search.searching}
               election={election ?? ""}
               rows={draft.rows}
@@ -1065,6 +1051,7 @@ export function MyBallotPanel() {
           election={election ?? ""}
           area={isAreaSet(area) ? describeArea(area) : ""}
           sections={printSections}
+          onlyMarked={printScope === "marked"}
           rows={draft.rows}
           followedCount={followedCount}
           notes={printNotes}
@@ -1101,21 +1088,18 @@ const SCHOOL_FAMILY = /\/(?:unsd|elsd|scsd)$/;
 /** A `district` a lookup can place: school, BOE, community college, supervisorial. */
 const LOOKUP_DISTRICT = /\/(?:unsd|elsd|scsd|boe|ccd|sup)-/;
 
-/** Races grouped by jurisdiction, in ballot order (the races come sorted). */
-function sectionsOf(races: Race[]): Array<{ label: string; races: Race[] }> {
-  const out: Array<{ label: string; races: Race[] }> = [];
-  for (const race of races) {
-    const label = jurisdictionLabel(race.jurisdiction);
-    const last = out.at(-1);
-    if (last?.label === label) last.races.push(race);
-    else out.push({ label, races: [race] });
-  }
-  return out;
+/** A district of the voter's with no race this election, listed where its race would print. */
+type NoRaceItem = SequencedRace & { key: string; noRace: string };
+/** A line on My ballot: a race, or a district of yours with none. */
+type BallotItem = Race | NoRaceItem;
+
+function isNoRace(item: BallotItem): item is NoRaceItem {
+  return "noRace" in item;
 }
 
 function BallotSection({
   label,
-  races,
+  items,
   defaultOpen,
   election,
   rows,
@@ -1128,7 +1112,7 @@ function BallotSection({
   onPlace,
 }: {
   label: string;
-  races: Race[];
+  items: BallotItem[];
   defaultOpen: boolean;
   election: string;
   rows: Record<string, DraftRow>;
@@ -1142,53 +1126,48 @@ function BallotSection({
   onPlace: OnPlace;
 }) {
   const [open, setOpen] = useState(defaultOpen);
-  const groups = useMemo(() => contestGroups(races), [races]);
-  const grid = (groupRaces: Race[]) => (
-    <div className="race-grid">
-      {groupRaces.map((race) => {
-        const status = statuses?.get(race.key);
-        const card = (
-          <RaceCard
-            key={race.key}
-            race={race}
-            election={election}
-            rows={rows}
-            patch={patch}
-            applyRank={applyRank}
-            mine={mine.get(race.key)}
-            articles={articles.get(race.key)}
-            onPlace={onPlace}
-          />
-        );
-        return status && status !== filter ? (
-          <DoneRace key={race.key} race={race} status={status} election={election} rows={rows}>
-            {card}
-          </DoneRace>
-        ) : (
-          card
-        );
-      })}
-    </div>
-  );
+  const raceCount = items.filter((item) => !isNoRace(item)).length;
   return (
     <details className="ballot-section" open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
       <summary className="ballot-section-title">
-        {label} <span className="hint">· {races.length}</span>
+        {label} <span className="hint">· {raceCount}</span>
       </summary>
       {/* Closed sections render nothing: a statewide ballot can run to 600+ races. */}
-      {open &&
-        // Candidates, judges and measures each under their own heading, when
-        // the section has more than one kind.
-        (groups.length > 1
-          ? groups.map((group) => (
-              <div key={group.group} className="ballot-subsection">
-                <h4 className="ballot-subsection-title">
-                  {group.label} <span className="hint">· {group.races.length}</span>
-                </h4>
-                {grid(group.races)}
-              </div>
-            ))
-          : grid(races))}
+      {open && (
+        <div className="race-grid">
+          {items.map((item) => {
+            if (isNoRace(item))
+              return (
+                <div key={item.key} className="card ballot-no-race">
+                  <strong>{item.subject.title}</strong> <span className="hint">· no race</span>
+                  <p className="hint">{item.noRace}</p>
+                </div>
+              );
+            const race = item;
+            const status = statuses?.get(race.key);
+            const card = (
+              <RaceCard
+                key={race.key}
+                race={race}
+                election={election}
+                rows={rows}
+                patch={patch}
+                applyRank={applyRank}
+                mine={mine.get(race.key)}
+                articles={articles.get(race.key)}
+                onPlace={onPlace}
+              />
+            );
+            return status && status !== filter ? (
+              <DoneRace key={race.key} race={race} status={status} election={election} rows={rows}>
+                {card}
+              </DoneRace>
+            ) : (
+              card
+            );
+          })}
+        </div>
+      )}
     </details>
   );
 }

@@ -9,9 +9,9 @@ import {
 } from "../lib/ballotDraft";
 import {
   ballotChoices,
-  contestGroups,
   designation,
   instructionLine,
+  isMarked,
   picksIn,
   raceHeading,
   ranksFor,
@@ -69,9 +69,11 @@ export const PrintBallot = forwardRef<
     counts: boolean;
     /** Colour each area, and support and opposition, rather than black only. */
     color: boolean;
+    /** Races with nothing marked print as one "skipped" line, not in full. */
+    onlyMarked?: boolean;
   }
 >(function PrintBallot(
-  { election, area, sections, rows, followedCount, notes, counts, color },
+  { election, area, sections, rows, followedCount, notes, counts, color, onlyMarked = false },
   ref,
 ) {
   const rankings = useRankings();
@@ -97,33 +99,34 @@ export const PrintBallot = forwardRef<
         </p>
       </header>
       <div className="pb-columns">
-        {sections.map((section, i) => {
-          const groups = contestGroups(section.races);
-          return (
-            <section
-              key={section.label}
-              className="pb-section"
-              style={{ "--pb-area": AREA_COLORS[i % AREA_COLORS.length] } as CSSProperties}
-            >
-              <h2>{section.label}</h2>
-              {groups.map((group) => [
-                // Candidates, judges and measures apart, when the section has more than one kind.
-                groups.length > 1 && <h3 key={group.group}>{group.label}</h3>,
-                ...group.races.map((race) => (
-                  <PrintRace
-                    key={race.key}
-                    race={race}
-                    election={election}
-                    rows={rows}
-                    notes={notes}
-                    counts={counts}
-                    saved={rankings[rankingKeyFor(election, race.subject)]}
-                  />
-                )),
-              ])}
-            </section>
-          );
-        })}
+        {sections.map((section, i) => (
+          <section
+            key={section.label}
+            className="pb-section"
+            style={{ "--pb-area": AREA_COLORS[i % AREA_COLORS.length] } as CSSProperties}
+          >
+            <h2>{section.label}</h2>
+            {section.races.map((race) =>
+              onlyMarked && !isMarked(race, election, rows) ? (
+                <div key={race.key} className="pb-race pb-skipped">
+                  <div className="pb-race-title">
+                    {raceHeading(race).heading} <em>· skipped</em>
+                  </div>
+                </div>
+              ) : (
+                <PrintRace
+                  key={race.key}
+                  race={race}
+                  election={election}
+                  rows={rows}
+                  notes={notes}
+                  counts={counts}
+                  saved={rankings[rankingKeyFor(election, race.subject)]}
+                />
+              ),
+            )}
+          </section>
+        ))}
       </div>
     </div>
   );
