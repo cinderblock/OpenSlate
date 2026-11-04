@@ -113,7 +113,12 @@ for it. Its two sides:
   feed where OpenSlate reads one (Los Angeles, San Diego, Orange, Riverside,
   San Bernardino, Santa Clara, Sacramento, Contra Costa, San Mateo, Ventura,
   Sonoma, Solano, Marin): a place's "Local races" adds them one at a time or
-  all at once. *How my ballot is doing* (from Results, or My ballot's "How
+  all at once. The same county count shows where you already look at a local
+  race: under it on My ballot, and on its race page (in place of civicAPI's),
+  matched by the people running or the measure's letter and place, from the
+  same once-a-minute check, once votes are in. A regional measure (RTM) shows
+  none there: each county's feed has only its own share of the vote.
+  *How my ballot is doing* (from Results, or My ballot's "How
   it's going" once the polls open) lists every race you marked next to its
   count (the state's, your county's own for local races, civicAPI for the
   rest), grouped by whether it's going your way, partly, or not. Nothing
