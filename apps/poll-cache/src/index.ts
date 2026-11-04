@@ -10,9 +10,11 @@ import { GEOCODE_PATH, handleGeocode } from "./geocode";
 import {
   HISTORY_PREFIX,
   LIVE_PREFIX,
+  RECORDER_STATUS_PATH,
   serveHistory,
   serveLive,
   serveRecorded,
+  serveStatus,
   startRecorders,
 } from "./recorded";
 import type { Recorder } from "./recorder";
@@ -151,6 +153,10 @@ export default {
     }
     if (isResultsProxyPath(url.pathname)) {
       return proxyResults(url);
+    }
+    if (url.pathname === RECORDER_STATUS_PATH) {
+      if (!recorder) return new Response("Not Found", { status: 404, headers: corsHeaders() });
+      return serveStatus(recorder, corsHeaders());
     }
     if (url.pathname.startsWith(HISTORY_PREFIX)) {
       if (!recorder) return new Response("Not Found", { status: 404, headers: corsHeaders() });

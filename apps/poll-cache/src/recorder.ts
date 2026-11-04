@@ -169,6 +169,34 @@ export class Recorder extends DurableObject<RecorderEnv> {
     }
   }
 
+  /** Where the recorder stands, for `/api/recorder` (public: nothing here is about visitors). */
+  async status(): Promise<Record<string, string | number | null>> {
+    const files = this.sql
+      .exec<{ kept: number; absent: number }>(
+        "SELECT SUM(absent_until IS NULL) AS kept, SUM(absent_until IS NOT NULL) AS absent FROM files",
+      )
+      .toArray()[0];
+    const races = this.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM races").toArray()[0];
+    const points = this.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM points").toArray()[0];
+    const iso = (k: string) => {
+      const v = this.metaNum(k);
+      return v === undefined ? null : new Date(v).toISOString();
+    };
+    return {
+      feed: this.meta("feed") ?? null,
+      checkedAt: iso("checkedAt"),
+      changedAt: iso("changedAt"),
+      nextCheck: iso("nextCheck"),
+      quick: this.meta("quick") === "1" ? 1 : 0,
+      files: files?.kept ?? 0,
+      absent: files?.absent ?? 0,
+      races: races?.n ?? 0,
+      points: points?.n ?? 0,
+      sockets: this.ctx.getWebSockets().length,
+      error: this.meta("error") ?? null,
+    };
+  }
+
   /** The recorder's newest copy of `path`, or null when it keeps none (the relay passes it through). */
   async latest(path: string): Promise<Latest | null> {
     if (!this.meta("feed")) return null;

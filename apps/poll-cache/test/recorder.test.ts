@@ -117,6 +117,7 @@ describe("a county's recorder", () => {
     // Next check a minute later (election night).
     expect(fake.alarmAt()).toBe(Date.now() + 60_000);
 
+    expect(await r.status()).toMatchObject({ feed: "orange", files: 1, absent: 0, error: null });
     const races = await r.history("county-ca/orange/no-such-race");
     expect(races).toBeNull();
 

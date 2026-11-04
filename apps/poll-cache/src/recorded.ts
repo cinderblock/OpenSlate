@@ -15,6 +15,7 @@ import { SOS_CA_PREFIX, sosCaUpstream } from "./sosCa";
 
 export const LIVE_PREFIX = "/api/live/";
 export const HISTORY_PREFIX = "/api/history/";
+export const RECORDER_STATUS_PATH = "/api/recorder";
 
 /** Headers a page may read off a recorded answer. */
 const EXPOSED = "X-Report-Version, X-Checked-At, X-Ready-By";
@@ -106,8 +107,13 @@ export async function serveRecorded(
   const cache = caches.default;
   const hit = await cache.match(key);
   if (hit) return hit;
-  const latest = await stub(env, file.feed).latest(file.path);
-  if (!latest) return null;
+  const recorder = stub(env, file.feed);
+  const latest = await recorder.latest(file.path);
+  if (!latest) {
+    // Not started yet (a new deployment, before the cron): start it now.
+    ctx.waitUntil(recorder.start(file.feed).catch(() => undefined));
+    return null;
+  }
   const body = await bodyOf(env, latest.r2Key, ctx);
   if (body === null) return null;
   const ttl = answerTtl(latest, versioned, Date.now());
@@ -165,4 +171,16 @@ export async function serveLive(
 /** The cron: every feed's recorder running, so a lost alarm is found within minutes. */
 export async function startRecorders(env: RecorderEnv): Promise<void> {
   await Promise.all(recordedFeeds().map((feed) => stub(env, feed).start(feed)));
+}
+
+/** `/api/recorder`: where each feed's recorder stands. */
+export async function serveStatus(
+  env: RecorderEnv,
+  cors: Record<string, string>,
+): Promise<Response> {
+  const feeds = recordedFeeds();
+  const states = await Promise.all(feeds.map((feed) => stub(env, feed).status()));
+  const headers = new Headers(cors);
+  headers.set("Cache-Control", "public, max-age=15");
+  return Response.json(Object.fromEntries(feeds.map((feed, i) => [feed, states[i]])), { headers });
 }
