@@ -760,10 +760,11 @@ function useChanged(time: string | undefined): boolean {
 
 function ReportingLine({ result }: { result: ContestResult }) {
   const { percent, time } = result.reporting;
+  const lead = percent !== undefined ? `${percent}% of precincts` : result.reporting.text;
   return (
-    <span className="hint live-reporting" title={result.reporting.text}>
-      {percent !== undefined ? `${percent}% of precincts` : result.reporting.text}
-      {time && ` · updated ${time}`}
+    <span className="hint live-reporting" title={result.reporting.text || undefined}>
+      {lead}
+      {time && `${lead ? " · u" : "U"}pdated ${time}`}
     </span>
   );
 }

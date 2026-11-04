@@ -323,3 +323,24 @@ describe("what a local measure needs to pass", () => {
     expect(r.kind === "measure" && r.measure.threshold).toBe("2/3");
   });
 });
+
+describe("precincts on a county card", () => {
+  test("left out while none has reported, though mail ballots are counted", () => {
+    const [early] = parseClaritySummary([
+      {
+        K: "1",
+        C: "Measure O",
+        CAT: "Measures",
+        TP: 5,
+        PR: 0,
+        CH: ["YES", "NO"],
+        V: [1171, 418],
+        PCT: [73.7, 26.3],
+      },
+    ]);
+    if (!early) throw new Error("no contest");
+    const r = countyContestResult(early);
+    expect(r.reporting.percent).toBeUndefined();
+    expect(r.reporting.text).toBe("");
+  });
+});

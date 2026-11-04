@@ -93,9 +93,14 @@ const timeFmt = new Intl.DateTimeFormat("en-US", {
 
 export function countyContestResult(c: CountyContest, updated?: number): ContestResult {
   const p = c.precincts;
-  const percent = p && p.total > 0 ? Math.round((p.reporting / p.total) * 1000) / 10 : undefined;
+  // Mail ballots are counted before any precinct "reports": "0% of precincts"
+  // beside thousands of votes would mislead, so precincts show once one reports.
+  const precincts = p && p.total > 0 && p.reporting > 0 ? p : undefined;
+  const percent = precincts
+    ? Math.round((precincts.reporting / precincts.total) * 1000) / 10
+    : undefined;
   const reporting = {
-    text: p ? `${p.reporting} of ${p.total} precincts reporting` : "",
+    text: precincts ? `${precincts.reporting} of ${precincts.total} precincts reporting` : "",
     ...(percent !== undefined ? { percent } : {}),
     ...(updated ? { time: timeFmt.format(updated) } : {}),
   };
