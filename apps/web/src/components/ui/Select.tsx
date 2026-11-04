@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import {
   ComboBox as AriaComboBox,
   Select as AriaSelect,
@@ -157,6 +157,11 @@ export interface ComboBoxProps<K extends string> extends CommonProps<K> {
   alwaysShow?: (option: SelectOption<K>) => boolean;
   /** Called as the user types, e.g. to carry the text into a "new item" form. */
   onInputChange?: (text: string) => void;
+  /**
+   * The options to list for what's typed, in order: a ranked search in place
+   * of the default filter (every typed word anywhere, in the list's order).
+   */
+  search?: (text: string) => SelectOption<K>[];
 }
 
 /** A Select you can type into to filter a long list. */
@@ -170,18 +175,24 @@ export function ComboBox<K extends string>({
   className,
   alwaysShow,
   onInputChange,
+  search,
   "aria-label": ariaLabel,
 }: ComboBoxProps<K>) {
   const { contains } = useFilter({ sensitivity: "base" });
+  const [typed, setTyped] = useState("");
+  const found = useMemo(() => (search ? search(typed) : undefined), [search, typed]);
   return (
     <AriaComboBox
       className={cx("ui-field ui-combobox", className)}
-      defaultItems={options}
+      {...(found ? { items: found } : { defaultItems: options })}
       selectedKey={value ?? null}
       onSelectionChange={(key) => {
         if (key != null) onChange(key as K);
       }}
-      onInputChange={onInputChange}
+      onInputChange={(text) => {
+        if (search) setTyped(text);
+        onInputChange?.(text);
+      }}
       defaultFilter={(text, input) =>
         // Every typed word, in any order: "schools proposition" finds "Proposition 3 (… Schools …)".
         input

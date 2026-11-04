@@ -1,7 +1,7 @@
 import type { CountyContest } from "@openslate/core";
 import { useIsFetching, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAllRaces, useCatalogCopyReady } from "../lib/allSlates";
 import {
   catalogRaceFor,
@@ -13,6 +13,7 @@ import {
   feedCountyNames,
   feedCountyOfArea,
   localContests,
+  measureLetter,
   parseCountyContestId,
 } from "../lib/countyCa";
 import type { Area } from "../lib/jurisdictions";
@@ -20,6 +21,7 @@ import { EMPTY_AREA, isAreaSet } from "../lib/jurisdictions";
 import { useLocalStore } from "../lib/localStore";
 import { useArea } from "../lib/myVote";
 import { raceChangesStore, useRaceChange } from "../lib/raceChanges";
+import { contestAliases, prepareRace, type RaceSearchEntry, rankRaces } from "../lib/raceSearch";
 import { baseUrlFor } from "../lib/routing";
 import {
   type ContestResult,
@@ -969,51 +971,79 @@ function AddRace({ measures, onDone }: { measures: MeasureResult[]; onDone: () =
   );
   // Who's running where, so a race can be found by a candidate's name.
   const running = useSosCandidates(true);
-  const options = useMemo<SelectOption[]>(() => {
+  // Each option with what it's found by (lib/raceSearch.ts ranks them as the voter types).
+  const { options, prepared } = useMemo(() => {
+    const options: SelectOption[] = [];
+    const entries: RaceSearchEntry[] = [];
+    const add = (option: SelectOption, entry: RaceSearchEntry) => {
+      options.push(option);
+      entries.push(entry);
+    };
     // The county's own races and measures first: what the state's lists don't have.
-    const out: SelectOption[] =
-      found && local.data
-        ? localContests(local.data.contests).map((c) => {
-            const names = c.measure ? [] : c.choices.map((x) => x.name);
-            const where = `${found.feed.name} County${c.category ? ` · ${c.category}` : ""}`;
-            return {
-              id: countyContestId(found.slug, c.key),
-              label: c.title,
-              textValue: [c.title, ...names].join(" "),
-              description: names.length > 0 ? `${where} · ${nameList(names)}` : where,
-            };
-          })
-        : [];
-    /** A state contest, found by its name or anyone running in it. */
-    const state = (id: string, label: string, where?: string): SelectOption => {
+    if (found && local.data) {
+      for (const c of localContests(local.data.contests)) {
+        const names = c.measure ? [] : c.choices.map((x) => x.name);
+        const where = `${found.feed.name} County${c.category ? ` · ${c.category}` : ""}`;
+        const letter = c.measure ? measureLetter(c.title) : undefined;
+        add(
+          {
+            id: countyContestId(found.slug, c.key),
+            label: c.title,
+            textValue: [c.title, ...names].join(" "),
+            description: names.length > 0 ? `${where} · ${nameList(names)}` : where,
+          },
+          { name: c.title, people: names, detail: where, ...(letter ? { measure: letter } : {}) },
+        );
+      }
+    }
+    /** A state contest, found by its name, what voters call it, or anyone running in it. */
+    const state = (id: string, label: string, where?: string) => {
       const names = running[id] ?? [];
       const description = [where, names.length > 0 ? nameList(names) : undefined]
         .filter(Boolean)
         .join(" · ");
-      return {
-        id,
-        label,
-        textValue: [label, ...names].join(" "),
-        ...(description ? { description } : {}),
-      };
+      add(
+        {
+          id,
+          label,
+          textValue: [label, ...names].join(" "),
+          ...(description ? { description } : {}),
+        },
+        {
+          name: label,
+          aliases: contestAliases(id),
+          people: names,
+          ...(where ? { detail: where } : {}),
+        },
+      );
     };
-    out.push(...STATEWIDE_OFFICES.map((o) => state(o.id, o.label, "Statewide")));
+    for (const o of STATEWIDE_OFFICES) state(o.id, o.label, "Statewide");
     for (const m of measures) {
-      out.push({
-        id: propContest(m.number),
-        label: `Proposition ${m.number}`,
-        textValue: `Proposition ${m.number} Prop ${m.number} ${m.name}`,
-        description: m.name,
-      });
+      const id = propContest(m.number);
+      add(
+        {
+          id,
+          label: `Proposition ${m.number}`,
+          textValue: `Proposition ${m.number} ${m.name}`,
+          description: m.name,
+        },
+        {
+          name: `Proposition ${m.number}`,
+          aliases: contestAliases(id),
+          detail: m.name,
+          measure: m.number,
+        },
+      );
     }
-    for (const { family, count, label } of DISTRICT_FAMILIES) {
-      for (let n = 1; n <= count; n++) {
-        const id = `${DISTRICT_FAMILIES.find((f) => f.family === family)?.path}/district/${n}`;
-        out.push(state(id, `${label} ${n}`));
-      }
+    for (const { path, count, label } of DISTRICT_FAMILIES) {
+      for (let n = 1; n <= count; n++) state(`${path}/district/${n}`, `${label} ${n}`);
     }
-    return out;
+    return { options, prepared: entries.map(prepareRace) };
   }, [measures, found, local.data, running]);
+  const search = useCallback(
+    (text: string) => rankRaces(options, prepared, text),
+    [options, prepared],
+  );
   return (
     <div className="card-inset live-add">
       <ComboBox
@@ -1033,8 +1063,9 @@ function AddRace({ measures, onDone }: { measures: MeasureResult[]; onDone: () =
       <ComboBox
         label="Race or measure"
         options={options}
+        search={search}
         value={null}
-        placeholder="A race, measure or candidate: Governor, Prop 50, a name…"
+        placeholder="A race, measure or candidate: Governor, Prop 3, Measure A, a name…"
         onChange={(id) => {
           if (!id) return;
           watchStore.set((gs) => addSingle(gs, id));
