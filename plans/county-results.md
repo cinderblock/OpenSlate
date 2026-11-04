@@ -213,11 +213,12 @@ Formats:
 - SF stays out unless it stops blocking our UA
 - [ ] Recheck of the zero-report counties above: handed to thread "County results: recheck feeds still at zero", 2026-11-04
 - [ ] Race search ranking ("Measure O" not first for its own name): handed to thread "Results: race search fixes" (plan `plans/race-search.md`), 2026-11-04
-- [ ] Whole-night history stored on our side (user ask, 2026-11-04): waiting on the user's choice of storage, see Open questions
+- [x] History stored on our side (user ask, 2026-11-04): the user chose Durable Objects plus an R2 audit trail; built and live (recorder `a7044d9`, browser side `486174b`). Continued in `plans/live-recorder.md`
 
 ## Open questions for the user
 
-1. Where should the relay keep race history? (Asked 2026-11-04; user: cost is
+1. ANSWERED 2026-11-04: yes to Durable Objects and R2; see `plans/live-recorder.md`.
+   Where should the relay keep race history? (Asked 2026-11-04; user: cost is
    fine, wants options compared.) Recommendation: one SQLite-backed Durable
    Object per feed in openslate-poll-cache, the "recorder". Needs a DO binding
    and migration in `apps/poll-cache/wrangler.toml`; an R2 bucket for raw
