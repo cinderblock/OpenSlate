@@ -71,7 +71,7 @@ those rows.
 - [x] tests: `test/browserData.test.ts`, including a guard that every `openslate.*` key in the source is catalogued
 - [x] README
 - [x] typecheck, tests, build; headless check of the built app at a phone viewport: list, backup, remove unnamed slate, remove leftover key, merge-restore, reset everything, no console errors
-- [ ] deploy (goes out with the next push to master)
+- [x] deployed: on master via another thread's push, live on openslate.us on 2026-11-03
 
 ## Open questions for the user
 
