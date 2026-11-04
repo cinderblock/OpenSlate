@@ -344,3 +344,21 @@ describe("precincts on a county card", () => {
     expect(r.reporting.text).toBe("");
   });
 });
+
+describe("when a county's count changed", () => {
+  const c = contest("1", "Measure O", "Measures", ["YES", "NO"]);
+  test("the county's own time, when it gives one", () => {
+    const r = countyContestResult(
+      c,
+      Date.parse("2026-11-04T04:15:00Z"),
+      Date.parse("2026-11-04T04:16:30Z"),
+    );
+    expect(r.reporting.changedAt).toBe(Date.parse("2026-11-04T04:15:00Z"));
+    expect(r.reporting.changedSeen).toBeUndefined();
+  });
+  test("else when OpenSlate first saw the count, marked as such", () => {
+    const r = countyContestResult(c, undefined, Date.parse("2026-11-04T04:16:30Z"));
+    expect(r.reporting.changedAt).toBe(Date.parse("2026-11-04T04:16:30Z"));
+    expect(r.reporting.changedSeen).toBe(true);
+  });
+});

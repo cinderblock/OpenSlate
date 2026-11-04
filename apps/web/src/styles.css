@@ -4524,6 +4524,18 @@ button.tag.active {
 .live-reporting {
   flex: 1 1 auto;
 }
+/* Precincts · Changed … · Checked …, each part kept whole when the line wraps. */
+.live-reporting > span {
+  white-space: nowrap;
+}
+.live-reporting > span + span::before {
+  content: " · ";
+  white-space: pre;
+}
+.live-utc {
+  font-size: 0.85em;
+  opacity: 0.85;
+}
 .live-remove {
   margin-left: auto;
 }

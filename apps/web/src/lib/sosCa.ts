@@ -113,6 +113,13 @@ export interface Reporting {
   percent?: number;
   /** When the count was last updated, as the API words it ("November 3, 2026, 8:15 p.m."). */
   time?: string;
+  /** When the source last changed its count, ms since epoch, when it says (a county's file time). */
+  changedAt?: number;
+  /**
+   * `changedAt` is when OpenSlate first saw this count, not a time the source
+   * gave (Los Angeles publishes none): the count changed by then.
+   */
+  changedSeen?: boolean;
 }
 
 export interface CandidateResult {

@@ -609,7 +609,9 @@ function CountyContestCard({
   const query = useQuery(countyQueryOptions(slug));
   const remove = () => watchStore.set((gs) => removeFromGroups(gs, groupIds, id));
   const contest = query.data?.contests.find((c) => c.key === contestKey);
-  const result = contest ? countyContestResult(contest, query.data?.updated) : undefined;
+  const result = contest
+    ? countyContestResult(contest, query.data?.updated, query.data?.seenAt)
+    : undefined;
   const changed = useChanged(query.data?.version);
   const feed = countyFeed(slug)?.feed;
   const title = contest?.title ?? "Local race";
@@ -618,7 +620,7 @@ function CountyContestCard({
       <div className="live-contest-head">
         {move && <MoveButtons move={move} title={title} />}
         <strong>{title}</strong>
-        {result && <ReportingLine result={result} />}
+        {result && <ReportingLine result={result} checkedAt={query.dataUpdatedAt} />}
         <button
           type="button"
           className="link live-remove"
@@ -701,7 +703,7 @@ function StateContestCard({
       <div className="live-contest-head">
         {move && <MoveButtons move={move} title={contestLabel(id)} />}
         <strong>{contestLabel(id)}</strong>
-        {result && <ReportingLine result={result} />}
+        {result && <ReportingLine result={result} checkedAt={query.dataUpdatedAt} />}
         <button
           type="button"
           className="link live-remove"
@@ -758,13 +760,50 @@ function useChanged(time: string | undefined): boolean {
   return changedAt > 0 && Date.now() - changedAt < 120_000;
 }
 
-function ReportingLine({ result }: { result: ContestResult }) {
-  const { percent, time } = result.reporting;
-  const lead = percent !== undefined ? `${percent}% of precincts` : result.reporting.text;
+const clockFmt = new Intl.DateTimeFormat("en-US", {
+  hour: "numeric",
+  minute: "2-digit",
+  timeZoneName: "short",
+});
+const dayFmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+
+/** A moment as local time (with the day when it isn't today), UTC beside it, smaller. */
+function Clock({ at }: { at: number }) {
+  const d = new Date(at);
+  const today = new Date().toDateString() === d.toDateString();
+  const utc = `${d.toISOString().slice(11, 16)}Z`;
   return (
-    <span className="hint live-reporting" title={result.reporting.text || undefined}>
-      {lead}
-      {time && `${lead ? " · u" : "U"}pdated ${time}`}
+    <time dateTime={d.toISOString()}>
+      {today ? "" : `${dayFmt.format(d)}, `}
+      {clockFmt.format(d)} <small className="live-utc">({utc})</small>
+    </time>
+  );
+}
+
+/**
+ * Precincts, when the count says, then two times: when the source last changed
+ * its count (its own time; for a county that gives none, when OpenSlate first
+ * saw this count), and when OpenSlate last checked it.
+ */
+function ReportingLine({ result, checkedAt }: { result: ContestResult; checkedAt: number }) {
+  const { percent } = result.reporting;
+  const lead = percent !== undefined ? `${percent}% of precincts` : result.reporting.text;
+  const sosTime = parseSosTime(result.reporting.time);
+  const changedAt = result.reporting.changedAt ?? (sosTime ? Date.parse(sosTime) : undefined);
+  return (
+    <span className="hint live-reporting">
+      {lead && <span>{lead}</span>}
+      {changedAt !== undefined && (
+        <span>
+          {result.reporting.changedSeen ? "New by " : "Changed "}
+          <Clock at={changedAt} />
+        </span>
+      )}
+      {checkedAt > 0 && (
+        <span>
+          Checked <Clock at={checkedAt} />
+        </span>
+      )}
     </span>
   );
 }

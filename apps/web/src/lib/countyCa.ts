@@ -80,6 +80,8 @@ export interface CountyResults {
   version: string;
   /** When the county published this count, as the server says (`Last-Modified`), ms since epoch. */
   updated?: number;
+  /** When OpenSlate first read this version, ms since epoch: the change time when the county gives none. */
+  seenAt: number;
   contests: CountyContest[];
 }
 
@@ -91,7 +93,21 @@ const timeFmt = new Intl.DateTimeFormat("en-US", {
   timeZoneName: "short",
 });
 
-export function countyContestResult(c: CountyContest, updated?: number): ContestResult {
+/**
+ * A county contest in the Live page's shape. `updated` is the county's own
+ * time for the count; without one, `seenAt` (when OpenSlate first read it)
+ * stands in, marked as such.
+ */
+export function countyContestResult(
+  c: CountyContest,
+  updated?: number,
+  seenAt?: number,
+): ContestResult {
+  const changed = updated
+    ? { changedAt: updated }
+    : seenAt
+      ? { changedAt: seenAt, changedSeen: true }
+      : {};
   const p = c.precincts;
   // Mail ballots are counted before any precinct "reports": "0% of precincts"
   // beside thousands of votes would mislead, so precincts show once one reports.
@@ -103,6 +119,7 @@ export function countyContestResult(c: CountyContest, updated?: number): Contest
     text: precincts ? `${precincts.reporting} of ${precincts.total} precincts reporting` : "",
     ...(percent !== undefined ? { percent } : {}),
     ...(updated ? { time: timeFmt.format(updated) } : {}),
+    ...changed,
   };
   if (c.measure) {
     const threshold = measureThreshold(c.title);
@@ -381,12 +398,17 @@ async function fetchLvt(slug: string, feed: CountyFeed): Promise<CountyResults> 
   // The same file again (same time, same length): keep what was read.
   const version = `${updated.updated ?? ""}:${text.length}`;
   if (previous?.version === version) return previous;
-  const out: CountyResults = { county: slug, version, ...updated, contests: parseLvtCsv(text) };
+  const out: CountyResults = {
+    county: slug,
+    version,
+    ...updated,
+    seenAt: Date.now(),
+    contests: parseLvtCsv(text),
+  };
   lastRead.set(slug, out);
   return out;
 }
 
-/** Sacramento's results API: every ballot item in one JSON, its time in `election.asOf`. */
 /** Los Angeles: every contest in one JSON (through the relay: no CORS, and a query the relay adds). */
 async function fetchLaVote(slug: string, feed: CountyFeed): Promise<CountyResults> {
   const res = await fetch(`${baseFor(slug, feed)}/json`, {
@@ -402,12 +424,14 @@ async function fetchLaVote(slug: string, feed: CountyFeed): Promise<CountyResult
     county: slug,
     version,
     ...updated,
+    seenAt: Date.now(),
     contests: parseLaVote(JSON.parse(text)),
   };
   lastRead.set(slug, out);
   return out;
 }
 
+/** Sacramento's results API: every ballot item in one JSON, its time in `election.asOf`. */
 async function fetchResultsApi(slug: string, feed: CountyFeed): Promise<CountyResults> {
   const res = await fetch(`${baseFor(slug, feed)}/data`, {
     headers: { accept: "application/json" },
@@ -419,6 +443,7 @@ async function fetchResultsApi(slug: string, feed: CountyFeed): Promise<CountyRe
   const out: CountyResults = {
     county: slug,
     version: `${updated.updated ?? ""}:${text.length}`,
+    seenAt: Date.now(),
     ...updated,
     contests,
   };
@@ -457,6 +482,7 @@ export async function fetchCountyResults(slug: string): Promise<CountyResults> {
     county: slug,
     version,
     ...updatedOf(res),
+    seenAt: Date.now(),
     contests: parseClaritySummary(await res.json()),
   };
   lastRead.set(slug, out);
