@@ -96,3 +96,19 @@ sources: each county's sample ballots (PDF per ballot type, or the voter-guide l
 election-night results / Statement of Votes Cast (exported from the election system in its contest
 order), and the Civic/VIP feed's `ballotPlacement` (already found wrong for LA: `plans/ballot-order.md`).
 
+
+## A county's "County" results group pulls every local contest onto a place (Sonoma, Ventura)
+
+Seen 12:29 PM PST 2026-11-04 (20:29Z), headless on openslate.us (`plans/county-results.md`).
+`contestsForPlace` (`apps/web/src/lib/countyCa.ts`) takes any contest whose category is
+`County` as one the whole county votes on (added in `f918124` for LA's groups). But Sonoma's
+Clarity feed files all 37 non-state contests under `County` (Calistoga, Two Rock, Windsor school
+boards, Santa Rosa council districts, supervisors), so a Santa Rosa place got 41 local races.
+Ventura's `County` group holds "Kern County Board of Education Trustee Area 7" and trustee-area
+seats, which an Oxnard place got. Reproduce: a place `{ localities: ["us/ca/santa-rosa",
+"us/ca/sonoma-county"] }` with county Sonoma on the Results page, or `contestsForPlace` on
+Sonoma's `summary.json`.
+
+Why it matters: the matcher is meant to be over-inclusive, but here the voter has to remove dozens
+of races that aren't theirs. LA's `County Measures` / `Sheriff` groups are truly countywide;
+a bare `County` category isn't.
