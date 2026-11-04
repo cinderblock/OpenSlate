@@ -1616,6 +1616,11 @@ button.source-chip {
   background: #e6e6e6;
   border-bottom: 1pt solid #000;
 }
+/* A race the voter left blank, under "Only races I've marked": one line, so nothing goes missing. */
+.pb-skipped .pb-race-title {
+  border-bottom: 0;
+  font-weight: 400;
+}
 .pb-vote-for {
   font-size: 9pt;
   font-weight: 700;
