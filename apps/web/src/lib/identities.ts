@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useActiveIdentityKey } from "./address";
 import { identityCollection, knownIdentitiesCollection } from "./collections";
 import type { KnownIdentity } from "./db";
+import { shortKey } from "./sources";
 
 /** All of the user's own identities (each holds a secret key). */
 export function useMyIdentities(): StoredIdentity[] {
@@ -58,8 +59,4 @@ export function useDisplayName(publicKey: string | undefined, selfAsserted?: str
   return known?.displayName?.trim() || selfAsserted?.trim() || shortKey(publicKey);
 }
 
-export function shortKey(publicKey: string | undefined): string {
-  if (!publicKey) return "unknown";
-  const body = publicKey.startsWith("ed25519:") ? publicKey.slice("ed25519:".length) : publicKey;
-  return `${body.slice(0, 8)}…${body.slice(-4)}`;
-}
+export { shortKey };

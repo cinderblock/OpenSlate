@@ -54,6 +54,13 @@ export function normaliseEntityUri(uri: string | undefined): string | undefined 
   }
 }
 
+/** A public key shortened for display: `a1b2c3d4…wxyz`. */
+export function shortKey(publicKey: string | undefined): string {
+  if (!publicKey) return "unknown";
+  const body = publicKey.startsWith("ed25519:") ? publicKey.slice("ed25519:".length) : publicKey;
+  return `${body.slice(0, 8)}…${body.slice(-4)}`;
+}
+
 export function sourceIdOf(input: SourceInput): string {
   const of = input.attribution?.of;
   if (!of) return `key:${input.issuer.key}`;
@@ -65,7 +72,8 @@ export function sourceOf(input: SourceInput | SlatePayload): Source {
   const entity = of ?? input.issuer;
   const source: Source = {
     id: sourceIdOf(input),
-    name: entity.name ?? input.issuer.key,
+    // A slate signed without a name: a short key reads better than the whole one.
+    name: entity.name ?? shortKey(input.issuer.key),
     secondhand: Boolean(of),
     signerKey: input.issuer.key,
   };
