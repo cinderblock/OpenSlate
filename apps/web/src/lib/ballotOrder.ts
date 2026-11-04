@@ -260,10 +260,27 @@ const NAMESAKE_CITIES = new Set([
 export function countyOfPath(path: string | undefined): string | undefined {
   if (!path) return undefined;
   if (path === "us/ca/sf") return "San Francisco";
-  return COUNTIES.find((county) => {
+  return countyPaths().get(path);
+}
+
+/**
+ * Every county's paths, built once: sorting a ballot asks for thousands, and
+ * slugifying all 58 names each time froze the race page for over a second.
+ */
+let countyPathTable: Map<string, string> | undefined;
+function countyPaths(): Map<string, string> {
+  if (countyPathTable) return countyPathTable;
+  const table = new Map<string, string>();
+  const add = (path: string, county: string) => {
+    if (!table.has(path)) table.set(path, county);
+  };
+  for (const county of COUNTIES) {
     const base = localityPathFor("us/ca", county);
-    return path === `${base}-county` || (path === base && !NAMESAKE_CITIES.has(county));
-  });
+    add(`${base}-county`, county);
+    if (!NAMESAKE_CITIES.has(county)) add(base, county);
+  }
+  countyPathTable = table;
+  return table;
 }
 
 /** The counties the voter's area puts them in (normally one). */
