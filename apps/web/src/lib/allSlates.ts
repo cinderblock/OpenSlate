@@ -18,6 +18,7 @@ import {
   electionsOf,
   type Race,
   rememberVerified,
+  verifyAhead,
 } from "./collate";
 import { slatesCollection } from "./collections";
 import { yieldToPage } from "./decodedSlates";
@@ -43,6 +44,7 @@ const loader = createCatalogLoader({
     const [slate] = decodeSlates([{ token, importedAt: "" }]);
     return slate?.valid ? slate.payload : undefined;
   },
+  verifyAhead,
   async readCopy(catalogUrl) {
     const copy = await get<CatalogCopy>(COPY_KEY);
     if (copy?.catalogUrl !== catalogUrl) return undefined;

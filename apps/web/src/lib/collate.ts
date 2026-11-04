@@ -6,6 +6,7 @@ import {
   type Stance,
   type Subject,
   verifySlate,
+  verifySlateAsync,
 } from "@openslate/core";
 import type { ChoiceCheck } from "./ballotCheck";
 import { ballotOrderFor, type OrderBasis } from "./ballotOrder";
@@ -107,6 +108,27 @@ export function decodeSlates(rows: Array<{ token: string; importedAt: string }>)
     out.push({ token: row.token, importedAt: row.importedAt, ...decoded });
   }
   return out;
+}
+
+/**
+ * Verify these tokens ahead of `decodeSlates`, all at once, through the
+ * browser's own Ed25519 where it has one (`verifySlateAsync`): the same
+ * results, kept where `decodeSlates` finds them, in a fraction of the time.
+ */
+export async function verifyAhead(tokens: readonly string[]): Promise<void> {
+  const todo = [...new Set(tokens)].filter((token) => !verified.has(token));
+  await Promise.all(
+    todo.map(async (token) => {
+      const result = await verifySlateAsync(token);
+      if (verified.has(token)) return;
+      verified.set(
+        token,
+        result.payload
+          ? { payload: result.payload, valid: result.valid, source: sourceOf(result.payload) }
+          : null,
+      );
+    }),
+  );
 }
 
 /** Whether `decodeSlates` already has this token's result, so it would cost nothing. */

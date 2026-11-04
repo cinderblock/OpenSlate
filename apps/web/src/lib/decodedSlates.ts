@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { type DecodedSlate, decodeSlates, isDecoded } from "./collate";
+import { type DecodedSlate, decodeSlates, isDecoded, verifyAhead } from "./collate";
 
 /**
  * Verifying a slate (schema check plus an Ed25519 signature) takes a couple of
@@ -31,7 +31,12 @@ export interface SliceOptions {
   onProgress?: (done: number, total: number) => void;
   /** At least this long between progress reports, in ms. */
   progressMs?: number;
+  /** Check a few ahead at once, faster than one by one (`verifyAhead` in collate.ts). */
+  verifyAhead?: (tokens: string[]) => Promise<void>;
 }
+
+/** Checked ahead at once: enough in flight to be quick, few enough to fit a slice. */
+const AHEAD = 8;
 
 /** About half a frame: long enough to get through a few slates, short enough not to stutter. */
 const SLICE_MS = 8;
@@ -51,12 +56,20 @@ export async function decodeSlatesInSlices(
     signal,
     onProgress,
     progressMs = PROGRESS_MS,
+    verifyAhead: ahead,
   }: SliceOptions,
 ): Promise<DecodedSlate[] | undefined> {
   let sliceStart = now();
   let progressAt = sliceStart;
   for (let i = 0; i < rows.length; i++) {
     if (signal?.aborted) return undefined;
+    if (ahead && i % AHEAD === 0) {
+      const next = rows
+        .slice(i, i + AHEAD)
+        .map((r) => r.token)
+        .filter((t) => !isDecoded(t));
+      if (next.length) await ahead(next);
+    }
     const row = rows[i];
     if (!row || isDecoded(row.token)) continue;
     decodeSlates([row]);
@@ -104,6 +117,7 @@ export function useDecodedSlates(rows: Row[]): DecodedSlatesState {
       now: () => performance.now(),
       signal: controller.signal,
       onProgress: (done) => setProgress({ rows, done }),
+      verifyAhead,
     }).then((slates) => {
       if (slates) setResult({ rows, slates });
     });

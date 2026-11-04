@@ -52,6 +52,11 @@ export interface CopyDeps {
   fetchSlate: (entry: CatalogEntry, catalogUrl: string) => Promise<string>;
   /** The payload of a token that verifies; undefined for one that doesn't. */
   verify: (token: string) => SlatePayload | undefined;
+  /**
+   * Check these ahead of `verify`, all at once (the browser's own Ed25519 is
+   * many times faster than `verify`'s one at a time); `verify` then has them.
+   */
+  verifyAhead?: (tokens: string[]) => Promise<void>;
   readCopy: (catalogUrl: string) => Promise<CatalogCopy | undefined>;
   writeCopy: (copy: CatalogCopy) => Promise<void>;
   /** Let the page paint and answer input. */
@@ -75,6 +80,8 @@ const RECHECK_MS = 5 * 60 * 1000;
 const CONCURRENCY = 6;
 /** Signature-checking between yields: long enough to get on, short enough not to be felt. */
 const SLICE_MS = 12;
+/** Checked ahead at once: enough in flight to be quick, few enough to fit a slice. */
+const AHEAD = 8;
 /** How often the progress bar moves. */
 const PROGRESS_MS = 250;
 
@@ -139,6 +146,14 @@ export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
     report({ label, value: 0, maxValue });
     let sliceStart = deps.now();
     for (const [index, entry] of catalog.entries.entries()) {
+      // A few at a time ahead, many in flight at once, before `verify` asks for each.
+      if (deps.verifyAhead && index % AHEAD === 0) {
+        const ahead = catalog.entries
+          .slice(index, index + AHEAD)
+          .map((e) => tokens.get(e.path))
+          .filter((t): t is string => t !== undefined && !verified.has(t));
+        if (ahead.length) await deps.verifyAhead(ahead);
+      }
       const token = tokens.get(entry.path);
       const payload = token ? (verified.get(token) ?? deps.verify(token)) : undefined;
       // The index and the bundle should agree on who signed.
