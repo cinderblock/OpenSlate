@@ -66,12 +66,11 @@ Asked 2026-11-04 (the day after the Nov 3 general), after the user found no way 
 - [x] Scoring + tests, resolver hook, page, route, links: `e7e5240`
 - [x] `/results/$token` leading/trailing, measures by stance: `df4ca50`
 - [x] README
-- [ ] Push (not done: waiting on the user)
+- [x] Pushed `ab17ef0` (origin/master)
 
 ## Open questions for the user
 
-1. Push to master (deploys)? Recommend yes.
-2. Follow-ups worth doing: retention judges from the county feeds, Regional Measure RTM
+1. Follow-ups worth doing: retention judges from the county feeds, Regional Measure RTM
    matching, county counts on `/results/$token`. Recommend the first two (they're on
    most Bay Area ballots).
 
