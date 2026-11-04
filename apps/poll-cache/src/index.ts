@@ -29,6 +29,20 @@ const RESULTS_LIVE_SWR_SECONDS = 5 * 60;
 const RESULTS_SETTLED_TTL_SECONDS = 15 * 60;
 const RESULTS_SETTLED_SWR_SECONDS = 60 * 60;
 
+// California Secretary of State election-night results. Everyone watching the
+// same contest shares one upstream request per data center per minute.
+const SOS_CA_UPSTREAM = "https://api.sos.ca.gov/returns";
+const SOS_CA_PREFIX = "/api/sos-ca/returns/";
+const SOS_CA_TTL_SECONDS = 60;
+/** Contest paths only: `governor`, `us-rep/district/16`, `ballot-measures/county/santa-clara`. */
+const SOS_CA_PATH = /^[a-z-]+(\/district\/\d{1,2})?(\/county\/[a-z-]+)?$/;
+
+export function sosCaUpstream(pathname: string): string | null {
+  if (!pathname.startsWith(SOS_CA_PREFIX)) return null;
+  const inner = pathname.slice(SOS_CA_PREFIX.length);
+  return SOS_CA_PATH.test(inner) ? `${SOS_CA_UPSTREAM}/${inner}` : null;
+}
+
 const POLLS_PROXY_PATHS = ["/api/polls", "/api/pollsters", "/api/subjects", "/api/poll-types"];
 const RESULTS_PREFIX = "/api/results/v2";
 
@@ -102,6 +116,7 @@ export default {
           service: "openslate-poll-cache",
           polls_upstream: POLLS_UPSTREAM,
           results_upstream: RESULTS_UPSTREAM,
+          sos_ca_upstream: SOS_CA_UPSTREAM,
           geocode: GEOCODE_PATH,
           // Whether this relay can ask Google (it has a key): the web app
           // offers "Google (via OpenSlate)" only then.
@@ -118,6 +133,11 @@ export default {
     }
     if (isResultsProxyPath(url.pathname)) {
       return proxyResults(url);
+    }
+    if (url.pathname.startsWith(SOS_CA_PREFIX)) {
+      const upstream = sosCaUpstream(url.pathname);
+      if (!upstream) return new Response("Not Found", { status: 404, headers: corsHeaders() });
+      return proxySosCa(upstream);
     }
 
     return new Response("Not Found", { status: 404, headers: corsHeaders() });
@@ -175,4 +195,20 @@ async function proxyResults(url: URL): Promise<Response> {
     statusText: upstreamRes.statusText,
     headers,
   });
+}
+
+async function proxySosCa(upstream: string): Promise<Response> {
+  const upstreamRes = await fetch(upstream, {
+    // Errors briefly, so an outage upstream isn't repeated by every visitor.
+    cf: {
+      cacheEverything: true,
+      cacheTtlByStatus: { "200-299": SOS_CA_TTL_SECONDS, "400-599": 15 },
+    },
+  });
+  const headers = new Headers();
+  for (const [key, value] of Object.entries(corsHeaders())) headers.set(key, value);
+  headers.set("Content-Type", upstreamRes.headers.get("Content-Type") ?? "application/json");
+  headers.set("Cache-Control", `public, max-age=${SOS_CA_TTL_SECONDS}`);
+  headers.set("X-Data-Source", "California Secretary of State");
+  return new Response(upstreamRes.body, { status: upstreamRes.status, headers });
 }

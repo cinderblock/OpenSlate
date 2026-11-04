@@ -71,6 +71,17 @@ export const PROVIDERS: Record<string, ProviderInfo> = {
     privacyNote:
       "civicAPI's CORS is open, so the SPA can hit them directly. Direct means civicAPI sees your IP; proxy keeps that off their logs but puts our backend in the middle of every request.",
   },
+  "sos-ca": {
+    key: "sos-ca",
+    name: "California Secretary of State",
+    homepage: "https://electionresults.sos.ca.gov",
+    canDirect: true,
+    defaultMode: "proxy",
+    directUrl: "https://api.sos.ca.gov",
+    proxyUrl: envBase("VITE_SOS_CA_BASE", `${apiBase()}/api/sos-ca`),
+    privacyNote:
+      "The Secretary of State's results API allows browser-direct access. Through our backend, a crowd of browsers costs them one request a minute, and they see us instead of you.",
+  },
   votehub: {
     key: "votehub",
     name: "VoteHub",

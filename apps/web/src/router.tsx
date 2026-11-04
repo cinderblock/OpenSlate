@@ -74,6 +74,11 @@ const resultsIndexRoute = createRoute({
   validateSearch: validateQuerySearch,
   component: lazyRouteComponent(() => import("./components/ResultsView"), "ResultsView"),
 });
+const liveRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/live",
+  component: lazyRouteComponent(() => import("./components/LivePanel"), "LivePanel"),
+});
 const resultsForSlateRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/results/$token",
@@ -151,6 +156,7 @@ const routeTree = rootRoute.addChildren([
   raceRoute,
   resultsIndexRoute,
   resultsForSlateRoute,
+  liveRoute,
   composeRoute,
   identitiesRoute,
   electionsRoute,

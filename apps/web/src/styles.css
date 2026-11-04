@@ -4372,3 +4372,116 @@ button.tag.active {
   margin: 0.25rem 0 0.5rem;
   font-size: 0.875rem;
 }
+
+/* Live results (/live) */
+.live-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+.live-refresh {
+  margin: 0.25rem 0;
+}
+.warning-line {
+  border-left: 3px solid var(--warn);
+  padding-left: 0.5rem;
+}
+.live-add {
+  margin-bottom: 1rem;
+}
+.live-district-pickers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.live-group {
+  margin-top: 1.25rem;
+}
+.live-group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+.live-group-head h3 {
+  margin: 0;
+  flex: 1 1 auto;
+}
+.live-county {
+  min-width: 14rem;
+}
+.live-contests {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr));
+  gap: 0.75rem;
+}
+.live-contest {
+  transition: box-shadow 0.4s;
+}
+.live-changed {
+  box-shadow: 0 0 0 2px var(--warn);
+}
+.live-contest-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+.live-reporting {
+  flex: 1 1 auto;
+}
+.live-remove {
+  margin-left: auto;
+}
+.live-candidates {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+.live-candidate {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1.4fr) 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+.live-bar {
+  display: flex;
+  height: 0.6rem;
+  border-radius: 0.3rem;
+  background: var(--border);
+  overflow: hidden;
+}
+.live-bar-fill {
+  display: block;
+  height: 100%;
+  transition: width 0.6s;
+}
+.live-num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.live-measure-name {
+  margin-bottom: 0.2rem;
+}
+.live-yesno {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+.live-county-count {
+  margin-top: 0.4rem;
+  font-size: 0.9em;
+}
+.live-source {
+  margin-top: 1.5rem;
+}
