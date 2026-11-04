@@ -88,9 +88,10 @@ describe("ballotOrderFor", () => {
   });
 
   test("Congress rotates over the Assembly districts it reaches, lowest first", () => {
-    const [cd, ads] = Object.entries(CA_DISTRICTS_2026.cd).find(
-      ([n, list]) => list.length >= 2 && !CA_DISTRICTS_2026.cdUnsure[n],
-    ) as [string, number[]];
+    const [cd, ads] = Object.entries(CA_DISTRICTS_2026.cd).find(([, list]) => list.length >= 2) as [
+      string,
+      number[],
+    ];
     const race = {
       election: ELECTION,
       jurisdiction: `us/ca/cd-${cd}`,
@@ -106,15 +107,19 @@ describe("ballotOrderFor", () => {
     ]);
   });
 
-  test("Congress: an Assembly district behind an unsure sliver varies", () => {
-    const entry = Object.entries(CA_DISTRICTS_2026.cdUnsure).find(([n, unsure]) =>
-      (CA_DISTRICTS_2026.cd[n] ?? []).some((ad) => ad > Math.min(...unsure)),
+  test("Congress counts a district's empty territory: CD 16 in AD 23 leads with Soulé", () => {
+    // A San Mateo County ballot (2026-11-03, AD 23) printed Peter Sundin Soulé
+    // above Sam Liccardo. CD 16 reaches AD 21 through one block nobody lives
+    // in, so AD 23 is the second district in its rotation.
+    expect(CA_DISTRICTS_2026.cd["16"]?.slice(0, 2)).toEqual([21, 23]);
+    const race = {
+      election: ELECTION,
+      jurisdiction: "us/ca/cd-16",
+      title: "US House of Representatives, California District 16",
+    };
+    expect(ballotOrderFor(race, ["Sam Liccardo", "Peter Sundin Soulé"], inAd("23"))?.names).toEqual(
+      ["Peter Sundin Soulé", "Sam Liccardo"],
     );
-    if (!entry) return;
-    const [cd, unsure] = entry;
-    const after = (CA_DISTRICTS_2026.cd[cd] ?? []).find((ad) => ad > Math.min(...unsure)) as number;
-    const race = { election: ELECTION, jurisdiction: `us/ca/cd-${cd}`, title: "x" };
-    expect(ballotOrderFor(race, names, inAd(String(after)))?.basis).toBe("varies");
   });
 
   test("Assembly: the drawn order within one county, unknown across counties", () => {
@@ -165,10 +170,7 @@ describe("ballotOrderFor", () => {
       jurisdiction: "us/ca",
       title: `California State Board of Equalization, District ${n}`,
     };
-    const first = ads.find((ad) => !(CA_DISTRICTS_2026.boeUnsure[n] ?? []).some((u) => u <= ad));
-    expect(ballotOrderFor(race, names, inAd(String(first)))?.basis).toBe(
-      first === ads[0] ? "ballot" : "varies",
-    );
+    expect(ballotOrderFor(race, names, inAd(String(ads[0])))?.basis).toBe("ballot");
     // Not AD 1's statewide rotation: its own.
     expect(ballotOrderFor(race, names, inAd("1"))?.basis).toBe(
       ads.includes(1) ? "ballot" : "varies",

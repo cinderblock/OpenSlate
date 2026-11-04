@@ -87,8 +87,9 @@ Rodriguez (Div. 3); Brown (PJ, Div. 4); Chou, Simons, Burns (Div. 5).
 4. Skipped races print as one line. Done.
 5. **CD 16 name order** (Soulé above Liccardo on the paper, flipped in the
    app). Cause found (below); rebuild `cd` / `boe` from the official block
-   equivalency files. Current step.
-6. Tests, deploy, headless check.
+   equivalency files. Done: `scripts/ca-district-overlaps/block-equivalency.ts`
+   writes `cd` / `boe`; the `*Unsure` lists are gone.
+6. Tests, deploy, headless check. Current step.
 
 ## CD 16: why the names were flipped
 
@@ -109,6 +110,13 @@ Wrong in the table (all omissions): CD 4 (+1), 8 (+13), 10 (+14, 18), 11 (+12,
 (+77), 52 (+77, 78); BOE 4 (+45). The other 40 CDs and 3 BOE districts match.
 Caveat: only the zero-population case is proven by a ballot.
 
+County reach (`sdCounties`, `adCounties`) stays people-based. By blocks alone,
+SD 2, SD 7, AD 12 and AD 18 would also reach San Francisco, through bay water,
+and AD 18 would turn multi-county, giving Alameda County voters Alameda's own
+letter order. Alameda's document says only "multi-county legislative
+districts"; San Mateo's names AD 19 and 23, both with people in both counties.
+A county with no voters in a district prints no ballot for it.
+
 ## Progress log
 
 - [x] Diagnosis against the user's ballot
@@ -116,7 +124,7 @@ Caveat: only the zero-population case is proven by a ballot.
 - [x] Section order
 - [x] Local measure order
 - [x] Skipped races shown, not hidden
-- [ ] CD / BOE tables from official block files
+- [x] CD / BOE tables from official block files (12 CDs and BOE 4 changed)
 - [ ] Deploy
 
 ## Open questions for the user

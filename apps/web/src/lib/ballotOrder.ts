@@ -299,15 +299,11 @@ function ruleFor(
   const ad = area?.districts["us/ca/ad"];
   const voterAd = ad && ad !== NO_DISTRICT ? Number(ad) : undefined;
   const counties = voterCounties(area);
-  const acrossAds = (
-    ads: number[] | undefined,
-    unsure: number[] | undefined,
-    label: string,
-  ): Rule | undefined => {
+  const acrossAds = (ads: number[] | undefined, label: string): Rule | undefined => {
     if (!ads?.length) return undefined;
     if (voterAd === undefined)
       return { reason: `It changes from one Assembly district to the next across ${label}.` };
-    if (!ads.includes(voterAd) || unsure?.some((n) => n <= voterAd))
+    if (!ads.includes(voterAd))
       return {
         reason: `It changes from one Assembly district to the next across ${label}, and we can't tell where yours falls.`,
       };
@@ -318,11 +314,7 @@ function ruleFor(
     const boe = race.title.match(BOE_TITLE)?.[1];
     if (boe) {
       const n = String(Number(boe));
-      return acrossAds(
-        order.districts.boe[n],
-        order.districts.boeUnsure[n],
-        `Board of Equalization District ${n}`,
-      );
+      return acrossAds(order.districts.boe[n], `Board of Equalization District ${n}`);
     }
     if (voterAd === undefined)
       return { reason: "Statewide races change order from one Assembly district to the next." };
@@ -332,11 +324,7 @@ function ruleFor(
   if (where.kind === "district" && where.state === "us/ca") {
     const n = where.number;
     if (where.family === "cd")
-      return acrossAds(
-        order.districts.cd[n],
-        order.districts.cdUnsure[n],
-        `Congressional District ${n}`,
-      );
+      return acrossAds(order.districts.cd[n], `Congressional District ${n}`);
     if (where.family === "sd" || where.family === "ad") {
       const reaches = (
         where.family === "sd" ? order.districts.sdCounties : order.districts.adCounties

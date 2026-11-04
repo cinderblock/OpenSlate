@@ -3,6 +3,11 @@
 //   bun scripts/ca-district-overlaps/1-intersect.ts
 //   bun scripts/ca-district-overlaps/2-classify.ts
 //   bun scripts/ca-district-overlaps/3-emit.ts src/lib/ballotOrderCa.ts
+//   bun scripts/ca-district-overlaps/block-equivalency.ts src/lib/ballotOrderCa.ts
+// The last step replaces this one's congressional and BOE tables with ones from
+// the official block files: the population cut-off here dropped districts a race
+// is voted in through empty territory (CD 16 / AD 21). Only the county tables
+// from these steps are kept.
 // Work files go in the OS temp dir (openslate-district-overlaps). plans/ballot-order.md has the method.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
