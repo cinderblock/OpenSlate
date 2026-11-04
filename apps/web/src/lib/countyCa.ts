@@ -339,16 +339,53 @@ function raceJurisdiction(race: CatalogRace): string {
   return race.jurisdiction ?? race.subject.jurisdiction ?? "";
 }
 
+/** The judge a retention vote is about: "… — Retain Justice Kathleen M. Banke" → "Kathleen M. Banke". */
+export function retainedJudge(title: string): string | undefined {
+  return title
+    .match(/\bretain\s+(?:chief\s+|presiding\s+|associate\s+)?(?:justice|judge)\s+(.+)$/i)?.[1]
+    ?.trim();
+}
+
 /**
- * How well a catalog race is a county contest, 0 when it isn't: for a measure,
- * the same letter in the same place (1); for a race, how many of the county's
- * candidates the race names (at least two, or all of them when there are
- * fewer). The one rule both directions use (`catalogRaceFor`, `countyContestFor`).
+ * Whether a county's retention contest is about this judge: the name in its
+ * brackets ("… Division 1 (Kathleen M. Banke)"), after its last dash, or
+ * anywhere in its title, spelled out in full.
+ */
+function namesJudge(title: string, judge: string): boolean {
+  const named = title.match(/\(([^()]+)\)\s*$/)?.[1] ?? title.split(/\s[–-]\s/).at(-1) ?? "";
+  if (named && samePerson(named.trim(), judge)) return true;
+  return titleWords(title).includes(titleWords(judge));
+}
+
+/**
+ * A measure's description, from its title's brackets ("Bay Area — Regional
+ * Measure RTM (Regional Transit Measure)" → "Regional Transit Measure"), when
+ * it's specific enough to find the measure by (three words or more).
+ */
+function measureDescription(title: string): string | undefined {
+  const desc = title.match(/\(([^()]+)\)\s*$/)?.[1]?.trim();
+  return desc && desc.split(/\s+/).length >= 3 ? desc : undefined;
+}
+
+/**
+ * How well a catalog race is a county contest, 0 when it isn't: for a judge's
+ * retention vote, the same judge (2); for a measure, the same letter in the
+ * same place (1), or, when the county's title has no letter, a title that
+ * opens with the measure's description ("Regional Transit Measure (Majority
+ * Approval Required)" for Regional Measure RTM) (1); for a race, how many of
+ * the county's candidates the race names (at least two, or all of them when
+ * there are fewer). The one rule both directions use (`catalogRaceFor`,
+ * `countyContestFor`).
  */
 export function raceMatch(contest: CountyContest, race: CatalogRace, countyName: string): number {
   if (contest.measure) {
+    const judge = retainedJudge(race.subject.title);
+    if (judge) return namesJudge(contest.title, judge) ? 2 : 0;
     const letter = measureLetter(contest.title);
-    if (!letter) return 0;
+    if (!letter) {
+      const desc = measureDescription(race.subject.title);
+      return desc && titleWords(contest.title).startsWith(titleWords(desc)) ? 1 : 0;
+    }
     const number = (race.ballot?.number ?? race.subject.ballot?.number ?? "").toUpperCase();
     if (number !== letter) return 0;
     const leaf = raceJurisdiction(race).split("/").at(-1) ?? "";
@@ -428,7 +465,10 @@ export function localRaceCounty(
     election,
   };
   if (sosContestForSubject(subject)) return undefined;
-  if (parseJurisdiction(jurisdiction).kind !== "local") return undefined;
+  const where = parseJurisdiction(jurisdiction);
+  // A Court of Appeal district's retention votes are on every county's ballot in it.
+  if (where.kind === "district" && where.family === "coa") return feedCountyOfArea(area);
+  if (where.kind !== "local") return undefined;
   // A county's race (`us/ca/san-mateo-county`, `…/san-mateo-county/sup-3`) is in its own count.
   const place = jurisdiction.split("/").slice(0, 3).join("/");
   if (place.endsWith("-county")) return feedCountyOfArea({ localities: [place] });

@@ -99,3 +99,43 @@ describe("Secretary of State results", () => {
     expect(countySlug("Contra Costa")).toBe("contra-costa");
   });
 });
+
+describe("Supreme Court retention", () => {
+  // The state's answer at /returns/supreme-court (Nov 4, 2026).
+  const wire = {
+    raceTitle: "Supreme Court Justice - Statewide Results",
+    Reporting: "100.0% (23,860 of 23,860) precincts reporting",
+    ReportingTime: "November 4, 2026, 8:08 a.m.",
+    "supreme-court": [
+      {
+        Name: "Kelli M. Evans",
+        yesVotes: "4380187",
+        yesPercent: "71.4",
+        noVotes: "1752274",
+        noPercent: "28.6",
+      },
+      {
+        Name: "Joshua Groban",
+        yesVotes: "4348533",
+        yesPercent: "70.7",
+        noVotes: "1799166",
+        noPercent: "29.3",
+      },
+    ],
+  };
+
+  test("one justice's vote from the shared document, found by name", () => {
+    expect(contestPath("supreme-court/kelli-evans")).toEqual({
+      path: "supreme-court",
+      justice: "kelli-evans",
+    });
+    const result = normalizeContest(wire, undefined, "kelli-evans");
+    expect(result.kind).toBe("measure");
+    if (result.kind === "measure") expect(result.measure.yes).toBe(4380187);
+    expect(contestLabel("supreme-court/joshua-groban")).toBe("Supreme Court: retain Joshua Groban");
+  });
+
+  test("a justice who isn't up isn't on this ballot", () => {
+    expect(() => normalizeContest(wire, undefined, "someone-else")).toThrow(NotOnBallot);
+  });
+});

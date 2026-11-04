@@ -4,6 +4,7 @@ import {
   type ContestResult,
   DISTRICT_FAMILIES,
   districtContest,
+  justiceContest,
   propContest,
   STATEWIDE_OFFICES,
 } from "./sosCa";
@@ -61,6 +62,9 @@ export function sosContestForSubject(subject: Subject): string | undefined {
     return family ? districtContest(family.family, where.number) : undefined;
   }
   if (where.kind !== "state" || where.path !== "us/ca") return undefined;
+  // "California Supreme Court — Retain Justice Joshua Groban".
+  const justice = subject.title.match(/\bsupreme court\b.*\bretain (?:chief )?justice\s+(.+)$/i);
+  if (justice?.[1]) return justiceContest(justice[1].trim());
   const title = subject.title.toLowerCase();
   const prop = title.match(/\bprop(?:osition)?\.?\s*(\d+)\b/);
   if (prop?.[1]) return propContest(prop[1]);

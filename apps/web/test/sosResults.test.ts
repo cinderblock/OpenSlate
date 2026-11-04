@@ -30,6 +30,14 @@ describe("which races the Secretary of State counts", () => {
     );
   });
 
+  test("a Supreme Court justice's retention vote", () => {
+    expect(
+      sosContestForSubject(
+        nov("California Supreme Court — Retain Justice Joshua Groban", "us/ca", "measure"),
+      ),
+    ).toBe("supreme-court/joshua-groban");
+  });
+
   test("measures and districts", () => {
     expect(
       sosContestForSubject(

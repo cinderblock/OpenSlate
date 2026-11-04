@@ -1,3 +1,4 @@
+import { samePerson } from "@openslate/core";
 import { baseUrlFor } from "./routing";
 
 /**
@@ -9,7 +10,8 @@ import { baseUrlFor } from "./routing";
  *
  * A contest id is its path under `/returns`: `governor`,
  * `us-rep/district/16`, or `prop/37` for one statewide measure (the API serves
- * them all together, at `ballot-measures`).
+ * them all together, at `ballot-measures`), or `supreme-court/<justice>` for
+ * one Supreme Court justice's retention vote (all of them at `supreme-court`).
  *
  * Normalizers are pure; unit-tested in test/sosCa.test.ts.
  */
@@ -53,12 +55,19 @@ export function propContest(number: string | number): string {
   return `prop/${Number(number)}`;
 }
 
+/** One Supreme Court justice's retention vote, by the justice's name ("Joshua Groban"). */
+export function justiceContest(name: string): string {
+  return `supreme-court/${countySlug(name)}`;
+}
+
 /** A readable name for a contest id, without fetching it. */
 export function contestLabel(id: string): string {
   const office = STATEWIDE_OFFICES.find((o) => o.id === id);
   if (office) return office.label;
   const prop = id.match(/^prop\/(\d+)$/);
   if (prop) return `Proposition ${prop[1]}`;
+  const justice = id.match(/^supreme-court\/([a-z-]+)$/);
+  if (justice?.[1]) return `Supreme Court: retain ${justiceName(justice[1])}`;
   const district = id.match(/^([a-z-]+)\/district\/(\d+)$/);
   if (district) {
     const f = DISTRICT_FAMILIES.find((d) => d.path === district[1]);
@@ -102,6 +111,8 @@ interface WireContest {
   ReportingTime?: string;
   candidates?: WireCandidate[];
   "ballot-measures"?: WireMeasure[];
+  /** Each justice up for retention: a yes/no vote, named for the justice. */
+  "supreme-court"?: WireMeasure[];
 }
 
 // ---- Normalized shapes -------------------------------------------------------
@@ -190,12 +201,19 @@ function measureOf(m: WireMeasure): MeasureResult {
 }
 
 /** One contest's response (or the first of a county response, which is an array). */
-export function normalizeContest(raw: unknown, prop?: string): ContestResult {
+export function normalizeContest(raw: unknown, prop?: string, justice?: string): ContestResult {
   const wire = (Array.isArray(raw) ? raw[0] : raw) as WireContest | undefined;
   if (!wire || typeof wire !== "object")
     throw new Error("Unexpected answer from the Secretary of State");
   const reporting = parseReporting(wire.Reporting, wire.ReportingTime);
   const title = wire.raceTitle ?? "";
+  const justices = wire["supreme-court"];
+  if (justices) {
+    const name = justice ? justiceName(justice) : "";
+    const hit = justices.find((j) => samePerson(j.Name, name));
+    if (!hit) throw new NotOnBallot();
+    return { kind: "measure", title, reporting, measure: { ...measureOf(hit), number: "" } };
+  }
   const measures = wire["ballot-measures"];
   if (measures) {
     const all = measures.map(measureOf);
@@ -227,11 +245,24 @@ export class NotOnBallot extends Error {
 }
 
 /** The API path for a contest id, statewide or for one county. */
-export function contestPath(id: string, county?: string): { path: string; prop?: string } {
+export function contestPath(
+  id: string,
+  county?: string,
+): { path: string; prop?: string; justice?: string } {
   const prop = id.match(/^prop\/(\d+)$/)?.[1];
-  const base = prop ? "ballot-measures" : id;
+  const justice = id.match(/^supreme-court\/([a-z-]+)$/)?.[1];
+  const base = prop ? "ballot-measures" : justice ? "supreme-court" : id;
   const path = county ? `${base}/county/${countySlug(county)}` : base;
-  return prop ? { path, prop } : { path };
+  return prop ? { path, prop } : justice ? { path, justice } : { path };
+}
+
+/** "joshua-groban" → "Joshua Groban". */
+function justiceName(slug: string): string {
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
 async function getJson(base: string, path: string): Promise<unknown> {
@@ -248,12 +279,13 @@ async function getJson(base: string, path: string): Promise<unknown> {
 
 /** Fetch one contest: through the preferred route, then the other when that fails outright. */
 export async function fetchContest(id: string, county?: string): Promise<ContestResult> {
-  const { path, prop } = contestPath(id, county);
-  return normalizeContest(await fetchPath(path), prop);
+  const { path, prop, justice } = contestPath(id, county);
+  return normalizeContest(await fetchPath(path), prop, justice);
 }
 
 /**
- * Every proposition is one document (`ballot-measures`): the cards asking for
+ * Every proposition is one document (`ballot-measures`), every justice one
+ * more (`supreme-court`): the cards asking for
  * it at the same moment share one request, and its answer for a few seconds.
  */
 const recent = new Map<string, { at: number; raw: Promise<unknown> }>();

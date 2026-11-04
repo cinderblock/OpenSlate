@@ -432,3 +432,77 @@ describe("when a county's count changed", () => {
     expect(r.reporting.changedSeen).toBe(true);
   });
 });
+
+describe("retention votes and measures the county titles without a letter", () => {
+  const measure = (title: string, jurisdiction: string, number?: string) => ({
+    key: title,
+    subject: { title, jurisdiction, election: "2026-11-03" },
+    election: "2026-11-03",
+    jurisdiction,
+    ...(number ? { ballot: { number } } : {}),
+    choices: [{ choice: "Yes" }, { choice: "No" }],
+  });
+  // San Mateo's own titles (Nov 2026).
+  const sanMateo = [
+    contest(
+      "1",
+      "For Associate Justice, Court of Appeal, 1st District, Division 1 (Kathleen M. Banke)",
+      "Judicial",
+      ["YES", "NO"],
+    ),
+    contest(
+      "2",
+      "For Associate Justice, Court of Appeal, 1st District, Division 1 (Charles A. Smiley)",
+      "Judicial",
+      ["YES", "NO"],
+    ),
+    contest("3", "Regional Transit Measure (Majority Approval Required)", "Measures", [
+      "YES",
+      "NO",
+    ]),
+    contest("4", "Measure CC - East Palo Alto Term Limits", "Measures", ["YES", "NO"]),
+  ];
+  const keyOf = (race: ReturnType<typeof measure>) =>
+    countyContestFor(race, sanMateo, "San Mateo", "2026-11-03")?.key;
+
+  test("a Court of Appeal justice's retention: by name, in the voter's county", () => {
+    const banke = measure(
+      "California Court of Appeal, First District — Retain Justice Kathleen M. Banke",
+      "us/ca/coa-1",
+    );
+    expect(keyOf(banke)).toBe("1");
+    const epa = { localities: ["us/ca/east-palo-alto", "us/ca/san-mateo-county"] };
+    expect(localRaceCounty(banke, epa, "2026-11-03")).toBe("San Mateo");
+    // A justice the county doesn't list matches nothing, not the first justice.
+    expect(
+      keyOf(
+        measure(
+          "California Court of Appeal, First District — Retain Justice Amy Guerra",
+          "us/ca/coa-1",
+        ),
+      ),
+    ).toBeUndefined();
+  });
+
+  test("a regional measure the county titles by its description", () => {
+    expect(
+      keyOf(
+        measure(
+          "Bay Area — Regional Measure RTM (Regional Transit Measure)",
+          "us/ca/bay-area",
+          "RTM",
+        ),
+      ),
+    ).toBe("3");
+    // A lettered county title still needs the letter.
+    expect(
+      keyOf(
+        measure("East Palo Alto — Measure CC (Term Limits Measure)", "us/ca/east-palo-alto", "CC"),
+      ),
+    ).toBe("4");
+    // A short description isn't enough to go on.
+    expect(
+      keyOf(measure("Somewhere — Measure Q (Transit Measure)", "us/ca/somewhere", "Q")),
+    ).toBeUndefined();
+  });
+});
