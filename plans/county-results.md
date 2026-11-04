@@ -17,6 +17,10 @@ Secretary of State. California only.
 - Gentle on county servers: cache, coalesce, honest User-Agent
   (`OpenSlate election-results relay (+https://openslate.us)`), no aggressive polling.
 - Ship the first working county early, add more after.
+- Alameda and San Joaquin from their HTML results pages: yes (user, 11/4 ~12:30 PM
+  PST), since neither publishes a feed. Plus a scheduled CI check (daily to
+  weekly) that fails, and so notifies, when a page's layout stops parsing.
+- San Francisco: no spoofing a browser to get past its block (user's rule).
 
 ## Design
 
@@ -59,8 +63,10 @@ Wired up (11 counties):
 
 | Sacramento | `results.saccounty.gov/results/public/api/elections/sacramento-county-ca/69/data` | own JSON (`ballotItems[]`, `election.asOf`), 374 KB | none |
 | Los Angeles | `results.lavote.gov/electionresults/json?electionid=4348` | own JSON (`Election.ContestGroups[].Contests[]`, top-level `Timestamp` in California time with no zone), 193 KB, no ids/precincts | none |
+| San Joaquin | `livevoterturnout.com/ENR/sanjoaquincaenr/22/en/Index_22.html` | HTML (`lvt-html`): LVT's results page, 407 KB; race ids, seats, votes; no precincts/parties; time in `lblLastPublishedDateTime` | none |
+| Alameda | `alamedacountyca.gov/rovresults/260/index.htm` | HTML (`acvote`), 341 KB; groups, precincts, seats, "Needs 2/3"; time "Last Updated: …"; no `Last-Modified` | none |
 
-(13 counties. LA answered our honest User-Agent at 7:39 PM PST, despite the
+(15 counties; Alameda and San Joaquin from HTML since 11/4, `199faf3`. LA answered our honest User-Agent at 7:39 PM PST, despite the
 survey's Imperva note; Sacramento's `/data` has no CORS header, though the
 survey thought so.)
 
@@ -104,6 +110,22 @@ Formats:
   sends `no-cache`; time from `Last-Modified`.
 
 ## Findings / gotchas
+
+- HTML pages (11/4): LVT's page gives a measure's NO row the negative of the
+  YES row's contestant id (`data-contestant="-6880"`); a `\d+` pattern drops
+  every NO. Alameda puts all state propositions in one "Propositions" panel
+  with YES/NO column groups (`colspan="2"`): read as one measure per row.
+  Alameda's ranked-choice races show first choices only (titles end "(RCV)").
+  "Vote for no more than Two (2)" as well as "Vote for One (1) Only".
+- San Joaquin titles its local measures bare ("Measure T", "U", "G", "V"), with
+  no jurisdiction anywhere on the page, so a place doesn't pick them up on its
+  own; they're in "Add one race". "Assembly District 9" wasn't known as a state
+  contest: added to `STATE_TITLE`.
+- Biome lints `.html`: `packages/core/test/fixtures/*.html` is excluded, since
+  fixtures stay as the county wrote them.
+- Locally `bun run lint` reports `noExplicitAny` in
+  `apps/web/scripts/ca-district-overlaps/*.ts` (committed 18 h earlier) while
+  CI's lint passes; not looked into.
 
 - A push can fail to start Workers Builds (8:30 PM PST, `a1c7349`): check
   that the commit has "Workers Builds: openslate-web" check runs
@@ -185,7 +207,10 @@ Formats:
   - Limits: history starts when this browser first watched the race, and only reports seen while a page was open are logged (a closed page misses intermediate reports; the next one seen is logged). No source offers past reports to backfill from (Clarity's old versions aren't listed).
 - [ ] My ballot / race pages showing a race's county count (reuse `catalogRaceFor`): handed to its own thread, "County counts on My ballot and race pages" (plan `plans/county-counts-on-ballot.md`), 2026-11-04
 - [x] San Francisco, San Joaquin, Alameda: thread "County results: add San Francisco, San Joaquin, Alameda" surveyed again 12:05–12:20 PM PST 11/4 (20:05–20:20Z). No machine-readable feed reachable with our honest UA in any (see "Not yet")
-- [ ] San Joaquin / Alameda from their HTML pages: only if the user says yes (asked 11/4). SF stays out unless it stops blocking our UA
+- [x] San Joaquin / Alameda from their HTML pages (user said yes 11/4): `199faf3`. Parsers `parseLvtHtml`, `parseAcvoteHtml`, fixtures cut from the real pages, relay paths `en/Index_22.html` / `index.htm` (60 s), web `fetchResultsPage` (version = length + FNV hash, since Alameda has no `Last-Modified`), CountyContest `threshold`. Full pages: SJ 80 contests / 50 local, Alameda 158 / 125
+- [x] Daily CI check `.github/workflows/county-html.yml` (8:23 AM PST, 16:23Z) runs `packages/core/scripts/check-county-pages.ts` through the relay: fails on a fetch error, a parse error, < 10 contests, < 5 local, a nameless choice, or no page time
+- [ ] Push, then live check: an Alameda place and a San Joaquin place show local races on openslate.us; a manual run of county-html passes
+- SF stays out unless it stops blocking our UA
 - [ ] Recheck of the zero-report counties above: handed to thread "County results: recheck feeds still at zero", 2026-11-04
 - [ ] Race search ranking ("Measure O" not first for its own name): handed to thread "Results: race search fixes" (plan `plans/race-search.md`), 2026-11-04
 - [ ] Whole-night history stored on our side (user ask, 2026-11-04): waiting on the user's choice of storage, see Open questions
