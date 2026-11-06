@@ -102,18 +102,18 @@ function useRaceTarget(
   const looking = parsed !== undefined && direct === undefined;
 
   const { slates, isReady } = useDecodedSlates();
-  const [follows] = useFollows();
   const draft = useBallotDraft();
   const guide = useGuideSubjects(looking ? parsed : undefined);
   const local = useMemo(() => {
     if (!looking) return [];
+    // Every race collated from these slates has one of their positions' keys.
     const keys = [
-      ...collateRaces(slates, { follows, includeUnfollowed: true }).map((r) => r.key),
+      ...slates.flatMap((slate) => slate.payload.positions.map((p) => subjectKey(p.subject))),
       ...Object.values(draft.rows).map((r) => subjectKey(r.subject)),
       ...guide.subjects.map(subjectKey),
     ];
     return [...new Set(keys)].filter((k) => raceSlug(k) === parsed.slug);
-  }, [looking, parsed, slates, follows, draft.rows, guide.subjects]);
+  }, [looking, parsed, slates, draft.rows, guide.subjects]);
   // Once the local look has finished for this slug, it stays finished: a guide
   // list that failed goes back to pending each time a new reader of it mounts
   // (the race page itself, once found), which would otherwise unfind the race.
@@ -237,8 +237,7 @@ function RaceView({
   const [filter, setFilter] = useState<SlateFilter>(NO_SLATE_FILTER);
 
   const imported = useMemo(
-    () =>
-      collateRaces(slates, { follows, includeUnfollowed: true }).find((r) => r.key === targetKey),
+    () => collateRaces(slates, { follows, includeUnfollowed: true, only: targetKey })[0],
     [slates, follows, targetKey],
   );
   const race = all?.byKey.get(targetKey) ?? imported;

@@ -349,6 +349,11 @@ export interface CollateOptions {
   disagree?: DisagreeMode;
   /** The voter's own ballot order for races they've fixed by hand (`orderOverrides.ts`). */
   orderOverrides?: OrderOverrides;
+  /**
+   * Only the race with this key: the same race, worked out without the rest.
+   * Nothing about a race depends on any other race's positions.
+   */
+  only?: string;
 }
 
 type Field = Pick<Race, "choices" | "onBallot" | "subject">;
@@ -397,9 +402,12 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
   // A source can have several slates covering the same race (a reissue, or a
   // firsthand slate imported twice). Only its newest slate speaks for it.
   const newest = new Map<string, { issuedAt: string; slate: DecodedSlate }>();
+  const { only } = options;
   for (const slate of slates) {
     for (const position of slate.payload.positions) {
-      const id = `${subjectKey(position.subject)}\u0000${slate.source.id}`;
+      const key = subjectKey(position.subject);
+      if (only !== undefined && key !== only) continue;
+      const id = `${key}\u0000${slate.source.id}`;
       const current = newest.get(id);
       if (!current || slate.payload.issued_at > current.issuedAt) {
         newest.set(id, { issuedAt: slate.payload.issued_at, slate });
@@ -427,6 +435,7 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
     for (const [index, position] of slate.payload.positions.entries()) {
       const check = slate.checks?.[index];
       const key = subjectKey(position.subject);
+      if (only !== undefined && key !== only) continue;
       if (newest.get(`${key}\u0000${slate.source.id}`)?.slate !== slate) continue;
       const election = electionOf(position.subject, slate.payload);
       if (options.election && election !== options.election) continue;
