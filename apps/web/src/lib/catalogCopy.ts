@@ -96,6 +96,14 @@ const PROGRESS_MS = 250;
 /** How often a check in progress is kept: a reload loses at most this much. */
 const CHECKPOINT_MS = 2000;
 
+/**
+ * `fn()`, with a throw turned into a rejection: storage that isn't there can
+ * throw before it returns a promise, and nothing kept is worth failing over.
+ */
+function attempt<T>(fn: () => Promise<T> | undefined): Promise<T | undefined> {
+  return Promise.resolve().then(fn);
+}
+
 export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
   let status: CopyStatus = { state: "idle" };
   let running: Promise<void> | undefined;
@@ -150,7 +158,8 @@ export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
     report: (bar: { label: string; value: number; maxValue?: number }) => void,
   ): Promise<CatalogCopy> {
     const tokens = await fetchTokens(catalog, catalogUrl, report);
-    const earlier = (await deps.readChecked?.(catalogUrl).catch(() => undefined)) ?? [];
+    const earlier =
+      (await attempt(() => deps.readChecked?.(catalogUrl)).catch(() => undefined)) ?? [];
     const verified = new Map(
       [...(known?.slates ?? []), ...earlier].map((slate) => [slate.token, slate.payload]),
     );
@@ -167,7 +176,9 @@ export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
       if (!deps.writeChecked || checked === slates.length) return;
       checked = slates.length;
       const sofar = [...new Map([...earlier, ...slates].map((s) => [s.token, s])).values()];
-      keeping = keeping.then(() => deps.writeChecked?.(catalogUrl, sofar)).catch(() => undefined);
+      keeping = keeping
+        .then(() => attempt(() => deps.writeChecked?.(catalogUrl, sofar)))
+        .catch(() => undefined);
     };
     for (const [index, entry] of catalog.entries.entries()) {
       // A few at a time ahead, many in flight at once, before `verify` asks for each.
@@ -217,19 +228,19 @@ export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
       set({ state: "loading", ...bar });
     };
     report({ label: "Opening the public catalog", value: 0 });
-    copy ??= await deps.readCopy(catalogUrl).catch(() => undefined);
+    copy ??= await attempt(() => deps.readCopy(catalogUrl)).catch(() => undefined);
     if (copy) set({ state: "ready", copy });
     try {
       const catalog = await deps.fetchCatalog(catalogUrl);
       if (copy?.generatedAt !== catalog.generated_at) {
         const next = await download(catalog, catalogUrl, copy, report);
         // Keeping it only saves time next visit: not worth stopping for.
-        const kept = await deps.writeCopy(next).then(
+        const kept = await attempt(() => deps.writeCopy(next)).then(
           () => true,
           () => false,
         );
         // The whole copy holds all of it now.
-        if (kept) await deps.writeChecked?.(catalogUrl, []).catch(() => undefined);
+        if (kept) await attempt(() => deps.writeChecked?.(catalogUrl, [])).catch(() => undefined);
         set({ state: "ready", copy: next });
       }
       checkedAt = deps.now();

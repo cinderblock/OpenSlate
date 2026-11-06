@@ -335,6 +335,22 @@ describe("createCatalogLoader", () => {
     expect(checked).toBeUndefined();
   });
 
+  test("storage that throws outright (no IndexedDB) still leaves a working copy", async () => {
+    const gone = () => {
+      throw new Error("indexedDB is not defined");
+    };
+    const h = harness(catalog("v1", entries), tokens, {
+      readCopy: gone,
+      writeCopy: gone,
+      readChecked: gone,
+      writeChecked: gone,
+    });
+    await h.loader.load(URL_A);
+    const status = h.loader.status();
+    if (status.state !== "ready") throw new Error(status.state);
+    expect(status.copy.slates).toHaveLength(2);
+  });
+
   test("a partial check isn't cleared when keeping the whole copy fails", async () => {
     const cleared: number[] = [];
     const h = harness(catalog("v1", entries), tokens, {
