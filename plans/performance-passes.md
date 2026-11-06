@@ -66,6 +66,11 @@ page by page, and cut it, measuring before and after.
   in one task; `collateRaces`' self time is spread over ~30k positions, no
   single hotspot. Moving it to a worker is the fix (ISSUES.md, "The catalog
   copy verifies on the page, and workers would halve the wait").
+- A kept browser profile's service worker serves the build it cached:
+  `serviceWorkers: "block"` doesn't stop it in a persistent context. Delete
+  `<profile>\Default\Service Worker` before measuring a new build with it.
+- Sources' 9 entries that never count as imported are a bug, not speed
+  (ISSUES.md); the heavy setup waits for the "Imported N" summary instead.
 - Copying the worker's reply is not free: with the slates in it, 0.5-0.57 s
   at 4x, about half of what the worker saved. Sending articles and search
   text instead of slates brought it to 0.25-0.3 s.
@@ -110,11 +115,59 @@ page by page, and cut it, measuring before and after.
      the site still served `9d02be1`), and an empty commit fixed it again.
      Live All races at 4x, warm: long tasks 3.0-3.6 s -> 2.5 s, longest
      1.25-1.33 s -> 0.6-0.78 s. Search and the `?all` race page checked.
-10. [ ] Not started, not asked for yet:
-   - The race page collates every slate to find one race (`useRaceTarget`).
-   - What's left on All races' main thread: reading the catalog copy from
-     IndexedDB (0.33-0.5 s at 4x), copying the worker's reply (0.25-0.3 s),
-     posting its input (0.2 s), React rendering the list.
+10. [ ] <- current. Third round, "fix all performance issues" (the user,
+   2026-11-06). Live sweep before it, every page at 4x (cold = fresh
+   profile; warm = after a 40 s first visit), last content change / long
+   tasks / longest:
+   - My ballot: cold 2.3 s / 1.7 s / 0.56 s; warm 0.9 s / 0.44 s / 0.19 s
+   - All races: cold 6.9 s / 4.4 s / 0.48 s; warm 1.7 s / 1.3 s / 0.31 s
+   - Compare: cold 1.6 s / 1.1 s / 0.38 s; warm 0.6 s / 0.25 s
+   - Results: cold 1.3 s / 1.7 s / 0.5 s; warm 0.4 s / 0.3 s
+   - Sources: cold 5.9 s / 2.7 s / 0.37 s; warm 6.4 s / 1.7 s / 0.26 s
+   - Governor race: cold 3.9 s / 2.8 s / 0.97 s; warm 0.4 s / 0.06 s
+   - Governor `?all`: cold 10.9 s / 8.1 s / 0.73 s; warm 2.1 s / 1.2 s / 0.54 s
+   - Publish: cold 2.4 s / 2.5 s / 1.19 s; warm 1.2 s / 1.3 s / 0.67 s
+   - Settings: cold 1.4 s / 1.9 s / 0.78 s; warm 0.5 s / 0.44 s
+   Work:
+   - [x] The race page lists race keys straight from positions and collates
+     only its own race (`collateRaces` `only`), not every imported race.
+   - [x] The whole catalog job in a worker (`catalog.worker.ts`): bundle
+     download and parse, signature checks, the IndexedDB copy, lining up.
+     The page gets progress and races only; the catalog's list and single
+     slates are asked of the page's query cache. Falls back to the page
+     (`catalogService.ts`) where a worker can't start.
+   - [x] Storage that throws outright (no IndexedDB) no longer breaks the
+     loader (found by the worker test, where Bun has no IndexedDB).
+   - [x] Query cache written at most once a second (`5271df2`): it was
+     rewritten whole (660 KB) on every query change, 0.56 s at 4x.
+   - [x] TextArea sizes itself with `field-sizing: content` (`54d808e`):
+     the script forced a whole-page layout per box. Publish's longest task
+     1.2 s -> 0.5 s.
+   - [x] Sources: source ids worked out once per catalog (`17b2d72`).
+   - [x] Voter guides verified through WebCrypto (`0e87747`).
+   - [x] A voter with the whole catalog imported (383 slates; profile built
+     by `%TEMP%\os-perf\heavy-setup.ts`, measured with `--user-dir`):
+     - "Import the other N" through the background queue (`46725bc`): over
+       10 minutes on a desktop, now 8 s.
+       - Every page's layout and CatalogUpdater decoded all imported slates
+       at once with noble: 6-15 s on every page at 4x. Now sliced and kept
+       in IndexedDB for the next visit (`a2eca8d`, `bc9a3c6`). That commit
+       also fixes `decodeSlatesInSlices` never yielding once every slate
+       was checked ahead.
+     - Sources renders its lists a few dozen rows at a time, the closed one
+       only when opened (`151c159`): 7 s -> 1.2 s.
+     - Heavy profile at 4x, longest task, before -> after: My ballot 14.1 s
+       -> 3.2 s; All races 8.0 s -> 0.6 s; Compare 11.2 s -> 1.4 s; Results
+       6.8 s -> 1.0 s; Sources 15.5 s -> 1.2 s; Governor 7.8 s -> 0.7 s;
+       Publish 7.5 s -> 0.7 s; Settings 6.7 s -> 0.4 s.
+   - [ ] <- current: push, check the live site, sweep it again.
+11. [ ] Not started, for a later round:
+   - My ballot with hundreds imported: 3.2 s at 4x in one task, spread
+     over collating (two `collateRaces` over every slate, 0.7 s), React
+     Aria controls and the race cards. Collating in a worker, as All races
+     does, is the next step.
+   - The main bundle is 786 KB minified; TanStack DB (172 KB) and React
+     DOM (131 KB) are most of it and every page needs both at start.
 
 ## Progress log
 
