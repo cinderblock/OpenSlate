@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { adoptedEntries, expandAdoptions } from "../lib/adoptions";
 import { importAdoptedEntries, resumeSetupImport, updateFromCatalog } from "../lib/catalogImport";
 import { missingNews } from "../lib/catalogUpdates";
-import { decodeSlates } from "../lib/collate";
 import { slatesCollection } from "../lib/collections";
+import { useDecodedSlates } from "../lib/decodedSlates";
 import { areaStore, removedSourcesStore } from "../lib/myVote";
 import { pendingSetupStore } from "../lib/pendingSetup";
 import {
@@ -40,6 +40,9 @@ export function CatalogUpdater() {
   const resumed = useRef(false);
   // Each adopted slate is tried once a visit: one that won't import stays unresolved.
   const adopted = useRef(new Set<string>());
+  // Checked a slice at a time, through the cache every page shares: decoding
+  // them here all at once froze a page with a few hundred for seconds.
+  const { slates: decoded } = useDecodedSlates(rows);
 
   useEffect(() => {
     const data = catalog.data;
@@ -48,25 +51,24 @@ export function CatalogUpdater() {
       resumed.current = true;
       resumeSetupImport(data, CATALOG_URL);
     }
-    if (rows.length === 0 || checked.current.has(data.generated_at)) return;
+    if (rows.length === 0 || !decoded || checked.current.has(data.generated_at)) return;
     checked.current.add(data.generated_at);
-    // decodeSlates caches each token's verification, so this is cheap.
-    const stored = decodeSlates(rows).filter((slate) => slate.valid);
+    const stored = decoded.filter((slate) => slate.valid);
     const news = missingNews(stored, data.entries, {
       area: areaStore.get(),
       removed: new Set(removedSourcesStore.get()),
     });
     updateFromCatalog(data, CATALOG_URL, stored, news);
-  }, [catalog.data, rows, isReady, pendingAtLoad]);
+  }, [catalog.data, rows, decoded, isReady, pendingAtLoad]);
 
   // On every change to what's imported, unlike the update above: following a
   // source for the first time can bring a new adoption with it.
   useEffect(() => {
     const data = catalog.data;
-    if (!data || !isReady || rows.length === 0) return;
+    if (!data || !isReady || rows.length === 0 || !decoded) return;
     const removed = new Set(removedSourcesStore.get());
     const entries = adoptedEntries(
-      expandAdoptions(decodeSlates(rows)),
+      expandAdoptions(decoded),
       data.entries,
       removed,
     ).filter((entry) => !adopted.current.has(entry.path));
@@ -78,7 +80,7 @@ export function CatalogUpdater() {
       new Set(rows.map((row) => row.token)),
       queryClient,
     );
-  }, [catalog.data, rows, isReady]);
+  }, [catalog.data, rows, decoded, isReady]);
 
   return null;
 }

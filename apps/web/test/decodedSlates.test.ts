@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createSlate, generateKeyPair } from "@openslate/core";
-import { decodeSlates, isDecoded } from "../src/lib/collate";
-import { decodeSlatesInSlices } from "../src/lib/decodedSlates";
+import { decodeSlates, isDecoded, verifyAhead } from "../src/lib/collate";
+import { AHEAD, decodeSlatesInSlices } from "../src/lib/decodedSlates";
 
 function makeRow(name: string) {
   const { token } = createSlate({
@@ -96,5 +96,22 @@ describe("decodeSlatesInSlices", () => {
     expect(out).toBeUndefined();
     expect(isDecoded(rows[0]?.token ?? "")).toBe(true);
     expect(isDecoded(rows[1]?.token ?? "")).toBe(false);
+  });
+
+  test("checking ahead still hands the page back between slices", async () => {
+    const rows = ["y1", "y2", "y3", "y4", "y5", "y6", "y7", "y8", "y9", "y10"].map(makeRow);
+    let clock = 0;
+    let yields = 0;
+    const out = await decodeSlatesInSlices(rows, {
+      yieldToPage: async () => {
+        yields++;
+      },
+      // Every look at the clock is past the slice.
+      now: () => (clock += 100),
+      verifyAhead,
+    });
+    expect(out).toHaveLength(10);
+    // One slice a batch checked ahead; before, none at all.
+    expect(yields).toBe(Math.ceil(rows.length / AHEAD));
   });
 });

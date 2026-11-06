@@ -4,8 +4,9 @@ import { useMemo } from "react";
 import { z } from "zod";
 import { expandAdoptions } from "./adoptions";
 import { translateSlates } from "./ballotCheck";
-import { type DecodedSlate, type DisagreeMode, decodeLocalGuides, decodeSlates } from "./collate";
+import { type DecodedSlate, type DisagreeMode, decodeLocalGuides } from "./collate";
 import { slatesCollection } from "./collections";
+import { useDecodedSlates as useCheckedSlates } from "./decodedSlates";
 import { useKnownIdentities } from "./identities";
 import type { Area } from "./jurisdictions";
 import { EMPTY_AREA, upgradeArea } from "./jurisdictions";
@@ -201,10 +202,19 @@ export function useDecodedSlates(): { slates: DecodedSlate[]; isReady: boolean }
   const { data, isReady } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
   const contacts = useKnownIdentities();
   const guides = useLocalStore(friendGuidesStore)[0];
+  // Checked a slice at a time (and kept for the next visit), not all at once
+  // in this render: every page's layout asks for these, and with a few
+  // hundred imported that was a freeze of many seconds on a phone.
+  const { slates: checked } = useCheckedSlates(data, { keepForNextVisit: true });
   const decoded = useMemo(
-    () => translateSlates(expandAdoptions([...decodeSlates(data), ...decodeLocalGuides(guides)])),
-    [data, guides],
+    () =>
+      checked
+        ? translateSlates(expandAdoptions([...checked, ...decodeLocalGuides(guides)]))
+        : NO_SLATES,
+    [checked, guides],
   );
   const slates = useMemo(() => withNicknames(decoded, contacts), [decoded, contacts]);
-  return { slates, isReady };
+  return { slates, isReady: isReady && checked !== undefined };
 }
+
+const NO_SLATES: DecodedSlate[] = [];

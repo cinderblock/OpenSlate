@@ -1,5 +1,14 @@
+import type { SlatePayload } from "@openslate/core";
+import { get, set } from "idb-keyval";
 import { useEffect, useMemo, useState } from "react";
-import { type DecodedSlate, decodeSlates, isDecoded, verifyAhead } from "./collate";
+import {
+  type DecodedSlate,
+  decodeSlates,
+  isDecoded,
+  rememberVerified,
+  verifyAhead,
+} from "./collate";
+import { throttleWrites } from "./throttleWrites";
 
 /**
  * Verifying a slate (schema check plus an Ed25519 signature) takes a couple of
@@ -30,8 +39,12 @@ export interface SliceOptions {
   verifyAhead?: (tokens: string[]) => Promise<void>;
 }
 
-/** Checked ahead at once: enough in flight to be quick, few enough to fit a slice. */
-const AHEAD = 8;
+/**
+ * Checked ahead at once: enough in flight to be quick, few enough to fit a
+ * slice. Each still parses its payload on the page, about 8 ms at 4x CPU
+ * throttling, so 4 is a slice of about 30 ms.
+ */
+export const AHEAD = 4;
 
 /** About half a frame: long enough to get through a few slates, short enough not to stutter. */
 const SLICE_MS = 8;
@@ -58,17 +71,26 @@ export async function decodeSlatesInSlices(
   let progressAt = sliceStart;
   for (let i = 0; i < rows.length; i++) {
     if (signal?.aborted) return undefined;
+    // Whether this step cost anything: slates verified already don't.
+    let worked = false;
     if (ahead && i % AHEAD === 0) {
       const next = rows
         .slice(i, i + AHEAD)
         .map((r) => r.token)
         .filter((t) => !isDecoded(t));
-      if (next.length) await ahead(next);
+      if (next.length) {
+        await ahead(next);
+        worked = true;
+      }
     }
     const row = rows[i];
-    if (!row || isDecoded(row.token)) continue;
-    decodeSlates([row]);
-    if (now() - sliceStart >= budgetMs) {
+    if (row && !isDecoded(row.token)) {
+      decodeSlates([row]);
+      worked = true;
+    }
+    // Checking ahead decodes a batch at once, so it counts as work too: only
+    // counting a decode here left one long task for the lot.
+    if (worked && now() - sliceStart >= budgetMs) {
       // A few times a second: each report re-renders the page showing the bar.
       if (now() - progressAt >= progressMs) {
         onProgress?.(i + 1, rows.length);
@@ -92,11 +114,51 @@ export interface DecodedSlatesState {
 }
 
 /**
+ * The voter's slates verified on an earlier visit, so the next needn't check
+ * them again: with a few hundred imported, checking them all on the page was
+ * seconds of every visit's start on a phone. Browser storage is as trusted as
+ * the app (catalogDeps.ts keeps the catalog's copy the same way). Only slates
+ * that verified are kept; anything else is checked every time.
+ */
+export const KEPT_KEY = "openslate.verifiedSlates.v1";
+
+type Kept = Array<[token: string, payload: SlatePayload]>;
+
+let keptLoaded: Promise<void> | undefined;
+
+/** What earlier visits verified, into `decodeSlates`' cache. Once a visit. */
+export function loadKept(): Promise<void> {
+  keptLoaded ??= get<Kept>(KEPT_KEY)
+    .then((kept) => {
+      for (const [token, payload] of kept ?? []) rememberVerified(token, payload);
+    })
+    .catch(() => undefined);
+  return keptLoaded;
+}
+
+/** The tokens last kept, so the same set isn't written again. */
+let keptTokens = "";
+const keepLater = throttleWrites((kept: Kept) => set(KEPT_KEY, kept), 2000);
+
+/** Keep these slates' verified results for the next visit, when they're new. */
+function keep(slates: DecodedSlate[]): void {
+  const valid = slates.filter((slate) => slate.valid && !slate.local);
+  const tokens = valid.map((slate) => slate.token.slice(-24)).join();
+  if (tokens === keptTokens) return;
+  keptTokens = tokens;
+  keepLater(valid.map((slate) => [slate.token, slate.payload]));
+}
+
+/**
  * `decodeSlates(rows)` without blocking the page: at once when they're all
  * verified already (no flash of a progress bar), otherwise a slice at a time
  * with progress. `rows` should be stable between renders, as a live query's are.
  */
-export function useDecodedSlates(rows: Row[]): DecodedSlatesState {
+export function useDecodedSlates(
+  rows: Row[],
+  /** These are the voter's imported slates: keep their results for the next visit. */
+  { keepForNextVisit = false }: { keepForNextVisit?: boolean } = {},
+): DecodedSlatesState {
   const cached = useMemo(
     () => (rows.every((row) => isDecoded(row.token)) ? decodeSlates(rows) : undefined),
     [rows],
@@ -107,17 +169,28 @@ export function useDecodedSlates(rows: Row[]): DecodedSlatesState {
   useEffect(() => {
     if (cached) return;
     const controller = new AbortController();
-    void decodeSlatesInSlices(rows, {
-      yieldToPage,
-      now: () => performance.now(),
-      signal: controller.signal,
-      onProgress: (done) => setProgress({ rows, done }),
-      verifyAhead,
-    }).then((slates) => {
-      if (slates) setResult({ rows, slates });
-    });
+    void loadKept()
+      .then(() =>
+        decodeSlatesInSlices(rows, {
+          yieldToPage,
+          now: () => performance.now(),
+          signal: controller.signal,
+          onProgress: (done) => setProgress({ rows, done }),
+          verifyAhead,
+        }),
+      )
+      .then((slates) => {
+        if (!slates) return;
+        setResult({ rows, slates });
+        if (keepForNextVisit) keep(slates);
+      });
     return () => controller.abort();
-  }, [rows, cached]);
+  }, [rows, cached, keepForNextVisit]);
+
+  // Verified already this visit (an import checks as it goes): kept all the same.
+  useEffect(() => {
+    if (cached && keepForNextVisit) keep(cached);
+  }, [cached, keepForNextVisit]);
 
   const slates = cached ?? (result?.rows === rows ? result.slates : undefined);
   return {

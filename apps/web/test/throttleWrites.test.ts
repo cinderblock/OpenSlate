@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { throttleWrites } from "../src/lib/query";
+import { throttleWrites } from "../src/lib/throttleWrites";
 
 /** A timer run by hand. */
 function manualTimer() {

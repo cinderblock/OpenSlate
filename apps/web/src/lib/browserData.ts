@@ -216,6 +216,7 @@ export const CACHE_KEYS = [
   "openslate.query-cache",
   "openslate.catalogCopy.v1",
   "openslate.catalogChecked.v1",
+  "openslate.verifiedSlates.v1",
 ];
 
 /** Forget downloaded data (catalog, results, polls). Reloads fetch it again. */
