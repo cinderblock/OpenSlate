@@ -59,6 +59,15 @@ export interface CopyDeps {
   verifyAhead?: (tokens: string[]) => Promise<void>;
   readCopy: (catalogUrl: string) => Promise<CatalogCopy | undefined>;
   writeCopy: (copy: CatalogCopy) => Promise<void>;
+  /**
+   * Slates checked so far by a check that hasn't finished, kept as it goes: a
+   * visitor who reloads halfway (a phone can take most of a minute) picks up
+   * where it stopped instead of starting over. A token's result never changes,
+   * so these hold for any version of the catalog.
+   */
+  readChecked?: (catalogUrl: string) => Promise<CopiedSlate[]>;
+  /** Replace what's kept for `readChecked`; an empty list clears it. */
+  writeChecked?: (catalogUrl: string, slates: CopiedSlate[]) => Promise<void>;
   /** Let the page paint and answer input. */
   yieldToPage: () => Promise<void>;
   now: () => number;
@@ -84,6 +93,8 @@ const SLICE_MS = 12;
 const AHEAD = 8;
 /** How often the progress bar moves. */
 const PROGRESS_MS = 250;
+/** How often a check in progress is kept: a reload loses at most this much. */
+const CHECKPOINT_MS = 2000;
 
 export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
   let status: CopyStatus = { state: "idle" };
@@ -139,12 +150,25 @@ export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
     report: (bar: { label: string; value: number; maxValue?: number }) => void,
   ): Promise<CatalogCopy> {
     const tokens = await fetchTokens(catalog, catalogUrl, report);
-    const verified = new Map(known?.slates.map((slate) => [slate.token, slate.payload]));
+    const earlier = (await deps.readChecked?.(catalogUrl).catch(() => undefined)) ?? [];
+    const verified = new Map(
+      [...(known?.slates ?? []), ...earlier].map((slate) => [slate.token, slate.payload]),
+    );
     const slates: CopiedSlate[] = [];
     const maxValue = catalog.entries.length;
     const label = "Checking signatures";
     report({ label, value: 0, maxValue });
     let sliceStart = deps.now();
+    let keptAt = sliceStart;
+    let keeping = Promise.resolve();
+    let checked = 0;
+    /** Keep what's checked so far, one write at a time, never holding the check up. */
+    const checkpoint = () => {
+      if (!deps.writeChecked || checked === slates.length) return;
+      checked = slates.length;
+      const sofar = [...new Map([...earlier, ...slates].map((s) => [s.token, s])).values()];
+      keeping = keeping.then(() => deps.writeChecked?.(catalogUrl, sofar)).catch(() => undefined);
+    };
     for (const [index, entry] of catalog.entries.entries()) {
       // A few at a time ahead, many in flight at once, before `verify` asks for each.
       if (deps.verifyAhead && index % AHEAD === 0) {
@@ -160,10 +184,15 @@ export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
       if (token && payload?.issuer.key === entry.issuer.key) slates.push({ token, payload });
       if (deps.now() - sliceStart >= SLICE_MS) {
         report({ label, value: index + 1, maxValue });
+        if (deps.now() - keptAt >= CHECKPOINT_MS) {
+          checkpoint();
+          keptAt = deps.now();
+        }
         await deps.yieldToPage();
         sliceStart = deps.now();
       }
     }
+    await keeping;
     return {
       catalogUrl,
       generatedAt: catalog.generated_at,
@@ -195,7 +224,12 @@ export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
       if (copy?.generatedAt !== catalog.generated_at) {
         const next = await download(catalog, catalogUrl, copy, report);
         // Keeping it only saves time next visit: not worth stopping for.
-        await deps.writeCopy(next).catch(() => undefined);
+        const kept = await deps.writeCopy(next).then(
+          () => true,
+          () => false,
+        );
+        // The whole copy holds all of it now.
+        if (kept) await deps.writeChecked?.(catalogUrl, []).catch(() => undefined);
         set({ state: "ready", copy: next });
       }
       checkedAt = deps.now();

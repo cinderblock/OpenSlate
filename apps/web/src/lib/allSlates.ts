@@ -1,10 +1,11 @@
 import { useLiveQuery } from "@tanstack/react-db";
-import { get, set } from "idb-keyval";
+import { del, get, set } from "idb-keyval";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { expandAdoptions } from "./adoptions";
 import { translateSlates } from "./ballotCheck";
 import {
   type CatalogCopy,
+  type CopiedSlate,
   type CopyStatus,
   createCatalogLoader,
   gatherSlates,
@@ -35,6 +36,8 @@ import type { Follows } from "./sources";
 
 /** Its own key rather than the query cache's: that blob is rewritten on every change. */
 const COPY_KEY = "openslate.catalogCopy.v1";
+/** A check that hasn't finished yet, kept as it goes (`readChecked` in catalogCopy.ts). */
+const CHECKED_KEY = "openslate.catalogChecked.v1";
 
 const loader = createCatalogLoader({
   fetchCatalog: (catalogUrl) => queryClient.fetchQuery(catalogQueryOptions(catalogUrl)),
@@ -53,6 +56,14 @@ const loader = createCatalogLoader({
     return copy;
   },
   writeCopy: (copy) => set(COPY_KEY, copy),
+  async readChecked(catalogUrl) {
+    const kept = await get<{ catalogUrl: string; slates: CopiedSlate[] }>(CHECKED_KEY);
+    if (kept?.catalogUrl !== catalogUrl) return [];
+    for (const slate of kept.slates) rememberVerified(slate.token, slate.payload);
+    return kept.slates;
+  },
+  writeChecked: (catalogUrl, slates) =>
+    slates.length ? set(CHECKED_KEY, { catalogUrl, slates }) : del(CHECKED_KEY),
   yieldToPage,
   now: () => Date.now(),
 });

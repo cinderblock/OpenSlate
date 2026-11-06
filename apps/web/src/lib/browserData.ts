@@ -212,7 +212,11 @@ export function readLocalEntries(): LocalEntry[] {
 }
 
 /** Caches kept in idb-keyval: re-fetched when missing, never the user's own data. */
-export const CACHE_KEYS = ["openslate.query-cache", "openslate.catalogCopy.v1"];
+export const CACHE_KEYS = [
+  "openslate.query-cache",
+  "openslate.catalogCopy.v1",
+  "openslate.catalogChecked.v1",
+];
 
 /** Forget downloaded data (catalog, results, polls). Reloads fetch it again. */
 export async function clearCaches(): Promise<void> {

@@ -288,6 +288,68 @@ describe("createCatalogLoader", () => {
     expect(h.calls.yields).toBeGreaterThan(0);
   });
 
+  test("a check cut off by a reload picks up where it stopped", async () => {
+    const many = Array.from({ length: 40 }, (_, i) => entry(`s${i}.slate`, `Source ${i}`));
+    const manyTokens = new Map(many.map((e, i) => [e.path, token(`Source ${i}`)]));
+    let checked: { url: string; slates: CatalogCopy["slates"] } | undefined;
+    const writes: number[] = [];
+    const storage: Partial<CopyDeps> = {
+      async readChecked(url) {
+        return checked?.url === url ? checked.slates : [];
+      },
+      async writeChecked(url, slates) {
+        writes.push(slates.length);
+        checked = slates.length ? { url, slates } : undefined;
+      },
+    };
+    // Each step is 100 ms of the fake clock, so it keeps what it has every 2 s or so.
+    const ticking = () => {
+      let t = 0;
+      return () => (t += 100);
+    };
+    // The first visit's page goes away 25 slates in.
+    let verified = 0;
+    const first = harness(catalog("v1", many), manyTokens, {
+      ...storage,
+      now: ticking(),
+      verify(raw) {
+        if (++verified > 25) throw new Error("reloaded");
+        const result = verifySlate(raw);
+        return result.valid ? result.payload : undefined;
+      },
+    });
+    await first.loader.load(URL_A);
+    expect(first.loader.status().state).toBe("error");
+    const kept = checked?.slates.length ?? 0;
+    expect(kept).toBeGreaterThan(10);
+    expect(kept).toBeLessThanOrEqual(25);
+
+    const second = harness(catalog("v1", many), manyTokens, { ...storage, now: ticking() });
+    await second.loader.load(URL_A);
+    const status = second.loader.status();
+    if (status.state !== "ready") throw new Error(status.state);
+    expect(status.copy.slates).toHaveLength(40);
+    expect(second.calls.verify).toBe(40 - kept);
+    // Once the whole copy is kept, the partial one is cleared.
+    expect(writes.at(-1)).toBe(0);
+    expect(checked).toBeUndefined();
+  });
+
+  test("a partial check isn't cleared when keeping the whole copy fails", async () => {
+    const cleared: number[] = [];
+    const h = harness(catalog("v1", entries), tokens, {
+      async writeCopy() {
+        throw new Error("quota");
+      },
+      async writeChecked(_url, slates) {
+        cleared.push(slates.length);
+      },
+    });
+    await h.loader.load(URL_A);
+    expect(h.loader.status().state).toBe("ready");
+    expect(cleared).not.toContain(0);
+  });
+
   test("asking twice at once loads once, and again only after a while", async () => {
     const h = harness(catalog("v1", entries), tokens);
     await Promise.all([h.loader.load(URL_A), h.loader.load(URL_A)]);
