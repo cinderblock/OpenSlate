@@ -133,13 +133,22 @@ export function CatalogBrowser() {
       );
   }, [catalog, activeElection, search]);
 
+  // Each entry's source id once per catalog: it parses a URL, and every
+  // render asked it of all several hundred entries, the list growing a few
+  // dozen rows a turn included.
+  const sourceIds = useMemo(
+    () => new Map((catalog?.entries ?? []).map((entry) => [entry, sourceIdOf(entry)])),
+    [catalog],
+  );
+  const idOf = (entry: CatalogEntry) => sourceIds.get(entry) ?? sourceIdOf(entry);
+
   function isImported(entry: CatalogEntry): boolean {
-    return imported.has(`${sourceIdOf(entry)}|${entry.election}`);
+    return imported.has(`${idOf(entry)}|${entry.election}`);
   }
 
   async function follow(entry: CatalogEntry, standing: Standing = "follow") {
     const key = entryKey(entry);
-    const sourceId = sourceIdOf(entry);
+    const sourceId = idOf(entry);
     if (isImported(entry)) {
       setStanding(sourceId, standing);
       return;
@@ -168,7 +177,7 @@ export function CatalogBrowser() {
     defaultToUnfollowed(
       pending
         .filter((entry) => !isBallotEntry(entry) && !isArticlesEntry(entry))
-        .map(sourceIdOf)
+        .map(idOf)
         .filter((id) => !alreadyImported.has(id) && !(id in follows)),
     );
     setBulkSummary(null);
@@ -236,7 +245,7 @@ export function CatalogBrowser() {
           <ul className="catalog-list">
             {rows.slice(0, shownCount).map((entry) => {
               const key = entryKey(entry);
-              const sourceId = sourceIdOf(entry);
+              const sourceId = idOf(entry);
               const has = isImported(entry);
               return (
                 <CatalogRow
