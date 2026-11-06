@@ -1,32 +1,21 @@
 import { useLiveQuery } from "@tanstack/react-db";
 import { del, get, set } from "idb-keyval";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { expandAdoptions } from "./adoptions";
-import { translateSlates } from "./ballotCheck";
 import {
   type CatalogCopy,
   type CopiedSlate,
   type CopyStatus,
   createCatalogLoader,
-  gatherSlates,
 } from "./catalogCopy";
 import { fetchCatalogBundle, fetchCatalogSlate } from "./catalogImport";
-import {
-  collateRaces,
-  type DecodedSlate,
-  decodeSlates,
-  type ElectionSummary,
-  electionsOf,
-  type Race,
-  rememberVerified,
-  verifyAhead,
-} from "./collate";
+import { decodeSlates, type Race, rememberVerified, verifyAhead } from "./collate";
 import { slatesCollection } from "./collections";
 import { yieldToPage } from "./decodedSlates";
 import { useKnownIdentities } from "./identities";
-import { useFollows, withNicknames } from "./myVote";
+import { type LinedUp, type LineUpInput, lineUp } from "./lineUp";
+import type { LineUpReply, LineUpRequest } from "./lineUp.worker";
+import { useFollows } from "./myVote";
 import { catalogQueryOptions, DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG, queryClient } from "./query";
-import type { Follows } from "./sources";
 
 /**
  * Every slate there is to see: the public catalog's and the voter's own,
@@ -68,18 +57,8 @@ const loader = createCatalogLoader({
   now: () => Date.now(),
 });
 
-export interface AllRaces {
-  /** Imported and catalog slates, adoptions expanded, in the ballot's spellings. */
-  slates: DecodedSlate[];
-  /** The voter's follows, with 0 for every catalog source they haven't imported. */
-  follows: Follows;
-  /** Every race, in ballot order. */
-  races: Race[];
+export interface AllRaces extends LinedUp {
   byKey: Map<string, Race>;
-  elections: ElectionSummary[];
-  /** Catalog entries that couldn't be used. */
-  rejected: number;
-  generatedAt: string;
 }
 
 export interface AllRacesState {
@@ -99,6 +78,57 @@ export function useCatalogCopyReady(): boolean {
 
 /** The last result, so going from page to page doesn't collate it all again. */
 let last: { signature: string; all: AllRaces } | undefined;
+
+/** The worker, once it's started; `false` once it's failed and the page does it itself. */
+let worker: Worker | false | undefined;
+let nextId = 0;
+const waiting = new Map<number, (reply: LineUpReply | undefined) => void>();
+
+function startWorker(): Worker | false {
+  if (worker !== undefined) return worker;
+  try {
+    const started = new Worker(new URL("./lineUp.worker.ts", import.meta.url), {
+      type: "module",
+    });
+    started.onmessage = (event: MessageEvent<LineUpReply>) => {
+      waiting.get(event.data.id)?.(event.data);
+      waiting.delete(event.data.id);
+    };
+    // A worker that can't start (an old browser, a blocked script): every
+    // request still waiting, and every one after, is done on the page instead.
+    started.onerror = (event) => {
+      event.preventDefault();
+      worker = false;
+      started.terminate();
+      for (const done of waiting.values()) done(undefined);
+      waiting.clear();
+    };
+    worker = started;
+  } catch {
+    worker = false;
+  }
+  return worker;
+}
+
+/**
+ * `lineUp` in a worker, so the page goes on answering while it runs (seconds,
+ * over the whole catalog on a phone). On the page itself where there's no
+ * worker, or the worker fails.
+ */
+async function lineUpOffPage(input: LineUpInput): Promise<LinedUp> {
+  const off = typeof Worker === "undefined" ? false : startWorker();
+  if (off) {
+    const id = nextId++;
+    const reply = await new Promise<LineUpReply | undefined>((resolve) => {
+      waiting.set(id, resolve);
+      off.postMessage({ id, input } satisfies LineUpRequest);
+    });
+    if (reply && "result" in reply) return reply.result;
+  }
+  // Let the page paint `preparing` first.
+  await yieldToPage();
+  return lineUp(input);
+}
 
 /**
  * Every race. `enabled` is the asking: the catalog isn't touched until it's
@@ -137,14 +167,29 @@ export function useAllRaces(enabled: boolean): AllRacesState {
       setAll(last.all);
       return;
     }
-    const timer = setTimeout(() => {
-      const { ready, rows, follows, contacts } = inputs.current;
-      if (!ready) return;
-      const next = lineUp(ready, decodeSlates(rows), follows, contacts);
+    const { ready, rows, follows, contacts } = inputs.current;
+    if (!ready) return;
+    let live = true;
+    void lineUpOffPage({
+      imported: decodeSlates(rows),
+      catalog: decodeSlates(
+        ready.slates.map(({ token }) => ({ token, importedAt: ready.generatedAt })),
+      ),
+      follows,
+      contacts,
+      rejected: ready.rejected,
+      generatedAt: ready.generatedAt,
+    }).then((linedUp) => {
+      const next: AllRaces = {
+        ...linedUp,
+        byKey: new Map(linedUp.races.map((race) => [race.key, race])),
+      };
       last = { signature, all: next };
-      setAll(next);
+      if (live) setAll(next);
     });
-    return () => clearTimeout(timer);
+    return () => {
+      live = false;
+    };
   }, [signature]);
 
   return {
@@ -152,28 +197,5 @@ export function useAllRaces(enabled: boolean): AllRacesState {
     all: enabled ? all : undefined,
     preparing: Boolean(ready) && !all,
     retry: () => void loader.load(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG),
-  };
-}
-
-function lineUp(
-  copy: CatalogCopy,
-  imported: DecodedSlate[],
-  follows: Follows,
-  contacts: Parameters<typeof withNicknames>[1],
-): AllRaces {
-  const catalog = decodeSlates(
-    copy.slates.map(({ token }) => ({ token, importedAt: copy.generatedAt })),
-  );
-  const gathered = gatherSlates(imported, catalog, follows);
-  const slates = withNicknames(translateSlates(expandAdoptions(gathered.slates)), contacts);
-  const races = collateRaces(slates, { follows: gathered.follows, includeUnfollowed: true });
-  return {
-    slates,
-    follows: gathered.follows,
-    races,
-    byKey: new Map(races.map((race) => [race.key, race])),
-    elections: electionsOf(slates, gathered.follows),
-    rejected: copy.rejected,
-    generatedAt: copy.generatedAt,
   };
 }

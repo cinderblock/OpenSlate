@@ -20,13 +20,7 @@ import {
 import { localToday, useArea, useMyElection } from "../lib/myVote";
 import { usePageSearch } from "../lib/pageSearch";
 import { type ChoiceTally, headlineChoices, namedChoices, tallyRace } from "../lib/raceTally";
-import {
-  foldText,
-  matchesSearch,
-  raceSearchFields,
-  raceSearchText,
-  startsAWord,
-} from "../lib/search";
+import { foldText, matchesSearch, startsAWord } from "../lib/search";
 import { AllSlatesLoading, CatalogNote, plural } from "./AllSlates";
 import { FollowButton } from "./FollowButton";
 import { FollowedRaceCard } from "./FollowedRaceCard";
@@ -180,16 +174,8 @@ function RaceList({
     () => all.races.filter((race) => race.election === election),
     [all.races, election],
   );
-  const searchText = useMemo(
-    () =>
-      new Map(
-        inElection.map((race) => [
-          race.key,
-          { text: raceSearchText(race), fields: raceSearchFields(race) },
-        ]),
-      ),
-    [inElection],
-  );
+  // Worked out with the races, off the page (lineUp.ts).
+  const searchText = all.search;
   const { terms } = search;
   const found = useMemo(() => {
     const ofContest =

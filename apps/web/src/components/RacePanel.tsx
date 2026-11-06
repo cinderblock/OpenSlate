@@ -246,7 +246,7 @@ function RaceView({
 
   // Articles slates attach to this race (SPEC §3.15).
   const articlesEverywhere = useMemo(
-    () => articlesByRace(all?.slates ?? slates, all?.follows ?? follows),
+    () => all?.articles ?? articlesByRace(slates, follows),
     [all, slates, follows],
   );
   const articles = articlesEverywhere.get(targetKey) ?? [];
