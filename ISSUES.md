@@ -1,5 +1,17 @@
 # Issues
 
+## Sources: 9 catalog entries never count as imported
+
+Seen 2026-11-06, about 2:25 PM PST (22:25Z), on a fresh profile against the
+local build. Sources → "Import the other 383 to compare" finishes with
+"Imported 383", then offers "Import the other 9 to compare"; pressing it says
+"Imported 9" and still offers the same 9, every time. `CatalogBrowser.tsx`
+`isImported` keys an entry by `sourceIdOf(entry)|entry.election` and the
+imported side by each slate's `source.id|electionOf(position)`, so an entry
+whose slate's id or elections don't match its index entry never shows as
+imported. Matters because the button never reaches "All shown are imported",
+and those rows keep offering Follow for something already there.
+
 ## Cited endorsement sources already gone, or answering a bot page
 
 Seen 2026-10-30, about 3:15 AM PDT (10:15Z), by `experiments/signed-source-capture/03-survey-hosts.ts`
