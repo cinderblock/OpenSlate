@@ -1,68 +1,166 @@
 import { useLiveQuery } from "@tanstack/react-db";
-import { del, get, set } from "idb-keyval";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import type { CatalogQuestion, FromCatalogWorker, ToCatalogWorker } from "./catalog.worker";
+import { storedDeps } from "./catalogDeps";
+import { fetchCatalogSlate } from "./catalogImport";
 import {
-  type CatalogCopy,
-  type CopiedSlate,
-  type CopyStatus,
-  createCatalogLoader,
-} from "./catalogCopy";
-import { fetchCatalogBundle, fetchCatalogSlate } from "./catalogImport";
-import { decodeSlates, type Race, rememberVerified, verifyAhead } from "./collate";
+  type CatalogService,
+  type CatalogStatus,
+  createCatalogService,
+  type LineUpAsk,
+} from "./catalogService";
+import type { Race } from "./collate";
 import { slatesCollection } from "./collections";
-import { yieldToPage } from "./decodedSlates";
 import { useKnownIdentities } from "./identities";
-import { type LinedUp, type LineUpInput, lineUp } from "./lineUp";
-import type { LineUpReply, LineUpRequest } from "./lineUp.worker";
+import type { LinedUp } from "./lineUp";
 import { useFollows } from "./myVote";
-import { catalogQueryOptions, DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG, queryClient } from "./query";
+import {
+  type Catalog,
+  catalogQueryOptions,
+  DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG,
+  queryClient,
+} from "./query";
 
 /**
  * Every slate there is to see: the public catalog's and the voter's own,
  * collated. Loaded when a page asks for it, never at startup (catalogCopy.ts
  * says how), and held for the rest of the visit.
+ *
+ * The work happens in the catalog worker (catalog.worker.ts): downloading and
+ * parsing the bundle, checking several hundred signatures, keeping the copy,
+ * lining up every race. On a phone that was most of a minute of the page
+ * stuttering. Where a worker can't start, the same work runs on the page
+ * (catalogService.ts), a slice at a time.
  */
 
-/** Its own key rather than the query cache's: that blob is rewritten on every change. */
-const COPY_KEY = "openslate.catalogCopy.v1";
-/** A check that hasn't finished yet, kept as it goes (`readChecked` in catalogCopy.ts). */
-const CHECKED_KEY = "openslate.catalogChecked.v1";
+/** The page's half of the worker's questions: through its query cache, which other pages share. */
+function answer(question: CatalogQuestion): Promise<unknown> {
+  return question.what === "catalog"
+    ? queryClient.fetchQuery(catalogQueryOptions(question.catalogUrl))
+    : fetchCatalogSlate(question.entry, question.catalogUrl, queryClient);
+}
 
-const loader = createCatalogLoader({
-  fetchCatalog: (catalogUrl) => queryClient.fetchQuery(catalogQueryOptions(catalogUrl)),
-  fetchBundle: fetchCatalogBundle,
-  fetchSlate: (entry, catalogUrl) => fetchCatalogSlate(entry, catalogUrl, queryClient),
-  verify(token) {
-    const [slate] = decodeSlates([{ token, importedAt: "" }]);
-    return slate?.valid ? slate.payload : undefined;
-  },
-  verifyAhead,
-  async readCopy(catalogUrl) {
-    const copy = await get<CatalogCopy>(COPY_KEY);
-    if (copy?.catalogUrl !== catalogUrl) return undefined;
-    // Verified when it was kept; browser storage is as trusted as the app.
-    for (const slate of copy.slates) rememberVerified(slate.token, slate.payload);
-    return copy;
-  },
-  writeCopy: (copy) => set(COPY_KEY, copy),
-  async readChecked(catalogUrl) {
-    const kept = await get<{ catalogUrl: string; slates: CopiedSlate[] }>(CHECKED_KEY);
-    if (kept?.catalogUrl !== catalogUrl) return [];
-    for (const slate of kept.slates) rememberVerified(slate.token, slate.payload);
-    return kept.slates;
-  },
-  writeChecked: (catalogUrl, slates) =>
-    slates.length ? set(CHECKED_KEY, { catalogUrl, slates }) : del(CHECKED_KEY),
-  yieldToPage,
-  now: () => Date.now(),
-});
+function onThePage(): CatalogService {
+  return createCatalogService({
+    ...storedDeps,
+    fetchCatalog: (catalogUrl) => answer({ what: "catalog", catalogUrl }) as Promise<Catalog>,
+    fetchSlate: (entry, catalogUrl) =>
+      answer({ what: "slate", entry, catalogUrl }) as Promise<string>,
+  });
+}
+
+const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err));
+
+/** The catalog in a worker; undefined where one can't be made. `onFail` if it dies. */
+function inAWorker(onFail: () => void): CatalogService | undefined {
+  if (typeof Worker === "undefined") return undefined;
+  let worker: Worker;
+  try {
+    worker = new Worker(new URL("./catalog.worker.ts", import.meta.url), { type: "module" });
+  } catch {
+    return undefined;
+  }
+  let status: CatalogStatus = { state: "idle" };
+  const listeners = new Set<() => void>();
+  let nextId = 0;
+  const waiting = new Map<number, { resolve: (v: LinedUp) => void; reject: (e: Error) => void }>();
+  const send = (message: ToCatalogWorker) => worker.postMessage(message);
+
+  worker.onmessage = (event: MessageEvent<FromCatalogWorker>) => {
+    const message = event.data;
+    if (message.type === "status") {
+      status = message.status;
+      for (const listener of listeners) listener();
+    } else if (message.type === "linedUp") {
+      const done = waiting.get(message.id);
+      waiting.delete(message.id);
+      if (message.result) done?.resolve(message.result);
+      else done?.reject(new Error(message.error ?? "nothing came back"));
+    } else {
+      const { id } = message;
+      answer(message.question).then(
+        (value) => send({ type: "answer", id, value }),
+        (err) => send({ type: "answer", id, error: errorText(err) }),
+      );
+    }
+  };
+  // A worker that can't load (an old browser, a blocked script) or dies.
+  worker.onerror = (event) => {
+    event.preventDefault();
+    worker.terminate();
+    for (const done of waiting.values()) done.reject(new Error("the catalog worker stopped"));
+    waiting.clear();
+    onFail();
+  };
+
+  return {
+    load: (catalogUrl) => send({ type: "load", catalogUrl }),
+    status: () => status,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    lineUp: (ask) =>
+      new Promise<LinedUp>((resolve, reject) => {
+        const id = nextId++;
+        waiting.set(id, { resolve, reject });
+        send({ type: "lineUp", id, ask });
+      }),
+  };
+}
+
+const IDLE: CatalogStatus = { state: "idle" };
+
+/** The worker once something asks, or the page if the worker can't be had. */
+const catalog = (() => {
+  let current: CatalogService | undefined;
+  let unsubscribe: (() => void) | undefined;
+  let loading: string | undefined;
+  /** Counts switches to the page, so a lining up the worker dropped is asked again. */
+  let generation = 0;
+  const listeners = new Set<() => void>();
+  const notify = () => {
+    for (const listener of listeners) listener();
+  };
+  function use(next: CatalogService) {
+    unsubscribe?.();
+    current = next;
+    unsubscribe = next.subscribe(notify);
+  }
+  function fallBack() {
+    generation++;
+    const page = onThePage();
+    use(page);
+    if (loading) page.load(loading);
+    notify();
+  }
+  function started(): CatalogService {
+    if (!current) use(inAWorker(fallBack) ?? onThePage());
+    return current as CatalogService;
+  }
+  return {
+    load(catalogUrl: string) {
+      loading = catalogUrl;
+      started().load(catalogUrl);
+    },
+    status: () => current?.status() ?? IDLE,
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    lineUp: (ask: LineUpAsk) => started().lineUp(ask),
+    generation: () => generation,
+  };
+})();
 
 export interface AllRaces extends LinedUp {
   byKey: Map<string, Race>;
 }
 
 export interface AllRacesState {
-  status: CopyStatus;
+  status: CatalogStatus;
   /** Undefined until it's asked for, loaded and lined up. */
   all: AllRaces | undefined;
   /** The slates are in, and they're being lined up into races. */
@@ -73,83 +171,32 @@ export interface AllRacesState {
 
 /** Whether this visit already has the catalog, without asking for it. */
 export function useCatalogCopyReady(): boolean {
-  return useSyncExternalStore(loader.subscribe, loader.status).state === "ready";
+  return useSyncExternalStore(catalog.subscribe, catalog.status).state === "ready";
 }
 
 /** The last result, so going from page to page doesn't collate it all again. */
 let last: { signature: string; all: AllRaces } | undefined;
 
-/** The worker, once it's started; `false` once it's failed and the page does it itself. */
-let worker: Worker | false | undefined;
-let nextId = 0;
-const waiting = new Map<number, (reply: LineUpReply | undefined) => void>();
-
-function startWorker(): Worker | false {
-  if (worker !== undefined) return worker;
-  try {
-    const started = new Worker(new URL("./lineUp.worker.ts", import.meta.url), {
-      type: "module",
-    });
-    started.onmessage = (event: MessageEvent<LineUpReply>) => {
-      waiting.get(event.data.id)?.(event.data);
-      waiting.delete(event.data.id);
-    };
-    // A worker that can't start (an old browser, a blocked script): every
-    // request still waiting, and every one after, is done on the page instead.
-    started.onerror = (event) => {
-      event.preventDefault();
-      worker = false;
-      started.terminate();
-      for (const done of waiting.values()) done(undefined);
-      waiting.clear();
-    };
-    worker = started;
-  } catch {
-    worker = false;
-  }
-  return worker;
-}
-
-/**
- * `lineUp` in a worker, so the page goes on answering while it runs (seconds,
- * over the whole catalog on a phone). On the page itself where there's no
- * worker, or the worker fails.
- */
-async function lineUpOffPage(input: LineUpInput): Promise<LinedUp> {
-  const off = typeof Worker === "undefined" ? false : startWorker();
-  if (off) {
-    const id = nextId++;
-    const reply = await new Promise<LineUpReply | undefined>((resolve) => {
-      waiting.set(id, resolve);
-      off.postMessage({ id, input } satisfies LineUpRequest);
-    });
-    if (reply && "result" in reply) return reply.result;
-  }
-  // Let the page paint `preparing` first.
-  await yieldToPage();
-  return lineUp(input);
-}
-
 /**
  * Every race. `enabled` is the asking: the catalog isn't touched until it's
- * true. Collating takes long enough to feel on a phone, so it starts after a
- * paint, with `preparing` on the screen.
+ * true. Until it's lined up, `preparing` is on the screen.
  */
 export function useAllRaces(enabled: boolean): AllRacesState {
-  const status = useSyncExternalStore(loader.subscribe, loader.status);
+  const status = useSyncExternalStore(catalog.subscribe, catalog.status);
   const { data: rows, isReady } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
   const contacts = useKnownIdentities();
   const [follows] = useFollows();
   const [all, setAll] = useState<AllRaces | undefined>();
 
   useEffect(() => {
-    if (enabled) void loader.load(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG);
+    if (enabled) catalog.load(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG);
   }, [enabled]);
 
   const copy = status.state === "ready" ? status.copy : undefined;
   const ready = enabled && isReady ? copy : undefined;
   const signature = ready
     ? JSON.stringify([
+        catalog.generation(),
         ready.generatedAt,
         rows.map((row) => row.token.slice(-16)),
         follows,
@@ -158,8 +205,8 @@ export function useAllRaces(enabled: boolean): AllRacesState {
     : undefined;
 
   // `signature` stands for these, which can be new objects on any render.
-  const inputs = useRef({ ready, rows, follows, contacts });
-  inputs.current = { ready, rows, follows, contacts };
+  const inputs = useRef({ rows, follows, contacts });
+  inputs.current = { rows, follows, contacts };
 
   useEffect(() => {
     if (!signature) return;
@@ -167,26 +214,31 @@ export function useAllRaces(enabled: boolean): AllRacesState {
       setAll(last.all);
       return;
     }
-    const { ready, rows, follows, contacts } = inputs.current;
-    if (!ready) return;
+    const { rows, follows, contacts } = inputs.current;
     let live = true;
-    void lineUpOffPage({
-      imported: decodeSlates(rows),
-      catalog: decodeSlates(
-        ready.slates.map(({ token }) => ({ token, importedAt: ready.generatedAt })),
-      ),
-      follows,
-      contacts,
-      rejected: ready.rejected,
-      generatedAt: ready.generatedAt,
-    }).then((linedUp) => {
-      const next: AllRaces = {
-        ...linedUp,
-        byKey: new Map(linedUp.races.map((race) => [race.key, race])),
-      };
-      last = { signature, all: next };
-      if (live) setAll(next);
-    });
+    catalog
+      .lineUp({
+        // Plain rows: they cross to the worker.
+        rows: rows.map(({ token, importedAt }) => ({ token, importedAt })),
+        follows,
+        contacts: contacts.map(({ publicKey, displayName }) => ({
+          publicKey,
+          ...(displayName !== undefined ? { displayName } : {}),
+        })),
+      })
+      .then(
+        (linedUp) => {
+          const next: AllRaces = {
+            ...linedUp,
+            byKey: new Map(linedUp.races.map((race) => [race.key, race])),
+          };
+          last = { signature, all: next };
+          if (live) setAll(next);
+        },
+        // The worker stopped (the page picks it up, and `generation` asks
+        // again), or a newer copy is on its way: either way, nothing to show.
+        () => undefined,
+      );
     return () => {
       live = false;
     };
@@ -196,6 +248,6 @@ export function useAllRaces(enabled: boolean): AllRacesState {
     status,
     all: enabled ? all : undefined,
     preparing: Boolean(ready) && !all,
-    retry: () => void loader.load(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG),
+    retry: () => catalog.load(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG),
   };
 }

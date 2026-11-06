@@ -10,14 +10,9 @@ import { type DecodedSlate, decodeSlates, isDecoded, verifyAhead } from "./colla
  * asks gets them for free.
  */
 
-/** The next task, without `setTimeout`'s once-a-second crawl in a background tab. */
-export function yieldToPage(): Promise<void> {
-  return new Promise((resolve) => {
-    const channel = new MessageChannel();
-    channel.port1.onmessage = () => resolve();
-    channel.port2.postMessage(null);
-  });
-}
+import { yieldToPage } from "./yieldToPage";
+
+export { yieldToPage };
 
 type Row = { token: string; importedAt: string };
 
