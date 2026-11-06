@@ -1,7 +1,8 @@
-import { type Subject, verifySlate } from "@openslate/core";
+import type { Subject } from "@openslate/core";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useMemo } from "react";
 import { slatesCollection } from "./collections";
+import { useDecodedSlates } from "./decodedSlates";
 import { subjectKey } from "./subjectKey";
 
 export { subjectFromKey, subjectKey } from "./subjectKey";
@@ -14,14 +15,14 @@ export interface KnownSubject {
 }
 
 export function useImportedSubjects(): KnownSubject[] {
-  const { data: slates } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
+  const { data: rows } = useLiveQuery((q) => q.from({ slate: slatesCollection }));
+  // Checked a slice at a time through the shared cache, not all at once here.
+  const { slates } = useDecodedSlates(rows);
   return useMemo(() => {
     const seen = new Map<string, { subject: Subject; issuers: Set<string> }>();
-    for (const { token } of slates) {
-      const result = verifySlate(token);
-      if (!result.payload) continue;
-      const issuer = result.payload.issuer.key;
-      for (const position of result.payload.positions) {
+    for (const { payload } of slates ?? []) {
+      const issuer = payload.issuer.key;
+      for (const position of payload.positions) {
         const key = subjectKey(position.subject);
         const entry = seen.get(key);
         if (entry) entry.issuers.add(issuer);

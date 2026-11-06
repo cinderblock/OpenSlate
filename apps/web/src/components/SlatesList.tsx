@@ -1,9 +1,10 @@
-import { verifySlate } from "@openslate/core";
 import { useLiveQuery } from "@tanstack/react-db";
 import Fuse from "fuse.js";
 import { useMemo, useState } from "react";
+import { decodeSlates } from "../lib/collate";
 import { slatesCollection } from "../lib/collections";
 import { formatLocalDate } from "../lib/dates";
+import { useDecodedSlates } from "../lib/decodedSlates";
 import { shortKey, useKnownIdentities } from "../lib/identities";
 import { SearchField } from "./ui/TextField";
 
@@ -32,11 +33,15 @@ export function SlatesList() {
     [knownContacts],
   );
 
+  // Checked a slice at a time through the shared cache, not all at once here.
+  const { slates: checked } = useDecodedSlates(slates);
   const rows = useMemo<SlateRow[]>(() => {
+    if (!checked) return [];
     return slates.map((slate) => {
-      const result = verifySlate(slate.token);
-      const issuerKey = result.issuerKey ?? "";
-      const issuerName = result.payload?.issuer.name ?? "";
+      // Cached now; undefined for a token that doesn't even parse.
+      const [result] = decodeSlates([slate]);
+      const issuerKey = result?.payload.issuer.key ?? "";
+      const issuerName = result?.payload.issuer.name ?? "";
       const nickname = contactNames.get(issuerKey) ?? "";
       return {
         token: slate.token,
@@ -45,12 +50,12 @@ export function SlatesList() {
         issuerName,
         nickname,
         displayName: nickname || issuerName || shortKey(issuerKey),
-        election: result.payload?.context?.election ?? "",
-        positions: result.payload?.positions.length ?? 0,
-        valid: result.valid,
+        election: result?.payload.context?.election ?? "",
+        positions: result?.payload.positions.length ?? 0,
+        valid: result?.valid ?? false,
       };
     });
-  }, [slates, contactNames]);
+  }, [checked, slates, contactNames]);
 
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("importedAt");
