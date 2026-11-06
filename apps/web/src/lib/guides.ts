@@ -9,7 +9,7 @@ import {
   parseGuideReferences,
   type ReferencePlace,
   type Subject,
-  verifyGuide,
+  verifyGuideAsync,
 } from "@openslate/core";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -104,7 +104,7 @@ export function guideManifestQueryOptions(entry: GuideEntry | undefined) {
       // Revalidate rather than trust the browser's copy: a guide's files change with it.
       const response = await fetch(entry.url, { cache: "no-cache" });
       if (!response.ok) throw new Error(`Voter guide: HTTP ${response.status}`);
-      const result = verifyGuide(await response.text(), { expectedKey: entry.key });
+      const result = await verifyGuideAsync(await response.text(), { expectedKey: entry.key });
       if (!result.valid || !result.manifest) {
         throw new Error(`Voter guide didn't verify: ${result.errors.join("; ")}`);
       }

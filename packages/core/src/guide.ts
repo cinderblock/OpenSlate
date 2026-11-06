@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { canonicalize, utf8 } from "./canonical";
 import { b64url, decodePublicKey, sign as edSign } from "./crypto";
-import { type DecodedSlate, decodeToken, verifySignature } from "./envelope";
+import { type DecodedSlate, decodeToken, verifySignature, verifySignatureAsync } from "./envelope";
 import { attributionSchema, contextSchema, httpUrl, issuerSchema, subjectSchema } from "./schema";
 
 /**
@@ -255,12 +255,54 @@ export interface GuideVerifyOptions {
 
 /** Parse, schema-check and verify a signed guide manifest. */
 export function verifyGuide(token: string, options: GuideVerifyOptions = {}): GuideVerifyResult {
+  const checked = checkGuide(token, options);
+  if ("result" in checked) return checked.result;
+  return finishGuide(checked, () => verifySignature(checked.decoded, checked.publicKey));
+}
+
+/**
+ * `verifyGuide`, with the signature checked through the platform's own
+ * Ed25519 where it has one (`verifyAsync` in crypto.ts): the same result, a
+ * fraction of the time on a phone's first check.
+ */
+export async function verifyGuideAsync(
+  token: string,
+  options: GuideVerifyOptions = {},
+): Promise<GuideVerifyResult> {
+  const checked = checkGuide(token, options);
+  if ("result" in checked) return checked.result;
+  let ok: boolean | Error;
+  try {
+    ok = await verifySignatureAsync(checked.decoded, checked.publicKey);
+  } catch (err) {
+    ok = err instanceof Error ? err : new Error(String(err));
+  }
+  return finishGuide(checked, () => {
+    if (ok instanceof Error) throw ok;
+    return ok;
+  });
+}
+
+interface CheckedGuide {
+  decoded: DecodedSlate;
+  manifest: GuideManifest;
+  /** Empty when the issuer key doesn't decode; `keyError` says why. */
+  publicKey: Uint8Array;
+  keyError?: string;
+  errors: string[];
+}
+
+/** Everything `verifyGuide` checks but the signature, or the result when it can't get that far. */
+function checkGuide(
+  token: string,
+  options: GuideVerifyOptions,
+): CheckedGuide | { result: GuideVerifyResult } {
   const errors: string[] = [];
   let decoded: DecodedSlate;
   try {
     decoded = decodeToken(token);
   } catch (err) {
-    return { valid: false, errors: [errorMessage(err)] };
+    return { result: { valid: false, errors: [errorMessage(err)] } };
   }
 
   const header = guideHeaderSchema.safeParse(decoded.header);
@@ -271,7 +313,7 @@ export function verifyGuide(token: string, options: GuideVerifyOptions = {}): Gu
     for (const issue of parsed.error.issues) {
       errors.push(`manifest ${issue.path.join(".") || "(root)"}: ${issue.message}`);
     }
-    return { valid: false, errors };
+    return { result: { valid: false, errors } };
   }
   const manifest = parsed.data;
 
@@ -280,15 +322,24 @@ export function verifyGuide(token: string, options: GuideVerifyOptions = {}): Gu
   if (options.expectedKey && manifest.issuer.key !== options.expectedKey) {
     errors.push(`signed by ${manifest.issuer.key}, expected ${options.expectedKey}`);
   }
-
   try {
-    if (!verifySignature(decoded, decodePublicKey(manifest.issuer.key))) {
-      errors.push("signature verification failed");
-    }
+    return { decoded, manifest, publicKey: decodePublicKey(manifest.issuer.key), errors };
   } catch (err) {
-    errors.push(`invalid issuer key: ${errorMessage(err)}`);
+    return { decoded, manifest, publicKey: new Uint8Array(), keyError: errorMessage(err), errors };
   }
+}
 
+/** The result, given a check of the signature (which may throw, as a bad key does). */
+function finishGuide(checked: CheckedGuide, signatureOk: () => boolean): GuideVerifyResult {
+  const { manifest, errors } = checked;
+  if (checked.keyError !== undefined) errors.push(`invalid issuer key: ${checked.keyError}`);
+  else {
+    try {
+      if (!signatureOk()) errors.push("signature verification failed");
+    } catch (err) {
+      errors.push(`invalid issuer key: ${errorMessage(err)}`);
+    }
+  }
   return { valid: errors.length === 0, manifest, errors };
 }
 

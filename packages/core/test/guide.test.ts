@@ -11,6 +11,7 @@ import {
   sha256,
   signGuide,
   verifyGuide,
+  verifyGuideAsync,
 } from "../src/guide";
 
 const SUBJECT = {
@@ -140,6 +141,38 @@ describe("guide", () => {
       JSON.stringify({ alg: "EdDSA", kid: manifest.issuer.key, typ: "openslate+jws" }),
     ).toString("base64url");
     expect(verifyGuide(`${slateHeader}.${p}.${s}`).valid).toBe(false);
+  });
+
+  test("verifyGuideAsync says just what verifyGuide does", async () => {
+    const keys = generateKeyPair();
+    const key = encodePublicKey(keys.publicKey);
+    const { manifest } = await manifestFor(ITEM, key);
+    const token = signGuide(manifest, keys.secretKey);
+    const [h, p, s] = token.split(".") as [string, string, string];
+    const forged = JSON.parse(Buffer.from(p, "base64url").toString());
+    forged.files["items/prop-1.json"] = "0".repeat(64);
+    const tampered = `${h}.${Buffer.from(JSON.stringify(forged)).toString("base64url")}.${s}`;
+    // A signature from another key over the same manifest.
+    const swapped = `${h}.${p}.${signGuide(manifest, generateKeyPair().secretKey).split(".")[2]}`;
+    // An issuer key that isn't a key at all.
+    const badKey = signGuide(
+      { ...manifest, issuer: { ...manifest.issuer, key: "ed25519:nope" } },
+      keys.secretKey,
+    );
+    const other = encodePublicKey(generateKeyPair().publicKey);
+    const cases: Array<[string, { expectedKey?: string }]> = [
+      [token, { expectedKey: key }],
+      [token, { expectedKey: other }],
+      [tampered, {}],
+      [swapped, {}],
+      [badKey, {}],
+      ["garbage", {}],
+    ];
+    for (const [t, options] of cases) {
+      expect(await verifyGuideAsync(t, options)).toEqual(verifyGuide(t, options));
+    }
+    expect((await verifyGuideAsync(token, { expectedKey: key })).valid).toBe(true);
+    expect((await verifyGuideAsync(tampered)).errors).toContain("signature verification failed");
   });
 
   test("paths must stay inside the guide", () => {
