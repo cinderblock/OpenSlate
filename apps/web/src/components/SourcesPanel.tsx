@@ -10,7 +10,7 @@ import {
   UserCheck,
   UserPlus,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { adoptedCounts } from "../lib/adoptions";
 import { type DecodedSlate, electionOf } from "../lib/collate";
 import { formatElectionDate } from "../lib/dates";
@@ -32,6 +32,7 @@ import {
   type Standing,
   standingOf,
 } from "../lib/sources";
+import { useGrowingCount } from "../lib/useGrowingCount";
 import { CatalogBrowser } from "./CatalogBrowser";
 import { ContactsCard } from "./ContactsCard";
 import { DisagreeModeSetting } from "./DisagreeModeSetting";
@@ -100,18 +101,27 @@ export function SourcesPanel() {
   const groups = useMemo(() => groupBySource(slates, follows), [slates, follows]);
   // The search box narrows the lists; the spectrum still shows everyone you follow.
   const search = usePageSearch("/sources");
-  const shown = search.searching
-    ? groups.filter((g) => matchesSearch(g.searchText, search.terms))
-    : groups;
-  const ballots = shown.filter((g) => g.ballot);
-  // Whoever counts most first. `sort` is stable, so even ones keep their order.
-  const following = shown
-    .filter((g) => !g.ballot && g.standing === "follow")
-    .sort((a, b) => b.count - a.count);
-  const disagreeing = shown
-    .filter((g) => !g.ballot && g.standing === "disagree")
-    .sort((a, b) => a.count - b.count);
-  const notFollowing = shown.filter((g) => !g.ballot && g.standing === "off");
+  // Memoized: each list grows in a few dozen rows at a time (SourceList), and
+  // starts over whenever it's a new array.
+  const { searching, terms } = search;
+  const shown = useMemo(
+    () => (searching ? groups.filter((g) => matchesSearch(g.searchText, terms)) : groups),
+    [groups, searching, terms],
+  );
+  const { ballots, following, disagreeing, notFollowing } = useMemo(
+    () => ({
+      ballots: shown.filter((g) => g.ballot),
+      // Whoever counts most first. `sort` is stable, so even ones keep their order.
+      following: shown
+        .filter((g) => !g.ballot && g.standing === "follow")
+        .sort((a, b) => b.count - a.count),
+      disagreeing: shown
+        .filter((g) => !g.ballot && g.standing === "disagree")
+        .sort((a, b) => a.count - b.count),
+      notFollowing: shown.filter((g) => !g.ballot && g.standing === "off"),
+    }),
+    [shown],
+  );
   const allFollowing = useMemo(
     () => groups.filter((g) => !g.ballot && g.standing === "follow"),
     [groups],
@@ -187,11 +197,7 @@ export function SourcesPanel() {
               Official candidate lists. They aren't recommendations, so there's nothing to follow;
               they give each race its whole field.
             </p>
-            <ul className="source-list">
-              {ballots.map((group) => (
-                <SourceRow key={group.source.id} group={group} />
-              ))}
-            </ul>
+            <SourceList groups={ballots} />
           </div>
         )}
 
@@ -209,22 +215,14 @@ export function SourcesPanel() {
                     : "You aren't following anyone to agree with yet."}
               </p>
             ) : (
-              <ul className="source-list">
-                {following.map((group) => (
-                  <SourceRow key={group.source.id} group={group} />
-                ))}
-              </ul>
+              <SourceList groups={following} />
             )}
             {disagreeing.length > 0 && (
               <>
                 <h4 className="sources-subheading">
                   <ThumbsDown className="icon" /> Disagree with ({disagreeing.length})
                 </h4>
-                <ul className="source-list">
-                  {disagreeing.map((group) => (
-                    <SourceRow key={group.source.id} group={group} />
-                  ))}
-                </ul>
+                <SourceList groups={disagreeing} />
                 <details className="disagree-mode-details">
                   <summary>
                     In two-way races:{" "}
@@ -236,14 +234,13 @@ export function SourcesPanel() {
             )}
             {notFollowing.length > 0 && (
               // Open while searching, so a match in here isn't hidden behind it.
-              <details key={String(search.searching)} open={search.searching}>
-                <summary>Imported but not followed ({notFollowing.length})</summary>
-                <ul className="source-list">
-                  {notFollowing.map((group) => (
-                    <SourceRow key={group.source.id} group={group} />
-                  ))}
-                </ul>
-              </details>
+              <LazyDetails
+                key={String(search.searching)}
+                initiallyOpen={search.searching}
+                summary={`Imported but not followed (${notFollowing.length})`}
+              >
+                <SourceList groups={notFollowing} />
+              </LazyDetails>
             )}
           </div>
         )}
@@ -345,7 +342,42 @@ function AdoptionNote({ slates }: { slates: DecodedSlate[] }) {
   );
 }
 
-function SourceRow({ group }: { group: SourceGroup }) {
+/**
+ * A list of sources, a few dozen rows at a time: a voter who imported the
+ * whole catalog has hundreds, each with real controls, and rendering them in
+ * one go froze the page for seconds on a phone.
+ */
+function SourceList({ groups }: { groups: SourceGroup[] }) {
+  const shown = useGrowingCount(groups);
+  return (
+    <ul className="source-list">
+      {groups.slice(0, shown).map((group) => (
+        <SourceRow key={group.source.id} group={group} />
+      ))}
+    </ul>
+  );
+}
+
+/** A <details> whose contents render only once it's opened, not while they're hidden. */
+function LazyDetails({
+  initiallyOpen,
+  summary,
+  children,
+}: {
+  initiallyOpen: boolean;
+  summary: string;
+  children: ReactNode;
+}) {
+  const [opened, setOpened] = useState(initiallyOpen);
+  return (
+    <details open={initiallyOpen} onToggle={(e) => e.currentTarget.open && setOpened(true)}>
+      <summary>{summary}</summary>
+      {opened && children}
+    </details>
+  );
+}
+
+const SourceRow = memo(function SourceRow({ group }: { group: SourceGroup }) {
   const [confirming, setConfirming] = useState(false);
   const { source } = group;
 
@@ -412,4 +444,4 @@ function SourceRow({ group }: { group: SourceGroup }) {
       )}
     </li>
   );
-}
+});
