@@ -3799,6 +3799,18 @@ button.tag.active {
     border-color 0.12s,
     box-shadow 0.12s;
 }
+/* Grows with its content, from --rows lines to --max-rows, then scrolls
+   (TextField.tsx sets both; its script does the same where this isn't
+   supported). Heights are border-box: lines, plus 0.5rem padding and a
+   1px border above and below. */
+@supports (field-sizing: content) {
+  .ui-textarea {
+    field-sizing: content;
+    min-height: calc(var(--rows, 2) * 1lh + 1rem + 2px);
+    max-height: calc(var(--max-rows, 16) * 1lh + 1rem + 2px);
+    overflow-y: auto;
+  }
+}
 .ui-textarea::placeholder {
   color: var(--muted);
   opacity: 0.8;

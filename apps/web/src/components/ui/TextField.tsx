@@ -1,4 +1,11 @@
-import { type KeyboardEvent, type ReactNode, useLayoutEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type KeyboardEvent,
+  type ReactNode,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   SearchField as AriaSearchField,
   TextArea as AriaTextArea,
@@ -178,6 +185,15 @@ export interface TextAreaProps extends FieldProps {
 }
 
 /** Several lines of text. Grows as you type, so nothing hides behind a scrollbar. */
+/**
+ * The browser fits a box to its content itself (`field-sizing: content`, in
+ * styles.css), with no script and no measuring. Where it can't, the script
+ * below does: reading `scrollHeight` right after setting the height forces a
+ * layout of the whole page, once per box, which on a phone was a few hundred
+ * milliseconds of opening the Publish page.
+ */
+const SIZES_ITSELF = typeof CSS !== "undefined" && CSS.supports?.("field-sizing", "content");
+
 export function TextArea(props: TextAreaProps) {
   const { label, description, errorMessage, rows = 2, maxRows = 16 } = props;
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -186,6 +202,7 @@ export function TextArea(props: TextAreaProps) {
   // that come from outside (a cleared form, a loaded file).
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when the text changes
   useLayoutEffect(() => {
+    if (SIZES_ITSELF) return;
     const el = ref.current;
     // Not rendered yet (e.g. inside a <dialog> that isn't open): there's
     // nothing to measure, and sizing to 0 would stick. Keep `rows` for now.
@@ -216,7 +233,13 @@ export function TextArea(props: TextAreaProps) {
       aria-label={props["aria-label"]}
     >
       {label != null && <Label className="ui-label">{label}</Label>}
-      <AriaTextArea ref={ref} className="ui-textarea" rows={rows} placeholder={props.placeholder} />
+      <AriaTextArea
+        ref={ref}
+        className="ui-textarea"
+        rows={rows}
+        placeholder={props.placeholder}
+        style={{ "--rows": rows, "--max-rows": maxRows } as CSSProperties}
+      />
       <FieldFooter description={description} errorMessage={errorMessage} />
     </AriaTextField>
   );
