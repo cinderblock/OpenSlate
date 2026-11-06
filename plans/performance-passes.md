@@ -160,8 +160,16 @@ page by page, and cut it, measuring before and after.
        -> 3.2 s; All races 8.0 s -> 0.6 s; Compare 11.2 s -> 1.4 s; Results
        6.8 s -> 1.0 s; Sources 15.5 s -> 1.2 s; Governor 7.8 s -> 0.7 s;
        Publish 7.5 s -> 0.7 s; Settings 6.7 s -> 0.4 s.
-   - [ ] <- current: push, check the live site, sweep it again.
-11. [ ] Not started, for a later round:
+   - [x] Live as `e1d252a` (entry `index-CgSu63-A.js`; deployed first
+     time). Live sweep at 4x, before -> after, full content / long tasks:
+     - All races cold 6.9 s / 4.4 s -> 3.5 s / 2.3 s; warm 1.7 / 1.3 -> 1.2 / 0.9
+     - Governor `?all` cold 10.9 s / 8.1 s -> 3.5 s / 2.1 s; warm 2.1 / 1.2 -> 1.4 / 0.7
+     - Governor cold 3.9 s / 2.8 s -> 2.1 s / 1.4 s
+     - Publish cold 2.4 s / 2.5 s (longest 1.19 s) -> 1.2 s / 1.4 s (0.47 s)
+     - Results cold 1.3 / 1.7 -> 1.0 / 1.2; Compare cold 1.6 / 1.1 -> 1.3 / 0.9
+     - My ballot, Sources, Settings: about the same for a fresh profile
+       (their wins are for a voter with many slates, measured locally above).
+11. [ ] <- next, not started; waiting on the user:
    - My ballot with hundreds imported: 3.2 s at 4x in one task, spread
      over collating (two `collateRaces` over every slate, 0.7 s), React
      Aria controls and the race cards. Collating in a worker, as All races
@@ -177,9 +185,8 @@ page by page, and cut it, measuring before and after.
 
 ## Open questions for the user
 
-1. Anything from step 10 worth doing next? Recommended: none urgently;
-   the race page's `useRaceTarget` is the largest left on a page with no
-   catalog loaded.
+1. Go ahead with step 11 (My ballot's collation in a worker, for voters
+   with hundreds of slates)? Recommended: yes, it's the largest left.
 
 ## Things not to do
 
