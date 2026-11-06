@@ -63,6 +63,15 @@ page by page, and cut it, measuring before and after.
   in one task; `collateRaces`' self time is spread over ~30k positions, no
   single hotspot. Moving it to a worker is the fix (ISSUES.md, "The catalog
   copy verifies on the page, and workers would halve the wait").
+- Copying the worker's reply is not free: with the slates in it, 0.5-0.57 s
+  at 4x, about half of what the worker saved. Sending articles and search
+  text instead of slates brought it to 0.25-0.3 s.
+- A worker can't load anything that touches React, the database or
+  localStorage, even indirectly; `test/lineUp.test.ts` walks the worker's
+  runtime imports and fails on any of them.
+- `--block=<substring>` on `measure.ts` aborts matching requests (and
+  blocks the service worker), so the same build can be measured with the
+  worker failing over to the page.
 - The harness's own per-frame `textContent` read (`check :9` in profiles)
   costs real time on big pages; ignore it in profiles.
 
@@ -83,11 +92,21 @@ page by page, and cut it, measuring before and after.
    the empty commit `3a800cc` redeployed it (entry `index-Ch5w33CZ.js`).
    Live Governor page at 4x: cold full content 45 s -> 11.4 s (long tasks
    34 s -> 8.5 s); warm 3.4 s (long tasks 3.0 s).
-9. [ ] ← current, waiting on the user: next round, each its own job:
-   - All races / race page with `?all`: collate in a worker.
-   - Keep catalog-check progress across reloads (save verified tokens as
-     they're checked, not only at the end).
+9. [x] Second round (the user's go-ahead, 2026-11-06):
+   - [x] Catalog-check progress kept across reloads (`bb91644`): the slates
+     checked so far go to `openslate.catalogChecked.v1` every 2 s and are
+     read back by the next check; cleared once the whole copy is kept.
+     Headless at 6x: reloaded at 225/413, resumed at 129 (121 kept).
+   - [x] All races / `?all` race pages collate in a worker (`56da124` splits
+     out what a worker can load, `ff10ab8` adds `lineUp.worker.ts`). The
+     reply carries races, search text and articles, not slates. All races
+     at 4x, warm, against the same build with the worker blocked: long
+     tasks 3.3-4.4 s -> 1.8-2.3 s, longest 1.8-2.3 s -> 0.5 s.
+10. [ ] Not started, not asked for yet:
    - The race page collates every slate to find one race (`useRaceTarget`).
+   - What's left on All races' main thread: reading the catalog copy from
+     IndexedDB (0.33-0.5 s at 4x), copying the worker's reply (0.25-0.3 s),
+     posting its input (0.2 s), React rendering the list.
 
 ## Progress log
 
@@ -97,9 +116,9 @@ page by page, and cut it, measuring before and after.
 
 ## Open questions for the user
 
-1. Go ahead with the next round (step 9)? Recommended order: collate in a
-   worker (All races and `?all` race pages, the largest freeze left), then
-   keeping catalog-check progress across reloads.
+1. Anything from step 10 worth doing next? Recommended: none urgently;
+   the race page's `useRaceTarget` is the largest left on a page with no
+   catalog loaded.
 
 ## Things not to do
 
