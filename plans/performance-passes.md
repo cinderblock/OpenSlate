@@ -50,6 +50,9 @@ page by page, and cut it, measuring before and after.
   Bun: 122 ms against v3's 229 ms once warm, identical results. Its speed is
   generated code (`new Function`), which our CSP likely forbids, so in the
   browser it would be less. Not worth a migration for ~100 ms on a desktop.
+- Workers Builds has now twice not deployed a pushed commit (`583403f`,
+  `ac83b90`); each time an empty commit deployed fine. The build log is in
+  the Cloudflare dashboard, which this thread doesn't touch.
 - Machine load: Processor Time was 77-88% from other work during these runs.
 - Warm sweep, 4x, production vs local (before the Sources fix): All races
   ~10 s of long tasks either way; Sources 17.5 s (one 5.7 s); Results 7.8 s
@@ -102,6 +105,11 @@ page by page, and cut it, measuring before and after.
      reply carries races, search text and articles, not slates. All races
      at 4x, warm, against the same build with the worker blocked: long
      tasks 3.3-4.4 s -> 1.8-2.3 s, longest 1.8-2.3 s -> 0.5 s.
+   - [x] Live 2026-11-06 as `5ae18d4` (entry `index-DxKPG0dK.js`): Workers
+     Builds again didn't deploy the pushed commit (`ac83b90`; 20 min later
+     the site still served `9d02be1`), and an empty commit fixed it again.
+     Live All races at 4x, warm: long tasks 3.0-3.6 s -> 2.5 s, longest
+     1.25-1.33 s -> 0.6-0.78 s. Search and the `?all` race page checked.
 10. [ ] Not started, not asked for yet:
    - The race page collates every slate to find one race (`useRaceTarget`).
    - What's left on All races' main thread: reading the catalog copy from
