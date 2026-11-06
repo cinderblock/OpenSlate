@@ -127,6 +127,60 @@ describe("createImportQueue", () => {
     expect(status?.errors.sort()).toEqual(["bad: bad signature", "offline: fetch failed: 404"]);
   });
 
+  test("says which entries failed, and why", async () => {
+    const { deps } = fakes();
+    const queue = createImportQueue(deps);
+    const entries = ["a", "bad", "offline"].map(entry);
+    const failed: string[] = [];
+    await queue.start({
+      catalog: catalog(entries),
+      catalogUrl: URL_,
+      entries,
+      label: "Picks",
+      onFailed: (e, problem) => failed.push(`${e.slug}: ${problem}`),
+    });
+    expect(failed.sort()).toEqual(["bad: bad signature", "offline: fetch failed: 404"]);
+  });
+
+  test("checks each token ahead before verify asks for it", async () => {
+    const ahead = new Set<string>();
+    const order: string[] = [];
+    const { deps, stored } = fakes();
+    const verify = deps.verify;
+    deps.verifyAhead = async (tokens) => {
+      for (const t of tokens) {
+        ahead.add(t);
+        order.push(`ahead ${t}`);
+      }
+    };
+    deps.verify = (token, known) => {
+      order.push(`verify ${token}`);
+      expect(ahead.has(token)).toBe(true);
+      return verify(token, known);
+    };
+    const queue = createImportQueue(deps);
+    const entries = ["a", "b", "c"].map(entry);
+    await queue.start({ catalog: catalog(entries), catalogUrl: URL_, entries, label: "Picks" });
+    expect([...stored].sort()).toEqual(["token:a", "token:b", "token:c"]);
+    for (const slug of ["a", "b", "c"]) {
+      expect(order.indexOf(`ahead token:${slug}`)).toBeLessThan(
+        order.indexOf(`verify token:${slug}`),
+      );
+    }
+  });
+
+  test("a check ahead that fails leaves verify to decide", async () => {
+    const { deps, stored } = fakes();
+    deps.verifyAhead = async () => {
+      throw new Error("no WebCrypto");
+    };
+    const queue = createImportQueue(deps);
+    const entries = ["a", "bad"].map(entry);
+    await queue.start({ catalog: catalog(entries), catalogUrl: URL_, entries, label: "Picks" });
+    expect([...stored]).toEqual(["token:a"]);
+    expect(queue.status()?.errors).toEqual(["bad: bad signature"]);
+  });
+
   test("already-imported slates count as in and aren't stored again", async () => {
     const { deps, stored, batches } = fakes();
     stored.add("token:a");

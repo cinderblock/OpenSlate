@@ -3,7 +3,7 @@ import { Check, Download, Plus, RefreshCw } from "lucide-react";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { adoptedCount } from "../lib/adoptions";
 import { type BallotProblem, ballotProblems, problemReport } from "../lib/ballotCheck";
-import { importCatalogEntry } from "../lib/catalogImport";
+import { importCatalogEntry, importForComparison } from "../lib/catalogImport";
 import { electionOf } from "../lib/collate";
 import { formatLocalDate } from "../lib/dates";
 import { reportFeedback } from "../lib/feedback";
@@ -182,14 +182,20 @@ export function CatalogBrowser() {
     );
     setBulkSummary(null);
     setBulk({ done: 0, total: pending.length });
+    let done = 0;
     let failed = 0;
-    for (const [i, entry] of pending.entries()) {
-      const result = await importCatalogEntry(entry, catalogUrl, knownTokens, queryClient);
-      if (result.kind === "error") {
-        failed++;
-        setErrors((prev) => ({ ...prev, [entryKey(entry)]: result.error }));
-      }
-      setBulk({ done: i + 1, total: pending.length });
+    if (catalog) {
+      await importForComparison({
+        catalog,
+        catalogUrl,
+        entries: pending,
+        onImported: () => setBulk({ done: ++done, total: pending.length }),
+        onFailed: (entry, problem) => {
+          failed++;
+          setBulk({ done: ++done, total: pending.length });
+          setErrors((prev) => ({ ...prev, [entryKey(entry)]: problem }));
+        },
+      });
     }
     setBulk(null);
     setBulkSummary(

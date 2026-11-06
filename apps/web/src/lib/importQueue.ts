@@ -27,6 +27,8 @@ export interface CatalogImportJob {
   bundle?: boolean;
   /** Called for each entry whose slate is in, newly stored or already there. */
   onImported?: (entry: CatalogEntry) => void;
+  /** Called for each entry that didn't import, with why. */
+  onFailed?: (entry: CatalogEntry, problem: string) => void;
   /** Why an entry's checked slate mustn't be stored, or undefined when it may. */
   check?: (entry: CatalogEntry, token: string) => string | undefined;
   /** Tokens an entry's slate replaces: removed once it's stored. */
@@ -56,6 +58,11 @@ export interface ImportDeps {
   ) => Promise<Map<string, string>>;
   fetchSlate: (entry: CatalogEntry, catalogUrl: string) => Promise<string>;
   verify: (token: string, known: { has(token: string): boolean }) => VerifyOutcome;
+  /**
+   * Check these ahead of `verify` (the browser's own Ed25519, several at a
+   * time, many times faster than `verify` alone); `verify` then has them.
+   */
+  verifyAhead?: (tokens: string[]) => Promise<void>;
   /** Store checked slates, all in one transaction. */
   store: (slates: VerifiedSlate[], kind: "import" | "update") => void;
   /** Remove slates, all in one transaction. */
@@ -154,12 +161,15 @@ export function createImportQueue(
           token ??= await deps.fetchSlate(entry, job.catalogUrl);
         } catch (err) {
           errors.push(`${name}: ${errorMessage(err)}`);
+          job.onFailed?.(entry, errorMessage(err));
         }
         if (token) {
+          await deps.verifyAhead?.([token]).catch(() => undefined);
           const result = deps.verify(token, known);
           const problem = result.kind === "error" ? result.error : job.check?.(entry, token);
           if (problem) {
             errors.push(`${name}: ${problem}`);
+            job.onFailed?.(entry, problem);
           } else if (result.kind !== "error") {
             if (result.kind === "verified") {
               pending.push(result.slate);

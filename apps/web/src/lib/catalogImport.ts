@@ -2,6 +2,7 @@ import { parseSlate, verifySlate } from "@openslate/core";
 import type { QueryClient } from "@tanstack/react-query";
 import { fetchCatalogBundle } from "./catalogBundle";
 import { type StoredSlate, staleImports, updateProblem } from "./catalogUpdates";
+import { decodeSlates, isDecoded, verifyAhead } from "./collate";
 import { slatesCollection, upsertKnownIdentity } from "./collections";
 import { createImportQueue } from "./importQueue";
 import { followsStore, removedSourcesStore, setStanding } from "./myVote";
@@ -42,7 +43,9 @@ export async function importCatalogEntry(
   try {
     // `knownTokens` is the caller's snapshot, which a bulk import or the
     // background queue may have overtaken since: ask the store too.
-    const outcome = verifyCatalogSlate(await fetchCatalogSlate(entry, catalogUrl, queryClient), {
+    const token = await fetchCatalogSlate(entry, catalogUrl, queryClient);
+    await verifyAhead([token]);
+    const outcome = verifyCatalogSlate(token, {
       has: (token) => knownTokens.has(token) || slatesCollection.has(token),
     });
     if (outcome.kind !== "verified") return outcome;
@@ -99,6 +102,16 @@ export function verifyCatalogSlate(
   knownTokens: { has(token: string): boolean },
 ): { kind: "verified"; slate: VerifiedSlate } | Exclude<ImportOutcome, { kind: "imported" }> {
   try {
+    // Checked ahead already (`verifyAhead`), and kept where the ballot finds it.
+    const [ahead] = isDecoded(token) ? decodeSlates([{ token, importedAt: "" }]) : [];
+    if (ahead?.valid) {
+      if (knownTokens.has(token)) return { kind: "already-imported", token };
+      const { key, name } = ahead.payload.issuer;
+      return {
+        kind: "verified",
+        slate: { token, issuerKey: key, ...(name ? { issuerName: name } : {}) },
+      };
+    }
     const result = verifySlate(token);
     if (!result.valid) {
       return { kind: "error", error: result.errors[0] ?? "slate did not verify" };
@@ -196,6 +209,35 @@ export function updateFromCatalog(
 }
 
 /**
+ * Import these catalog entries for comparison, without following any: through
+ * the background queue (the bundle when it's most of the catalog, a few at a
+ * time, stored in batches), so even several hundred take a minute, not ten.
+ */
+export function importForComparison({
+  catalog,
+  catalogUrl,
+  entries,
+  onImported,
+  onFailed,
+}: {
+  catalog: Catalog;
+  catalogUrl: string;
+  entries: CatalogEntry[];
+  onImported?: (entry: CatalogEntry) => void;
+  onFailed?: (entry: CatalogEntry, problem: string) => void;
+}): Promise<void> {
+  return backgroundImports.start({
+    catalog,
+    catalogUrl,
+    entries,
+    label: entries.length === 1 ? "Importing 1 source" : `Importing ${entries.length} sources`,
+    bundle: entries.length > catalog.entries.length / 2,
+    ...(onImported ? { onImported } : {}),
+    ...(onFailed ? { onFailed } : {}),
+  });
+}
+
+/**
  * Setup's download: `entries` into the background queue, each pick's standing
  * set once its slate is in (so a source that failed isn't left followed).
  * Recorded as pending until each entry is settled, so a download cut short
@@ -284,6 +326,7 @@ export const backgroundImports = createImportQueue({
     fetchCatalogBundle(catalog, catalogUrl, onProgress),
   fetchSlate: (entry, catalogUrl) => fetchCatalogSlate(entry, catalogUrl, queryClient),
   verify: verifyCatalogSlate,
+  verifyAhead,
   store: storeSlates,
   remove: removeSlates,
   isStored: (token) => slatesCollection.has(token),
