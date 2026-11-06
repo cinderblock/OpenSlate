@@ -10,9 +10,40 @@ export const queryClient = new QueryClient({
   },
 });
 
+/**
+ * `write`, at most once every `ms`: the last value asked for is the one
+ * written, `ms` after the first ask (trailing, as TanStack's own async
+ * persister does). The query cache is rewritten whole on every change to any
+ * query, a fetch starting included, and with the catalog's list in it (about
+ * 600 KB) each write cost a phone tens of milliseconds of the page's time.
+ */
+export function throttleWrites<T>(
+  write: (value: T) => Promise<unknown>,
+  ms: number,
+  // Called, not passed: a browser's setTimeout called as a method throws "Illegal invocation".
+  timer: { set: (fn: () => void, ms: number) => unknown } = {
+    set: (fn, ms) => setTimeout(fn, ms),
+  },
+): (value: T) => void {
+  let pending: { value: T } | undefined;
+  return (value) => {
+    const waiting = pending !== undefined;
+    pending = { value };
+    if (waiting) return;
+    timer.set(() => {
+      const next = pending;
+      pending = undefined;
+      // A cache: one that didn't save is fetched again next visit.
+      if (next) void write(next.value).catch(() => undefined);
+    }, ms);
+  };
+}
+
+const persistLater = throttleWrites((client: PersistedClient) => set(CACHE_KEY, client), 1000);
+
 // Persist the query cache to IndexedDB so fetched data survives reloads / offline.
 export const persister: Persister = {
-  persistClient: (client: PersistedClient) => set(CACHE_KEY, client),
+  persistClient: (client: PersistedClient) => persistLater(client),
   restoreClient: () => get<PersistedClient>(CACHE_KEY),
   removeClient: () => del(CACHE_KEY),
 };
