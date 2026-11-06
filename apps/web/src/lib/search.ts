@@ -1,6 +1,5 @@
 import type { Subject } from "@openslate/core";
-import { designation } from "./ballotView";
-import type { Race } from "./collate";
+import { designation, type Race } from "./collate";
 import { formatElectionDate } from "./dates";
 import { jurisdictionLabel } from "./jurisdictions";
 import type { Source } from "./sources";

@@ -6,11 +6,11 @@ import { expandAdoptions } from "./adoptions";
 import { translateSlates } from "./ballotCheck";
 import { type DecodedSlate, type DisagreeMode, decodeLocalGuides, decodeSlates } from "./collate";
 import { slatesCollection } from "./collections";
-import type { KnownIdentity } from "./db";
 import { useKnownIdentities } from "./identities";
 import type { Area } from "./jurisdictions";
 import { EMPTY_AREA, upgradeArea } from "./jurisdictions";
 import { createLocalStore, useLocalStore } from "./localStore";
+import { withNicknames } from "./nicknames";
 import {
   type Follows,
   isCount,
@@ -19,6 +19,8 @@ import {
   type Standing,
   standingOfCount,
 } from "./sources";
+
+export { withNicknames } from "./nicknames";
 
 /**
  * Client-side state for the "My vote" mode. All of it stays in this browser.
@@ -205,19 +207,4 @@ export function useDecodedSlates(): { slates: DecodedSlate[]; isReady: boolean }
   );
   const slates = useMemo(() => withNicknames(decoded, contacts), [decoded, contacts]);
   return { slates, isReady };
-}
-
-/** Firsthand sources named by the user's nickname for the issuer, where they've set one. */
-export function withNicknames(
-  slates: DecodedSlate[],
-  contacts: Array<Pick<KnownIdentity, "publicKey" | "displayName">>,
-): DecodedSlate[] {
-  const nicknames = new Map(
-    contacts.filter((c) => c.displayName?.trim()).map((c) => [c.publicKey, c.displayName?.trim()]),
-  );
-  if (nicknames.size === 0) return slates;
-  return slates.map((slate) => {
-    const nickname = slate.source.secondhand ? undefined : nicknames.get(slate.source.signerKey);
-    return nickname ? { ...slate, source: { ...slate.source, name: nickname } } : slate;
-  });
 }

@@ -3,7 +3,7 @@ import type { DecodedSlate } from "./collate";
 import { formatElectionDate, formatLocalDate } from "./dates";
 import { httpHref } from "./httpHref";
 import { type Follows, type Source, type Standing, standingOf } from "./sources";
-import { subjectKey } from "./subjects";
+import { subjectKey } from "./subjectKey";
 
 /**
  * Articles attached to ballot items (SPEC §3.15): news, analysis, explainers

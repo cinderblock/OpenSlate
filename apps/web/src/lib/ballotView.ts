@@ -12,6 +12,9 @@ import {
   tallyPositions,
 } from "./collate";
 
+// In collate.ts beside `ChoiceGroup`, where a worker can load it (search.ts, lineUp.ts).
+export { designation } from "./collate";
+
 /**
  * A race laid out the way the printed ballot shows it: the official order,
  * Yes / No for every measure, and how many to vote for. Pure; unit-tested in
@@ -251,17 +254,6 @@ export function instructionLine(race: Race): string | undefined {
   if (ranks) return ranksLine(ranks);
   const seats = voteFor(race);
   return seats === undefined ? undefined : voteForLine(seats);
-}
-
-/**
- * What the ballot prints with a candidate's name: party, designation, and
- * whether they're the incumbent (`ballot`, SPEC §3.14).
- */
-export function designation(choice: Pick<ChoiceGroup, "ballot">): string | undefined {
-  const ballot = choice.ballot;
-  if (!ballot) return undefined;
-  const parts = [ballot.party, ballot.designation, ballot.incumbent ? "incumbent" : undefined];
-  return parts.filter(Boolean).join(" · ") || undefined;
 }
 
 /** Names the user wrote in on this race that no source or listing names. */

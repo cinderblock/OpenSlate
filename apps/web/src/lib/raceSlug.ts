@@ -1,5 +1,5 @@
 import type { Subject } from "@openslate/core";
-import { subjectFromKey } from "./subjects";
+import { subjectFromKey } from "./subjectKey";
 
 /**
  * A race's readable address: `<election>/<jurisdiction path>/<title>`, e.g.

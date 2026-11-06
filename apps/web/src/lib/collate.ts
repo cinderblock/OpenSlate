@@ -19,7 +19,7 @@ import {
   parseJurisdiction,
   placeRace,
 } from "./jurisdictions";
-import { type OrderOverrides, overrideKey, reconcileOrder } from "./orderOverrides";
+import { type OrderOverrides, overrideKey, reconcileOrder } from "./orderReconcile";
 import {
   countOf,
   type Follows,
@@ -30,7 +30,7 @@ import {
   sourceOf,
   standingOf,
 } from "./sources";
-import { subjectKey } from "./subjects";
+import { subjectKey } from "./subjectKey";
 
 /**
  * Collation for the "My vote" side: imported slates → races → choices → which
@@ -139,6 +139,16 @@ export function isDecoded(token: string): boolean {
 /** A slate verified earlier and kept (catalogCopy.ts), so `decodeSlates` needn't again. */
 export function rememberVerified(token: string, payload: SlatePayload): void {
   verified.set(token, { payload, valid: true, source: sourceOf(payload) });
+}
+
+/**
+ * Slates decoded elsewhere (on the page, for a worker), so `decodeSlates`
+ * here gives the same result without checking them again.
+ */
+export function rememberDecoded(slates: readonly DecodedSlate[]): void {
+  for (const { token, payload, valid, source } of slates) {
+    if (!verified.has(token)) verified.set(token, { payload, valid, source });
+  }
 }
 
 /** The election a position belongs to: its subject's, else the slate's context. */
@@ -268,6 +278,17 @@ export interface ChoiceGroup {
   ballotIndex?: number;
   /** How the ballot prints the choice (SPEC §3.14): a ballot source's, else any slate's. */
   ballot?: BallotChoice;
+}
+
+/**
+ * What the ballot prints with a candidate's name: party, designation, and
+ * whether they're the incumbent (`ballot`, SPEC §3.14).
+ */
+export function designation(choice: Pick<ChoiceGroup, "ballot">): string | undefined {
+  const ballot = choice.ballot;
+  if (!ballot) return undefined;
+  const parts = [ballot.party, ballot.designation, ballot.incumbent ? "incumbent" : undefined];
+  return parts.filter(Boolean).join(" · ") || undefined;
 }
 
 export interface Race {
