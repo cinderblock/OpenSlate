@@ -124,7 +124,7 @@ page by page, and cut it, measuring before and after.
      the site still served `9d02be1`), and an empty commit fixed it again.
      Live All races at 4x, warm: long tasks 3.0-3.6 s -> 2.5 s, longest
      1.25-1.33 s -> 0.6-0.78 s. Search and the `?all` race page checked.
-10. [ ] <- current. Third round, "fix all performance issues" (the user,
+10. [x] Third round, "fix all performance issues" (the user,
    2026-11-06). Live sweep before it, every page at 4x (cold = fresh
    profile; warm = after a 40 s first visit), last content change / long
    tasks / longest:
@@ -212,7 +212,7 @@ page by page, and cut it, measuring before and after.
    - The main bundle is 786 KB minified; TanStack DB (172 KB) and React
      DOM (131 KB) are most of it and every page needs both at start.
 
-12. [ ] <- current. Fifth round ("any other performance improvements you
+12. [x] Fifth round ("any other performance improvements you
    can find?", 2026-11-06). Cold sweep of a local build, fresh profile, 4x:
    Sources 10.0 s to its last change (5.1 s long tasks), All races 5.5 s,
    Publish/Settings 2.4-2.8 s of long tasks spread thin over start-up.
