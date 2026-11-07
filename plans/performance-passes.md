@@ -178,7 +178,7 @@ page by page, and cut it, measuring before and after.
      - Results cold 1.3 / 1.7 -> 1.0 / 1.2; Compare cold 1.6 / 1.1 -> 1.3 / 0.9
      - My ballot, Sources, Settings: about the same for a fresh profile
        (their wins are for a voter with many slates, measured locally above).
-11. [ ] <- current. Fourth round: the user's go-ahead 2026-11-06 ("anything
+11. [x] Fourth round: the user's go-ahead 2026-11-06 ("anything
    to make it feel snappier"). Heavy profile, local build, 4x, My ballot:
    one 2.9 s task. Of it: React rendering the open race cards' controls
    ~1.5 s (React Aria Select/Button/TextField/GridList; 2580 elements),
@@ -197,7 +197,10 @@ page by page, and cut it, measuring before and after.
      profile, 4x: My ballot's biggest task 3.8-4.5 s -> 2.4-2.6 s, long
      tasks 7.2-8.2 s -> 5.9-6.9 s. All races, Governor, Publish: no change
      beyond noise.
-   - [ ] <- current: push, check the live site.
+   - [x] Live as `dbc8f83` 2026-11-06 10:30 PM PST (06:30Z), entry
+     `index-c1GV8byS.js` (Workers Builds names it differently from a local
+     build; checked by content). Cold live check, no page errors: My
+     ballot, All races 3.2 s, Governor 2.2 s, Sources.
    Left: the first collation after a page load is ~2.5x a warm one (243 ms
    vs ~95 ms on a desktop): JIT and the new per-string caches filling. The
    rest of My ballot's biggest task is React building ~1,300 elements.
