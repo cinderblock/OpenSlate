@@ -32,15 +32,19 @@ free and unmetered. Held until after the 2026-11-03 election (see
   verify; switch the app default; then stop the endorsements scripts writing
   github.io addresses.
 - Pages stays up and unchanged, with no custom domain on it.
+- Deploy route: **(a) Workers Builds on a `catalog-site` build branch** (the
+  user, 2026-11-06). No Cloudflare credential goes in GitHub.
 
 ## Plan / steps
 
-1. [ ] **Current, blocked:** publish `dist/` to Workers static assets from the
-       endorsements repo's CI. There's no way to deploy yet; see Findings and
-       the open question.
-2. [ ] Ops: declare worker `openslate-catalog` with custom domain
-       `catalog.openslate.us` (`external: true, provision: true`), applied by CI
-       after a dry run that shows only those additions.
+1. [x] Ops: worker `openslate-catalog` with custom domain
+       `catalog.openslate.us` (`external: true, provision: true`). The dry run
+       showed 2 to create and nothing else. Ops `7e244f85`, applied by CI.
+2. [ ] **Current:** the endorsements repo's `publish.yml` commits the signed
+       site to the `catalog-site` branch (endorsements `4e56998`). Then the user
+       connects Workers Builds to that branch in the dashboard (the one manual
+       step). Root directory `/`, no build command, deploy command
+       `npx wrangler deploy`.
 3. [ ] Verify: certificate, `Access-Control-Allow-Origin: *`, and `index.json` and
        `bundle.json` byte-identical to Pages.
 4. [ ] Switch the default in `apps/web/src/lib/query.ts`, run the checks, push,
@@ -72,6 +76,16 @@ free and unmetered. Held until after the 2026-11-03 election (see
   because signing needs a key that exists only as a GitHub secret. Local tokens
   can't write Workers, and none of the scope's changes can make a credential or
   a Workers Builds connection.
+- The `catalog-site` branch layout: `wrangler.jsonc` and `README.md` at the
+  root, the built site under `site/` with `site/_headers` added. The templates
+  live in master's `catalog-site/` folder. The publish step builds the tree with
+  a separate git index (`GIT_INDEX_FILE` and `--work-tree`), so the checkout is
+  untouched. It parents each commit on the fetched branch tip and pushes
+  without force. A run whose tree matches the tip adds nothing. Tested against
+  a local bare remote: create, skip when unchanged, add on change.
+- Branch growth: `bundle.json` is 12.2 MB, about 1.9 MB gzipped. Each publish
+  that changes a slate adds roughly that to the repo. If it ever matters,
+  trimming the branch's history is a rewrite and needs the user's yes.
 - Workers static assets don't add CORS headers. The deploy needs a `_headers`
   file with `Access-Control-Allow-Origin: *`, written only into the Workers
   copy so the Pages output stays unchanged.
@@ -79,22 +93,17 @@ free and unmetered. Held until after the 2026-11-03 election (see
 ## Progress log
 
 - [x] Pre-checks (2026-11-04). All passed. Nothing changed anywhere.
-- [ ] Step 1. Stopped: needs a deploy route the user has to set up.
+- [x] Step 1 was stopped on the deploy route. The user chose (a) on
+      2026-11-06.
+- [x] Ops worker and domain (`7e244f85`).
+- [x] `publish.yml` commits to `catalog-site` (`4e56998`).
+- [ ] Workers Builds connection (the user, in the dashboard).
+- [ ] Verify, switch the app default, update the endorsements scripts.
 - [x] The scheduled task turned itself off, so it won't run again.
 
 ## Open questions for the user
 
-1. How should the endorsements repo deploy to Workers? Recommendation: **(a)**.
-   - **(a) Workers Builds on a build branch.** `publish.yml` commits the signed
-     `dist/` and a `wrangler.jsonc` to a branch such as `catalog-site`, adding
-     commits rather than force-pushing. A Workers Builds connection on that
-     branch runs `bunx wrangler deploy`. No Cloudflare credential goes in
-     GitHub, which keeps the app's existing pattern. You'd make the one
-     dashboard connection.
-   - **(b) A Cloudflare token in GitHub.** You'd create a token limited to
-     Workers Scripts Edit and store it as a repo secret. `publish.yml` then runs
-     `wrangler deploy` itself. That's simpler, but it puts the first Cloudflare
-     credential in an app repo.
+None. The deploy route is decided: (a).
 
 ## Things not to do
 
