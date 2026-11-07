@@ -4,7 +4,7 @@ import optimizeLocales from "@react-aria/optimize-locales-plugin";
 import react from "@vitejs/plugin-react";
 import { build as esbuild } from "esbuild";
 import { deriveIngestKey } from "telemetry-collector-core";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import { type ManifestOptions, VitePWA } from "vite-plugin-pwa";
 
 // Which build this is, for feedback reports and issue links (src/lib/feedback.ts).
@@ -71,6 +71,30 @@ function agentTool(): Plugin {
   };
 }
 
+// Every page reads the catalog's index (CatalogUpdater, All races, Compare),
+// but the app only asks for it once it has booted and, on All races, once its
+// worker has started: 1.5-3 s into a first visit on a phone. A preload in the
+// page itself starts it with the HTML, and the app's own fetch (query.ts
+// `catalogQueryOptions`, a plain cross-origin GET) is answered from it. Not for
+// a catalog shipped with the app (a relative URL): that's local, and a
+// same-origin fetch wouldn't match an anonymous preload.
+function preloadCatalog(catalog: string | undefined): Plugin {
+  const url = catalog || "https://cinderblock.github.io/openslate-public-endorsements/index.json";
+  return {
+    name: "openslate:preload-catalog",
+    transformIndexHtml() {
+      if (!/^https:\/\//i.test(url)) return [];
+      return [
+        {
+          tag: "link",
+          attrs: { rel: "preload", href: url, as: "fetch", crossorigin: "anonymous" },
+          injectTo: "head",
+        },
+      ];
+    },
+  };
+}
+
 // The installed app's splash screen and title bar match the page: light and
 // dark --bg from src/styles.css (test/theme.test.ts checks). color_scheme_dark
 // is the manifest's dark override (spec 2026; Safari has it, Chrome plans to);
@@ -98,6 +122,7 @@ export default defineConfig(({ mode }) => ({
     { ...optimizeLocales.vite({ locales: ["en-US"] }), enforce: "pre" },
     neverBundle(appSecret),
     agentTool(),
+    preloadCatalog(loadEnv(mode, process.cwd(), "VITE_").VITE_PUBLIC_ENDORSEMENTS_CATALOG),
     VitePWA({
       disable: mode === "desktop",
       registerType: "autoUpdate",
