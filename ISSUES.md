@@ -60,6 +60,13 @@ pool is on the local branch `ballot-alignment-worker-pipeline`
 (`lib/comparison.ts` `verifyAll`). A worker can't import `collate.ts` today:
 `subjects.ts` pulls in React and the database, so `subjectKey` needs its own file.
 
+Update 2026-11-06 (thread on `plans/performance-passes.md`): the whole catalog
+job now runs in one worker (`catalog.worker.ts`, `612de8a`; `subjectKey` has its
+own file), so the page no longer waits on it, but it's still one thread. On a
+desktop a first visit spends 443 ms checking 413 slates (WebCrypto, all at
+once), 269 ms lining up and 126 ms copying the reply back: roughly 3.4 s on a
+phone before All races shows. A pool would split the 443 ms part.
+
 ## The archive workflow's hourly schedule skips slots
 
 Seen 2026-10-30, about 8:50 PM PDT (2026-10-31 03:50Z), in `gh run list` for
