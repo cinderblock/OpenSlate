@@ -62,6 +62,7 @@ import {
   collateRaces,
   defaultElection,
   electionsOf,
+  listedJurisdictions,
   positionJurisdictions,
   type Race,
 } from "../lib/collate";
@@ -104,6 +105,7 @@ import { isBallotSource, isFollowed, standingOf } from "../lib/sources";
 import { subjectKey } from "../lib/subjects";
 import { isDecided, marksOn, type RaceStatus, raceStatus, stepThrough } from "../lib/triage";
 import { track } from "../lib/usage";
+import { useGrowingCount } from "../lib/useGrowingCount";
 import { AreaPicker, describeArea } from "./AreaPicker";
 import { BallotProblemsNotice, RaceUnlistedNote } from "./BallotTags";
 import { ChoiceRow } from "./ChoiceRow";
@@ -301,9 +303,13 @@ export function MyBallotPanel() {
 
   // The search box: narrows what's listed, never what's counted or exported.
   const search = usePageSearch("/");
+  // Only while searching: over a statewide ballot it costs as much as a render.
   const raceText = useMemo(
-    () => new Map(collated.map((race) => [race.key, raceSearchText(race)])),
-    [collated],
+    () =>
+      search.searching
+        ? new Map(collated.map((race) => [race.key, raceSearchText(race)]))
+        : new Map<string, string>(),
+    [collated, search.searching],
   );
   const matches = useCallback(
     (race: Race) => matchesSearch(raceText.get(race.key) ?? "", search.terms),
@@ -320,22 +326,22 @@ export function MyBallotPanel() {
   // isn't left wondering where their Assembly race went.
   const hiddenByDistrict = useMemo(() => {
     if (!isAreaSet(area)) return [];
-    const everywhere = collateRaces(slates, {
+    // Only where each race is: collating them all again took as long as the ballot.
+    const everywhere = listedJurisdictions(slates, {
       follows,
-      disagree,
       ...(election ? { election } : {}),
       includeUnfollowed: showUnfollowed,
     });
     const counts = new Map<string, number>();
-    for (const race of everywhere) {
-      const part = parseJurisdiction(race.jurisdiction);
+    for (const jurisdiction of everywhere.values()) {
+      const part = parseJurisdiction(jurisdiction);
       if (part.kind !== "district") continue;
       const family = `${part.state}/${part.family}`;
       if (area.districts[family]) continue;
       counts.set(part.family, (counts.get(part.family) ?? 0) + 1);
     }
     return [...counts.entries()];
-  }, [slates, follows, disagree, election, area, showUnfollowed]);
+  }, [slates, follows, election, area, showUnfollowed]);
 
   const statuses = useMemo(
     () => new Map(races.map((race) => [race.key, raceStatus(race, draft.rows, election ?? "")])),
@@ -1143,41 +1149,78 @@ function BallotSection({
       </summary>
       {/* Closed sections render nothing: a statewide ballot can run to 600+ races. */}
       {open && (
-        <div className="race-grid">
-          {items.map((item) => {
-            if (isNoRace(item))
-              return (
-                <div key={item.key} className="card ballot-no-race">
-                  <strong>{item.subject.title}</strong> <span className="hint">· no race</span>
-                  <p className="hint">{item.noRace}</p>
-                </div>
-              );
-            const race = item;
-            const status = statuses?.get(race.key);
-            const card = (
-              <RaceCard
-                key={race.key}
-                race={race}
-                election={election}
-                rows={rows}
-                patch={patch}
-                applyRank={applyRank}
-                mine={mine.get(race.key)}
-                articles={articles.get(race.key)}
-                onPlace={onPlace}
-              />
-            );
-            return status && status !== filter ? (
-              <DoneRace key={race.key} race={race} status={status} election={election} rows={rows}>
-                {card}
-              </DoneRace>
-            ) : (
-              card
-            );
-          })}
-        </div>
+        <SectionCards
+          items={items}
+          election={election}
+          rows={rows}
+          patch={patch}
+          applyRank={applyRank}
+          mine={mine}
+          articles={articles}
+          statuses={statuses}
+          filter={filter}
+          onPlace={onPlace}
+        />
       )}
     </details>
+  );
+}
+
+type SectionCardsProps = Omit<Parameters<typeof BallotSection>[0], "label" | "defaultOpen">;
+
+/**
+ * An open section's cards, a few at a time: each is dozens of real controls,
+ * and a statewide section in one render held the page for over a second on a
+ * phone. The count is kept as the list changes under a mark, so the cards
+ * below don't fold away, and starts over each time the section opens.
+ */
+function SectionCards({
+  items,
+  election,
+  rows,
+  patch,
+  applyRank,
+  mine,
+  articles,
+  statuses,
+  filter,
+  onPlace,
+}: SectionCardsProps) {
+  const rendered = useGrowingCount(items, { first: 3, step: 3, restart: false });
+  return (
+    <div className="race-grid">
+      {items.slice(0, rendered).map((item) => {
+        if (isNoRace(item))
+          return (
+            <div key={item.key} className="card ballot-no-race">
+              <strong>{item.subject.title}</strong> <span className="hint">· no race</span>
+              <p className="hint">{item.noRace}</p>
+            </div>
+          );
+        const race = item;
+        const status = statuses?.get(race.key);
+        const card = (
+          <RaceCard
+            key={race.key}
+            race={race}
+            election={election}
+            rows={rows}
+            patch={patch}
+            applyRank={applyRank}
+            mine={mine.get(race.key)}
+            articles={articles.get(race.key)}
+            onPlace={onPlace}
+          />
+        );
+        return status && status !== filter ? (
+          <DoneRace key={race.key} race={race} status={status} election={election} rows={rows}>
+            {card}
+          </DoneRace>
+        ) : (
+          card
+        );
+      })}
+    </div>
   );
 }
 

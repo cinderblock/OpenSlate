@@ -398,11 +398,16 @@ function moveToOtherSide(race: Field): void {
  * authorities) contribute the field and its order but never count as sources;
  * follow state doesn't apply to them.
  */
-export function collateRaces(slates: DecodedSlate[], options: CollateOptions): Race[] {
-  // A source can have several slates covering the same race (a reissue, or a
-  // firsthand slate imported twice). Only its newest slate speaks for it.
+/**
+ * A source can have several slates covering the same race (a reissue, or a
+ * firsthand slate imported twice). Only its newest slate speaks for it: by
+ * race key and source id, that slate.
+ */
+function newestSlates(
+  slates: DecodedSlate[],
+  only: string | undefined,
+): Map<string, { issuedAt: string; slate: DecodedSlate }> {
   const newest = new Map<string, { issuedAt: string; slate: DecodedSlate }>();
-  const { only } = options;
   for (const slate of slates) {
     for (const position of slate.payload.positions) {
       const key = subjectKey(position.subject);
@@ -414,6 +419,42 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
       }
     }
   }
+  return newest;
+}
+
+/**
+ * The jurisdiction of each race `collateRaces` would list with no area set,
+ * by race key, without collating them: for counting what an area hides, which
+ * needs no choices, tallies or ballot order.
+ */
+export function listedJurisdictions(
+  slates: DecodedSlate[],
+  options: Pick<CollateOptions, "follows" | "election" | "includeUnfollowed">,
+): Map<string, string | undefined> {
+  const newest = newestSlates(slates, undefined);
+  const seen = new Map<string, string | undefined>();
+  const listed = new Set<string>();
+  for (const slate of slates) {
+    const counted =
+      options.includeUnfollowed ||
+      isBallotSource(slate.source) ||
+      standingOf(options.follows, slate.source.id) !== "off";
+    for (const position of slate.payload.positions) {
+      const key = subjectKey(position.subject);
+      if (newest.get(`${key}\u0000${slate.source.id}`)?.slate !== slate) continue;
+      if (options.election && electionOf(position.subject, slate.payload) !== options.election)
+        continue;
+      if (!seen.has(key))
+        seen.set(key, position.subject.jurisdiction ?? slate.payload.context?.jurisdiction);
+      if (counted) listed.add(key);
+    }
+  }
+  return new Map([...seen].filter(([key]) => listed.has(key)));
+}
+
+export function collateRaces(slates: DecodedSlate[], options: CollateOptions): Race[] {
+  const { only } = options;
+  const newest = newestSlates(slates, only);
 
   interface Building extends Race {
     sourceIds: Set<string>;

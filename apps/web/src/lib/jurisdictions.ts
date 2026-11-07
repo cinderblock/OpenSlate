@@ -1,3 +1,5 @@
+import { memoByString } from "./memoByString";
+
 /**
  * Jurisdiction paths as slates use them: `us/ca` (statewide), `us/ca/sf` (a
  * locality), `us/ca/cd-11` (a numbered district). Helpers here turn those into
@@ -25,8 +27,19 @@ export type JurisdictionPart =
   | { kind: "district"; path: string; state: string; family: string; number: string }
   | { kind: "local"; path: string; state: string; slug: string };
 
+const NONE: JurisdictionPart = Object.freeze({ kind: "none" });
+
+/**
+ * A jurisdiction path's parts. Remembered per path: collating a whole catalog
+ * asks this tens of thousands of times over a few hundred paths. The answer is
+ * shared, so it's frozen.
+ */
 export function parseJurisdiction(path: string | undefined): JurisdictionPart {
-  if (!path?.trim()) return { kind: "none" };
+  return path === undefined ? NONE : parsePath(path);
+}
+
+const parsePath = memoByString((path: string): JurisdictionPart => {
+  if (!path.trim()) return NONE;
   const parts = path.trim().toLowerCase().split("/");
   if (parts.length <= 2) return { kind: "state", path: parts.join("/") };
   const state = parts.slice(0, 2).join("/");
@@ -42,7 +55,7 @@ export function parseJurisdiction(path: string | undefined): JurisdictionPart {
     };
   }
   return { kind: "local", path: `${state}/${leaf}`, state, slug: leaf };
-}
+});
 
 export interface Area {
   /** Locality paths, e.g. `us/ca/sf`. */

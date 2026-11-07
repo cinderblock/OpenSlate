@@ -1,6 +1,7 @@
 import { CA_DISTRICTS_2026, type DistrictOverlaps } from "./ballotOrderCa";
 import { COUNTY_DRAWINGS_2026, type CountyDrawing } from "./ballotOrderCounties";
 import { type Area, localityPathFor, NO_DISTRICT, parseJurisdiction } from "./jurisdictions";
+import { memoByString } from "./memoByString";
 
 /**
  * The order a California ballot prints a race's candidates in, for one voter.
@@ -117,7 +118,7 @@ function letters(text: string): string {
  * and a trailing comma's part are left out; a particle before the last name
  * ("Kevin de León") belongs to it.
  */
-export function sortParts(name: string): string[] {
+export const sortParts: (name: string) => readonly string[] = memoByString((name) => {
   const words = name
     .replace(/"[^"]*"|“[^”]*”|\([^)]*\)/g, " ")
     .split(/[\s,]+/)
@@ -133,7 +134,7 @@ export function sortParts(name: string): string[] {
   const last = letters(words.slice(lastStart).join(""));
   const [first = "", ...middle] = words.slice(0, lastStart);
   return [last, letters(first), letters(middle.join(""))];
-}
+});
 
 /** Compare two names by a drawn alphabet: last name, then first, then middle, letter by letter. */
 export function compareByAlphabet(alphabet: string, a: string, b: string): number {

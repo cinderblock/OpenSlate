@@ -108,7 +108,13 @@ export function setRanking(electionId: string, subject: Subject, order: readonly
  * Undefined when no row moves.
  */
 export function refiledRows(rows: DraftMap, subjects: readonly Subject[]): DraftMap | undefined {
+  // Most visits have nothing to move: the indexes below cost as much as a
+  // render over a whole catalog's subjects, so they're only built when needed.
+  const marks = Object.values(rows);
+  if (marks.length === 0) return undefined;
   const keys = new Set(subjects.map(subjectKey));
+  const stray = marks.filter((row) => !keys.has(subjectKey(row.subject)));
+  if (stray.length === 0) return undefined;
   const byTitle = new Map<string, Map<string, Subject>>();
   const byDesignation = new Map<string, Map<string, Subject>>();
   const add = (index: Map<string, Map<string, Subject>>, at: string, subject: Subject) => {
@@ -122,8 +128,7 @@ export function refiledRows(rows: DraftMap, subjects: readonly Subject[]): Draft
     if (at) add(byDesignation, at, subject);
   }
   let next: DraftMap | undefined;
-  for (const row of Object.values(rows)) {
-    if (keys.has(subjectKey(row.subject))) continue;
+  for (const row of stray) {
     const same = [
       ...(byTitle.get(`${row.subject.election ?? ""}|${row.subject.title}`)?.values() ?? []),
     ].filter((s) => !row.subject.kind || !s.kind || s.kind === row.subject.kind);
