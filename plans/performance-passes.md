@@ -224,8 +224,18 @@ page by page, and cut it, measuring before and after.
      out 1.5-3.4 s into a first visit; now ~0.1 s, one request per page.
    - [x] Start-up: the main bundle is framework code (TanStack DB 172 KB,
      React DOM 131 KB, router 60 KB, zod 56 KB); nothing worth splitting.
-   - [ ] Offered, waiting on the user: a worker pool for the catalog check
-     (ISSUES.md entry updated with numbers).
+   - [x] A worker pool for the catalog check (the user's yes, 2026-11-07):
+     built, measured, dropped; ISSUES.md entry closed. Bun, the public
+     catalog (413 slates), 12 cores: one thread first 516 ms / best 302 ms;
+     pool of 4 first 569 ms / best 221 ms. A visit checks once per catalog
+     version, so the first run is the one that counts, and there the pool
+     loses: each worker loads and warms up zod and the core itself. The
+     browser's own Ed25519 already runs off the JS thread; the issue's
+     4.3 s -> 1.5 s was measured with noble, before that. Checking more at
+     once on one thread (8 -> 64 -> all 413 in flight): 395 -> 315-358 ->
+     296-366 ms, within noise. The code is kept outside the repo, in the
+     session scratchpad `verify-pool/`, should phones without WebCrypto
+     Ed25519 ever matter.
    - [x] Live as `572b7e3` 2026-11-06 11:27 PM PST (07:27Z); the preload
      is in the live page and the index arrives at ~0.15 s. Live cold, no
      page errors or console warnings: Sources 6.8 -> 3.3 s. My ballot
