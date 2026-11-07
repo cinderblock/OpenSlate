@@ -343,17 +343,18 @@ function AdoptionNote({ slates }: { slates: DecodedSlate[] }) {
 }
 
 /**
- * A list of sources, a few dozen rows at a time: a voter who imported the
- * whole catalog has hundreds, each with real controls, and rendering them in
- * one go froze the page for seconds on a phone.
+ * A list of sources, a few dozen rows at a time as it's scrolled: a voter who
+ * imported the whole catalog has hundreds, each with real controls, and
+ * rendering them in one go froze the page for seconds on a phone.
  */
 function SourceList({ groups }: { groups: SourceGroup[] }) {
-  const shown = useGrowingCount(groups);
+  const { count, sentinel } = useGrowingCount(groups);
   return (
     <ul className="source-list">
-      {groups.slice(0, shown).map((group) => (
+      {groups.slice(0, count).map((group) => (
         <SourceRow key={group.source.id} group={group} />
       ))}
+      {count < groups.length && <li ref={sentinel} className="growing-end" aria-hidden />}
     </ul>
   );
 }

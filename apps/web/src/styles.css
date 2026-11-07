@@ -2343,6 +2343,13 @@ button.source-chip {
     margin-top: 0.75rem;
   }
 }
+/* The end of a list that renders more as it's scrolled to (`useGrowingCount`). */
+.growing-end {
+  list-style: none;
+  height: 1px;
+  grid-column: 1 / -1;
+}
+
 .source-list,
 .catalog-list {
   list-style: none;

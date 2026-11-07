@@ -1186,7 +1186,11 @@ function SectionCards({
   filter,
   onPlace,
 }: SectionCardsProps) {
-  const rendered = useGrowingCount(items, { first: 3, step: 3, restart: false });
+  const { count: rendered, sentinel } = useGrowingCount(items, {
+    first: 3,
+    step: 4,
+    restart: false,
+  });
   return (
     <div className="race-grid">
       {items.slice(0, rendered).map((item) => {
@@ -1220,6 +1224,7 @@ function SectionCards({
           card
         );
       })}
+      {rendered < items.length && <div ref={sentinel} className="growing-end" aria-hidden />}
     </div>
   );
 }

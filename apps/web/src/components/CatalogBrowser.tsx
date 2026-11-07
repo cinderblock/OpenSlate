@@ -204,7 +204,7 @@ export function CatalogBrowser() {
   }
 
   const pendingCount = rows.filter((entry) => !isImported(entry)).length;
-  const shownCount = useGrowingCount(rows);
+  const { count: shownCount, sentinel } = useGrowingCount(rows);
   // The same function every render, so memoized rows stay put.
   const followRef = useRef(follow);
   followRef.current = follow;
@@ -268,6 +268,7 @@ export function CatalogBrowser() {
                 />
               );
             })}
+            {shownCount < rows.length && <li ref={sentinel} className="growing-end" aria-hidden />}
           </ul>
           {rows.length === 0 && <p className="hint">No entries match.</p>}
 
