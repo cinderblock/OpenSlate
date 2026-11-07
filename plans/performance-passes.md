@@ -66,6 +66,15 @@ page by page, and cut it, measuring before and after.
   in one task; `collateRaces`' self time is spread over ~30k positions, no
   single hotspot. Moving it to a worker is the fix (ISSUES.md, "The catalog
   copy verifies on the page, and workers would halve the wait").
+- My ballot's collation in a worker is no win (measured 2026-11-06,
+  heavy profile, 4x): posting the slates cost 0.37 s on the page (0.29 s
+  even without their tokens), the reply 0.13 s plus ~0.3 s reading it
+  back, against 0.87 s for collating on the page. All races gains because
+  its worker already holds the catalog; My ballot's slates are on the page.
+- The machine's speed drifts a lot between sessions (Publish, untouched,
+  0.7 s one day and 1.2-2.1 s the next): compare builds with `ab.sh`
+  (`serve.ts` serves the build named in `which-dist.txt` on :5639, so both
+  share the heavy profile's origin and data), never against old numbers.
 - A kept browser profile's service worker serves the build it cached:
   `serviceWorkers: "block"` doesn't stop it in a persistent context. Delete
   `<profile>\Default\Service Worker` before measuring a new build with it.
@@ -169,7 +178,30 @@ page by page, and cut it, measuring before and after.
      - Results cold 1.3 / 1.7 -> 1.0 / 1.2; Compare cold 1.6 / 1.1 -> 1.3 / 0.9
      - My ballot, Sources, Settings: about the same for a fresh profile
        (their wins are for a voter with many slates, measured locally above).
-11. [ ] <- next, not started; waiting on the user:
+11. [ ] <- current. Fourth round: the user's go-ahead 2026-11-06 ("anything
+   to make it feel snappier"). Heavy profile, local build, 4x, My ballot:
+   one 2.9 s task. Of it: React rendering the open race cards' controls
+   ~1.5 s (React Aria Select/Button/TextField/GridList; 2580 elements),
+   collation 0.62 s, translateSlates 0.2 s, refile 0.25 s, IndexedDB
+   reads/writes ~0.6 s in other tasks. Work:
+   - [x] Race cards render three at a time per open section; less work per
+     visit: `listedJurisdictions` in place of a second collation, search
+     text only while searching, `parseJurisdiction` and name sort parts
+     remembered per string, `refiledRows` stops early (`9459837`).
+   - [x] Collation itself 2-4x faster (`1b4f5d8`; benchmark
+     `%TEMP%\os-perf\bench-collate.ts` over the public catalog, warm,
+     desktop): everywhere 91 -> 45 ms, one area 72 -> 18 ms,
+     `listedJurisdictions` 40 -> 9 ms.
+   - [x] Collation in a worker: built, measured, dropped (see Findings).
+   - [x] A/B against `1833ac8` on one origin, same moment (`ab.sh`), heavy
+     profile, 4x: My ballot's biggest task 3.8-4.5 s -> 2.4-2.6 s, long
+     tasks 7.2-8.2 s -> 5.9-6.9 s. All races, Governor, Publish: no change
+     beyond noise.
+   - [ ] <- current: push, check the live site.
+   Left: the first collation after a page load is ~2.5x a warm one (243 ms
+   vs ~95 ms on a desktop): JIT and the new per-string caches filling. The
+   rest of My ballot's biggest task is React building ~1,300 elements.
+   Was:
    - My ballot with hundreds imported: 3.2 s at 4x in one task, spread
      over collating (two `collateRaces` over every slate, 0.7 s), React
      Aria controls and the race cards. Collating in a worker, as All races
@@ -185,8 +217,8 @@ page by page, and cut it, measuring before and after.
 
 ## Open questions for the user
 
-1. Go ahead with step 11 (My ballot's collation in a worker, for voters
-   with hundreds of slates)? Recommended: yes, it's the largest left.
+1. (Answered 2026-11-06: yes, "anything to make it feel snappier". The
+   worker was measured and dropped; collation was made faster instead.)
 
 ## Things not to do
 
