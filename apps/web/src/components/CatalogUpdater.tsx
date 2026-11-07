@@ -67,11 +67,9 @@ export function CatalogUpdater() {
     const data = catalog.data;
     if (!data || !isReady || rows.length === 0 || !decoded) return;
     const removed = new Set(removedSourcesStore.get());
-    const entries = adoptedEntries(
-      expandAdoptions(decoded),
-      data.entries,
-      removed,
-    ).filter((entry) => !adopted.current.has(entry.path));
+    const entries = adoptedEntries(expandAdoptions(decoded), data.entries, removed).filter(
+      (entry) => !adopted.current.has(entry.path),
+    );
     if (entries.length === 0) return;
     for (const entry of entries) adopted.current.add(entry.path);
     void importAdoptedEntries(
