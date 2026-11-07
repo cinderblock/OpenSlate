@@ -212,6 +212,22 @@ page by page, and cut it, measuring before and after.
    - The main bundle is 786 KB minified; TanStack DB (172 KB) and React
      DOM (131 KB) are most of it and every page needs both at start.
 
+12. [ ] <- current. Fifth round ("any other performance improvements you
+   can find?", 2026-11-06). Cold sweep of a local build, fresh profile, 4x:
+   Sources 10.0 s to its last change (5.1 s long tasks), All races 5.5 s,
+   Publish/Settings 2.4-2.8 s of long tasks spread thin over start-up.
+   - [x] Long lists render more as they're scrolled to (`6ae20cc`):
+     Sources cold 10.0 -> 3.2 s, long tasks 5.1 -> 3.2 s. The observer's
+     root reaches far above the screen, since a jump past the end crosses
+     nothing smaller (found with `%TEMP%\os-perf\scroll-grow.ts`).
+   - [x] The catalog index preloaded with the page (`1e7a9a2`): it went
+     out 1.5-3.4 s into a first visit; now ~0.1 s, one request per page.
+   - [x] Start-up: the main bundle is framework code (TanStack DB 172 KB,
+     React DOM 131 KB, router 60 KB, zod 56 KB); nothing worth splitting.
+   - [ ] Offered, waiting on the user: a worker pool for the catalog check
+     (ISSUES.md entry updated with numbers).
+   - [ ] Push, check live.
+
 ## Progress log
 
 - [x] Harness built; Governor race page profiled.
