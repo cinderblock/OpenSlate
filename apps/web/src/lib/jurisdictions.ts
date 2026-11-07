@@ -397,6 +397,11 @@ export function stateLabel(path: string): string {
 
 /** Human label for a jurisdiction path. */
 export function jurisdictionLabel(path: string | undefined): string {
+  return path === undefined ? "Other" : labelOf(path);
+}
+
+/** Remembered per path: sorting a catalog into ballot order asks for thousands. */
+const labelOf = memoByString((path: string): string => {
   const part = parseJurisdiction(path);
   switch (part.kind) {
     case "none":
@@ -408,7 +413,7 @@ export function jurisdictionLabel(path: string | undefined): string {
     case "local":
       return LOCALITY_NAMES[part.slug] ?? titleCase(part.slug);
   }
-}
+});
 
 /** Sort rank for ballot sections: national, statewide, districts, local, unknown. */
 export function jurisdictionRank(path: string | undefined): number {

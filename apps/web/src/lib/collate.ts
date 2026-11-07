@@ -2,6 +2,7 @@ import {
   type Adoption,
   type BallotChoice,
   type BallotContest,
+  type Position,
   type SlatePayload,
   type Stance,
   type Subject,
@@ -16,6 +17,7 @@ import {
   answerFor,
   jurisdictionLabel,
   jurisdictionRank,
+  type Placement,
   parseJurisdiction,
   placeRace,
 } from "./jurisdictions";
@@ -394,32 +396,45 @@ function moveToOtherSide(race: Field): void {
 }
 
 /**
- * Imported slates → races → choices → who backs each. Ballot sources (election
- * authorities) contribute the field and its order but never count as sources;
- * follow state doesn't apply to them.
- */
-/**
  * A source can have several slates covering the same race (a reissue, or a
- * firsthand slate imported twice). Only its newest slate speaks for it: by
- * race key and source id, that slate.
+ * firsthand slate imported twice). Only its newest slate speaks for it; the
+ * first of those imported, where two were issued at once. Answers whether
+ * `slate` speaks for its source on the race keyed `key`.
+ *
+ * Most sources have one slate, which always speaks for them: only sources with
+ * several are compared, race by race. (Comparing every position by a key made
+ * of race and source was most of what collating a catalog cost.)
  */
-function newestSlates(
-  slates: DecodedSlate[],
-  only: string | undefined,
-): Map<string, { issuedAt: string; slate: DecodedSlate }> {
-  const newest = new Map<string, { issuedAt: string; slate: DecodedSlate }>();
+function newestSlates(slates: DecodedSlate[]): (slate: DecodedSlate, key: string) => boolean {
+  const bySource = new Map<string, DecodedSlate[]>();
   for (const slate of slates) {
-    for (const position of slate.payload.positions) {
-      const key = subjectKey(position.subject);
-      if (only !== undefined && key !== only) continue;
-      const id = `${key}\u0000${slate.source.id}`;
-      const current = newest.get(id);
-      if (!current || slate.payload.issued_at > current.issuedAt) {
-        newest.set(id, { issuedAt: slate.payload.issued_at, slate });
+    const same = bySource.get(slate.source.id);
+    if (same) same.push(slate);
+    else bySource.set(slate.source.id, [slate]);
+  }
+  /** Race keys each slate doesn't speak for, because a newer one of its source's does. */
+  const outdated = new Map<DecodedSlate, Set<string>>();
+  for (const same of bySource.values()) {
+    if (same.length < 2) continue;
+    const newest = new Map<string, DecodedSlate>();
+    for (const slate of same) {
+      for (const position of slate.payload.positions) {
+        const key = subjectKey(position.subject);
+        const current = newest.get(key);
+        if (!current || slate.payload.issued_at > current.payload.issued_at) newest.set(key, slate);
+      }
+    }
+    for (const slate of same) {
+      for (const position of slate.payload.positions) {
+        const key = subjectKey(position.subject);
+        if (newest.get(key) === slate) continue;
+        const keys = outdated.get(slate);
+        if (keys) keys.add(key);
+        else outdated.set(slate, new Set([key]));
       }
     }
   }
-  return newest;
+  return (slate, key) => outdated.get(slate)?.has(key) !== true;
 }
 
 /**
@@ -431,7 +446,7 @@ export function listedJurisdictions(
   slates: DecodedSlate[],
   options: Pick<CollateOptions, "follows" | "election" | "includeUnfollowed">,
 ): Map<string, string | undefined> {
-  const newest = newestSlates(slates, undefined);
+  const speaksFor = newestSlates(slates);
   const seen = new Map<string, string | undefined>();
   const listed = new Set<string>();
   for (const slate of slates) {
@@ -441,7 +456,7 @@ export function listedJurisdictions(
       standingOf(options.follows, slate.source.id) !== "off";
     for (const position of slate.payload.positions) {
       const key = subjectKey(position.subject);
-      if (newest.get(`${key}\u0000${slate.source.id}`)?.slate !== slate) continue;
+      if (!speaksFor(slate, key)) continue;
       if (options.election && electionOf(position.subject, slate.payload) !== options.election)
         continue;
       if (!seen.has(key))
@@ -452,9 +467,14 @@ export function listedJurisdictions(
   return new Map([...seen].filter(([key]) => listed.has(key)));
 }
 
+/**
+ * Imported slates → races → choices → who backs each. Ballot sources (election
+ * authorities) contribute the field and its order but never count as sources;
+ * follow state doesn't apply to them.
+ */
 export function collateRaces(slates: DecodedSlate[], options: CollateOptions): Race[] {
   const { only } = options;
-  const newest = newestSlates(slates, only);
+  const speaksFor = newestSlates(slates);
 
   interface Building extends Race {
     sourceIds: Set<string>;
@@ -465,6 +485,22 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
   const districts = placesOf(slates, (subject) => subject.district);
   const votedIns = placesOf(slates, (subject) => subject.voted_in);
   const races = new Map<string, Building>();
+  // Where each race is, against the area: once per race, not per position.
+  // Its district and voted-in are the race's; a position's jurisdiction can
+  // differ only for a race keyed by id, so that's checked.
+  const placements = new Map<string, { jurisdiction: string | undefined; placement: Placement }>();
+  const placed = (
+    key: string,
+    jurisdiction: string | undefined,
+    district: string | undefined,
+    votedIn: string[] | undefined,
+  ): Placement => {
+    const known = placements.get(key);
+    if (known && known.jurisdiction === jurisdiction) return known.placement;
+    const placement = placeRace(jurisdiction, district, options.area as Area, votedIn);
+    placements.set(key, { jurisdiction, placement });
+    return placement;
+  };
   for (const slate of slates) {
     const ballot = isBallotSource(slate.source);
     const standing = standingOf(options.follows, slate.source.id);
@@ -473,19 +509,19 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
     const labelDescriptions = new Map(
       slate.payload.labels?.map((definition) => [definition.label, definition.description]),
     );
-    for (const [index, position] of slate.payload.positions.entries()) {
+    const { positions } = slate.payload;
+    for (let index = 0; index < positions.length; index++) {
+      const position = positions[index] as Position;
       const check = slate.checks?.[index];
       const key = subjectKey(position.subject);
       if (only !== undefined && key !== only) continue;
-      if (newest.get(`${key}\u0000${slate.source.id}`)?.slate !== slate) continue;
+      if (!speaksFor(slate, key)) continue;
       const election = electionOf(position.subject, slate.payload);
       if (options.election && election !== options.election) continue;
       const jurisdiction = position.subject.jurisdiction ?? slate.payload.context?.jurisdiction;
       const district = districts.get(key);
       const votedIn = votedIns.get(key);
-      const placement = options.area
-        ? placeRace(jurisdiction, district, options.area, votedIn)
-        : "in";
+      const placement = options.area ? placed(key, jurisdiction, district, votedIn) : "in";
       if (placement === "out") continue;
 
       let race = races.get(key);
@@ -549,22 +585,24 @@ export function collateRaces(slates: DecodedSlate[], options: CollateOptions): R
 
       race.sourceIds.add(slate.source.id);
       if (followed) race.followedIds.add(slate.source.id);
-      group.positions.push({
-        source: slate.source,
-        stance: position.stance,
-        ...(position.statement ? { statement: position.statement } : {}),
-        ...(position.source ? { sourceUrl: position.source } : {}),
-        ...(position.label ? { label: position.label } : {}),
-        ...(position.label && labelDescriptions.get(position.label)
-          ? { labelDescription: labelDescriptions.get(position.label) }
-          : {}),
-        ...(position.rank !== undefined ? { rank: position.rank } : {}),
-        valid: slate.valid,
-        standing,
-        ...(times !== 0 && times !== 1 ? { times } : {}),
-        ...(check?.written ? { written: check.written } : {}),
-        ...(slate.adoptedFrom?.[index] ? { via: slate.adoptedFrom[index] } : {}),
-      });
+      // Fields set one by one, in this order, rather than spread: spreading
+      // the optional ones was a fifth of collating a catalog.
+      const entry: RacePosition = { source: slate.source, stance: position.stance } as RacePosition;
+      if (position.statement) entry.statement = position.statement;
+      if (position.source) entry.sourceUrl = position.source;
+      if (position.label) {
+        entry.label = position.label;
+        const description = labelDescriptions.get(position.label);
+        if (description) entry.labelDescription = description;
+      }
+      if (position.rank !== undefined) entry.rank = position.rank;
+      entry.valid = slate.valid;
+      entry.standing = standing;
+      if (times !== 0 && times !== 1) entry.times = times;
+      if (check?.written) entry.written = check.written;
+      const via = slate.adoptedFrom?.[index];
+      if (via) entry.via = via;
+      group.positions.push(entry);
     }
   }
 
