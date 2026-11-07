@@ -51,6 +51,8 @@ say. Fix it in `openslate-public-endorsements`, where each org is scraped.
 
 ## The catalog copy verifies on the page, and workers would halve the wait
 
+in progress — performance-passes thread (`plans/performance-passes.md`), 2026-11-07
+
 Seen 2026-10-30 building Compare. `createCatalogLoader` (`lib/catalogCopy.ts`)
 checks every signature on the main thread in 12 ms slices. In a production worker
 on a 12-core desktop, 349 slates took 4.3 s on 1 thread, 1.9 s on 4 and 1.5 s on 8,
