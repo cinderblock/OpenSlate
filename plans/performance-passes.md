@@ -226,7 +226,11 @@ page by page, and cut it, measuring before and after.
      React DOM 131 KB, router 60 KB, zod 56 KB); nothing worth splitting.
    - [ ] Offered, waiting on the user: a worker pool for the catalog check
      (ISSUES.md entry updated with numbers).
-   - [ ] Push, check live.
+   - [x] Live as `572b7e3` 2026-11-06 11:27 PM PST (07:27Z); the preload
+     is in the live page and the index arrives at ~0.15 s. Live cold, no
+     page errors or console warnings: Sources 6.8 -> 3.3 s. My ballot
+     ranged 1.8-3.8 s of long tasks run to run; the same build with and
+     without the preload, alternated locally, showed no difference.
 
 ## Progress log
 
