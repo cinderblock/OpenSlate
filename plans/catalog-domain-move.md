@@ -86,6 +86,12 @@ free and unmetered. Held until after the 2026-11-03 election (see
 - Branch growth: `bundle.json` is 12.2 MB, about 1.9 MB gzipped. Each publish
   that changes a slate adds roughly that to the repo. If it ever matters,
   trimming the branch's history is a rewrite and needs the user's yes.
+- Workers Builds posts a GitHub check run named `Workers Builds: <worker>` on
+  each commit it builds (seen on the app repo). That's how to see a build's
+  result here: the local Cloudflare token answers "Invalid token" (12006) on
+  the Builds API.
+- Connecting Workers Builds doesn't start a build. Only a push to the branch
+  does.
 - Workers static assets don't add CORS headers. The deploy needs a `_headers`
   file with `Access-Control-Allow-Origin: *`, written only into the Workers
   copy so the Pages output stays unchanged.
@@ -97,7 +103,11 @@ free and unmetered. Held until after the 2026-11-03 election (see
       2026-11-06.
 - [x] Ops worker and domain (`7e244f85`).
 - [x] `publish.yml` commits to `catalog-site` (`4e56998`).
-- [ ] Workers Builds connection (the user, in the dashboard).
+- [x] Workers Builds connection (the user, 2026-11-09).
+- [ ] First build. An empty commit on `catalog-site` (`4077b19`) started no
+      build: no "Workers Builds: openslate-catalog" check run on it, and the
+      domain still answered 503 four minutes later. The user is checking the
+      worker's build settings and history.
 - [ ] Verify, switch the app default, update the endorsements scripts.
 - [x] The scheduled task turned itself off, so it won't run again.
 
