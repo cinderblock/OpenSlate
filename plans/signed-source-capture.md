@@ -61,6 +61,18 @@ ranked-choice page. Read as:
 - The endorsements README said "written material", which covers a web page and would have argued
   the other way. It now follows SPEC.
 
+On 2026-11-08, after the daily task ended, the user said to push the plan notes, fix the queued-run
+publish, and be resilient to sources' outages: "recheck once quickly, then again later... if it's
+giving an error regularly we might refer to a dev for further investigation. they could be
+blocking, changed api, overloaded". Read as:
+
+- Retries are in scope. A URL
+  that doesn't come back 200 is asked again about 15 seconds later and again at least 10 minutes
+  after that, in the same run. Every attempt stays in the manifest, which keeps the objectivity rule:
+  a retry adds evidence and can't hide any.
+- A URL that keeps failing goes to a developer. `failing-sources.md` lists it, and one issue in the
+  capture repo stays open while that list holds anything.
+
 ## What was built
 
 | Piece | Where | State |
@@ -602,6 +614,11 @@ Verified offline and in Chrome, and provenance was rebuilt in the publish job.
   both runs succeeded, since they move nothing. After Nov 5 only the weekly line is left, but any
   run created while another is still going (a late `schedule` during a dispatched run, say) will
   fail the same way.
+- **One request per URL made a bad minute look like a dead site.** Before 2026-11-08 every URL got
+  one GET a run. Run to run, the same URLs flipped between a failure and a 200: `www.bakersfield.com`
+  sent 429 on 6 URLs on 2026-11-04 and was fine the day before, `calaborfed.org` went from 200 to 202
+  to no answer in three days, and `ieunited.org` and `voterguide.sos.ca.gov` each missed one run.
+  With weekly runs, one such failure stood for a week. Hence the retries.
 - **The dead-page case works from the Archive's own bytes.** `archive.ts compare` found
   25 of 25 `sf-republican-party` statements in the 2026-10-18 snapshot.
 - **Bumping the OpenSlate pin moved no slate.** Pin `2416fe3` to `f41bf95` is 28 commits.
@@ -771,11 +788,10 @@ publication rule, the merges and the field going in now, and `mode` on SF and Ne
 
 | Item | Needs |
 | --- | --- |
-| GitHub's scheduler runs `capture` and `pin-capture` hours late and `archive` about one slot in five (see Findings). A missed slot sends no failure email | A T3 scheduled task, daily at 5:00 AM local through Nov 5, starts `capture` and `pin-capture` if they haven't run, runs the home fill-in, and reports. It needs this machine awake |
-| Five hosts refuse CI and a home address: `www.nfib.com`, `www.smdailyjournal.com`, `www.sanbenitocounty-ca-cre.gov`, `ballotpedia.org`, `www.sacbee.com` | Nothing for now: each failure is on the record |
+| GitHub's scheduler runs `capture` and `pin-capture` hours late and `archive` about one slot in five (see Findings). A missed slot sends no failure email. The daily T3 task that covered this ran Oct 31 to Nov 5 and turned itself off on Nov 6, so the weekly Monday runs now have no backstop | The user, if a missed week matters: a second cron slot that skips when a run already happened, say |
+| Sources that keep failing: `failing-sources.md` in the capture repo, and [issue #1](https://github.com/cinderblock/openslate-source-captures/issues/1) | A developer, per entry. On 2026-11-08 it held 58 URLs, among them `www.sacbee.com` (no answer, 17 URLs), `www.nfib.com`, `www.smdailyjournal.com` and `www.sanbenitocounty-ca-cre.gov` (403), `ballotpedia.org` (202), two `jstreetpac.org` candidate pages gone since 2026-11-04, the Los Angeles GOP app's old script chunk (404) and an AIPAC API endpoint (500) |
 | `alamedacountyca.gov/rov_app/candidatelist/` may need a form post | Someone finds the request. Capture can now send one |
 | Second CI witness on GitLab | Deferred by the user |
-| `capture.yml`: a queued run's publish conflicts with the run before it (see Findings) | A fix in the capture repo: rebuild provenance after the rebase, or check out the branch tip in `publish`. Not for the daily task, which may not edit workflows |
 
 ## Things not to do
 
@@ -830,6 +846,18 @@ publication rule, the merges and the field going in now, and `mode` on SF and Ne
   PDT (2026-10-31 01:00Z), endorsements `cde01c1`, `2b50080`, README `7bb33fd`
 - [x] First scheduled capture and pin fired: 2026-10-31 8:36 and 9:14 AM PDT (15:36Z, 16:14Z), hours
   after their slots
+- [x] Daily task, Oct 31 to Nov 5: capture and pin dispatched each morning, home fill-in run each
+  day, 413 slates pinned and 0 waiting at the end. Turned off 2026-11-06
+- [x] Retries in `run.ts` by `src/retry.ts`, every attempt kept as `earlier_attempts`. Publish,
+  the verifier and the web loader read them too. Checked end to end against a local server
+- [x] `failing-sources.md` and the "Sources that keep failing" issue (`src/failing.ts`)
+- [x] `publish` checks out the branch tip and rebuilds provenance when a push is rejected, so a
+  queued run publishes
+- [x] First CI run with all three: `2026-11-09T0219Z`, dispatched 2026-11-08 6:19 PM PST (02:19Z),
+  done 6:52 PM PST (02:52Z), witnessed and verified with 0 bytes missing. 67 resources were asked
+  again and 1 came back 200: almost every failure now is a steady block, not a bad minute. The
+  capture job took 30 minutes, up from about 20. `failing-sources.md` listed 58 URLs and opened
+  [issue #1](https://github.com/cinderblock/openslate-source-captures/issues/1)
 
 **Not done:** TLSNotary wasn't built, so its proof sizes are unmeasured. OpenTimestamps
 was only probed once (a 207-byte pending proof in 1.8 s) and that proof was never
