@@ -92,6 +92,16 @@ free and unmetered. Held until after the 2026-11-03 election (see
   the Builds API.
 - Connecting Workers Builds doesn't start a build. Only a push to the branch
   does.
+- Read build state with the user-owned `CF_BUILDS_TOKEN` in ops
+  `cloudflare/.env.local` (Workers CI Read):
+  `GET /accounts/<id>/builds/workers/<script-tag>/triggers` and `/builds`. The
+  script tag for `openslate-catalog` is `12732711609f4f40ac1a34ec19ea0a13`. The
+  ops `bun builds <worker>` CLI does the same but needs `bun install` in the
+  checkout it runs from.
+- A test commit made with the Contents API briefly cut the branch README
+  short: `base64 -d` failed on GitHub's line-wrapped base64. Strip newlines
+  first (`tr -d '
+'`). Fixed in `ae50a30`. The catalog files weren't touched.
 - Workers static assets don't add CORS headers. The deploy needs a `_headers`
   file with `Access-Control-Allow-Origin: *`, written only into the Workers
   copy so the Pages output stays unchanged.
@@ -104,10 +114,17 @@ free and unmetered. Held until after the 2026-11-03 election (see
 - [x] Ops worker and domain (`7e244f85`).
 - [x] `publish.yml` commits to `catalog-site` (`4e56998`).
 - [x] Workers Builds connection (the user, 2026-11-09).
-- [ ] First build. An empty commit on `catalog-site` (`4077b19`) started no
-      build: no "Workers Builds: openslate-catalog" check run on it, and the
-      domain still answered 503 four minutes later. The user is checking the
-      worker's build settings and history.
+- [ ] First build. **Blocked:** no push to `catalog-site` has ever reached
+      Workers Builds. The trigger is right (read through the Builds API on
+      2026-11-09): branch `catalog-site`, root `/`, no build command, deploy
+      `npx wrangler deploy`, path filter `*`, token
+      `Workers Builds - 2026-09-23 01:27`, caching off, created 10:45 AM PST
+      (18:45Z). It has 0 builds after four pushes: an empty commit (`4077b19`),
+      a publish by `github-actions[bot]` (`48fba31`), and two README commits
+      pushed as the user (`3be46fe`, `ae50a30`). The same API shows
+      `openslate-web` building the user's pushes normally. Suspect: the
+      Cloudflare GitHub app's repository access doesn't cover this repo, so its
+      push events never reach Cloudflare.
 - [ ] Verify, switch the app default, update the endorsements scripts.
 - [x] The scheduled task turned itself off, so it won't run again.
 
