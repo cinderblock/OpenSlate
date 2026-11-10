@@ -56,8 +56,9 @@ export function AllSlatesLoading({ state }: { state: AllRacesState }) {
         )
       )}
       <p className="hint">
-        Every slate in the public catalog comes down as one file, so its host can't tell what you're
-        looking up. It's kept in this browser for next time, and adds nothing to My ballot.
+        Every slate in the public catalog for your state comes down together, so its host can't tell
+        which races you're looking up. It's kept in this browser for next time, and adds nothing to
+        My ballot.
       </p>
     </div>
   );

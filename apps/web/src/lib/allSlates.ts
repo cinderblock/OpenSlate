@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { CatalogQuestion, FromCatalogWorker, ToCatalogWorker } from "./catalog.worker";
 import { storedDeps } from "./catalogDeps";
 import { fetchCatalogSlate } from "./catalogImport";
+import { scopeRegions, useCatalogScope } from "./catalogScope";
 import {
   type CatalogService,
   type CatalogStatus,
@@ -94,7 +95,8 @@ function inAWorker(onFail: () => void): CatalogService | undefined {
   };
 
   return {
-    load: (catalogUrl) => send({ type: "load", catalogUrl }),
+    load: (catalogUrl, changed) =>
+      send({ type: "load", catalogUrl, ...(changed ? { changed } : {}) }),
     status: () => status,
     subscribe(listener) {
       listeners.add(listener);
@@ -116,6 +118,8 @@ const catalog = (() => {
   let current: CatalogService | undefined;
   let unsubscribe: (() => void) | undefined;
   let loading: string | undefined;
+  /** The regions the catalog was last asked for, to tell a change of them from a revisit. */
+  let askedFor: string | undefined;
   /** Counts switches to the page, so a lining up the worker dropped is asked again. */
   let generation = 0;
   const listeners = new Set<() => void>();
@@ -139,9 +143,12 @@ const catalog = (() => {
     return current as CatalogService;
   }
   return {
-    load(catalogUrl: string) {
+    /** `regions`: the voter's (catalogScope.ts), so new ones are fetched now, not at the next check. */
+    load(catalogUrl: string, regions: string) {
+      const changed = askedFor !== undefined && askedFor !== regions;
+      askedFor = regions;
       loading = catalogUrl;
-      started().load(catalogUrl);
+      started().load(catalogUrl, changed);
     },
     status: () => current?.status() ?? IDLE,
     subscribe(listener: () => void) {
@@ -187,17 +194,25 @@ export function useAllRaces(enabled: boolean): AllRacesState {
   const contacts = useKnownIdentities();
   const [follows] = useFollows();
   const [all, setAll] = useState<AllRaces | undefined>();
+  const [scope] = useCatalogScope();
+  const regions = scopeRegions(scope).join();
 
   useEffect(() => {
-    if (enabled) catalog.load(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG);
-  }, [enabled]);
+    if (enabled) catalog.load(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG, regions);
+  }, [enabled, regions]);
+
+  // A copy for other regions is being replaced: its races aren't these regions'.
+  const replacing = status.state === "loading";
+  useEffect(() => {
+    if (replacing) setAll(undefined);
+  }, [replacing]);
 
   const copy = status.state === "ready" ? status.copy : undefined;
   const ready = enabled && isReady ? copy : undefined;
   const signature = ready
     ? JSON.stringify([
         catalog.generation(),
-        ready.generatedAt,
+        ready.revision,
         rows.map((row) => row.token.slice(-16)),
         follows,
         contacts.map((contact) => [contact.publicKey, contact.displayName]),
@@ -248,6 +263,6 @@ export function useAllRaces(enabled: boolean): AllRacesState {
     status,
     all: enabled ? all : undefined,
     preparing: Boolean(ready) && !all,
-    retry: () => catalog.load(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG),
+    retry: () => catalog.load(DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG, regions),
   };
 }

@@ -30,6 +30,7 @@ import { matchesSearch, searchTerms, searchTextOf } from "../lib/search";
 import { ELECTION_AUTHORITY, type Standing, sourceIdOf, standingOf } from "../lib/sources";
 import { track } from "../lib/usage";
 import { useGrowingCount } from "../lib/useGrowingCount";
+import { CatalogRegions } from "./CatalogRegions";
 import { EndorserAvatar } from "./EndorserAvatar";
 import { electionOptions } from "./electionOptions";
 import { LeanMeter } from "./LeanMeter";
@@ -331,6 +332,7 @@ export function CatalogBrowser() {
             {catalog.entries.length} entries · generated {formatLocalDate(catalog.generated_at)}
           </p>
         )}
+        <CatalogRegions catalogUrl={catalogUrl} />
       </details>
     </div>
   );

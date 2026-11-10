@@ -22,6 +22,7 @@ import { usePageSearch } from "../lib/pageSearch";
 import { type ChoiceTally, headlineChoices, namedChoices, tallyRace } from "../lib/raceTally";
 import { foldText, matchesSearch, startsAWord } from "../lib/search";
 import { AllSlatesLoading, CatalogNote, plural } from "./AllSlates";
+import { CatalogRegions } from "./CatalogRegions";
 import { FollowButton } from "./FollowButton";
 import { FollowedRaceCard } from "./FollowedRaceCard";
 import { PageSearch } from "./PageSearch";
@@ -294,8 +295,9 @@ export function AllRacesPanel() {
       <h2>All races</h2>
       <p className="hint">
         Every race and measure in the public catalog, on your ballot or not, with every slate for
-        and against it. The catalog covers California so far.
+        and against it.
       </p>
+      <CatalogRegions />
 
       {followed.length > 0 && (
         <>

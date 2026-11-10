@@ -13,7 +13,7 @@ import type { Catalog, CatalogEntry } from "./query";
 
 /** From the page. */
 export type ToCatalogWorker =
-  | { type: "load"; catalogUrl: string }
+  | { type: "load"; catalogUrl: string; changed?: boolean }
   | { type: "lineUp"; id: number; ask: LineUpAsk }
   | { type: "answer"; id: number; value?: unknown; error?: string };
 
@@ -53,7 +53,7 @@ service.subscribe(() => post({ type: "status", status: service.status() }));
 
 self.onmessage = (event: MessageEvent<ToCatalogWorker>) => {
   const message = event.data;
-  if (message.type === "load") service.load(message.catalogUrl);
+  if (message.type === "load") service.load(message.catalogUrl, message.changed);
   else if (message.type === "answer") {
     const waiting = asked.get(message.id);
     asked.delete(message.id);

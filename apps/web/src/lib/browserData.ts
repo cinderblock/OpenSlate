@@ -106,6 +106,12 @@ export const LOCAL_KEYS: Readonly<Record<string, KeyInfo>> = {
     description: "The city, county and districts My ballot shows races for.",
     group: "area",
   },
+  "openslate.catalogScope.v1": {
+    label: "States the catalog is loaded for",
+    description:
+      "The states your area is in, and any others you chose to look at: the public catalog comes one state at a time.",
+    group: "area",
+  },
   "openslate.address.v1": {
     label: "Address",
     description: "The address you last looked your districts up with.",

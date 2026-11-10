@@ -1,6 +1,8 @@
 import { QueryClient } from "@tanstack/react-query";
 import type { PersistedClient, Persister } from "@tanstack/react-query-persist-client";
 import { del, get, set } from "idb-keyval";
+import { scopeRegions } from "./catalogScope";
+import { type FetchJson, loadCatalog } from "./catalogShards";
 import { throttleWrites } from "./throttleWrites";
 
 const CACHE_KEY = "openslate.query-cache";
@@ -122,6 +124,21 @@ export interface Catalog {
    * the transfer is compressed.
    */
   bundle?: { path: string; bytes?: number };
+  /**
+   * A catalog put together from shards (catalogShards.ts): each shard's
+   * bundle, in place of `bundle`.
+   */
+  bundles?: Array<{ path: string; bytes?: number }>;
+  /**
+   * What the catalog holds, as a string that changes when any of it does. A
+   * catalog put together from shards has one; the rest go by `generated_at`
+   * (`catalogRevision`).
+   */
+  revision?: string;
+  /** The regions it was put together for, when it came from shards; none: all of them. */
+  regions?: string[];
+  /** Set on a catalog that came from shards: how much there is beyond what was loaded. */
+  sharded?: { shards: number; regions: string[] };
 }
 
 /** One entry of a catalog bundle: the entry plus its signed slate. */
@@ -165,15 +182,23 @@ export function isArticlesEntry(entry: CatalogEntry): boolean {
   return entry.positions === 0 && (entry.articles ?? 0) > 0;
 }
 
-/** Fetch a catalog (index.json) listing publicly-attributed slates available for import. */
+const fetchJson: FetchJson = async (url) => {
+  const response = await fetch(url);
+  if (!response.ok) return { ok: false, status: response.status };
+  return { ok: true, data: await response.json() };
+};
+
+/**
+ * Fetch a catalog listing publicly-attributed slates available for import:
+ * its `index.json`, or, for a catalog cut into shards, the part for this
+ * browser's regions (catalogScope.ts, catalogShards.ts). The key doesn't name
+ * the regions: when they change, `keepCatalogScope` marks this stale and
+ * every page reading it gets the new part.
+ */
 export function catalogQueryOptions(catalogUrl: string) {
   return {
     queryKey: ["catalog", catalogUrl] as const,
-    queryFn: async (): Promise<Catalog> => {
-      const response = await fetch(catalogUrl);
-      if (!response.ok) throw new Error(`fetch failed: ${response.status}`);
-      return (await response.json()) as Catalog;
-    },
+    queryFn: (): Promise<Catalog> => loadCatalog(catalogUrl, scopeRegions(), fetchJson),
     staleTime: 1000 * 60 * 5,
   };
 }

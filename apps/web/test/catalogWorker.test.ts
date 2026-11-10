@@ -178,7 +178,7 @@ describe("the catalog worker", () => {
       const ready = statuses.at(-1);
       expect(ready).toEqual({
         state: "ready",
-        copy: { catalogUrl, generatedAt: "v1", slates: 2, rejected: 1 },
+        copy: { catalogUrl, generatedAt: "v1", revision: "v1", slates: 2, rejected: 1 },
       });
       expect(statuses.some((s) => s.state === "loading" && s.label === "Checking signatures")).toBe(
         true,

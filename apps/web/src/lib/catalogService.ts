@@ -20,6 +20,8 @@ import { yieldToPage } from "./yieldToPage";
 export interface CatalogSummary {
   catalogUrl: string;
   generatedAt: string;
+  /** What the catalog held (`catalogRevision`): another revision is another set of slates. */
+  revision: string;
   /** Slates that verified. */
   slates: number;
   /** Entries that couldn't be used. */
@@ -44,7 +46,8 @@ export interface LineUpAsk {
 }
 
 export interface CatalogService {
-  load: (catalogUrl: string) => void;
+  /** `changed`: the voter's regions changed, so what's kept may be for somewhere else. */
+  load: (catalogUrl: string, changed?: boolean) => void;
   status: () => CatalogStatus;
   subscribe: (listener: () => void) => () => void;
   /** Every race, from the copy that's ready and the voter's own slates. */
@@ -53,8 +56,17 @@ export interface CatalogService {
 
 export function summarize(status: CopyStatus): CatalogStatus {
   if (status.state !== "ready") return status;
-  const { catalogUrl, generatedAt, slates, rejected } = status.copy;
-  return { state: "ready", copy: { catalogUrl, generatedAt, slates: slates.length, rejected } };
+  const { catalogUrl, generatedAt, revision, slates, rejected } = status.copy;
+  return {
+    state: "ready",
+    copy: {
+      catalogUrl,
+      generatedAt,
+      revision: revision ?? generatedAt,
+      slates: slates.length,
+      rejected,
+    },
+  };
 }
 
 export function createCatalogService(deps: CopyDeps): CatalogService {
@@ -74,7 +86,7 @@ export function createCatalogService(deps: CopyDeps): CatalogService {
   const decoded = new WeakMap<CatalogCopy, DecodedSlate[]>();
 
   return {
-    load: (catalogUrl) => void loader.load(catalogUrl),
+    load: (catalogUrl, changed) => void loader.load(catalogUrl, changed),
     status,
     subscribe: loader.subscribe,
     async lineUp({ rows, follows, contacts }) {

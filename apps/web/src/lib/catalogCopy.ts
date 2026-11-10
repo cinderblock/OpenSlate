@@ -1,4 +1,5 @@
 import type { SlatePayload } from "@openslate/core";
+import { catalogBundles, catalogRevision } from "./catalogShards";
 import type { DecodedSlate } from "./collate";
 import { forEachConcurrently } from "./fetchProgress";
 import type { Catalog, CatalogEntry } from "./query";
@@ -10,8 +11,10 @@ import type { Follows } from "./sources";
  * fetched only when they ask to look beyond those, and never stored as imports:
  * it adds nothing to My ballot.
  *
- * It comes down as the catalog's bundle, one file, so the host can't tell
- * what's being looked up (fetching only the slates for Oakland would say). The
+ * It comes down as the catalog's bundle, one file (one per election for the
+ * voter's state, where the catalog is cut into shards), so the host can't
+ * tell what's being looked up (fetching only the slates for Oakland would
+ * say). The
  * signatures are the slow part, about 9 ms a slate on a desktop and several
  * times that on a phone, so they're checked a little at a time and the verified
  * result is kept: the next visit needs neither the download nor the checks,
@@ -29,8 +32,13 @@ export interface CopiedSlate {
 
 export interface CatalogCopy {
   catalogUrl: string;
-  /** The catalog's `generated_at`: the same catalog needs no second download. */
+  /** The catalog's `generated_at`, for showing how fresh it is. */
   generatedAt: string;
+  /**
+   * What the catalog held (`catalogRevision`): the same again needs no second
+   * download. A copy kept before catalogs had one goes by `generatedAt`.
+   */
+  revision?: string;
   slates: CopiedSlate[];
   /** Entries that couldn't be used: missing, or failing their signature. */
   rejected: number;
@@ -76,9 +84,12 @@ export interface CopyDeps {
 export interface CatalogLoader {
   /**
    * Show what's kept, then bring it up to date. Does nothing while running, or
-   * within a few minutes of the last check.
+   * within a few minutes of the last check. `changed`: what's asked of the
+   * catalog changed (the voter's regions), so check now, whatever was checked
+   * a minute ago, and show the loading rather than a copy made for somewhere
+   * else.
    */
-  load: (catalogUrl: string) => Promise<void>;
+  load: (catalogUrl: string, changed?: boolean) => Promise<void>;
   status: () => CopyStatus;
   subscribe: (listener: () => void) => () => void;
 }
@@ -107,6 +118,8 @@ function attempt<T>(fn: () => Promise<T> | undefined): Promise<T | undefined> {
 export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
   let status: CopyStatus = { state: "idle" };
   let running: Promise<void> | undefined;
+  /** A `changed` load asked for while another was running: run again when it's done. */
+  let again: string | undefined;
   let checkedAt: number | undefined;
   const listeners = new Set<() => void>();
 
@@ -121,25 +134,26 @@ export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
     catalogUrl: string,
     report: (bar: { label: string; value: number; maxValue?: number }) => void,
   ): Promise<Map<string, string>> {
-    if (catalog.bundle) {
+    let tokens = new Map<string, string>();
+    const bundles = catalogBundles(catalog);
+    if (bundles.length > 0) {
       const label = "Downloading the public catalog";
-      report({
-        label,
-        value: 0,
-        ...(catalog.bundle.bytes ? { maxValue: catalog.bundle.bytes } : {}),
-      });
+      const bytes = bundles.reduce((sum, b) => sum + (b.bytes ?? 0), 0);
+      report({ label, value: 0, ...(bytes ? { maxValue: bytes } : {}) });
       try {
-        return await deps.fetchBundle(catalog, catalogUrl, (value, maxValue) =>
+        tokens = await deps.fetchBundle(catalog, catalogUrl, (value, maxValue) =>
           report({ label, value, ...(maxValue ? { maxValue } : {}) }),
         );
       } catch {
         // Fetch them one by one instead.
       }
     }
-    const tokens = new Map<string, string>();
-    const maxValue = catalog.entries.length;
+    // Whatever no bundle brought: all of it without one, a shard that has none.
+    const missing = catalog.entries.filter((entry) => !tokens.has(entry.path));
+    if (missing.length === 0) return tokens;
+    const maxValue = missing.length;
     let done = 0;
-    await forEachConcurrently(catalog.entries, CONCURRENCY, async (entry) => {
+    await forEachConcurrently(missing, CONCURRENCY, async (entry) => {
       try {
         tokens.set(entry.path, await deps.fetchSlate(entry, catalogUrl));
       } catch {
@@ -207,14 +221,18 @@ export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
     return {
       catalogUrl,
       generatedAt: catalog.generated_at,
+      revision: catalogRevision(catalog),
       slates,
       rejected: maxValue - slates.length,
     };
   }
 
-  async function run(catalogUrl: string): Promise<void> {
+  async function run(catalogUrl: string, changed: boolean): Promise<void> {
     const showing = status.state === "ready" ? status.copy : undefined;
-    let copy = showing?.catalogUrl === catalogUrl ? showing : undefined;
+    // After a change, what's showing is for other regions: it stays useful
+    // for its checked slates (`known`), not for the screen.
+    let known = showing?.catalogUrl === catalogUrl ? showing : undefined;
+    let copy = changed ? undefined : known;
     let reported: { label: string; at: number } | undefined;
     const report = (bar: { label: string; value: number; maxValue?: number }) => {
       // Whatever's on screen stays there while a newer copy comes in.
@@ -228,12 +246,17 @@ export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
       set({ state: "loading", ...bar });
     };
     report({ label: "Opening the public catalog", value: 0 });
-    copy ??= await attempt(() => deps.readCopy(catalogUrl)).catch(() => undefined);
+    known ??= await attempt(() => deps.readCopy(catalogUrl)).catch(() => undefined);
+    if (!changed) copy = known;
     if (copy) set({ state: "ready", copy });
     try {
       const catalog = await deps.fetchCatalog(catalogUrl);
-      if (copy?.generatedAt !== catalog.generated_at) {
-        const next = await download(catalog, catalogUrl, copy, report);
+      const revision = catalogRevision(catalog);
+      if (changed && known && (known.revision ?? known.generatedAt) === revision) {
+        // The same after all: what was kept is what's asked for.
+        set({ state: "ready", copy: known });
+      } else if ((copy?.revision ?? copy?.generatedAt) !== revision) {
+        const next = await download(catalog, catalogUrl, known, report);
         // Keeping it only saves time next visit: not worth stopping for.
         const kept = await attempt(() => deps.writeCopy(next)).then(
           () => true,
@@ -251,15 +274,25 @@ export function createCatalogLoader(deps: CopyDeps): CatalogLoader {
   }
 
   return {
-    load(catalogUrl) {
-      if (running) return running;
+    load(catalogUrl, changed = false) {
+      if (running) {
+        if (changed) again = catalogUrl;
+        return running;
+      }
       const fresh =
+        !changed &&
         status.state === "ready" &&
         status.copy.catalogUrl === catalogUrl &&
         checkedAt !== undefined &&
         deps.now() - checkedAt < RECHECK_MS;
       if (fresh) return Promise.resolve();
-      running = run(catalogUrl).finally(() => {
+      const start = (url: string, isChange: boolean): Promise<void> =>
+        run(url, isChange).then(() => {
+          const next = again;
+          again = undefined;
+          return next === undefined ? undefined : start(next, true);
+        });
+      running = start(catalogUrl, changed).finally(() => {
         running = undefined;
       });
       return running;

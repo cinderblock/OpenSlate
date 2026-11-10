@@ -410,3 +410,107 @@ describe("gatherSlates", () => {
     expect(choice?.positions.map((p) => p.standing).sort()).toEqual(["follow", "off"]);
   });
 });
+
+describe("when the voter's regions change", () => {
+  // What the catalog hands back depends on the regions asked for (catalogShards.ts):
+  // here, one slate for California and another for Texas.
+  const ca = { ...catalog("d1", [entries[0] as CatalogEntry]), revision: "ca=1" };
+  const tx = { ...catalog("d1", [entries[1] as CatalogEntry]), revision: "tx=1" };
+
+  function moving() {
+    let current: Catalog = ca;
+    const h = harness(ca, tokens, {
+      async fetchCatalog() {
+        return current;
+      },
+    });
+    return { ...h, to: (next: Catalog) => (current = next) };
+  }
+
+  test("a change is fetched now, not at the next check", async () => {
+    const h = moving();
+    await h.loader.load(URL_A);
+    h.to(tx);
+    // A revisit within a few minutes asks for nothing.
+    await h.loader.load(URL_A);
+    expect(h.calls.bundle).toBe(1);
+    await h.loader.load(URL_A, true);
+    const status = h.loader.status();
+    if (status.state !== "ready") throw new Error(status.state);
+    expect(status.copy.slates.map((s) => s.token)).toEqual([B]);
+    expect(status.copy.revision).toBe("tx=1");
+    expect(h.calls.bundle).toBe(2);
+  });
+
+  test("the copy for the old regions isn't shown while the new one loads", async () => {
+    const h = moving();
+    await h.loader.load(URL_A);
+    h.to(tx);
+    const seen: string[] = [];
+    h.loader.subscribe(() => seen.push(h.loader.status().state));
+    await h.loader.load(URL_A, true);
+    expect(seen[0]).toBe("loading");
+    expect(seen.at(-1)).toBe("ready");
+    // Never "ready" with California's slate on the way.
+    expect(seen.slice(0, -1)).not.toContain("ready");
+  });
+
+  test("slates checked for the old regions aren't checked again", async () => {
+    const both = { ...catalog("d1", entries), revision: "ca=1\ntx=1" };
+    const h = moving();
+    await h.loader.load(URL_A);
+    expect(h.calls.verify).toBe(1);
+    h.to(both);
+    await h.loader.load(URL_A, true);
+    // Only Texas's is new.
+    expect(h.calls.verify).toBe(2);
+  });
+
+  test("the same regions after all: the kept copy, no download", async () => {
+    const h = moving();
+    await h.loader.load(URL_A);
+    await h.loader.load(URL_A, true);
+    expect(h.calls.bundle).toBe(1);
+    expect(h.loader.status().state).toBe("ready");
+  });
+
+  test("a change that arrives mid-load is loaded when that one finishes", async () => {
+    const h = moving();
+    const first = h.loader.load(URL_A);
+    h.to(tx);
+    void h.loader.load(URL_A, true);
+    await first;
+    const status = h.loader.status();
+    if (status.state !== "ready") throw new Error(status.state);
+    expect(status.copy.revision).toBe("tx=1");
+    // And the loader is free again.
+    h.to(ca);
+    await h.loader.load(URL_A, true);
+    expect((h.loader.status() as { copy: CatalogCopy }).copy.revision).toBe("ca=1");
+  });
+
+  test("regions with nothing in the catalog: an empty copy, not an error", async () => {
+    const h = moving();
+    await h.loader.load(URL_A);
+    h.to({ ...catalog("d1", [], false), revision: "", bundles: [] });
+    await h.loader.load(URL_A, true);
+    const status = h.loader.status();
+    if (status.state !== "ready") throw new Error(status.state);
+    expect(status.copy.slates).toEqual([]);
+    expect(status.copy.rejected).toBe(0);
+  });
+
+  test("a bundle that misses a slate: that one is fetched by itself", async () => {
+    const partial = new Map([["a.slate", A]]);
+    const h = harness(catalog("v1", entries), tokens, {
+      async fetchBundle() {
+        return new Map(partial);
+      },
+    });
+    await h.loader.load(URL_A);
+    const status = h.loader.status();
+    if (status.state !== "ready") throw new Error(status.state);
+    expect(status.copy.slates.map((s) => s.token)).toEqual([A, B]);
+    expect(h.calls.slate).toBe(1);
+  });
+});

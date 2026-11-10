@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import type { VerifiedSlate, verifyCatalogSlate } from "./catalogImport";
+import { catalogBundles } from "./catalogShards";
 import { forEachConcurrently } from "./fetchProgress";
 import type { Catalog, CatalogEntry } from "./query";
 
@@ -119,11 +120,12 @@ export function createImportQueue(
     // Everything at once from the catalog's bundle when it has one, so even
     // the order of requests says nothing about which sources were picked.
     let bundled: Map<string, string> | undefined;
-    if (job.bundle && job.catalog.bundle) {
+    const bundles = catalogBundles(job.catalog);
+    if (job.bundle && bundles.length > 0) {
       const label = "Downloading every organization's endorsements";
       const bar = (value: number, maxValue: number | undefined) =>
         report({ label, value, ...(maxValue ? { maxValue } : {}) });
-      bar(0, job.catalog.bundle.bytes);
+      bar(0, bundles.reduce((sum, b) => sum + (b.bytes ?? 0), 0) || undefined);
       try {
         bundled = await deps.fetchBundle(job.catalog, job.catalogUrl, bar);
       } catch {

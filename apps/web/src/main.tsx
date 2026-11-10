@@ -2,6 +2,9 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { catalogScopeStore } from "./lib/catalogScope";
+import { keepCatalogScope } from "./lib/catalogScopeKeeper";
+import { areaStore } from "./lib/myVote";
 import { persister, queryClient } from "./lib/query";
 import { installUsageSink } from "./lib/telemetry";
 import { syncTheme } from "./lib/theme";
@@ -12,6 +15,8 @@ import "./styles.css";
 syncTheme();
 installUsageSink();
 installWebMcp();
+// The catalog comes for the voter's own regions, from the first request on.
+keepCatalogScope({ area: areaStore, scope: catalogScopeStore, queryClient });
 
 // crypto.randomUUID is only exposed in secure contexts (HTTPS or localhost). On a
 // plain-HTTP LAN hostname the browser hides it, which breaks TanStack DB's mutation

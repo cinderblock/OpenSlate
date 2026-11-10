@@ -168,6 +168,26 @@ a {
   color: var(--accent);
 }
 
+/* Which states the public catalog is loaded for (CatalogRegions.tsx). */
+.catalog-regions p {
+  margin: 0 0 0.5rem;
+}
+.catalog-regions-also {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+.catalog-regions-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
