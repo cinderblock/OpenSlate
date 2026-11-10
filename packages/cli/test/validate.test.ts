@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createIdentity, serializeIdentity } from "@openslate/core";
@@ -43,6 +43,20 @@ async function run(...args: string[]) {
   ]);
   return { stdout, stderr, code };
 }
+
+describe("writing output", () => {
+  test("a bare file name lands in the current directory, on Windows too", async () => {
+    const proc = Bun.spawn(["bun", cli, "keygen", "--out", "bare-name.json"], {
+      cwd: dir,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const [stderr, code] = await Promise.all([new Response(proc.stderr).text(), proc.exited]);
+    expect(stderr).not.toContain("EEXIST");
+    expect(code).toBe(0);
+    expect(existsSync(join(dir, "bare-name.json"))).toBe(true);
+  });
+});
 
 describe("openslate validate", () => {
   test("accepts the positions.json sign takes", async () => {

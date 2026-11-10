@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
-import { dirname, join, relative, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import {
   type Adoption,
   ballotListing,
@@ -157,9 +157,13 @@ async function readStdin(): Promise<string> {
   return text;
 }
 
-/** Write a file, making its directory if need be. */
+/**
+ * Write a file, making its directory if need be. The directory is resolved
+ * first: for a bare file name it's ".", and on Windows Bun's recursive mkdir
+ * of "." fails with EEXIST (`sign --batch .` could never write ./index.json).
+ */
 async function writeText(path: string, text: string): Promise<void> {
-  mkdirSync(dirname(path), { recursive: true });
+  mkdirSync(resolve(dirname(path)), { recursive: true });
   await writeFile(path, text);
 }
 
