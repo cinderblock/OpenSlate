@@ -2,10 +2,11 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { catalogScopeStore } from "./lib/catalogScope";
+import { addScopeRegion, catalogScopeStore } from "./lib/catalogScope";
 import { keepCatalogScope } from "./lib/catalogScopeKeeper";
 import { areaStore } from "./lib/myVote";
 import { persister, queryClient } from "./lib/query";
+import { linkedRegion } from "./lib/regions";
 import { installUsageSink } from "./lib/telemetry";
 import { syncTheme } from "./lib/theme";
 import { installWebMcp } from "./lib/webmcp";
@@ -15,6 +16,10 @@ import "./styles.css";
 syncTheme();
 installUsageSink();
 installWebMcp();
+// A link can name a state to look at (`/?state=va`): its part of the catalog
+// comes too, beside the voter's own.
+const linked = linkedRegion(location.search);
+if (linked) catalogScopeStore.set((scope) => addScopeRegion(scope, linked));
 // The catalog comes for the voter's own regions, from the first request on.
 keepCatalogScope({ area: areaStore, scope: catalogScopeStore, queryClient });
 

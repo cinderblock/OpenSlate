@@ -342,7 +342,9 @@ hand offers every state and its districts, numbered, lettered (Minnesota's
 work on the device, from a boundary file per state, and so only for the
 states the app ships a file for: California today (`apps/web/public/geo/`).
 `us.topo.json` there is every state's outline, so a location says which state
-it's in before any state's file is loaded.
+it's in before any state's file is loaded. One app serves every state: a link
+can name one to look at (`openslate.us/?state=va`), and its part of the
+catalog comes beside the voter's own.
 
 The boundary files (`us-<code>.topo.json`; California's is ~1.4 MB gzipped,
 fetched only when someone opens the finder) are built by

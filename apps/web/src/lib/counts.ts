@@ -129,6 +129,11 @@ export function isStateRaceId(raceId: string | number | undefined): raceId is st
   return stateContestOfRace(raceId) !== undefined;
 }
 
+/** The regions whose own state count OpenSlate reads, by path. */
+export function stateCountRegions(): string[] {
+  return STATE_COUNTS.map((source) => source.region);
+}
+
 /** The counties' counts of the region a race is in. */
 export function countyCountsFor(jurisdiction: string | undefined): CountyCounts | undefined {
   const region = regionFor(jurisdiction)?.path;

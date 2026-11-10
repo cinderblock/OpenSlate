@@ -3,12 +3,16 @@ import { useLiveQuery } from "@tanstack/react-db";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { startTransition, useEffect, useMemo, useState } from "react";
 import { slatesCollection } from "../lib/collections";
+import { stateCountRegions } from "../lib/counts";
 import { formatElectionDate } from "../lib/dates";
 import { useDecodedSlates } from "../lib/decodedSlates";
 import { shortKey } from "../lib/identities";
+import { areaStates, stateLabel } from "../lib/jurisdictions";
+import { useArea } from "../lib/myVote";
 import { usePageSearch } from "../lib/pageSearch";
 import { matchesSearch, searchTextOf } from "../lib/search";
 import { firsthandSubjectKeys, supersessionFor } from "../lib/supersession";
+import { useWatch } from "../lib/watch";
 import { Leaderboard } from "./Leaderboard";
 import { LivePanel } from "./LivePanel";
 import { matchCount, PageSearch } from "./PageSearch";
@@ -28,6 +32,18 @@ export function ResultsView() {
 
   const navigate = useNavigate();
   const [pasted, setPasted] = useState("");
+
+  // The live count is the states' own, and OpenSlate reads California's alone
+  // so far: a voter somewhere else is told so, not handed California's page.
+  // Anyone already watching places there keeps it.
+  const [area] = useArea();
+  const [watching] = useWatch();
+  const [liveAnyway, setLiveAnyway] = useState(false);
+  const counted = stateCountRegions();
+  const mine = [...areaStates(area)];
+  const uncounted = mine.filter((state) => !counted.includes(state));
+  const showLive =
+    liveAnyway || watching.length > 0 || mine.length === 0 || uncounted.length < mine.length;
 
   const rows = useMemo(() => {
     // SPEC §3.9: surface when a secondhand report has firsthand coverage
@@ -104,7 +120,22 @@ export function ResultsView() {
           </Link>
         </div>
       </section>
-      <LivePanel />
+      {showLive ? (
+        <LivePanel />
+      ) : (
+        <section className="panel">
+          <h2>Live count</h2>
+          <p className="hint">
+            OpenSlate reads a live count from {counted.map(stateLabel).join(", ")} so far, not yet
+            from {uncounted.map(stateLabel).join(" or ")}. Your races' counts, where civicAPI has
+            them, are on <Link to="/results/my-ballot">how my ballot is doing</Link> and on each
+            race's own page.{" "}
+            <button type="button" className="link" onClick={() => setLiveAnyway(true)}>
+              Watch {counted.map(stateLabel).join(", ")}'s count anyway
+            </button>
+          </p>
+        </section>
+      )}
       <section className="panel">
         <h2>How your slates did</h2>
         <p className="hint">

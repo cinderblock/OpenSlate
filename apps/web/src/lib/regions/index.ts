@@ -57,6 +57,19 @@ export function regionByCode(country: string, code: string): RegionProfile | und
 }
 
 /**
+ * The region a link asks to look at: `?state=va` (a US postal code) or
+ * `?state=us/va`. One app serves every state, so a state's own address
+ * (`va.example.org`) can be a redirect to the app with this on it. Undefined
+ * when the link names none the app knows.
+ */
+export function linkedRegion(search: string): string | undefined {
+  const value = new URLSearchParams(search).get("state")?.trim().toLowerCase();
+  if (!value) return undefined;
+  const path = value.includes("/") ? value : `us/${value}`;
+  return REGIONS.has(path) ? path : undefined;
+}
+
+/**
  * A family by key, in a region when one is given: the region's own, else the
  * local ones every state shares. Without a region, the first region that has
  * the key says what it is (California's `ad` is an Assembly district).

@@ -20,6 +20,7 @@ import {
   districtFamilyAt,
   layerFamily,
   layerWords,
+  linkedRegion,
   regionByCode,
   regionFor,
   regionPathOf,
@@ -114,6 +115,21 @@ describe("the region registry", () => {
     expect(countyLabel(regionProfile("us/ca"), "San Francisco")).toBe("San Francisco");
     expect(countyLabel(regionProfile("us/la"), "Orleans")).toBe("Orleans Parish");
     expect(countyLabel(undefined, "Cook")).toBe("Cook County");
+  });
+});
+
+describe("a link that names a state", () => {
+  test("by postal code or by path", () => {
+    expect(linkedRegion("?state=va")).toBe("us/va");
+    expect(linkedRegion("?state=VA")).toBe("us/va");
+    expect(linkedRegion("?utm=x&state=us/tx")).toBe("us/tx");
+  });
+
+  test("nothing for a state the app doesn't know, or no state", () => {
+    expect(linkedRegion("?state=zz")).toBeUndefined();
+    expect(linkedRegion("?state=de/by")).toBeUndefined();
+    expect(linkedRegion("?state=")).toBeUndefined();
+    expect(linkedRegion("")).toBeUndefined();
   });
 });
 

@@ -101,7 +101,7 @@ order), and the Civic/VIP feed's `ballotPlacement` (already found wrong for LA: 
 ## A county's "County" results group pulls every local contest onto a place (Sonoma, Ventura)
 
 Seen 12:29 PM PST 2026-11-04 (20:29Z), headless on openslate.us (`plans/county-results.md`).
-`contestsForPlace` (`apps/web/src/lib/countyCa.ts`) takes any contest whose category is
+`contestsForPlace` (`apps/web/src/lib/regions/us-ca/countyResults.ts`) takes any contest whose category is
 `County` as one the whole county votes on (added in `f918124` for LA's groups). But Sonoma's
 Clarity feed files all 37 non-state contests under `County` (Calistoga, Two Rock, Windsor school
 boards, Santa Rosa council districts, supervisors), so a Santa Rosa place got 41 local races.
@@ -113,3 +113,44 @@ Sonoma's `summary.json`.
 Why it matters: the matcher is meant to be over-inclusive, but here the voter has to remove dozens
 of races that aren't theirs. LA's `County Measures` / `Sheriff` groups are truly countywide;
 a bare `County` category isn't.
+
+
+## Towns and townships aren't found: a lookup in twelve states finds the county and no town
+
+Seen 2026-11-10 (`plans/national-scale.md`). The boundary files and the address relay look a
+point up in the Census's incorporated places (TIGERweb layer 28). In New England, New Jersey,
+New York, Pennsylvania, Michigan, Minnesota and Wisconsin most people live in a town or township
+the Census calls a county subdivision (layer 22, `FUNCSTAT` `A` for the ones that are
+governments). The geocoder's answer for 1625 Massachusetts Ave, Lexington, MA has no
+`Incorporated Places` at all, and a `County Subdivisions` entry `Lexington town`.
+
+Why it matters: a race filed under `us/ma/lexington` won't be on a Lexington voter's ballot after
+a lookup. It needs a path convention before code: township names repeat inside a state
+(Pennsylvania has many Washington Townships, New York has towns and cities of one name, Ithaca),
+so a bare `us/pa/washington-township` isn't one place. Nesting under the county
+(`us/pa/greene-county/washington-township`) is unambiguous and already a valid path (SPEC §3.3).
+
+
+## The desktop app's offline catalog copy reads the catalog whole
+
+`apps/web/scripts/snapshot-catalog.ts` downloads `index.json` and `bundle.json` and every entry.
+The catalog also publishes `shards.json` now (one shard per election and state), and the web app
+reads only that. The whole files are still published, so the snapshot works today.
+
+Why it matters: once the catalog covers more than California the whole files have to stop
+growing or go, and the snapshot then needs to take the shards for chosen states. It also copies
+no boundary files beyond what's in `public/geo`.
+
+
+## The Live results page is built on California's contest ids
+
+`apps/web/src/components/LivePanel.tsx` and `apps/web/src/lib/watch.ts` keep what a voter
+watches as the California Secretary of State's contest ids (`governor`, `us-rep/district/16`)
+and its counties' feeds. A voter whose area is in another state is told there's no live count
+for it yet (`ResultsView.tsx`), which is true today.
+
+Why it matters: the shared results code already asks each state's sources through
+`apps/web/src/lib/counts.ts`; the Live page doesn't. When a second state's own count is read (a
+Clarity feed, as many states and counties publish), the watch list needs contest ids that say
+whose count they're from, and that is also what would show whether `StateCounts` is the right
+shape.

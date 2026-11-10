@@ -118,9 +118,13 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
      with a state chooser and that state's districts (`AreaPicker.tsx`), one
      state per area (`inOneState`, `mergeFoundArea`), the catalog's states on
      All races and the catalog browser (`CatalogRegions.tsx`).
-   - Not done: the Live page for another state (it is built on California's
-     contest ids), and a county subdivision layer for the states where towns
-     aren't incorporated places (Findings).
+   - Also done: a link can name a state (`openslate.us/?state=va`,
+     `linkedRegion`), which is all a state's own address would need to be (a
+     redirect); the Results page tells a voter outside California there's no
+     live count for their state yet, and no longer hands them California's.
+   - Not done, logged in `ISSUES.md`: the Live page's watch list is built on
+     California's contest ids; towns and townships (twelve states) need a
+     path convention first; the desktop snapshot reads the catalog whole.
    - Checked in headless Chrome, 2026-11-10: with every state's file (a
      Vermont address, Vermont's map and a click on it, "Use my location" in
      Anchorage and on Attu east of the 180th meridian, Minnesota by hand) and
@@ -261,8 +265,19 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
    smaller than I guessed, and the files change rarely. Say which, and it's
    one commit. Until then only California has a map; every state has the
    address lookup.
-2. State subdomains as redirects (`ca.openslate.us` → the app with California
-   preset): want them? It's a Cloudflare change, so it waits for your yes.
+2. State subdomains as redirects (`va.openslate.us` → `openslate.us/?state=va`,
+   which the app understands now): want them? It's a Cloudflare change, so it
+   waits for your yes.
+4. Towns and townships (`ISSUES.md`): file one that shares its name with
+   another in the state under its county
+   (`us/pa/greene-county/washington-township`)? My recommendation: yes, and
+   a town whose name is its own in the state keeps the bare path
+   (`us/ma/lexington`). It becomes a SPEC line and then code.
+5. Federal coverage and a second state are data, and the catalog signs what
+   it's given. How do you want new states' listings and endorsements
+   reviewed before they publish: a pull request per source for you to merge,
+   or scripts that publish on their own as California's do? I'd open pull
+   requests.
 3. `openslate.org` is for sale on Afternic. Worth pricing if the project goes
    past the US.
 
