@@ -52,19 +52,44 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
   app keeps each token once.
 - **No central server** (standing project rule): shards and boundary files are
   static files.
+- **District keys are the same in every state**: `cd` Congress, `sd` the upper
+  chamber, `ad` where the lower one is an Assembly (CA, NV, NJ, NY, WI) and
+  `hd` anywhere else, `ld` for Nebraska's one chamber. One rule a slate's
+  author can remember beats per-state keys. What voters call them (Washington's
+  "legislative district") is the label, not the key.
+- **Shards are by election and region**, listed in `shards.json` beside the
+  catalog's `index.json`, which stays as it is for older apps and small
+  catalogs. A shard's files carry no date, so an unchanged shard keeps its
+  revision and nobody re-downloads it.
+- **California's Live results page stays California's** for now (`LivePanel`,
+  `watch.ts`): it is built on the Secretary of State's contest ids. Other
+  states get results through `counts.ts` and civicAPI until a second state's
+  own count is read.
 
 ## Plan / steps
 
-1. **Region registry and California behind it.** *(current)*
-   - `regions/` with the profile type, the table of US states, and
-     `regions/us-ca/` holding today's California modules.
-   - Every `"us/ca"` literal, `STATE = "us/ca"`, `isCalifornia`, California
-     wording in components goes through the registry.
-   - No behavior change for California; tests prove it.
-2. **Catalog shards.** `build-site.ts` writes `regions/<path>/index.json` and
-   `bundle.json` beside today's files; the catalog's `index.json` gains
-   `regions`. The app loads only the voter's regions (and `us`), keeps a copy
-   per region, and falls back to the whole bundle for an old catalog.
+1. **Region registry and California behind it.** Done in the library
+   (`2fa7d4f`, `0bd1d5e`); components' California wording is step 4.
+   - `apps/web/src/lib/regions/`: `types.ts` (the profile), `usStates.ts`
+     (every state from one table), `index.ts` (lookups), `us-ca/` (California:
+     `data.ts`, `ballotOrder.ts`, `countyDrawings.ts`, `districtOverlaps.ts`,
+     `sos.ts`, `sosResults.ts`, `sosCandidates.ts`, `countyResults.ts`,
+     `counts.ts`, `links.ts`).
+   - Seams the shared code asks through: `ballotOrder.ts` (`RULES`),
+     `counts.ts` (`StateCounts`, `CountyCounts`), `researchLinks.ts`
+     (`RegionLinks`). Adding a state is adding an entry to each it has.
+   - Generic pieces pulled out: `liveCount.ts`, `nameOrder.ts`, `counties.ts`.
+2. **Catalog shards.** *(current)* App side done (`a6074de`): core's
+   `buildCatalogShards` / `shardsFor`, `catalogShards.ts` (loader with the
+   whole-catalog fallback), `catalogScope.ts` + `catalogScopeKeeper.ts` (which
+   regions this browser asks for), `CatalogRegions.tsx`. Left:
+   - push OpenSlate, pin it in `openslate-public-endorsements`
+     (`.openslate-version`), have `build-site.ts` write the shard files and
+     `shards.json`, publish, check the live app reads shards;
+   - then point the page's catalog preload (`vite.config.ts`
+     `preloadCatalog`) at `shards.json`, or it preloads 800 KB nobody reads;
+   - `scripts/snapshot-catalog.ts` (the desktop app's offline copy) still
+     copies `index.json` and `bundle.json`: fine while those are published.
 3. **Boundaries for every state.** Generalize `build-geo.ts` to any state from
    TIGER (congressional, both chambers, counties, places, school districts),
    plus a small national file of state outlines so a point finds its state
@@ -108,12 +133,37 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
 - The four files `git status` shows modified in the shared tree
   (`Select.tsx`, three tests) have an empty `git diff`: line endings only, not
   anyone's work.
+- Biome's `lineEnding: auto` means CRLF in the working tree on Windows: a
+  file written with LF fails `biome check` as a whole-file format error. Run
+  `biome check --write` on changed files before committing.
+- Big inline shell heredocs break in this harness (an apostrophe is enough).
+  Write scripts and JSON to the scratchpad with the Write tool and run them.
+- `test/catalogWorker.test.ts` fails the build if the catalog worker's import
+  graph reaches `query.ts`, `localStore.ts` or React: anything `catalogCopy.ts`
+  or `catalogBundle.ts` needs at run time must live in a worker-safe module
+  (`catalogShards.ts`). `test/browserData.test.ts` fails on a localStorage key
+  that isn't listed in `browserData.ts`.
+- The All races loader skips a re-check within 5 minutes of the last one, so
+  a change of regions has to say so (`load(url, changed)`), or nothing loads.
+- Measured on the live catalog, 2026-11-10: shard `2026-11-03 us/ca` 383
+  entries, bundle 11.7 MB, index 555 KB; `2026-06-02 us/ca` 30 entries, 296 KB
+  and 36 KB. The live `index.json` is 811 KB.
+- `packages/cli/test/races.test.ts` times out (5 s) when the machine is busy
+  (another thread's rustc build, 2026-11-10); it passes alone on a quiet one.
+- Local end-to-end harness, outside the repo:
+  `%TEMP%\claude\…\scratchpad\e2e` (`mirror.ts` builds a sharded copy of
+  the live catalog with core, `serve.ts` serves a build on :5741 and the
+  mirror on :5742, `shards.e2e.ts` and `regions.e2e.ts` drive headless Chrome
+  through playwright-core). Build with
+  `VITE_PUBLIC_ENDORSEMENTS_CATALOG=http://localhost:5742/index.json bunx vite build --outDir <scratch>/e2e/dist`.
+  The scratchpad doesn't outlast the session: rebuild it from this note.
 
 ## Progress log
 
 - [x] 2026-11-10: survey of California-specific code; this plan.
-- [ ] Step 1: region registry, California behind it.
-- [ ] Step 2: catalog shards (app and catalog repo).
+- [x] Step 1: region registry, California behind it (`2fa7d4f`, `0bd1d5e`).
+- [ ] Step 2: catalog shards. App: `a6074de`, checked in headless Chrome
+  against a sharded mirror and a whole catalog. Catalog repo: not yet.
 - [ ] Step 3: nationwide boundary data.
 - [ ] Step 4: state-aware UI.
 - [ ] Step 5: SPEC.

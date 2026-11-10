@@ -95,9 +95,11 @@ for it. Its two sides:
   does the same for any race anywhere, on your ballot or not: search by seat,
   measure, candidate, place or endorser, or browse by place. A name you search
   for leads the list when one race holds the whole of it. The catalog comes
-  down only when you ask for it, as one file so its host can't tell what you're
-  looking up, and adds nothing to My ballot; once checked it's kept in this
-  browser, so the next visit needs no download until the catalog changes.
+  down only when you ask for it, a state at a time (the states your area
+  names, and any you add), each as whole files, so its host learns which
+  states you look at and nothing finer. It adds nothing to My ballot; once
+  checked it's kept in this browser, so the next visit needs no download
+  until the catalog changes.
   *Follow* a race or a candidate there (a friend running in another city) and
   it stays at the top of *All races*: slates for and against, how that compares
   with the rest of the field, who's new since you last looked, the latest poll
@@ -514,7 +516,11 @@ carries each org's logo and left-right counts, so the app never contacts the
 orgs' own sites, and where each slate's races are (`scope`, `jurisdictions`, and
 `regions`: where the contests filed under a region like `us/ca/bay-area` are voted,
 so setup lists a regional paper with its readers' local sources; all written by
-`openslate sign --batch`), plus a `bundle` of every slate in one file.
+`openslate sign --batch`), plus a `bundle` of every slate in one file. A catalog
+too big to hand every visitor whole also publishes `shards.json`: the same
+entries and bundles cut by election and region (`us/ca`, and `us` for what the
+whole country votes on; core's `buildCatalogShards`), and the app reads only the
+shards for its voter's states. Without `shards.json` it reads `index.json` whole.
 
 [ope]: https://github.com/cinderblock/openslate-public-endorsements
 
