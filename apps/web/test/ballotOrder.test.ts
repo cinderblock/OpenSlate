@@ -1,15 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import {
-  ballotOrderFor,
-  compareByAlphabet,
-  countyOfPath,
-  sortParts,
-  voterCounties,
-} from "../src/lib/ballotOrder";
-import { CA_DISTRICTS_2026 } from "../src/lib/ballotOrderCa";
-import { COUNTY_DRAWINGS_2026 } from "../src/lib/ballotOrderCounties";
+import { ballotOrderFor } from "../src/lib/ballotOrder";
+import { countyOfPath, voterCounties } from "../src/lib/counties";
 import type { Area } from "../src/lib/jurisdictions";
+import { compareByAlphabet, sortParts } from "../src/lib/nameOrder";
 import { reconcileOrder } from "../src/lib/orderOverrides";
+import { COUNTY_DRAWINGS_2026 } from "../src/lib/regions/us-ca/countyDrawings";
+import { CA_DISTRICTS_2026 } from "../src/lib/regions/us-ca/districtOverlaps";
 
 const ALPHABET = "HXKWCPJOZALDNSQBIRYGVEFMTU";
 const ELECTION = "2026-11-03";

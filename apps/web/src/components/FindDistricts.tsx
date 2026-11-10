@@ -19,8 +19,8 @@ import {
 } from "../lib/geo";
 import {
   type Area,
-  DISTRICT_COUNTS,
   districtFamilyLabel,
+  familyHasRaces,
   jurisdictionLabel,
   NO_DISTRICT,
   noRaceReason,
@@ -620,7 +620,7 @@ function FoundSummary({
           // race of its own to be missing.
           if (label) return <li key={family}>{label}</li>;
           const present = options.districts[family] ?? [];
-          const hasRace = present.includes(n) || !(family in DISTRICT_COUNTS);
+          const hasRace = present.includes(n) || !familyHasRaces(family);
           return (
             <li key={family}>
               {jurisdictionLabel(`${family}-${n}`)}

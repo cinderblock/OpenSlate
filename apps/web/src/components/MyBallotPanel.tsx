@@ -74,9 +74,9 @@ import {
   type Area,
   answerPlacement,
   clearNoAnswers,
-  DISTRICT_COUNTS,
   districtFamilyLabel,
   EMPTY_AREA,
+  familyHasRaces,
   isAreaSet,
   jurisdictionLabel,
   NO_DISTRICT,
@@ -461,7 +461,7 @@ export function MyBallotPanel() {
     for (const [family, n] of noRaces) {
       // Only families races are filed under (not school districts, which only
       // narrow a race's `district`).
-      if (n === NO_DISTRICT || !(family in DISTRICT_COUNTS || family in areaOptions.districts))
+      if (n === NO_DISTRICT || !(familyHasRaces(family) || family in areaOptions.districts))
         continue;
       const present = areaOptions.districts[family] ?? [];
       if (present.includes(n)) continue;

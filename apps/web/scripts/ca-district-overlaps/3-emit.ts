@@ -1,9 +1,9 @@
-// Step 3 of 3 for src/lib/ballotOrderCa.ts (California district overlaps for the
+// Step 3 of 3 for src/lib/regions/us-ca/districtOverlaps.ts (California district overlaps for the
 // ballot order). Run from apps/web, in order:
 //   bun scripts/ca-district-overlaps/1-intersect.ts
 //   bun scripts/ca-district-overlaps/2-classify.ts
-//   bun scripts/ca-district-overlaps/3-emit.ts src/lib/ballotOrderCa.ts
-//   bun scripts/ca-district-overlaps/block-equivalency.ts src/lib/ballotOrderCa.ts
+//   bun scripts/ca-district-overlaps/3-emit.ts src/lib/regions/us-ca/districtOverlaps.ts
+//   bun scripts/ca-district-overlaps/block-equivalency.ts src/lib/regions/us-ca/districtOverlaps.ts
 // The last step replaces this one's congressional and BOE tables with ones from
 // the official block files: the population cut-off here dropped districts a race
 // is voted in through empty territory (CD 16 / AD 21). Only the county tables

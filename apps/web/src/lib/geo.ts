@@ -3,11 +3,13 @@ import { feature, neighbors } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import type { AreaOptions } from "./collate";
 import { type Area, districtId, localityPathFor, NO_DISTRICT } from "./jurisdictions";
+import { countyLabel, layerFamily, regionProfile } from "./regions";
 
 /**
  * Finding someone's districts on their own device: boundary data shipped with
- * the app (`public/geo/us-ca.topo.json`, built by scripts/build-geo.ts from
- * Census TIGERweb) and a point-in-polygon lookup over it. Nothing here touches
+ * the app, one file per state (`public/geo/us-ca.topo.json`, built by
+ * scripts/build-geo.ts from Census TIGERweb; a region's profile names its
+ * file) and a point-in-polygon lookup over it. Nothing here touches
  * the network except loading that static file. Pure apart from `loadStateGeo`;
  * unit-tested in test/geo.test.ts.
  */
@@ -34,10 +36,10 @@ export type LookupLayer = (typeof LOOKUP_LAYERS)[number];
  */
 const COMPLETE_LAYERS: readonly LookupLayer[] = ["unsd", "elsd", "scsd"];
 
-/** States with boundary data, and the file each loads. */
-export const GEO_FILES: Record<string, string> = {
-  "us/ca": "geo/us-ca.topo.json",
-};
+/** Whether the app has boundary data for a state (`us/ca`). */
+export function hasStateGeo(state: string): boolean {
+  return regionProfile(state)?.geoFile !== undefined;
+}
 
 type Rings = Position[][];
 
@@ -221,7 +223,7 @@ const geoCache = new Map<string, Promise<StateGeo>>();
 
 /** Fetch and decode a state's boundaries (once per page load). */
 export function loadStateGeo(state: string): Promise<StateGeo> {
-  const file = GEO_FILES[state];
+  const file = regionProfile(state)?.geoFile;
   if (!file) return Promise.reject(new Error(`no boundary data for ${state}`));
   let pending = geoCache.get(state);
   if (!pending) {
@@ -401,27 +403,12 @@ export function lookupsAt(
 }
 
 /**
- * California Courts of Appeal by county (Gov. Code §69100–69106). Retention
- * races for appellate justices are filed under `us/ca/coa-<n>`.
- */
-export const COURT_OF_APPEAL_BY_COUNTY: Record<string, string> = Object.fromEntries(
-  Object.entries({
-    1: "Alameda, Contra Costa, Del Norte, Humboldt, Lake, Marin, Mendocino, Napa, San Francisco, San Mateo, Solano, Sonoma",
-    2: "Los Angeles, San Luis Obispo, Santa Barbara, Ventura",
-    3: "Alpine, Amador, Butte, Calaveras, Colusa, El Dorado, Glenn, Lassen, Modoc, Mono, Nevada, Placer, Plumas, Sacramento, San Joaquin, Shasta, Sierra, Siskiyou, Sutter, Tehama, Trinity, Yolo, Yuba",
-    4: "Imperial, Inyo, Orange, Riverside, San Bernardino, San Diego",
-    5: "Fresno, Kern, Kings, Madera, Mariposa, Merced, Stanislaus, Tulare, Tuolumne",
-    6: "Monterey, San Benito, Santa Clara, Santa Cruz",
-  }).flatMap(([n, counties]) => counties.split(", ").map((county) => [county, n])),
-);
-
-/**
  * Locality paths a city or county may be filed under. A city is `<name>` (or
  * `city-of-<name>`), by its Census name and, for one like "San Buenaventura
  * (Ventura)", its everyday name too. A county is `<name>-county`, or its bare
  * name when no city has that (`cities`, every city's paths, `cityPaths`):
- * `us/ca/orange` is the City of Orange's, never the county's. San Francisco,
- * one city and county, is `sf`.
+ * `us/ca/orange` is the City of Orange's, never the county's. A city and
+ * county in one (San Francisco, `sf`) has the one path.
  */
 export function localityCandidates(
   state: string,
@@ -431,7 +418,7 @@ export function localityCandidates(
 ): string[] {
   if (kind === "county") {
     const base = localityPathFor(state, name);
-    if (base === `${state}/sf`) return [base];
+    if (regionProfile(state)?.consolidated?.includes(name)) return [base];
     return cities.has(base) ? [`${base}-county`] : [`${base}-county`, base];
   }
   const everyday = /^(.+?)\s*\(([^)]+)\)$/.exec(name.trim());
@@ -477,9 +464,17 @@ export function areaFromHit(
   cities?: ReadonlySet<string>,
 ): AreaFromHit {
   const districts: Record<string, string> = {};
-  for (const [layer, n] of Object.entries(hit.districts)) districts[`${state}/${layer}`] = n;
-  const coa = hit.county ? COURT_OF_APPEAL_BY_COUNTY[hit.county] : undefined;
-  if (state === "us/ca" && coa) districts[`${state}/coa`] = coa;
+  const region = regionProfile(state);
+  for (const [layer, n] of Object.entries(hit.districts)) {
+    // The layer's family here: the lower chamber is `ad` in one state, `hd` in the next.
+    const family = layerFamily(region, layer as DistrictLayer);
+    if (family) districts[`${state}/${family}`] = n;
+  }
+  // Districts the county alone decides (California's Courts of Appeal).
+  for (const [family, byCounty] of Object.entries(region?.byCounty ?? {})) {
+    const id = hit.county ? byCounty[hit.county] : undefined;
+    if (id) districts[`${state}/${family}`] = id;
+  }
 
   const localities: string[] = [];
   const found: string[] = [];
@@ -503,7 +498,7 @@ export function areaFromHit(
       const n = id.split("|").pop() ?? "";
       if (!countyPath || !n) continue;
       districts[`${countyPath}/sup`] = districtId(n);
-      const county = hit.county === "San Francisco" ? "San Francisco" : `${hit.county} County`;
+      const county = countyLabel(region, hit.county ?? "");
       labels[`${countyPath}/sup`] = `${county} supervisorial district ${districtId(n)}`;
       continue;
     }
@@ -527,9 +522,9 @@ export function areaFromHit(
   );
   const places = [
     ...(hit.place ? [hit.place] : []),
-    // San Francisco is one city and county; say it once.
-    ...(hit.county && !(hit.county === "San Francisco" && hit.place === hit.county)
-      ? [`${hit.county} County`]
+    // A city and county in one (San Francisco): say it once.
+    ...(hit.county && !(region?.consolidated?.includes(hit.county) && hit.place === hit.county)
+      ? [`${hit.county} ${region?.countyWord ?? "County"}`]
       : []),
   ];
   const area: Area = { localities, districts };

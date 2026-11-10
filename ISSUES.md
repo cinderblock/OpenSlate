@@ -86,7 +86,7 @@ are quotes.
 
 Seen 2026-11-03, checking a San Mateo County ballot (`plans/ballot-order-san-mateo-check.md`).
 Local measures sort by letter, except San Mateo, whose order is typed into
-`apps/web/src/lib/ballotOrderCounties.ts` (`measures`) from the county's drawing PDF. San Mateo's
+`apps/web/src/lib/regions/us-ca/countyDrawings.ts` (`measures`) from the county's drawing PDF. San Mateo's
 ballot printed L, AA, J, U, so letter order is wrong there, and likely in other counties. Local
 offices use §13109 patterns, also unchecked against a real ballot.
 

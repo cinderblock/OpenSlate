@@ -1,5 +1,5 @@
 // Builds the congressional and Board of Equalization tables in
-// src/lib/ballotOrderCa.ts (California district overlaps for the ballot order)
+// src/lib/regions/us-ca/districtOverlaps.ts (California district overlaps for the ballot order)
 // from the official census-block equivalency files: every 2020 Census
 // block, and the district each plan puts it in. Two districts overlap when
 // they share a block, people or not: the Secretary of State rotates names
@@ -14,7 +14,7 @@
 // letter order. This script keeps those tables as they are in the file.
 //
 // Run from apps/web, after steps 1-3 if those were rerun:
-//   bun scripts/ca-district-overlaps/block-equivalency.ts src/lib/ballotOrderCa.ts
+//   bun scripts/ca-district-overlaps/block-equivalency.ts src/lib/regions/us-ca/districtOverlaps.ts
 // Downloads go in the OS temp dir (openslate-block-equivalency). Unzipping
 // uses `tar`, which reads zip files on Windows and macOS, or `unzip` elsewhere.
 import { spawnSync } from "node:child_process";

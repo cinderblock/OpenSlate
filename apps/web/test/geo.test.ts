@@ -5,7 +5,6 @@ import { neighbors } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import {
   areaFromHit,
-  COURT_OF_APPEAL_BY_COUNTY,
   cityPaths,
   decodeStateGeo,
   fourColor,
@@ -16,6 +15,7 @@ import {
   touching,
 } from "../src/lib/geo";
 import { placeRace } from "../src/lib/jurisdictions";
+import { COURT_OF_APPEAL_BY_COUNTY } from "../src/lib/regions/us-ca/data";
 
 // The real shipped file: these points are checked against the Census
 // geocoder's answers for the same addresses (2026-10-20).

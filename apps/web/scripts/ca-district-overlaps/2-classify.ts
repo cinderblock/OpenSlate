@@ -1,8 +1,8 @@
-// Step 2 of 3 for src/lib/ballotOrderCa.ts (California district overlaps for the
+// Step 2 of 3 for src/lib/regions/us-ca/districtOverlaps.ts (California district overlaps for the
 // ballot order). Run from apps/web, in order:
 //   bun scripts/ca-district-overlaps/1-intersect.ts
 //   bun scripts/ca-district-overlaps/2-classify.ts
-//   bun scripts/ca-district-overlaps/3-emit.ts src/lib/ballotOrderCa.ts
+//   bun scripts/ca-district-overlaps/3-emit.ts src/lib/regions/us-ca/districtOverlaps.ts
 // Work files go in the OS temp dir (openslate-district-overlaps). plans/ballot-order.md has the method.
 // Classify each overlap: sliver (geometry noise), real, or check-by-population.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";

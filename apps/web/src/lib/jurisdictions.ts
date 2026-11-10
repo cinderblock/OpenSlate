@@ -1,4 +1,12 @@
 import { memoByString } from "./memoByString";
+import {
+  allRegions,
+  districtFamily,
+  districtFamilyAt,
+  districtFamilyOrder,
+  regionFor,
+  regionProfile,
+} from "./regions";
 
 /**
  * Jurisdiction paths as slates use them: `us/ca` (statewide), `us/ca/sf` (a
@@ -107,19 +115,18 @@ export function withFoundLocalities(area: Area, known: readonly string[]): Area 
 }
 
 /**
- * Counties the catalog filed under their city's path until 2026-10-25, then
- * under their own. An area saved before then had the city's path as its
- * county, its city, or both.
+ * Paths the catalog once filed differently, from every region's profile
+ * (`RegionProfile.refiled`): counties that sat under their city's path, and
+ * cities filed as `city-of-<name>` while their county had the bare name.
  */
-const REFILED_COUNTIES: Record<string, string> = {
-  "us/ca/san-diego": "us/ca/san-diego-county",
-  "us/ca/imperial": "us/ca/imperial-county",
-};
-
-/** Cities filed as `city-of-<name>` while their county's races sat under the bare name. */
-const CITY_PATHS: Record<string, string> = {
-  "us/ca/alameda": "us/ca/city-of-alameda",
-};
+const REFILED_COUNTIES: Record<string, string> = Object.assign(
+  {},
+  ...allRegions().map((region) => region.refiled?.counties ?? {}),
+);
+const CITY_PATHS: Record<string, string> = Object.assign(
+  {},
+  ...allRegions().map((region) => region.refiled?.cities ?? {}),
+);
 
 /**
  * An area saved before the catalog re-filed counties under their own paths,
@@ -335,33 +342,6 @@ function placeDistrict(path: string, here: boolean, area: Area): Placement {
   return here || inside ? placement : "out";
 }
 
-const STATE_NAMES: Record<string, string> = {
-  "us/ca": "California",
-};
-
-const DISTRICT_FAMILIES: Record<string, string> = {
-  cd: "Congressional district",
-  sd: "State Senate district",
-  ad: "Assembly district",
-  coa: "Court of Appeal district",
-  bart: "BART district",
-  boe: "Board of Equalization district",
-  unsd: "Unified school district",
-  elsd: "Elementary school district",
-  scsd: "High school district",
-  sup: "Supervisorial district",
-  ta: "Trustee area",
-  council: "Council district",
-};
-
-const LOCALITY_NAMES: Record<string, string> = {
-  sf: "San Francisco",
-  ebmud: "EBMUD",
-  ebrpd: "East Bay Regional Parks",
-  laccd: "LA Community College District",
-  "san-dieguito-uhsd": "San Dieguito Union High School District",
-};
-
 /**
  * The locality path a place name maps to: `localityPathFor("us/ca", "San
  * Francisco")` → `us/ca/sf`. Named localities map back through their label;
@@ -369,7 +349,9 @@ const LOCALITY_NAMES: Record<string, string> = {
  */
 export function localityPathFor(state: string, name: string): string {
   const wanted = name.trim().toLowerCase();
-  const named = Object.entries(LOCALITY_NAMES).find(([, label]) => label.toLowerCase() === wanted);
+  const named = Object.entries(regionProfile(state)?.localityNames ?? {}).find(
+    ([, label]) => label.toLowerCase() === wanted,
+  );
   const slug =
     named?.[0] ??
     wanted
@@ -387,12 +369,17 @@ function titleCase(slug: string): string {
     .join(" ");
 }
 
-export function districtFamilyLabel(family: string): string {
-  return DISTRICT_FAMILIES[family] ?? `${family.toUpperCase()} district`;
+/**
+ * What a family's districts are called: "Assembly district". `region` (`us/ca`)
+ * picks whose family it is, where the same key means something else next door.
+ */
+export function districtFamilyLabel(family: string, region?: string): string {
+  return districtFamily(family, region)?.label ?? `${family.toUpperCase()} district`;
 }
 
+/** A region's name: "California". One the app has no profile for goes by its code. */
 export function stateLabel(path: string): string {
-  return STATE_NAMES[path] ?? path.split("/").pop()?.toUpperCase() ?? path;
+  return regionProfile(path)?.name ?? path.split("/").pop()?.toUpperCase() ?? path;
 }
 
 /** Human label for a jurisdiction path. */
@@ -409,9 +396,9 @@ const labelOf = memoByString((path: string): string => {
     case "state":
       return part.path === "us" ? "National" : stateLabel(part.path);
     case "district":
-      return `${districtFamilyLabel(part.family)} ${part.number}`;
+      return `${districtFamilyLabel(part.family, part.state)} ${part.number}`;
     case "local":
-      return LOCALITY_NAMES[part.slug] ?? titleCase(part.slug);
+      return regionFor(part.path)?.localityNames?.[part.slug] ?? titleCase(part.slug);
   }
 });
 
@@ -422,7 +409,7 @@ export function jurisdictionRank(path: string | undefined): number {
     case "state":
       return part.path === "us" ? 0 : 1;
     case "district":
-      return 2 + Object.keys(DISTRICT_FAMILIES).indexOf(part.family) / 100;
+      return 2 + districtFamilyOrder(part.family, part.state) / 100;
     case "local":
       return 3;
     case "none":
@@ -431,41 +418,32 @@ export function jurisdictionRank(path: string | undefined): number {
 }
 
 /**
- * How many districts each family has. Someone's district is theirs whether or
- * not it has a race this election, so the picker offers all of them.
+ * How many districts a family (`us/ca/sd`) has, when they're numbered from 1;
+ * 0 when the app doesn't know. Someone's district is theirs whether or not it
+ * has a race this election, so the picker offers all of them.
  */
-export const DISTRICT_COUNTS: Record<string, number> = {
-  "us/ca/cd": 52,
-  "us/ca/sd": 40,
-  "us/ca/ad": 80,
-  "us/ca/coa": 6,
-  "us/ca/bart": 9,
-};
+export function districtCount(family: string): number {
+  return districtFamilyAt(family)?.count ?? 0;
+}
 
-const DISTRICT_OFFICES: Record<string, string> = {
-  cd: "Congressional",
-  sd: "State Senate",
-  ad: "Assembly",
-  coa: "Court of Appeal",
-  bart: "BART board",
-};
+/**
+ * Whether races are filed under a family's districts (`us/ca/sd-11`), so that
+ * one with no race this election is worth saying. Not for the families that
+ * only narrow a race filed elsewhere: school districts, supervisorial
+ * districts, the Board of Equalization's.
+ */
+export function familyHasRaces(family: string): boolean {
+  const info = districtFamilyAt(family);
+  return info !== undefined && !info.narrows;
+}
 
 /** Every district number of a family (`us/ca/sd`), plus any the data uses beyond the known count. */
 export function allDistricts(family: string, present: readonly string[]): string[] {
-  const count = DISTRICT_COUNTS[family] ?? 0;
+  const count = districtCount(family);
   const numbers = new Set(present);
   for (let n = 1; n <= count; n++) numbers.add(String(n));
   return [...numbers].sort((a, b) => Number(a) - Number(b));
 }
-
-/**
- * Staggered terms: which half of a family's seats a regular election in a
- * given year fills. California's Senate (Const. art. IV §2): even-numbered
- * districts in gubernatorial years (2026), odd ones in presidential years.
- */
-const SEATS_UP: Record<string, (year: number) => "even" | "odd"> = {
-  "us/ca/sd": (year) => (year % 4 === 2 ? "even" : "odd"),
-};
 
 /**
  * Why a district has no race on this ballot. Where terms are staggered, say
@@ -480,13 +458,15 @@ export function noRaceReason(
   election?: string,
 ): string {
   const kind = family.split("/").pop() ?? family;
-  const office = DISTRICT_OFFICES[kind] ?? kind.toUpperCase();
+  const info = districtFamilyAt(family);
+  const office = info?.office ?? kind.toUpperCase();
   const year = election ? Number(election.slice(0, 4)) : Number.NaN;
-  const rule = SEATS_UP[family];
-  let up: "even" | "odd" | undefined = rule && Number.isFinite(year) ? rule(year) : undefined;
+  // Staggered terms, where the region's law says whose turn it is.
+  let up: "even" | "odd" | undefined =
+    info?.seatsUp && Number.isFinite(year) ? info.seatsUp(year) : undefined;
   if (!up) {
     const parities = new Set(present.map((n) => Number(n) % 2));
-    const count = DISTRICT_COUNTS[family] ?? 0;
+    const count = districtCount(family);
     if (present.length >= 3 && parities.size === 1 && present.length * 2 >= count - 1) {
       up = parities.has(0) ? "even" : "odd";
     }

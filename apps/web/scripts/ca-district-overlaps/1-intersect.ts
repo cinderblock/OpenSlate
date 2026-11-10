@@ -1,8 +1,8 @@
-// Step 1 of 3 for src/lib/ballotOrderCa.ts (California district overlaps for the
+// Step 1 of 3 for src/lib/regions/us-ca/districtOverlaps.ts (California district overlaps for the
 // ballot order). Run from apps/web, in order:
 //   bun scripts/ca-district-overlaps/1-intersect.ts
 //   bun scripts/ca-district-overlaps/2-classify.ts
-//   bun scripts/ca-district-overlaps/3-emit.ts src/lib/ballotOrderCa.ts
+//   bun scripts/ca-district-overlaps/3-emit.ts src/lib/regions/us-ca/districtOverlaps.ts
 // Work files go in the OS temp dir (openslate-district-overlaps). plans/ballot-order.md has the method.
 // Which ADs each CD / BOE / SD touches, and which counties each SD / AD touches.
 // TIGERweb geometry at ~1 m; intersection areas in km², so slivers can be told apart.

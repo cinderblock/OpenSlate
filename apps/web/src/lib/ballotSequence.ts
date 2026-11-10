@@ -1,10 +1,15 @@
-import { alphabetFor, compareByAlphabet, countyOfPath, measureOrderOf } from "./ballotOrder";
+import { alphabetFor, measureOrderOf } from "./ballotOrder";
+import { countyOfPath } from "./counties";
 import { type Area, jurisdictionLabel, parseJurisdiction } from "./jurisdictions";
+import { compareByAlphabet } from "./nameOrder";
+import { regionFor, regionProfile } from "./regions";
 
 /**
- * The order a California ballot prints its contests in, across every
- * jurisdiction on it. Pure; unit-tested in test/ballotSequence.test.ts.
- * `plans/ballot-order-san-mateo-check.md` checks it against a real ballot.
+ * The order a ballot prints its contests in, across every jurisdiction on
+ * it. It's California's order, which is the only one checked against a real
+ * ballot (`plans/ballot-order-san-mateo-check.md`); other states' races fall
+ * into the same parts by the same reading of their titles until a state
+ * needs its own. Pure; unit-tested in test/ballotSequence.test.ts.
  *
  * The paper ballot goes by kind of office, not by who holds the election
  * (Elections Code §13109): statewide offices, Congress and the Legislature,
@@ -141,9 +146,18 @@ function isSchool(race: SequencedRace): boolean {
   );
 }
 
-/** A county's path, a CA one (`countyOfPath`) or any `<name>-county`. */
+/** A county's path: one its region lists (`countyOfPath`), or any `<name>-county` (`-parish`, `-borough`). */
 function isCountyPath(path: string): boolean {
-  return countyOfPath(path) !== undefined || /-county$/.test(path);
+  if (countyOfPath(path) !== undefined || /-county$/.test(path)) return true;
+  const word = regionFor(path)?.countyWord.toLowerCase();
+  return !!word && word !== "county" && path.endsWith(`-${word}`);
+}
+
+/** Whether a district family is Congress or a chamber of the region's legislature. */
+function isLegislativeFamily(state: string, family: string): boolean {
+  const layers = regionProfile(state)?.layers;
+  if (!layers) return family === "cd" || family === "sd" || family === "ad";
+  return family === layers.congress || family === layers.upper || family === layers.lower;
 }
 
 /** Which part of the ballot a race prints in. */
@@ -170,8 +184,7 @@ export function ballotPart(race: SequencedRace): BallotPart {
     const office = PARTISAN_OFFICES.find(({ pattern }) => pattern.test(title));
     if (office) return office.part;
     if (where.kind === "district") {
-      if (where.family === "cd" || where.family === "sd" || where.family === "ad")
-        return "legislative";
+      if (isLegislativeFamily(where.state, where.family)) return "legislative";
       if (where.family === "boe") return "state";
       return "district";
     }
@@ -237,7 +250,7 @@ function compareJudges(a: SequencedRace, b: SequencedRace): number {
   const byDivision = divisionOf(a) - divisionOf(b) || Number(leadsCourt(b)) - Number(leadsCourt(a));
   if (byDivision) return byDivision;
   if (isRetention(a) && isRetention(b)) {
-    const alphabet = alphabetFor(a.election ?? b.election);
+    const alphabet = alphabetFor(a.election ?? b.election, a.jurisdiction ?? b.jurisdiction);
     if (alphabet) return compareByAlphabet(alphabet, judgeName(a), judgeName(b));
   }
   return 0;
