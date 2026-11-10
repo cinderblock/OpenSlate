@@ -154,3 +154,11 @@ Why it matters: the shared results code already asks each state's sources throug
 Clarity feed, as many states and counties publish), the watch list needs contest ids that say
 whose count they're from, and that is also what would show whether `StateCounts` is the right
 shape.
+
+## `bun run lint` fails on `apps/web/scripts/ca-district-overlaps/2-classify.ts`
+
+Seen 2026-11-10 on `origin/master` at `2fa7d4f` ("Regions: a registry of every state,
+California behind it"). Biome reports `noExplicitAny` at 19:72 and a run of `noNonNullAssertion`
+from line 26 on. Reproduce: `bun run lint` at the repo root.
+
+Why it matters: a whole-repo lint run fails, so it can hide new lint failures in other files.
