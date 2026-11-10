@@ -2,7 +2,7 @@ import { type Race as CivicRace, samePerson } from "@openslate/core";
 import { type DraftRow, rowIdFor } from "./ballotDraft";
 import { ballotChoices, isYesNo, ranksFor, voteFor } from "./ballotView";
 import { type Race, stanceTone } from "./collate";
-import { measurePasses } from "./sosCa";
+import { measurePasses } from "./liveCount";
 
 /**
  * My ballot against the count: what the voter marked on a race, the count as

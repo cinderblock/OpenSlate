@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { niceTicks, seriesColor } from "../src/components/RaceHistoryChart";
+import type { ContestResult } from "../src/lib/liveCount";
 import { appendPoint, MAX_POINTS, type RaceHistory } from "../src/lib/raceHistory";
-import type { ContestResult } from "../src/lib/sosCa";
 
 const at = (hhmm: string) => Date.parse(`2026-11-04T${hhmm}:00Z`);
 

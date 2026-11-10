@@ -1,7 +1,7 @@
 import { type Subject, verifySlate } from "@openslate/core";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchCatalogSlate } from "./catalogImport";
-import { catalogQueryOptions, DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG } from "./query";
+import { fetchCatalogSlate } from "../../catalogImport";
+import { catalogQueryOptions, DEFAULT_PUBLIC_ENDORSEMENTS_CATALOG } from "../../query";
 import { candidatesByContest, SOS_ELECTION } from "./sosResults";
 
 /** The catalog's transcription of the Secretary of State's certified candidate list. */

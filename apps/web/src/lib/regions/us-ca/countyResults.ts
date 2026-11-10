@@ -17,10 +17,12 @@ import {
   type Subject,
   samePerson,
 } from "@openslate/core";
-import { type Area, parseJurisdiction } from "./jurisdictions";
-import { liveRefetchInterval, noteAnswer, withVersion } from "./liveFeed";
-import { getRoutingMode, PROVIDERS } from "./routing";
-import { type ContestResult, countySlug, LIVE_REFRESH_MS, measureThreshold } from "./sosCa";
+import { type Area, parseJurisdiction } from "../../jurisdictions";
+import { type ContestResult, LIVE_REFRESH_MS, measureThreshold } from "../../liveCount";
+import { liveRefetchInterval, noteAnswer, withVersion } from "../../liveFeed";
+import { regionPathOf } from "../../regions";
+import { getRoutingMode, PROVIDERS } from "../../routing";
+import { countySlug } from "./sos";
 import { sosContestForSubject } from "./sosResults";
 
 /**
@@ -464,6 +466,8 @@ export function localRaceCounty(
 ): string | undefined {
   if (!inElection(race, election)) return undefined;
   const jurisdiction = raceJurisdiction(race);
+  // Another state's race is in no California county's count.
+  if (regionPathOf(jurisdiction) !== "us/ca") return undefined;
   const subject = {
     title: race.subject.title,
     jurisdiction,

@@ -1,13 +1,13 @@
 import type { Race, RaceCandidate, RaceSummary, Subject } from "@openslate/core";
-import { parseJurisdiction } from "./jurisdictions";
+import { parseJurisdiction } from "../../jurisdictions";
+import type { ContestResult } from "../../liveCount";
 import {
-  type ContestResult,
   DISTRICT_FAMILIES,
   districtContest,
   justiceContest,
   propContest,
   STATEWIDE_OFFICES,
-} from "./sosCa";
+} from "./sos";
 
 /**
  * The California Secretary of State as the results source for the races it
@@ -24,7 +24,9 @@ import {
 /** The election the state's results API is serving. Its API has no other. */
 export const SOS_ELECTION = "2026-11-03";
 
-const SOS_PREFIX = "sos:";
+/** What starts a race id from the state's count: `sos:governor`. */
+export const SOS_RACE_PREFIX = "sos:";
+const SOS_PREFIX = SOS_RACE_PREFIX;
 
 export function isSosRaceId(id: string | number | undefined): id is string {
   return typeof id === "string" && id.startsWith(SOS_PREFIX);

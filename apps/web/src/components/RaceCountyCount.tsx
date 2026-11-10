@@ -2,6 +2,9 @@ import type { CountyContest, CountyFeed } from "@openslate/core";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useId, useMemo } from "react";
+import type { ContestResult } from "../lib/liveCount";
+import { useArea } from "../lib/myVote";
+import { type RaceChange, useRaceChange } from "../lib/raceChanges";
 import {
   type CatalogRace,
   countyContestFor,
@@ -10,11 +13,8 @@ import {
   countyFeed,
   countyQueryOptions,
   localRaceCounty,
-} from "../lib/countyCa";
-import { useArea } from "../lib/myVote";
-import { type RaceChange, useRaceChange } from "../lib/raceChanges";
-import type { ContestResult } from "../lib/sosCa";
-import { SOS_ELECTION } from "../lib/sosResults";
+} from "../lib/regions/us-ca/countyResults";
+import { SOS_ELECTION } from "../lib/regions/us-ca/sosResults";
 import { RaceHistoryToggle, ReportingLine, ResultBody, sourceTimeOf } from "./LiveResult";
 
 /** Any votes in yet? Before then the count says nothing worth a voter's attention. */

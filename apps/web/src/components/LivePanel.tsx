@@ -3,6 +3,20 @@ import { useIsFetching, useQueries, useQuery, useQueryClient } from "@tanstack/r
 import { Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAllRaces, useCatalogCopyReady } from "../lib/allSlates";
+import { isLive, isOutOfDate, useCatchUpOnWake, useNow, useOnline } from "../lib/freshness";
+import type { Area } from "../lib/jurisdictions";
+import { EMPTY_AREA, isAreaSet } from "../lib/jurisdictions";
+import {
+  type ContestResult,
+  LIVE_REFRESH_MS,
+  type MeasureResult,
+  NotOnBallot,
+} from "../lib/liveCount";
+import { SOS_FEED, useLiveFeeds } from "../lib/liveFeed";
+import { useLocalStore } from "../lib/localStore";
+import { useArea } from "../lib/myVote";
+import { raceChangesStore, useRaceChange } from "../lib/raceChanges";
+import { contestAliases, prepareRace, type RaceSearchEntry, rankRaces } from "../lib/raceSearch";
 import {
   catalogRaceFor,
   contestsForPlace,
@@ -15,32 +29,20 @@ import {
   localContests,
   measureLetter,
   parseCountyContestId,
-} from "../lib/countyCa";
-import { isLive, isOutOfDate, useCatchUpOnWake, useNow, useOnline } from "../lib/freshness";
-import type { Area } from "../lib/jurisdictions";
-import { EMPTY_AREA, isAreaSet } from "../lib/jurisdictions";
-import { SOS_FEED, useLiveFeeds } from "../lib/liveFeed";
-import { useLocalStore } from "../lib/localStore";
-import { useArea } from "../lib/myVote";
-import { raceChangesStore, useRaceChange } from "../lib/raceChanges";
-import { contestAliases, prepareRace, type RaceSearchEntry, rankRaces } from "../lib/raceSearch";
-import { baseUrlFor } from "../lib/routing";
+} from "../lib/regions/us-ca/countyResults";
 import {
-  type ContestResult,
   contestLabel,
   contestQueryOptions,
   countySlug,
   DISTRICT_FAMILIES,
   type DistrictFamily,
   fetchCounties,
-  LIVE_REFRESH_MS,
-  type MeasureResult,
-  NotOnBallot,
   propContest,
   STATEWIDE_OFFICES,
-} from "../lib/sosCa";
-import { useSosCandidates } from "../lib/sosCandidates";
-import { parseSosTime, SOS_ELECTION } from "../lib/sosResults";
+} from "../lib/regions/us-ca/sos";
+import { useSosCandidates } from "../lib/regions/us-ca/sosCandidates";
+import { parseSosTime, SOS_ELECTION } from "../lib/regions/us-ca/sosResults";
+import { baseUrlFor } from "../lib/routing";
 import {
   addLocalOnce,
   addPlace,

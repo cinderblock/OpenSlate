@@ -1,6 +1,6 @@
 import type { Area } from "./jurisdictions";
 import { createLocalStore, useLocalStore } from "./localStore";
-import { DISTRICT_FAMILIES, type DistrictFamily, districtContest } from "./sosCa";
+import { DISTRICT_FAMILIES, type DistrictFamily, districtContest } from "./regions/us-ca/sos";
 
 /**
  * What the Live results page watches: groups of contests (`lib/sosCa.ts` ids),

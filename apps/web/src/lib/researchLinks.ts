@@ -1,6 +1,8 @@
 import type { BallotContest, Subject } from "@openslate/core";
 import { httpHref } from "./httpHref";
 import { jurisdictionLabel } from "./jurisdictions";
+import { regionFor } from "./regions";
+import { CA_LINKS } from "./regions/us-ca/links";
 
 /**
  * Where to read up on a race or a candidate: links to Ballotpedia, official
@@ -34,8 +36,27 @@ export const VOTE411: ResearchLink = {
     "The League of Women Voters' nonpartisan guide: enter your address for your ballot, with candidates' own answers",
 };
 
-function isCalifornia(jurisdiction: string | undefined): boolean {
-  return jurisdiction === "us/ca" || (jurisdiction?.startsWith("us/ca/") ?? false);
+/** One region's own places to read up on a race, beside the ones every region gets. */
+export interface RegionLinks {
+  /**
+   * The election authority's own guide for a race, when its site has one for
+   * it. `number`: a measure's, as the ballot heads it.
+   */
+  official?: (
+    race: { jurisdiction: string | undefined; election: string; measure: boolean; number?: string },
+    today: string,
+  ) => ResearchLink | undefined;
+  /** Newsrooms that cover the region's elections, as searches for the race. */
+  news?: (query: string) => ResearchLink[];
+}
+
+const REGION_LINKS: Record<string, RegionLinks> = {
+  "us/ca": CA_LINKS,
+};
+
+function regionLinks(jurisdiction: string | undefined): RegionLinks | undefined {
+  const region = regionFor(jurisdiction);
+  return region ? REGION_LINKS[region.path] : undefined;
 }
 
 function yearOf(election: string | undefined): string {
@@ -85,36 +106,19 @@ export function raceLinks(race: RaceLike, today: string): ResearchLink[] {
       description: "Linked by the slate itself",
     });
   }
-  // The Secretary of State's site only hosts the current election's guide.
-  if (jurisdiction === "us/ca" && election >= today) {
-    const number = measure ? (race.ballot?.number ?? race.subject.ballot?.number) : undefined;
-    if (number) {
-      links.push({
-        label: "Official guide",
-        href: `https://voterguide.sos.ca.gov/propositions/${encodeURIComponent(number)}/`,
-        description:
-          "California's Official Voter Information Guide: the Legislative Analyst's summary and the arguments for and against",
-      });
-    } else if (!measure) {
-      links.push({
-        label: "Official guide",
-        href: "https://voterguide.sos.ca.gov/candidates/",
-        description: "California's Official Voter Information Guide: candidates' own statements",
-      });
-    }
-  }
+  const region = regionLinks(jurisdiction);
+  const number = measure ? (race.ballot?.number ?? race.subject.ballot?.number) : undefined;
+  const official = region?.official?.(
+    { jurisdiction, election, measure, ...(number ? { number } : {}) },
+    today,
+  );
+  if (official) links.push(official);
   links.push({
     label: "Ballotpedia",
     href: ballotpediaSearch(query, false),
     description: `Search Ballotpedia for “${query}”`,
   });
-  if (isCalifornia(jurisdiction)) {
-    links.push({
-      label: "CalMatters",
-      href: `https://calmatters.org/?${new URLSearchParams({ s: query })}`,
-      description: `CalMatters' nonprofit reporting on “${query}”`,
-    });
-  }
+  links.push(...(region?.news?.(query) ?? []));
   links.push({ label: "News", href: newsSearch(query), description: `Google News: “${query}”` });
   return links;
 }

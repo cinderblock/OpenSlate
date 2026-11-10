@@ -1,17 +1,17 @@
 import { mergeHistories } from "@openslate/core";
 import { useState } from "react";
 import { useOutOfDate } from "../lib/freshness";
-import { useRecorder, viaRelay } from "../lib/liveFeed";
-import type { RaceChange } from "../lib/raceChanges";
-import { historyFeed, useRaceHistory, useRecordedHistory } from "../lib/raceHistory";
 import {
   type CandidateResult,
   type ContestResult,
   LIVE_REFRESH_MS,
   type MeasureResult,
   measurePasses,
-} from "../lib/sosCa";
-import { parseSosTime } from "../lib/sosResults";
+} from "../lib/liveCount";
+import { useRecorder, viaRelay } from "../lib/liveFeed";
+import type { RaceChange } from "../lib/raceChanges";
+import { historyFeed, useRaceHistory, useRecordedHistory } from "../lib/raceHistory";
+import { parseSosTime } from "../lib/regions/us-ca/sosResults";
 import { RaceHistoryChart } from "./RaceHistoryChart";
 
 /**

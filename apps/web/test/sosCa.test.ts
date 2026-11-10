@@ -1,14 +1,12 @@
 import { describe, expect, test } from "bun:test";
+import { NotOnBallot, num, parseReporting } from "../src/lib/liveCount";
 import {
   contestLabel,
   contestPath,
   countySlug,
   districtContest,
-  NotOnBallot,
   normalizeContest,
-  num,
-  parseReporting,
-} from "../src/lib/sosCa";
+} from "../src/lib/regions/us-ca/sos";
 
 describe("Secretary of State results", () => {
   test("numbers with commas", () => {

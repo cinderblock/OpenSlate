@@ -19,7 +19,6 @@ import {
   type RacePosition,
   stanceTone,
 } from "../lib/collate";
-import type { CatalogRace } from "../lib/countyCa";
 import { followedSubject } from "../lib/followedRaces";
 import {
   type GuideForSubject,
@@ -38,6 +37,7 @@ import {
   type SlateFilter,
   tallyRace,
 } from "../lib/raceTally";
+import type { CatalogRace } from "../lib/regions/us-ca/countyResults";
 import { candidateLinks, type ResearchLink, raceLinks } from "../lib/researchLinks";
 import { subjectFromKey, subjectKey } from "../lib/subjects";
 import { AllSlatesFilters, AllSlatesLoading, CatalogNote, plural, SlateGroups } from "./AllSlates";

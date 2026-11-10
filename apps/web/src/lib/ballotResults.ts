@@ -5,33 +5,33 @@ import { civicStanding, type Standing } from "./ballotOutcome";
 import { isYesNo } from "./ballotView";
 import type { Race } from "./collate";
 import {
-  type CountyResults,
-  countyContestFor,
-  countyContestResult,
-  countyFeed,
-  countyQueryOptions,
-  localRaceCounty,
-} from "./countyCa";
+  type CountyCount,
+  type CountyCounts,
+  countyCountsFor,
+  type StateContest,
+  stateContestFor,
+} from "./counts";
 import type { Area } from "./jurisdictions";
+import { type ContestResult, NotOnBallot } from "./liveCount";
 import { raceQueryOptions, raceSearchQueryOptions, resolveSubjectRace } from "./results";
-import { type ContestResult, contestQueryOptions, NotOnBallot } from "./sosCa";
-import { parseSosTime, SOS_ELECTION, sosContestForSubject } from "./sosResults";
 import { subjectKey } from "./subjects";
 
 /**
  * Each race's count, from whichever source reports it:
  *
- * - the Secretary of State for the races it counts (statewide offices and
- *   measures, Congress, the Legislature, Board of Equalization);
+ * - the state's election office for the races it counts, where OpenSlate
+ *   reads its count (`counts.ts`; California's Secretary of State: statewide
+ *   offices and measures, Congress, the Legislature, Board of Equalization);
  * - the voter's county's own file for local races and measures, one request
  *   for every one of them, matched to the ballot's races by who's running (or
- *   a measure's letter and place, `countyContestFor`);
+ *   a measure's letter and place);
  * - civicAPI, only for races neither of those covers (another state, another
  *   election, a county whose count OpenSlate doesn't read).
  *
  * Queries share the Live page's keys (`sos-ca`, `county-ca`) and the results
  * pages' (`results`), so a page already open costs nothing more, and every
- * proposition comes from one shared `ballot-measures` request (`sosCa.ts`).
+ * California proposition comes from one shared `ballot-measures` request
+ * (`regions/us-ca/sos.ts`).
  */
 
 export type RaceCount =
@@ -41,17 +41,19 @@ export type RaceCount =
   | { status: "none"; why: string }
   | { status: "error"; why: string };
 
-const STATE = "California Secretary of State";
-
-/** A Secretary of State or county contest, as a `Standing`. */
+/**
+ * A state's or a county's contest, as a `Standing`. `parseTime` reads the
+ * time a source words its own way, for a count that gives no instant.
+ */
 export function contestStanding(
   result: ContestResult,
   source: "state" | "county",
   sourceName: string,
   seats = 1,
+  parseTime?: (text: string | undefined) => string | undefined,
 ): Standing | undefined {
   const r = result.reporting;
-  const changedAt = r.changedAt ?? Date.parse(parseSosTime(r.time) ?? "");
+  const changedAt = r.changedAt ?? Date.parse(parseTime?.(r.time) ?? "");
   const base = {
     source,
     sourceName,
@@ -80,66 +82,95 @@ export function contestStanding(
   return undefined;
 }
 
+/** A county's count a race may be in: whose it is, and the county as its source keys it. */
+export interface CountyOf {
+  source: CountyCounts;
+  county: string;
+  /** One id per county across every region: `us/ca|santa-clara`. */
+  id: string;
+}
+
 /**
- * Which county contest each local race is, by race key (`countyContestFor`,
- * the Results page's matching the other way round).
+ * Which county contest each local race is, by race key (`CountyCounts.contestFor`,
+ * the Results page's matching the other way round). `data` is each county's
+ * count, in `ids`' order.
  */
 export function matchCountyContests(
   races: readonly Race[],
-  countyOf: ReadonlyMap<string, string>,
-  slugs: readonly string[],
-  data: readonly (CountyResults | undefined)[],
-): Map<string, { slug: string; contest: CountyContest }> {
-  const out = new Map<string, { slug: string; contest: CountyContest }>();
+  countyOf: ReadonlyMap<string, CountyOf>,
+  ids: readonly string[],
+  data: readonly (CountyCount | undefined)[],
+): Map<string, { of: CountyOf; contest: CountyContest }> {
+  const out = new Map<string, { of: CountyOf; contest: CountyContest }>();
   for (const race of races) {
-    const slug = countyOf.get(race.key);
-    const county = slug ? data[slugs.indexOf(slug)] : undefined;
-    const feed = slug ? countyFeed(slug) : null;
-    if (!slug || !county || !feed) continue;
-    const contest = countyContestFor(race, county.contests, feed.feed.name, SOS_ELECTION);
-    if (contest) out.set(race.key, { slug, contest });
+    const of = countyOf.get(race.key);
+    const count = of ? data[ids.indexOf(of.id)] : undefined;
+    if (!of || !count) continue;
+    const contest = of.source.contestFor(race, of.county, count.contests);
+    if (contest) out.set(race.key, { of, contest });
   }
   return out;
 }
 
 /** Every race's count, by race key. */
 export function useBallotCounts(races: readonly Race[], area: Area): Map<string, RaceCount> {
-  // 1. The Secretary of State, for the races it counts.
-  const sosOf = useMemo(() => {
-    const out = new Map<string, string>();
+  // 1. The state's own count, for the races it reports.
+  const stateOf = useMemo(() => {
+    const out = new Map<string, StateContest>();
     for (const race of races) {
-      const contest = sosContestForSubject(race.subject);
-      if (contest) out.set(race.key, contest);
+      const hit = stateContestFor(race.subject);
+      if (hit) out.set(race.key, hit);
     }
     return out;
   }, [races]);
-  const sosIds = useMemo(() => [...new Set(sosOf.values())].sort(), [sosOf]);
-  const sos = useQueries({ queries: sosIds.map((id) => contestQueryOptions(id)) });
+  const stateContests = useMemo(
+    () =>
+      [...new Map([...stateOf.values()].map((hit) => [hit.raceId, hit])).values()].sort((a, b) =>
+        a.raceId.localeCompare(b.raceId),
+      ),
+    [stateOf],
+  );
+  const stateIds = useMemo(() => stateContests.map((hit) => hit.raceId), [stateContests]);
+  const state = useQueries({
+    queries: stateContests.map((hit) => hit.source.queryOptions(hit.contest)),
+  });
 
   // 2. The counties' own files, for local races: one file per county covers them all.
   const countyOf = useMemo(() => {
-    const out = new Map<string, string>();
+    const out = new Map<string, CountyOf>();
     for (const race of races) {
-      if (sosOf.has(race.key)) continue;
-      const slug = countyFeed(localRaceCounty(race, area, SOS_ELECTION))?.slug;
-      if (slug) out.set(race.key, slug);
+      if (stateOf.has(race.key)) continue;
+      const source = countyCountsFor(race.jurisdiction ?? race.subject.jurisdiction);
+      const county = source?.countyFor(race, area);
+      if (source && county) {
+        out.set(race.key, { source, county, id: `${source.region}|${county}` });
+      }
     }
     return out;
-  }, [races, sosOf, area]);
-  const slugs = useMemo(() => [...new Set(countyOf.values())].sort(), [countyOf]);
-  const counties = useQueries({ queries: slugs.map((slug) => countyQueryOptions(slug)) });
+  }, [races, stateOf, area]);
+  const countyList = useMemo(
+    () =>
+      [...new Map([...countyOf.values()].map((of) => [of.id, of])).values()].sort((a, b) =>
+        a.id.localeCompare(b.id),
+      ),
+    [countyOf],
+  );
+  const countyIds = useMemo(() => countyList.map((of) => of.id), [countyList]);
+  const counties = useQueries({
+    queries: countyList.map((of) => of.source.queryOptions(of.county)),
+  });
   const countyData = counties.map((q) => q.data);
   const countyVersions = countyData.map((d) => d?.version ?? "").join("|");
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-match only when a county's count changes version
   const countyMatch = useMemo(
-    () => matchCountyContests(races, countyOf, slugs, countyData),
-    [races, countyOf, slugs, countyVersions],
+    () => matchCountyContests(races, countyOf, countyIds, countyData),
+    [races, countyOf, countyIds, countyVersions],
   );
 
   // 3. civicAPI, only where neither the state nor a county the voter's in reports.
   const civicRaces = useMemo(
-    () => races.filter((r) => !sosOf.has(r.key) && !countyOf.has(r.key)),
-    [races, sosOf, countyOf],
+    () => races.filter((r) => !stateOf.has(r.key) && !countyOf.has(r.key)),
+    [races, stateOf, countyOf],
   );
   const pins = useQueries({
     queries: civicRaces.map((r) => ({
@@ -163,7 +194,7 @@ export function useBallotCounts(races: readonly Race[], area: Area): Map<string,
   });
   const civic = useQueries({ queries: civicIds.map((id) => raceQueryOptions(id)) });
 
-  const sosVersion = sos.map((q) => q.dataUpdatedAt).join();
+  const stateVersion = state.map((q) => q.dataUpdatedAt).join();
   const countyVersion = `${countyVersions}:${counties.map((q) => q.status).join()}`;
   const civicVersion = [
     ...pins.map((q) => q.status),
@@ -174,33 +205,37 @@ export function useBallotCounts(races: readonly Race[], area: Area): Map<string,
   return useMemo(() => {
     const out = new Map<string, RaceCount>();
     for (const race of races) {
-      const contest = sosOf.get(race.key);
-      if (contest) {
-        const q = sos[sosIds.indexOf(contest)];
+      const hit = stateOf.get(race.key);
+      if (hit) {
+        const q = state[stateIds.indexOf(hit.raceId)];
+        const missing = `Not in the ${hit.source.short}'s count`;
         if (!q || q.isPending) out.set(race.key, { status: "loading" });
         else if (q.error instanceof NotOnBallot)
-          out.set(race.key, { status: "none", why: "Not in the Secretary of State's count" });
+          out.set(race.key, { status: "none", why: missing });
         else if (q.error) out.set(race.key, { status: "error", why: q.error.message });
         else {
-          const standing = q.data ? contestStanding(q.data, "state", STATE) : undefined;
+          const standing = q.data
+            ? contestStanding(q.data, "state", hit.source.name, 1, hit.source.parseTime)
+            : undefined;
           out.set(
             race.key,
-            standing
-              ? { status: "found", standing }
-              : { status: "none", why: "Not in the Secretary of State's count" },
+            standing ? { status: "found", standing } : { status: "none", why: missing },
           );
         }
         continue;
       }
-      const hit = countyMatch.get(race.key);
-      if (hit) {
-        const data = countyData[slugs.indexOf(hit.slug)];
-        const name = `${countyFeed(hit.slug)?.feed.name ?? hit.slug} County`;
+      const match = countyMatch.get(race.key);
+      if (match) {
+        const data = countyData[countyIds.indexOf(match.of.id)];
+        const name = match.of.source.countyName(match.of.county);
         const standing = contestStanding(
-          countyContestResult(hit.contest, data?.updated, data?.seenAt),
+          match.of.source.toResult(match.contest, {
+            ...(data?.updated !== undefined ? { updated: data.updated } : {}),
+            seenAt: data?.seenAt ?? 0,
+          }),
           "county",
           name,
-          hit.contest.voteFor || undefined,
+          match.contest.voteFor || undefined,
         );
         out.set(
           race.key,
@@ -210,10 +245,10 @@ export function useBallotCounts(races: readonly Race[], area: Area): Map<string,
         );
         continue;
       }
-      const slug = countyOf.get(race.key);
-      if (slug) {
-        const q = counties[slugs.indexOf(slug)];
-        const name = `${countyFeed(slug)?.feed.name ?? slug} County`;
+      const of = countyOf.get(race.key);
+      if (of) {
+        const q = counties[countyIds.indexOf(of.id)];
+        const name = of.source.countyName(of.county);
         if (!q || q.isPending) out.set(race.key, { status: "loading" });
         else if (q.error && !q.data) out.set(race.key, { status: "error", why: q.error.message });
         else out.set(race.key, { status: "none", why: `Not found in ${name}'s count` });
@@ -249,13 +284,13 @@ export function useBallotCounts(races: readonly Race[], area: Area): Map<string,
     return out;
   }, [
     races,
-    sosOf,
-    sosIds,
-    sosVersion,
+    stateOf,
+    stateIds,
+    stateVersion,
     countyMatch,
     countyVersion,
     countyOf,
-    slugs,
+    countyIds,
     civicRaces,
     civicVersion,
   ]);

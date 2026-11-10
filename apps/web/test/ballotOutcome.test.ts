@@ -4,6 +4,7 @@ import { type DraftRow, rowIdFor } from "../src/lib/ballotDraft";
 import { civicStanding, myMarks, raceOutcome, type Standing } from "../src/lib/ballotOutcome";
 import { contestStanding } from "../src/lib/ballotResults";
 import { collateRaces, decodeSlates, type Race } from "../src/lib/collate";
+import { parseSosTime } from "../src/lib/regions/us-ca/sosResults";
 
 const researcher = generateKeyPair();
 const E = "2026-11-03";
@@ -214,7 +215,7 @@ describe("standings from each source", () => {
     expect(s?.changedAt).toBe(1_700_000_000_000);
   });
 
-  test("the state's reporting time is read as Pacific time", () => {
+  test("the state's reporting time is read the way its source words it (California: Pacific time)", () => {
     const s = contestStanding(
       {
         kind: "candidates",
@@ -224,6 +225,8 @@ describe("standings from each source", () => {
       },
       "state",
       "State",
+      1,
+      parseSosTime,
     );
     expect(s?.changedAt).toBe(Date.parse("2026-11-04T04:15:00Z"));
     expect(s).toMatchObject({ kind: "candidates", seats: 1, percent: 50 });

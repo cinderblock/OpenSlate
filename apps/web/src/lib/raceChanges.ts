@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
+import type { ContestResult } from "./liveCount";
 import { createLocalStore, useLocalStore } from "./localStore";
 import { logReport } from "./raceHistory";
-import type { ContestResult } from "./sosCa";
 
 /**
  * When a race's own numbers last changed. Sources publish one time for a whole

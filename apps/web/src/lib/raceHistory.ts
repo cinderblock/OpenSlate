@@ -1,9 +1,9 @@
 import { appendChoices, isRaceHistory, type RaceHistory } from "@openslate/core";
 import { useQuery } from "@tanstack/react-query";
+import type { ContestResult } from "./liveCount";
 import { feedState, SOS_FEED, useFeedStates, useRecorder, viaRelay } from "./liveFeed";
 import { createLocalStore, useLocalStore } from "./localStore";
 import { apiBase } from "./routing";
-import type { ContestResult } from "./sosCa";
 
 /**
  * Each watched race's count over time, as this browser saw it: one point per

@@ -1,5 +1,5 @@
+import type { ContestResult } from "./liveCount";
 import { createLocalStore, useLocalStore } from "./localStore";
-import type { ContestResult } from "./sosCa";
 
 /**
  * How the live count orders its races, and whether it groups them by place.

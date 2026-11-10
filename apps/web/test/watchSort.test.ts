@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ContestResult } from "../src/lib/sosCa";
+import type { ContestResult } from "../src/lib/liveCount";
 import {
   type ContestFacts,
   leadOf,

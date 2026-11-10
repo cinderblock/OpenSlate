@@ -1,6 +1,7 @@
 import { confidenceBucket, type Race, type Stance, type Subject } from "@openslate/core";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { isStateRaceId, stateContestOfRace } from "../lib/counts";
 import { electionPhase, upcomingChipLabel } from "../lib/election-phase";
 import {
   raceQueryOptions,
@@ -9,7 +10,6 @@ import {
   saveSubjectRace,
 } from "../lib/results";
 import { type Actor, outcomeLine, pendingLine } from "../lib/results-framing";
-import { isSosRaceId } from "../lib/sosResults";
 import { RegionBreakdown } from "./RegionBreakdown";
 import { ResultsTimeline } from "./ResultsTimeline";
 import { SearchField } from "./ui/TextField";
@@ -180,7 +180,7 @@ export function ResultsPanel({ subject, stance, choice, attributedTo }: ResultsP
         </div>
       )}
 
-      {race.data && !isSosRaceId(race.data.id) && (
+      {race.data && !isStateRaceId(race.data.id) && (
         <div className="no-print">
           <ResultsTimeline raceId={race.data.id} hasMap={race.data.has_map ?? false} />
         </div>
@@ -441,14 +441,15 @@ function HitList({ hits, onPick, currentRaceId }: HitListProps) {
 }
 
 function SourceFooter({ raceId }: { raceId?: string | number } = {}) {
-  if (isSosRaceId(raceId)) {
+  const state = stateContestOfRace(raceId)?.source;
+  if (state) {
     return (
       <p className="hint attribution">
         Source:{" "}
-        <a href="https://electionresults.sos.ca.gov" target="_blank" rel="noreferrer">
-          California Secretary of State
+        <a href={state.page} target="_blank" rel="noreferrer">
+          {state.name}
         </a>{" "}
-        · semi-official election-night count; counties keep counting for weeks after.
+        · {state.note}
       </p>
     );
   }

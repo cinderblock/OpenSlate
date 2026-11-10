@@ -12,10 +12,14 @@ import {
   sosEntries,
   sosReportTime,
 } from "@openslate/core";
-import { countyContestResult } from "../src/lib/countyCa";
 import { choicesOf } from "../src/lib/raceHistory";
-import { DISTRICT_FAMILIES, normalizeContest, STATEWIDE_OFFICES } from "../src/lib/sosCa";
-import { parseSosTime } from "../src/lib/sosResults";
+import { countyContestResult } from "../src/lib/regions/us-ca/countyResults";
+import {
+  DISTRICT_FAMILIES,
+  normalizeContest,
+  STATEWIDE_OFFICES,
+} from "../src/lib/regions/us-ca/sos";
+import { parseSosTime } from "../src/lib/regions/us-ca/sosResults";
 
 /**
  * The relay's recorder (packages/core liveRecord) and this browser's history

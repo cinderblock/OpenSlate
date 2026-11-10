@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import type { ContestResult } from "../src/lib/liveCount";
 import { nextRaceChange, raceFingerprint } from "../src/lib/raceChanges";
-import type { ContestResult } from "../src/lib/sosCa";
 
 const measure = (yes: number, no: number, percent?: number): ContestResult => ({
   kind: "measure",

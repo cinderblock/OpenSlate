@@ -6,7 +6,7 @@ import {
   parseSosTime,
   sosContestForSubject,
   sosRaceId,
-} from "../src/lib/sosResults";
+} from "../src/lib/regions/us-ca/sosResults";
 
 const nov = (title: string, jurisdiction = "us/ca", kind = "race") => ({
   title,

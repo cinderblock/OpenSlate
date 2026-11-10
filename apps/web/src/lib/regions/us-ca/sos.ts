@@ -1,6 +1,14 @@
 import { samePerson } from "@openslate/core";
-import { feedState, liveRefetchInterval, noteAnswer, SOS_FEED, withVersion } from "./liveFeed";
-import { baseUrlFor } from "./routing";
+import {
+  type ContestResult,
+  LIVE_REFRESH_MS,
+  type MeasureResult,
+  NotOnBallot,
+  num,
+  parseReporting,
+} from "../../liveCount";
+import { feedState, liveRefetchInterval, noteAnswer, SOS_FEED, withVersion } from "../../liveFeed";
+import { baseUrlFor } from "../../routing";
 
 /**
  * California Secretary of State election-night results
@@ -116,80 +124,6 @@ interface WireContest {
   "supreme-court"?: WireMeasure[];
 }
 
-// ---- Normalized shapes -------------------------------------------------------
-
-export interface Reporting {
-  /** As the API words it: "12.3% (2,935 of 23,860) precincts reporting". */
-  text: string;
-  /** Percent reporting, when the text says. */
-  percent?: number;
-  /** When the count was last updated, as the API words it ("November 3, 2026, 8:15 p.m."). */
-  time?: string;
-  /** When the source last changed its count, ms since epoch, when it says (a county's file time). */
-  changedAt?: number;
-  /**
-   * `changedAt` is when OpenSlate first saw this count, not a time the source
-   * gave (Los Angeles publishes none): the count changed by then.
-   */
-  changedSeen?: boolean;
-}
-
-export interface CandidateResult {
-  name: string;
-  party?: string;
-  votes: number;
-  percent: number;
-  incumbent: boolean;
-}
-
-export interface MeasureResult {
-  number: string;
-  name: string;
-  yes: number;
-  no: number;
-  yesPercent: number;
-  noPercent: number;
-  /** The yes share it needs, when more than a majority: local taxes and bonds often need 55% or two-thirds. */
-  threshold?: "55%" | "2/3";
-}
-
-/** The yes share a measure's title says it needs: "2/3rds (66.67%) Vote Required", "55 Percent Approval". */
-export function measureThreshold(title: string): MeasureResult["threshold"] {
-  if (/2\s*\/\s*3|two[\s-]*thirds|66\.67?\s*%/i.test(title)) return "2/3";
-  if (/\b55\s*(%|percent)/i.test(title)) return "55%";
-  return undefined;
-}
-
-/** Whether a measure is passing on the count so far: a majority, 55%, or two-thirds of yes and no. */
-export function measurePasses(m: Pick<MeasureResult, "yes" | "no" | "threshold">): boolean {
-  const total = m.yes + m.no;
-  if (total === 0) return false;
-  if (m.threshold === "2/3") return m.yes * 3 >= total * 2;
-  if (m.threshold === "55%") return m.yes * 100 >= total * 55;
-  return m.yes * 2 > total;
-}
-
-export type ContestResult =
-  | { kind: "candidates"; title: string; reporting: Reporting; candidates: CandidateResult[] }
-  | { kind: "measure"; title: string; reporting: Reporting; measure: MeasureResult }
-  | { kind: "measures"; title: string; reporting: Reporting; measures: MeasureResult[] };
-
-/** "1,234" → 1234; anything unreadable → 0. */
-export function num(raw: string | number | undefined): number {
-  if (typeof raw === "number") return Number.isFinite(raw) ? raw : 0;
-  if (!raw) return 0;
-  const n = Number(raw.replace(/[,%\s]/g, ""));
-  return Number.isFinite(n) ? n : 0;
-}
-
-export function parseReporting(text: string | undefined, time: string | undefined): Reporting {
-  const out: Reporting = { text: text ?? "" };
-  const pct = text?.match(/([\d.]+)%/);
-  if (pct?.[1]) out.percent = Number(pct[1]);
-  if (time) out.time = time;
-  return out;
-}
-
 function measureOf(m: WireMeasure): MeasureResult {
   return {
     number: String(Number(m.Number)),
@@ -235,14 +169,6 @@ export function normalizeContest(raw: unknown, prop?: string, justice?: string):
     }))
     .sort((a, b) => b.votes - a.votes);
   return { kind: "candidates", title, reporting, candidates };
-}
-
-/** The contest isn't on this election's ballot (the API answers 500 with nothing). */
-export class NotOnBallot extends Error {
-  constructor() {
-    super("Not on this election's ballot");
-    this.name = "NotOnBallot";
-  }
 }
 
 /** The API path for a contest id, statewide or for one county. */
@@ -326,8 +252,6 @@ export async function fetchCounties(): Promise<string[]> {
     .filter((n): n is string => Boolean(n))
     .sort();
 }
-
-export const LIVE_REFRESH_MS = 60_000;
 
 export function contestQueryOptions(id: string, county?: string) {
   return {

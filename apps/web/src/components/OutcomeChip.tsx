@@ -1,8 +1,8 @@
 import { confidenceBucket, type Subject } from "@openslate/core";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { stateContestOfRace } from "../lib/counts";
 import { raceQueryOptions, raceSearchQueryOptions, resolveSubjectRace } from "../lib/results";
-import { isSosRaceId } from "../lib/sosResults";
 
 /**
  * Compact outcome marker used in the collation view alongside each subject
@@ -51,8 +51,8 @@ export function OutcomeChip({ subject }: { subject: Subject }) {
     <span
       className="tag"
       title={
-        isSosRaceId(race.data.id)
-          ? "Source: California Secretary of State"
+        stateContestOfRace(race.data.id)
+          ? `Source: ${stateContestOfRace(race.data.id)?.source.name}`
           : `Source: civicAPI · race #${race.data.id}`
       }
     >

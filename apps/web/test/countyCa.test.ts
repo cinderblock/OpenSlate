@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { type CountyContest, parseClaritySummary } from "@openslate/core";
+import { measurePasses, measureThreshold } from "../src/lib/liveCount";
 import {
   catalogRaceFor,
   contestsForPlace,
@@ -16,8 +17,7 @@ import {
   parseCountyContestId,
   titleDistrict,
   titleWords,
-} from "../src/lib/countyCa";
-import { measurePasses, measureThreshold } from "../src/lib/sosCa";
+} from "../src/lib/regions/us-ca/countyResults";
 
 function contest(key: string, title: string, category = "Local", choices = ["A", "B"]) {
   return parseClaritySummary([
