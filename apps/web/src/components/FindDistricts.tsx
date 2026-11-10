@@ -39,7 +39,7 @@ import {
   searchOpenStreetMap,
   useLookupConsent,
 } from "../lib/lookups";
-import { allRegions, layerWords, regionByCode, regionProfile } from "../lib/regions";
+import { allRegions, layerWords, pageRegion, regionByCode, regionProfile } from "../lib/regions";
 import { DistrictMap } from "./DistrictMap";
 import { ReportCivicProblem } from "./ReportCivicProblem";
 import { Segmented } from "./ui/Segmented";
@@ -78,13 +78,14 @@ function mappedStates(): string {
 }
 
 /**
- * The state to start in: the one the voter's area names, else the only one
- * there are maps of. With neither, the map asks.
+ * The state to start in: the one the voter's area names, else the one the
+ * page's address names (`/va`), else the only one there are maps of. With
+ * none of those, the map asks.
  */
 function startingState(area: Area): string | undefined {
   const states = [...areaStates(area)];
   if (states.length === 1) return states[0];
-  return MAPPED.length === 1 ? MAPPED[0]?.path : undefined;
+  return pageRegion() ?? (MAPPED.length === 1 ? MAPPED[0]?.path : undefined);
 }
 
 /** Load a state's boundaries once something needs them; none for a state the app has no file for. */

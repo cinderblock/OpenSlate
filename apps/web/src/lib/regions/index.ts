@@ -57,16 +57,29 @@ export function regionByCode(country: string, code: string): RegionProfile | und
 }
 
 /**
- * The region a link asks to look at: `?state=va` (a US postal code) or
- * `?state=us/va`. One app serves every state, so a state's own address
- * (`va.example.org`) can be a redirect to the app with this on it. Undefined
- * when the link names none the app knows.
+ * The region a link asks to look at: `/va` (the app's address with a US
+ * postal code after it), `?state=va` or `?state=us/va`. One app serves every
+ * state, so a state's own address (`va.example.org`) can be a redirect to
+ * either. Undefined when the link names none the app knows.
+ *
+ * The path form is the page itself at another name: the build writes a copy
+ * of `index.html` per state (vite.config.ts `statePages`), since every route
+ * is after the "#" and a static host has nothing else at `/va`. A bare
+ * two-letter path is a US state here (`/ca` is California, not Canada);
+ * another country's region would be spelled out, as it is in `?state=`.
  */
-export function linkedRegion(search: string): string | undefined {
-  const value = new URLSearchParams(search).get("state")?.trim().toLowerCase();
+export function linkedRegion(search: string, pathname = ""): string | undefined {
+  const named = new URLSearchParams(search).get("state")?.trim().toLowerCase();
+  const value = named || /^\/([a-z]{2})(?:\.html)?\/?$/i.exec(pathname)?.[1]?.toLowerCase();
   if (!value) return undefined;
   const path = value.includes("/") ? value : `us/${value}`;
   return REGIONS.has(path) ? path : undefined;
+}
+
+/** The region this page's own address names, if it names one (`linkedRegion`). */
+export function pageRegion(): string | undefined {
+  const at = (globalThis as { location?: { search: string; pathname: string } }).location;
+  return at ? linkedRegion(at.search, at.pathname) : undefined;
 }
 
 /**

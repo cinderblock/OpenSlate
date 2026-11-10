@@ -61,6 +61,25 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
   catalog's `index.json`, which stays as it is for older apps and small
   catalogs. A shard's files carry no date, so an unchanged shard keeps its
   revision and nobody re-downloads it.
+- **The boundary files live in this repo** (`apps/web/public/geo/`), the
+  user's call on 2026-11-10 ("in this repo is fine... although i could see
+  keeping it separate being reasonable"). `VITE_GEO_BASE` still lets a build
+  serve them from somewhere else.
+- **A state's short address is a path**, `openslate.us/va` (the user:
+  "can we support openslate.us/ca easily?"). State subdomains as redirects
+  are liked but not now ("no rush though. the /<state> also works"): leave
+  Cloudflare alone until asked.
+- **`openslate.org` is not being bought** ("they want $9k.. no thanks").
+- **A town may always be filed under its county**
+  (`us/ma/middlesex-county/lexington`), and bare (`us/ma/lexington`) when
+  its name is the only one in the state. The user: "allow always specifying
+  the county too".
+- **Reviewing new states' listings and endorsements is someone else's job**
+  ("I'll need someone else to do that. stash for another thread and/or
+  crowdsourcing"). This thread builds the machinery and logs the data work;
+  it doesn't import or sign other states' data.
+- **Every state's results get built** ("why not build each state's results
+  too?").
 - **California's Live results page stays California's** for now (`LivePanel`,
   `watch.ts`): it is built on the Secretary of State's contest ids. Other
   states get results through `counts.ts` and civicAPI until a second state's
@@ -94,8 +113,8 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
      most 3 states (`MAX_UNASKED_STATES`); past that, only what the whole
      country votes on, until a state is known. Setup asks for its draft
      area's state before the area is confirmed.
-3. **Boundaries for every state.** *(current)* Code done; where the files
-   are served from waits on open question 1.
+3. **Boundaries for every state.** Done: all 56 files are in
+   `apps/web/public/geo/` and ship with the app.
    - `bun run geo --state <code>|all [--out <dir>]` builds any state from
      TIGERweb (`167acf6`): district ids as core's `districts.ts` spells them,
      "not defined" areas dropped, an empty layer for a chamber a state lacks,
@@ -107,9 +126,12 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
      states the app ships a file for (those in `public/geo`, or `all`).
    - `geo.ts` reads `VITE_GEO_BASE` (a URL ending in `/`) for where the files
      are; default `geo/` beside the app.
-   - All 56 built to the scratchpad on 2026-11-10; sizes in Findings. Only
-     California's file is in `public/geo`, so only California has a map and
-     "Use my location" in production.
+   - All 56 built on 2026-11-10; sizes in the progress log. California's is
+     the one built 2026-10-27 (it has the council and supervisorial maps the
+     other build would also make; it wasn't replaced).
+   - The service worker keeps a fetched file (`openslate-geo`, 8 entries); it
+     precaches none. The desktop app carries all of them (about 56 MB more
+     unpacked).
 4. **State-aware UI.** Mostly done.
    - Done: Find your districts in any state (`FindDistricts.tsx`: the Census
      address lookup works everywhere with no boundary file; the map and "Use
@@ -118,9 +140,11 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
      with a state chooser and that state's districts (`AreaPicker.tsx`), one
      state per area (`inOneState`, `mergeFoundArea`), the catalog's states on
      All races and the catalog browser (`CatalogRegions.tsx`).
-   - Also done: a link can name a state (`openslate.us/?state=va`,
-     `linkedRegion`), which is all a state's own address would need to be (a
-     redirect); the Results page tells a voter outside California there's no
+   - Also done: a link can name a state (`openslate.us/va`, or
+     `?state=va`; `linkedRegion`, `pageRegion`), and the finder and the
+     by-hand lists start in it. The build writes `va.html` for each state
+     (`statePages` in `vite.config.ts`) and a `_redirects` for `/VA`. That is
+     all a state's own address would need to be (a redirect); the Results page tells a voter outside California there's no
      live count for their state yet, and no longer hands them California's.
    - Not done, logged in `ISSUES.md`: the Live page's watch list is built on
      California's contest ids; towns and townships (twelve states) need a
@@ -204,6 +228,14 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
 - Boundary files, all 56 built 2026-11-10 at the same simplification as
   California's: see the size line in the progress log. Each is the raw JSON
   size; Cloudflare serves them brotli-compressed, about a quarter of that.
+- TIGERweb's `tigerWMS_Current` (January 1, 2026 vintage) has the **120th**
+  Congress's districts (layer 54, `CDSESSN` 120) and the 2026 legislative
+  districts: the maps the 2026-11-03 election used, the 2025 redraws (Texas,
+  California's Proposition 50) included. Downtown Austin is district 10
+  there. Checked 2026-11-10.
+- A Bash heredoc in this harness eats backslashes even when quoted
+  (`\\/` arrived as `/`, `\\n` as a newline): write JSON specs with the Write
+  tool, not `cat <<'EOF'`.
 - In twelve states (New England, NJ, NY, PA, MI, MN, WI) most people live in
   a town or township that the Census calls a county subdivision, not an
   incorporated place. The boundary files have places only, so a lookup there
@@ -232,8 +264,11 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
   Texas voter is told the catalog has nothing for Texas and can add
   California. The shard revisions CI published equal the ones built locally
   from the live bundle (`64d0acca…`, `ff1ed7fc…`): the build is repeatable.
-- [ ] Step 3: nationwide boundary data. Build and app code done; files not
-  served yet (open question 1). **Sizes, all 56, built 2026-11-10 about
+- [x] Step 3: nationwide boundary data, shipped in the app 2026-11-10.
+  Checked in headless Chrome on the build as shipped: `/va` opens Virginia's
+  map and fetches only Virginia's file, "Use my location" in Austin fetches
+  the outlines and Texas's file and finds its districts, all 56 files are
+  served and have a congressional layer. **Sizes, all 56, built 2026-11-10 about
   1:20 PM PST (21:20Z):** 59.7 MB of JSON, 21.8 MB gzipped. Largest: Texas
   4.8 MB, California 4.1 MB (with its council and supervisorial maps),
   Illinois 3.0 MB, North Carolina 2.5 MB; smallest: Guam 6 KB, DC 13 KB,
@@ -250,36 +285,10 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
 
 ## Open questions for the user
 
-1. Where do the states' boundary files live? Measured: see the progress
-   log's size line (tens of MB of JSON in all, a few hundred KB to a few MB
-   a state). Two ways, both ready in code:
-   - **In this repo** (`apps/web/public/geo/`): copy the built files in, run
-     `bun run geo:regions`, commit. Same origin, deploys with the app, no
-     new moving part. Costs that much git history at each rebuild (yearly at
-     most, or a mid-decade redistricting).
-   - **A sibling repo** `openslate-geo`, published like the catalog: set
-     `VITE_GEO_BASE` to its URL and run `bun run geo:regions --files all`.
-     Keeps this repo small; adds a repo, a publish workflow and a second
-     origin.
-   My recommendation changed with the measurement: in this repo. It is
-   smaller than I guessed, and the files change rarely. Say which, and it's
-   one commit. Until then only California has a map; every state has the
-   address lookup.
-2. State subdomains as redirects (`va.openslate.us` → `openslate.us/?state=va`,
-   which the app understands now): want them? It's a Cloudflare change, so it
-   waits for your yes.
-4. Towns and townships (`ISSUES.md`): file one that shares its name with
-   another in the state under its county
-   (`us/pa/greene-county/washington-township`)? My recommendation: yes, and
-   a town whose name is its own in the state keeps the bare path
-   (`us/ma/lexington`). It becomes a SPEC line and then code.
-5. Federal coverage and a second state are data, and the catalog signs what
-   it's given. How do you want new states' listings and endorsements
-   reviewed before they publish: a pull request per source for you to merge,
-   or scripts that publish on their own as California's do? I'd open pull
-   requests.
-3. `openslate.org` is for sale on Afternic. Worth pricing if the project goes
-   past the US.
+None waiting. Answered 2026-11-10 (see Decisions): the boundary files live in
+this repo; state subdomains are wanted but not now; `openslate.org` isn't
+being bought; a town may always be filed under its county; reviewing new
+states' data is for another thread or crowdsourcing.
 
 ## Things not to do
 

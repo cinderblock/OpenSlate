@@ -16,7 +16,7 @@ import {
   parseJurisdiction,
   stateLabel,
 } from "../lib/jurisdictions";
-import { allRegions, regionPathOf, regionProfile } from "../lib/regions";
+import { allRegions, pageRegion, regionPathOf, regionProfile } from "../lib/regions";
 import { FindDistricts } from "./FindDistricts";
 import { Radio, RadioGroup } from "./ui/Radio";
 import { Select } from "./ui/Select";
@@ -64,8 +64,9 @@ export function AreaPicker({
   }
 
   // The state the lists are for: the one chosen here, else the area's, else
-  // the only one the imported races are in. With races from several states
-  // and no area yet, the lists wait for a choice.
+  // the one the page's address names (`/va`), else the only one the imported
+  // races are in. With races from several states and none of those, the lists
+  // wait for a choice.
   const [chosenState, setChosenState] = useState<string>();
   const optionStates = useMemo(
     () =>
@@ -78,7 +79,10 @@ export function AreaPicker({
   );
   const [areaState] = [...areaStates(area)];
   const state =
-    chosenState ?? areaState ?? (optionStates.size === 1 ? [...optionStates][0] : undefined);
+    chosenState ??
+    areaState ??
+    pageRegion() ??
+    (optionStates.size === 1 ? [...optionStates][0] : undefined);
   const needsState = state === undefined && optionStates.size > 1;
   const inState = (path: string) => state === undefined || regionPathOf(path) === state;
 

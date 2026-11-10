@@ -6,6 +6,7 @@ import { build as esbuild } from "esbuild";
 import { deriveIngestKey } from "telemetry-collector-core";
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import { type ManifestOptions, VitePWA } from "vite-plugin-pwa";
+import { US_STATES } from "./src/lib/regions/usStates";
 
 // Which build this is, for feedback reports and issue links (src/lib/feedback.ts).
 // Workers Builds sets WORKERS_CI_COMMIT_SHA; locally, ask git.
@@ -100,6 +101,36 @@ function preloadCatalog(catalog: string | undefined): Plugin {
   };
 }
 
+// One app serves every state, and a state's short address is the app with the
+// state's postal code after it: openslate.us/va (src/lib/regions `linkedRegion`
+// reads it). Every route is after the "#", so a static host has nothing at
+// /va unless a file is there: the page is written again as va.html for each
+// state, which Workers static assets (and GitHub Pages) serve at /va. The
+// copies are the page byte for byte; what differs is the address the app
+// finds itself at. `_redirects` sends the code as people write it (/VA) to
+// the lower-case one: Workers static assets read that file, other hosts
+// ignore it. Not for the desktop build, whose page has one address.
+function statePages(): Plugin {
+  const codes = [...US_STATES.values()].map((state) => state.code.toLowerCase());
+  return {
+    name: "openslate:state-pages",
+    apply: "build",
+    enforce: "post",
+    generateBundle(_options, bundle) {
+      const page = bundle["index.html"];
+      if (page?.type !== "asset") this.error("no index.html to copy for the states' pages");
+      for (const code of codes) {
+        this.emitFile({ type: "asset", fileName: `${code}.html`, source: page.source });
+      }
+      this.emitFile({
+        type: "asset",
+        fileName: "_redirects",
+        source: codes.map((code) => `/${code.toUpperCase()} /${code} 302\n`).join(""),
+      });
+    },
+  };
+}
+
 // The installed app's splash screen and title bar match the page: light and
 // dark --bg from src/styles.css (test/theme.test.ts checks). color_scheme_dark
 // is the manifest's dark override (spec 2026; Safari has it, Chrome plans to);
@@ -128,6 +159,7 @@ export default defineConfig(({ mode }) => ({
     neverBundle(appSecret),
     agentTool(),
     preloadCatalog(loadEnv(mode, process.cwd(), "VITE_").VITE_PUBLIC_ENDORSEMENTS_CATALOG),
+    ...(mode === "desktop" ? [] : [statePages()]),
     VitePWA({
       disable: mode === "desktop",
       registerType: "autoUpdate",
@@ -149,6 +181,9 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,ico,woff2}"],
+        // The states' pages (statePages) are index.html again: navigateFallback
+        // already answers /va with the one copy precached.
+        globIgnores: ["??.html"],
         // API responses (ballot, elections) are cached client-side by TanStack
         // Query's IndexedDB persister, not by the service worker.
         navigateFallback: "/index.html",

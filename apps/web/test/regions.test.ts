@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   allDistricts,
   districtCount,
@@ -123,6 +125,32 @@ describe("a link that names a state", () => {
     expect(linkedRegion("?state=va")).toBe("us/va");
     expect(linkedRegion("?state=VA")).toBe("us/va");
     expect(linkedRegion("?utm=x&state=us/tx")).toBe("us/tx");
+  });
+
+  test("by the page's own address: the postal code after the app's", () => {
+    expect(linkedRegion("", "/va")).toBe("us/va");
+    expect(linkedRegion("", "/VA")).toBe("us/va");
+    expect(linkedRegion("", "/va/")).toBe("us/va");
+    expect(linkedRegion("", "/va.html")).toBe("us/va");
+    // What the link says outright wins over where it was opened.
+    expect(linkedRegion("?state=tx", "/va")).toBe("us/tx");
+    expect(linkedRegion("", "/")).toBeUndefined();
+    expect(linkedRegion("", "/zz")).toBeUndefined();
+    expect(linkedRegion("", "/agents/openslate.mjs")).toBeUndefined();
+    expect(linkedRegion("", "/index.html")).toBeUndefined();
+  });
+
+  test("every state has a page, and only states do", () => {
+    const paths = allRegions().map((region) => region.code.toLowerCase());
+    expect(paths).toHaveLength(56);
+    expect(paths).toContain("ca");
+    expect(paths).toContain("dc");
+    expect(paths).toContain("pr");
+    for (const code of paths) expect(linkedRegion("", `/${code}`)).toBe(`us/${code}`);
+    // The build writes them from the same table (vite.config.ts `statePages`).
+    const config = readFileSync(join(import.meta.dir, "../vite.config.ts"), "utf8");
+    expect(config).toContain("[...US_STATES.values()].map((state) => state.code.toLowerCase())");
+    expect(config).toContain('globIgnores: ["??.html"]');
   });
 
   test("nothing for a state the app doesn't know, or no state", () => {

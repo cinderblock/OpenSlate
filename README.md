@@ -339,12 +339,21 @@ Census Bureau finds the congressional and legislative districts, county and
 city for an address in any state, the District or a territory. Choosing by
 hand offers every state and its districts, numbered, lettered (Minnesota's
 35A) or named (Massachusetts' Third Middlesex). The map and *Use my location*
-work on the device, from a boundary file per state, and so only for the
-states the app ships a file for: California today (`apps/web/public/geo/`).
-`us.topo.json` there is every state's outline, so a location says which state
-it's in before any state's file is loaded. One app serves every state: a link
-can name one to look at (`openslate.us/?state=va`), and its part of the
-catalog comes beside the voter's own.
+work on the device, from a boundary file per state
+(`apps/web/public/geo/`): the app ships all 56, and fetches one only when
+someone opens that state's map. `us.topo.json` there is every state's
+outline, so a location says which state it's in before any state's file is
+loaded.
+
+**One app serves every state.** A state's short address is the app's with the
+postal code after it: `openslate.us/va` (or `openslate.us/?state=va`) opens
+the app looking at Virginia, with its part of the catalog beside the voter's
+own and its map first in *Find your districts*. Every route is after the
+`#`, so the build writes the page again as `va.html` for each state
+(`statePages` in [`apps/web/vite.config.ts`](./apps/web/vite.config.ts)),
+which a static host serves at `/va`; `_redirects` sends `/VA` there. Nothing
+is stored by state: a voter's keys, picks and imports are the same at every
+address.
 
 The boundary files (`us-<code>.topo.json`; California's is ~1.4 MB gzipped,
 fetched only when someone opens the finder) are built by
@@ -356,7 +365,9 @@ and each city's GIS (`CA_OTHER_SOURCES` in `apps/web/scripts/build-geo.ts`;
 how each council map was checked is in
 [plans/council-districts-lookup.md](./plans/council-districts-lookup.md) and
 [plans/council-maps-missing-cities.md](./plans/council-maps-missing-cities.md));
-rerun it after redistricting. All 56 come to about 60 MB (22 MB gzipped).
+rerun it after redistricting. All 56 come to about 60 MB (22 MB gzipped),
+and the districts are the ones the Census calls current (the 120th Congress
+and the 2026 legislatures, as of this build).
 `bun run --filter '@openslate/web' geo:regions` then writes
 `src/lib/regions/usDistricts.gen.ts`: every state's districts, and which
 states' files the app ships. Set `VITE_GEO_BASE` to serve the files from
