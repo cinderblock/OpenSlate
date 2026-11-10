@@ -1,3 +1,4 @@
+import { compareDistrictIds, districtId } from "@openslate/core";
 import { memoByString } from "./memoByString";
 import {
   allRegions,
@@ -32,6 +33,7 @@ import {
 export type JurisdictionPart =
   | { kind: "none" }
   | { kind: "state"; path: string }
+  /** `number`: the district's id, which some states letter (`35a`) or name (`third-middlesex`). */
   | { kind: "district"; path: string; state: string; family: string; number: string }
   | { kind: "local"; path: string; state: string; slug: string };
 
@@ -62,8 +64,31 @@ const parsePath = memoByString((path: string): JurisdictionPart => {
       number: String(Number(district[2])),
     };
   }
+  // A legislative district that isn't numbered: Minnesota's `hd-35a`, Alaska's
+  // `sd-i`, Massachusetts' `sd-third-middlesex`. Only for the families the
+  // state's own legislature and Congress use, so a town can still be called
+  // anything.
+  const named = leaf.match(/^([a-z]+)-([a-z0-9][a-z0-9-]*)$/);
+  if (named?.[1] && named[2] && isLegislativeFamily(state, named[1])) {
+    return {
+      kind: "district",
+      path: `${state}/${leaf}`,
+      state,
+      family: named[1],
+      number: districtId(named[2]),
+    };
+  }
   return { kind: "local", path: `${state}/${leaf}`, state, slug: leaf };
 });
+
+/** Whether a family is Congress or a chamber of the region's legislature, by its profile. */
+function isLegislativeFamily(region: string, family: string): boolean {
+  const layers = regionProfile(region)?.layers;
+  return (
+    layers !== undefined &&
+    (family === layers.congress || family === layers.upper || family === layers.lower)
+  );
+}
 
 export interface Area {
   /** Locality paths, e.g. `us/ca/sf`. */
@@ -221,10 +246,12 @@ export type Placement = "in" | "out" | "unknown";
 /** A `district` path segment naming a district of a family: `sup-4`, `unsd-17760`, `ta-b`. */
 const DISTRICT_SEGMENT = /^([a-z]+)-(\d+|[a-z])$/;
 
-/** A district id as areas store it: numbers without leading zeros. */
-export function districtId(id: string): string {
-  return /^\d+$/.test(id) ? String(Number(id)) : id.toLowerCase();
-}
+/**
+ * A district's id as areas and paths spell it, from what it's called
+ * (core's districts.ts): `07` → `7`, `35A` → `35a`, `Third Middlesex` →
+ * `third-middlesex`.
+ */
+export { districtId };
 
 /**
  * Whether a race filed under `jurisdiction`, decided by the voters of
@@ -442,7 +469,7 @@ export function allDistricts(family: string, present: readonly string[]): string
   const count = districtCount(family);
   const numbers = new Set(present);
   for (let n = 1; n <= count; n++) numbers.add(String(n));
-  return [...numbers].sort((a, b) => Number(a) - Number(b));
+  return [...numbers].sort(compareDistrictIds);
 }
 
 /**
@@ -465,7 +492,9 @@ export function noRaceReason(
   let up: "even" | "odd" | undefined =
     info?.seatsUp && Number.isFinite(year) ? info.seatsUp(year) : undefined;
   if (!up) {
-    const parities = new Set(present.map((n) => Number(n) % 2));
+    // Only where districts are numbered: Alaska's lettered Senate has no odd and even.
+    const numbered = present.every((n) => /^\d+$/.test(n));
+    const parities = new Set(numbered ? present.map((n) => Number(n) % 2) : [0, 1]);
     const count = districtCount(family);
     if (present.length >= 3 && parities.size === 1 && present.length * 2 >= count - 1) {
       up = parities.has(0) ? "even" : "odd";

@@ -6,6 +6,7 @@ export * from "./civic";
 export * from "./countyReport";
 export * from "./countyResults";
 export * from "./crypto";
+export * from "./districts";
 export * from "./envelope";
 export * from "./forecasts";
 export * from "./guide";

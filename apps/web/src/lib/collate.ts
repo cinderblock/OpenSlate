@@ -2,6 +2,7 @@ import {
   type Adoption,
   type BallotChoice,
   type BallotContest,
+  compareDistrictIds,
   type Position,
   type SlatePayload,
   type Stance,
@@ -816,7 +817,7 @@ export function areaOptionsOf(
     districts: Object.fromEntries(
       [...districts.entries()]
         .sort(([a], [b]) => jurisdictionRank(`${a}-1`) - jurisdictionRank(`${b}-1`))
-        .map(([family, numbers]) => [family, [...numbers].sort((a, b) => Number(a) - Number(b))]),
+        .map(([family, numbers]) => [family, [...numbers].sort(compareDistrictIds)]),
     ),
   };
 }

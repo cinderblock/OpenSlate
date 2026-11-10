@@ -9,6 +9,7 @@
     "./civic": "./src/civic.ts",
     "./countyReport": "./src/countyReport.ts",
     "./countyResults": "./src/countyResults.ts",
+    "./districts": "./src/districts.ts",
     "./liveRecord": "./src/liveRecord.ts",
     "./names": "./src/names.ts",
     "./raceHistory": "./src/raceHistory.ts",

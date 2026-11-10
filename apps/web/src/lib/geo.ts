@@ -67,6 +67,17 @@ export interface StateGeo {
   bbox: [number, number, number, number];
   /** Where the data came from, for the map's footnote. */
   vintage: string;
+  /**
+   * The state crosses the 180th meridian (Alaska), and its file keeps it in
+   * one piece by putting everything west of -180: a point east of 0 is moved
+   * the same way before it's looked up (`ownLon`).
+   */
+  wrap?: true;
+}
+
+/** A longitude as a state's shapes have it (`StateGeo.wrap`). */
+function ownLon(geo: StateGeo, lon: number): number {
+  return geo.wrap && lon > 0 ? lon - 360 : lon;
 }
 
 function shapeOf(f: Feature<Polygon | MultiPolygon, { name?: unknown } | null>): GeoShape {
@@ -193,6 +204,7 @@ export function decodeStateGeo(state: string, topology: Topology): StateGeo {
   for (const name of ["cd", "sd", "ad", "county", "place"] as const) {
     const object = topology.objects[name] as GeometryCollection | undefined;
     if (!object) throw new Error(`boundary data has no ${name} layer`);
+    // A layer can be there and empty: Nebraska has no lower chamber.
     const collection = feature(topology, object) as unknown as {
       features: Feature<Polygon | MultiPolygon>[];
     };
@@ -215,8 +227,24 @@ export function decodeStateGeo(state: string, topology: Topology): StateGeo {
     lookups[name] = collection.features.flatMap((f) => (f.geometry ? [shapeOf(f)] : []));
   }
   const bbox = (topology.bbox ?? [0, 0, 0, 0]) as [number, number, number, number];
-  const metadata = (topology as { metadata?: { vintage?: string } }).metadata;
-  return { state, layers, lookups, bbox, vintage: metadata?.vintage ?? "Census TIGERweb" };
+  const metadata = (topology as { metadata?: { vintage?: string; wrap?: boolean } }).metadata;
+  return {
+    state,
+    layers,
+    lookups,
+    bbox,
+    vintage: metadata?.vintage ?? "Census TIGERweb",
+    ...(metadata?.wrap ? { wrap: true as const } : {}),
+  };
+}
+
+/**
+ * Where a boundary file is: beside the app (`geo/`), unless the build names
+ * somewhere else for them (`VITE_GEO_BASE`, a URL ending in `/`).
+ */
+export function geoUrl(file: string): string {
+  const base = import.meta.env.VITE_GEO_BASE as string | undefined;
+  return `${base || `${import.meta.env.BASE_URL}geo/`}${file}`;
 }
 
 const geoCache = new Map<string, Promise<StateGeo>>();
@@ -227,7 +255,7 @@ export function loadStateGeo(state: string): Promise<StateGeo> {
   if (!file) return Promise.reject(new Error(`no boundary data for ${state}`));
   let pending = geoCache.get(state);
   if (!pending) {
-    pending = fetch(`${import.meta.env.BASE_URL}${file}`)
+    pending = fetch(geoUrl(file))
       .then((response) => {
         if (!response.ok) throw new Error(`boundary data: HTTP ${response.status}`);
         return response.json() as Promise<Topology>;
@@ -297,13 +325,16 @@ export function shapeAt(
   lon: number,
   lat: number,
 ): GeoShape | undefined {
-  return geo.layers[layer].find((s) => shapeContains(s, lon, lat));
+  const x = ownLon(geo, lon);
+  return geo.layers[layer].find((s) => shapeContains(s, x, lat));
 }
 
 export interface GeoHit {
-  /** District number per district layer (`"13"`), when the point is in one. */
+  /** District id per district layer (`"13"`, `"35a"`, `"third-middlesex"`), when the point is in one. */
   districts: Partial<Record<DistrictLayer, string>>;
   county?: string;
+  /** The county's whole name where it isn't "<Name> County": "Orleans Parish", "Denali Borough". */
+  countyName?: string;
   /** Incorporated city, if any (unincorporated areas have none). */
   place?: string;
   /**
@@ -335,6 +366,8 @@ export function locate(
 ): GeoHit | null {
   const found: Partial<Record<GeoLayer, string>> = {};
   const nearLine: GeoLayer[] = [];
+  const x = ownLon(geo, lon);
+  let countyName: string | undefined;
   for (const layer of ["county", "cd", "sd", "ad", "place"] as const) {
     const shape = shapeAt(geo, layer, lon, lat);
     if (!shape) {
@@ -342,17 +375,19 @@ export function locate(
       continue;
     }
     found[layer] = shape.id;
-    if (distanceToEdge(shape, lon, lat) < nearMeters) nearLine.push(layer);
+    if (layer === "county") countyName = shape.name;
+    if (distanceToEdge(shape, x, lat) < nearMeters) nearLine.push(layer);
   }
   const districts: GeoHit["districts"] = {};
   for (const layer of DISTRICT_LAYERS) {
     const n = found[layer];
-    if (n) districts[layer] = String(Number(n));
+    if (n) districts[layer] = districtId(n);
   }
   const extra = lookupsAt(geo, lon, lat, { county: found.county, place: found.place }, nearMeters);
   return {
     districts,
     county: found.county,
+    ...(countyName ? { countyName } : {}),
     place: found.place,
     nearLine: [...nearLine, ...(extra?.nearLine ?? [])],
     ...(extra ? { lookups: extra.lookups } : {}),
@@ -374,6 +409,7 @@ export function lookupsAt(
   nearMeters = NEAR_LINE_METERS,
 ): { lookups: NonNullable<GeoHit["lookups"]>; nearLine: LookupLayer[] } | undefined {
   if (LOOKUP_LAYERS.every((layer) => geo.lookups[layer].length === 0)) return undefined;
+  lon = ownLon(geo, lon);
   // Shapes whose box comes within `nearMeters` of the point: the only ones
   // whose line could be that close.
   const dx = nearMeters / (METERS_PER_DEGREE_LON_AT_EQUATOR * Math.cos((lat * Math.PI) / 180));
@@ -498,7 +534,7 @@ export function areaFromHit(
       const n = id.split("|").pop() ?? "";
       if (!countyPath || !n) continue;
       districts[`${countyPath}/sup`] = districtId(n);
-      const county = countyLabel(region, hit.county ?? "");
+      const county = hit.countyName ?? countyLabel(region, hit.county ?? "");
       labels[`${countyPath}/sup`] = `${county} supervisorial district ${districtId(n)}`;
       continue;
     }
@@ -524,7 +560,7 @@ export function areaFromHit(
     ...(hit.place ? [hit.place] : []),
     // A city and county in one (San Francisco): say it once.
     ...(hit.county && !(region?.consolidated?.includes(hit.county) && hit.place === hit.county)
-      ? [`${hit.county} ${region?.countyWord ?? "County"}`]
+      ? [hit.countyName ?? `${hit.county} ${region?.countyWord ?? "County"}`]
       : []),
   ];
   const area: Area = { localities, districts };

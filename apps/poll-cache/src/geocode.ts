@@ -8,6 +8,7 @@
  * request log here. It is passed to Census and forgotten: no cache (in either
  * direction), no logging, no storage.
  */
+import { censusDistrictId } from "@openslate/core/districts";
 
 const CENSUS_UPSTREAM = "https://geocoding.geo.census.gov/geocoder/geographies/onelineaddress";
 /** TIGERweb layers: 120th Congress, 2026 State Senate, 2026 Assembly, counties, cities. */
@@ -51,10 +52,6 @@ function first(geographies: Record<string, CensusGeography[]>, test: RegExp): st
   return key ? geographies[key]?.[0]?.BASENAME : undefined;
 }
 
-function districtNumber(value: string | undefined): string | undefined {
-  return value && /^\d+$/.test(value) ? String(Number(value)) : undefined;
-}
-
 /** Census geocoder JSON → the trimmed matches the app reads. Pure. */
 export function trimCensus(json: unknown): GeocodeMatch[] {
   const matches = (json as { result?: { addressMatches?: CensusMatch[] } })?.result?.addressMatches;
@@ -66,9 +63,12 @@ export function trimCensus(json: unknown): GeocodeMatch[] {
     if (typeof lon !== "number" || typeof lat !== "number") continue;
     const g = m.geographies ?? {};
     const districts: GeocodeMatch["districts"] = {};
-    const cd = districtNumber(first(g, /Congressional Districts$/));
-    const sd = districtNumber(first(g, /State Legislative Districts - Upper$/));
-    const ad = districtNumber(first(g, /State Legislative Districts - Lower$/));
+    // As ids are spelled everywhere (core's districts.ts): Minnesota's 35A is
+    // `35a`, Massachusetts' Third Middlesex `third-middlesex`, a state's one
+    // at-large House district `1`.
+    const cd = censusDistrictId(first(g, /Congressional Districts$/));
+    const sd = censusDistrictId(first(g, /State Legislative Districts - Upper$/));
+    const ad = censusDistrictId(first(g, /State Legislative Districts - Lower$/));
     if (cd) districts.cd = cd;
     if (sd) districts.sd = sd;
     if (ad) districts.ad = ad;

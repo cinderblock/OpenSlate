@@ -25,6 +25,39 @@ test("trimCensus keeps the address, point, districts, county and city", () => {
   expect(() => trimCensus({ errors: ["nope"] })).toThrow();
 });
 
+test("trimCensus spells districts as paths do, whatever the state calls them", () => {
+  const match = (geographies: Record<string, { BASENAME: string }[]>) => ({
+    result: {
+      addressMatches: [{ matchedAddress: "x", coordinates: { x: -72.5, y: 44.2 }, geographies }],
+    },
+  });
+  const districts = (geographies: Record<string, { BASENAME: string }[]>) =>
+    trimCensus(match(geographies))[0]?.districts;
+  // Vermont: one House seat, named legislative districts.
+  expect(
+    districts({
+      "120th Congressional Districts": [{ BASENAME: "Congressional District (at Large)" }],
+      "2026 State Legislative Districts - Upper": [{ BASENAME: "Washington" }],
+      "2026 State Legislative Districts - Lower": [{ BASENAME: "Washington-4" }],
+    }),
+  ).toEqual({ cd: "1", sd: "washington", ad: "washington-4" });
+  // Minnesota: lettered House districts. New Hampshire: zero-padded Senate.
+  expect(
+    districts({
+      "120th Congressional Districts": [{ BASENAME: "5" }],
+      "2026 State Legislative Districts - Upper": [{ BASENAME: "02" }],
+      "2026 State Legislative Districts - Lower": [{ BASENAME: "35A" }],
+    }),
+  ).toEqual({ cd: "5", sd: "2", ad: "35a" });
+  // Nebraska has no lower chamber; water is in no district at all.
+  expect(
+    districts({
+      "120th Congressional Districts": [{ BASENAME: "Congressional Districts not defined" }],
+      "2026 State Legislative Districts - Upper": [{ BASENAME: "46" }],
+    }),
+  ).toEqual({ sd: "46" });
+});
+
 describe("handleGeocode", () => {
   const realFetch = globalThis.fetch;
   afterEach(() => {

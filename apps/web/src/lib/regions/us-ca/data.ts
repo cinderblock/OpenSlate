@@ -150,7 +150,7 @@ export const CALIFORNIA: RegionProfile = {
     "san-dieguito-uhsd": "San Dieguito Union High School District",
   },
   byCounty: { coa: COURT_OF_APPEAL_BY_COUNTY },
-  geoFile: "geo/us-ca.topo.json",
+  geoFile: "us-ca.topo.json",
   refiled: {
     // Filed under their city's path until 2026-10-25, then under their own.
     counties: {

@@ -1,10 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import {
+  allDistricts,
   districtCount,
   districtFamilyLabel,
   familyHasRaces,
+  inArea,
   jurisdictionLabel,
   jurisdictionRank,
+  noRaceReason,
+  parseJurisdiction,
   stateLabel,
 } from "../src/lib/jurisdictions";
 import {
@@ -59,7 +63,7 @@ describe("the region registry", () => {
     expect(districtCount("us/ca/coa")).toBe(6);
     expect(districtCount("us/ca/bart")).toBe(9);
     expect(ca?.counties).toHaveLength(58);
-    expect(ca?.geoFile).toBe("geo/us-ca.topo.json");
+    expect(ca?.geoFile).toBe("us-ca.topo.json");
   });
 
   test("chambers go by what the state calls them", () => {
@@ -98,6 +102,60 @@ describe("the region registry", () => {
     expect(countyLabel(regionProfile("us/ca"), "San Francisco")).toBe("San Francisco");
     expect(countyLabel(regionProfile("us/la"), "Orleans")).toBe("Orleans Parish");
     expect(countyLabel(undefined, "Cook")).toBe("Cook County");
+  });
+});
+
+describe("districts that aren't numbered", () => {
+  const district = (path: string) => {
+    const part = parseJurisdiction(path);
+    return part.kind === "district" ? `${part.family} ${part.number}` : part.kind;
+  };
+
+  test("lettered and named legislative districts are districts", () => {
+    expect(district("us/mn/hd-35a")).toBe("hd 35a");
+    expect(district("us/ak/sd-i")).toBe("sd i");
+    expect(district("us/ma/sd-third-middlesex")).toBe("sd third-middlesex");
+    expect(district("us/nh/hd-hillsborough-10")).toBe("hd hillsborough-10");
+    expect(district("us/vt/hd-orleans-3")).toBe("hd orleans-3");
+    expect(district("us/md/hd-38c")).toBe("hd 38c");
+    // Numbered ones as ever, in any family.
+    expect(district("us/ma/cd-09")).toBe("cd 9");
+    expect(district("us/ca/coa-4")).toBe("coa 4");
+  });
+
+  test("only in the families the state's legislature uses: a town can be called anything", () => {
+    // Iowa has no `council` chamber, Texas no `ad`.
+    expect(district("us/ia/council-bluffs")).toBe("local");
+    expect(district("us/tx/ad-hoc-district")).toBe("local");
+    expect(district("us/ca/city-of-alameda")).toBe("local");
+    expect(district("us/ca/sup-b")).toBe("local");
+    // A region the app has no profile for keeps the numbered rule alone.
+    expect(district("de/by/sd-nord")).toBe("local");
+    expect(district("de/by/sd-4")).toBe("sd 4");
+  });
+
+  test("a voter in one is on its ballot", () => {
+    const area = { localities: [], districts: { "us/mn/hd": "35a", "us/mn/sd": "35" } };
+    expect(inArea("us/mn/hd-35a", area)).toBe(true);
+    expect(inArea("us/mn/hd-35A", area)).toBe(true);
+    expect(inArea("us/mn/hd-35b", area)).toBe(false);
+    expect(inArea("us/mn/sd-35", area)).toBe(true);
+  });
+
+  test("they sort by number, then letter, then name", () => {
+    expect(allDistricts("us/mn/hd", ["35b", "4a", "35a", "10b"])).toEqual([
+      "4a",
+      "10b",
+      "35a",
+      "35b",
+    ]);
+    expect(allDistricts("us/vt/sd", ["washington", "addison"])).toEqual(["addison", "washington"]);
+  });
+
+  test("a lettered chamber has no odd and even years", () => {
+    expect(noRaceReason("us/ak/sd", "b", ["a", "c", "e"], "2026-11-03")).toBe(
+      "Nothing you've imported has a State Senate race in district b this election.",
+    );
   });
 });
 

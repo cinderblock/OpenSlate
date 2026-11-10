@@ -1,12 +1,12 @@
 /**
- * Builds `public/geo/us-ca.topo.json`: California's congressional, State
- * Senate, Assembly, county, city and school district boundaries, for finding
- * someone's districts on their own device (the map picker and "Use my
- * location"; see src/lib/geo.ts and plans/find-my-districts.md). School
- * districts (unified, elementary, secondary), Board of Equalization districts,
- * community college districts and counties' supervisorial districts are looked
- * up, not drawn: they place the races only part of a county or the state votes
- * on (plans/sub-county-districts.md).
+ * Builds a state's boundary file, `public/geo/us-<code>.topo.json`: its
+ * congressional, legislative, county, city and school district boundaries,
+ * for finding someone's districts on their own device (the map picker and
+ * "Use my location"; see src/lib/geo.ts and plans/find-my-districts.md).
+ * School districts (unified, elementary, secondary) are looked up, not drawn,
+ * and so are California's Board of Equalization, community college,
+ * supervisorial and city council districts: they place the races only part
+ * of a county or the state votes on (plans/sub-county-districts.md).
  *
  * Sources: the Census Bureau's TIGERweb "Current" map service (the boundaries
  * in force for this year's elections: the 120th Congress districts, 2026 state
@@ -16,29 +16,49 @@
  * then simplified topologically (shared borders stay shared, so no slivers or
  * overlaps) and quantized.
  *
- *   bun run geo                    fetch (cached in the OS temp dir) and build
+ *   bun run geo                    California: fetch (cached in the OS temp
+ *                                  dir) and build
+ *   bun run geo --state tx         another state, by postal code
+ *   bun run geo --state all        every state, the District and the territories
+ *                                  Census maps; writes `index.json` beside them,
+ *                                  and the states' outlines as `us.topo.json`
+ *   bun run geo --out <dir>        somewhere other than public/geo
  *   bun run geo --refresh          refetch from TIGERweb
  *   bun run geo --check            also report how often the simplified
  *                                  districts disagree with full resolution
  *
  * Re-run after redistricting or when Census publishes a new vintage, and commit
  * the output.
+ *
+ * What differs from state to state, all from the data itself:
+ * - District ids are what the Census calls them, as paths spell them
+ *   (`districtId`): `11`, Minnesota's `35a`, Alaska's Senate `i`, and for the
+ *   states that name theirs, `third-middlesex`, `hillsborough-10`. Anything
+ *   that isn't a plain number keeps its name beside it.
+ * - A state with one seat in the House has one district, `1`.
+ * - Water and other land in no district ("… not defined") is left out.
+ * - Nebraska and the District of Columbia have no lower chamber: that layer
+ *   is there, empty.
+ * - Alaska crosses the 180th meridian. Its western Aleutians are moved to
+ *   west of -180 so the state is one piece (`metadata.wrap`, which
+ *   src/lib/geo.ts applies to the point it looks up).
  */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { censusDistrictId } from "@openslate/core";
 import type { Feature, FeatureCollection, Geometry, Position } from "geojson";
 import { feature, merge, quantize } from "topojson-client";
 import { topology } from "topojson-server";
 import { presimplify, simplify } from "topojson-simplify";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import { decodeStateGeo, LOOKUP_LAYERS, lookupsAt } from "../src/lib/geo";
+import { allRegions, type RegionProfile, regionByCode } from "../src/lib/regions";
 
 const SERVICE =
   "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer";
-const STATE_FIPS = "06";
 
 /**
  * Our layer name → TIGERweb layer id, which attribute becomes the feature id,
@@ -49,7 +69,7 @@ const LAYERS: Record<string, { id: number; key: string; name?: string }> = {
   cd: { id: 54, key: "BASENAME" }, // 120th Congressional Districts
   sd: { id: 56, key: "BASENAME" }, // 2026 State Legislative Districts - Upper
   ad: { id: 58, key: "BASENAME" }, // 2026 State Legislative Districts - Lower
-  county: { id: 82, key: "BASENAME" },
+  county: { id: 82, key: "BASENAME", name: "NAME" },
   place: { id: 28, key: "BASENAME" }, // Incorporated Places
   unsd: { id: 14, key: "GEOID", name: "NAME" }, // Unified School Districts
   elsd: { id: 18, key: "GEOID", name: "NAME" }, // Elementary School Districts
@@ -67,7 +87,8 @@ const LAYERS: Record<string, { id: number; key: string; name?: string }> = {
  * is published only that way, by its redistricting consultant).
  */
 type Attributes = Record<string, unknown>;
-const OTHER_SOURCES: {
+/** California's. No other state has any yet. */
+const CA_OTHER_SOURCES: {
   layer: "boe" | "ccd" | "sup" | "council";
   url: string;
   where?: string;
@@ -423,7 +444,7 @@ const OTHER_SOURCES: {
     };
   }),
 ];
-type OtherLayer = (typeof OTHER_SOURCES)[number]["layer"];
+type OtherLayer = (typeof CA_OTHER_SOURCES)[number]["layer"];
 type LayerName = keyof typeof LAYERS | OtherLayer;
 
 /**
@@ -459,11 +480,26 @@ function arcsOf(object: GeometryCollection): Set<number> {
 }
 /** Grid size per axis; across California's ~10° that is about 5 m. */
 const QUANTIZATION = 2e5;
+/**
+ * The same for the states' outlines (`us.topo.json`): only to tell which
+ * state's file to load, so about a kilometre is plenty.
+ */
+const OUTLINE_MIN_WEIGHT = 1e-4;
+const OUTLINE_QUANTIZATION = 1e4;
 
 const here = dirname(fileURLToPath(import.meta.url));
-const outFile = join(here, "..", "public", "geo", "us-ca.topo.json");
 const cacheDir = join(tmpdir(), "openslate-geo-cache");
 const args = new Set(process.argv.slice(2));
+function option(name: string): string | undefined {
+  const at = process.argv.indexOf(name);
+  return at >= 0 ? process.argv[at + 1] : undefined;
+}
+const outDir = option("--out") ?? join(here, "..", "public", "geo");
+
+/** Boundaries Census doesn't publish, by region: only California has any. */
+function otherSources(region: RegionProfile): typeof CA_OTHER_SOURCES {
+  return region.path === "us/ca" ? CA_OTHER_SOURCES : [];
+}
 
 /**
  * Query an ArcGIS layer as GeoJSON, cached as `<cacheName>.geojson`. The default
@@ -475,6 +511,7 @@ async function fetchGeoJSON(
   outFields: string,
   cacheName: string,
   maxAllowableOffset = "0.00001",
+  allowEmpty = false,
 ): Promise<FeatureCollection> {
   const cached = join(cacheDir, `${cacheName}.geojson`);
   if (!args.has("--refresh") && existsSync(cached)) {
@@ -490,27 +527,58 @@ async function fetchGeoJSON(
     f: "geojson",
   });
   console.log(`fetching ${cacheName} (${layerUrl})…`);
-  // Some city servers answer a heavy query with an occasional 500: try again.
-  let response = await fetch(`${layerUrl}/query?${params}`);
-  for (let retry = 0; response.status >= 500 && retry < 3; retry++) {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    response = await fetch(`${layerUrl}/query?${params}`);
+  const collection: FeatureCollection = { type: "FeatureCollection", features: [] };
+  // A big layer (Texas's cities) comes a page at a time.
+  for (let page = 0; ; page++) {
+    if (page > 0) {
+      params.set("resultOffset", String(collection.features.length));
+      params.set("orderByFields", "OBJECTID");
+    }
+    // Some servers answer a heavy query with an occasional 500, or drop the
+    // connection: try again.
+    let part:
+      | (FeatureCollection & { exceededTransferLimit?: boolean; error?: unknown })
+      | undefined;
+    for (let attempt = 0; attempt < 5 && !part; attempt++) {
+      if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+      try {
+        const response = await fetch(`${layerUrl}/query?${params}`);
+        if (response.status >= 500) continue;
+        if (!response.ok) throw new Error(`${cacheName}: HTTP ${response.status}`);
+        const body = (await response.json()) as NonNullable<typeof part>;
+        // ArcGIS reports some failures as a 200 with an error inside.
+        if (!body.error) part = body;
+      } catch (err) {
+        if (attempt === 4) throw err;
+      }
+    }
+    if (!part) throw new Error(`${cacheName}: no answer after 5 tries`);
+    collection.features.push(...(part.features ?? []));
+    const more =
+      part.exceededTransferLimit ??
+      (part as { properties?: { exceededTransferLimit?: boolean } }).properties
+        ?.exceededTransferLimit;
+    if (!more) break;
+    if (!part.features?.length) throw new Error(`${cacheName}: result truncated`);
   }
-  if (!response.ok) throw new Error(`${cacheName}: HTTP ${response.status}`);
-  const collection = (await response.json()) as FeatureCollection & {
-    exceededTransferLimit?: boolean;
-  };
-  if (collection.exceededTransferLimit) throw new Error(`${cacheName}: result truncated`);
-  if (!collection.features?.length) throw new Error(`${cacheName}: no features`);
+  if (!collection.features.length && !allowEmpty) throw new Error(`${cacheName}: no features`);
   mkdirSync(cacheDir, { recursive: true });
   writeFileSync(cached, JSON.stringify(collection));
   return collection;
 }
 
-function fetchLayer(name: keyof typeof LAYERS): Promise<FeatureCollection> {
+function fetchLayer(region: RegionProfile, name: keyof typeof LAYERS): Promise<FeatureCollection> {
   const { id, key, name: nameKey } = LAYERS[name] ?? { id: 0, key: "" };
-  const outFields = nameKey ? `${key},${nameKey}` : key;
-  return fetchGeoJSON(`${SERVICE}/${id}`, `STATE='${STATE_FIPS}'`, outFields, name);
+  const outFields = [key, "GEOID", ...(nameKey ? [nameKey] : [])].join(",");
+  return fetchGeoJSON(
+    `${SERVICE}/${id}`,
+    `STATE='${region.fips}'`,
+    outFields,
+    `${region.code.toLowerCase()}-${name}`,
+    undefined,
+    // A state needn't have every layer: no lower chamber, no unified districts.
+    true,
+  );
 }
 
 /** Web Mercator (EPSG:3857) to longitude, latitude. */
@@ -597,12 +665,13 @@ async function fetchWebMapLayer(
  * `places`: every city's TIGER name, for council ids.
  */
 async function fetchOther(
+  sources: typeof CA_OTHER_SOURCES,
   layer: OtherLayer,
   places: readonly string[],
 ): Promise<FeatureCollection> {
   const placeByName = new Map(places.map((p) => [p.toLowerCase(), p]));
   const byId = new Map<string, { name?: string; polygons: Position[][][] }>();
-  for (const src of OTHER_SOURCES) {
+  for (const src of sources) {
     if (src.layer !== layer) continue;
     // Cached by what is fetched, so adding or removing a source can't mix them up.
     const key = createHash("sha256")
@@ -697,24 +766,72 @@ function mergePieces(polygons: Position[][][]): Position[][][] {
   return merge(pieces, object.geometries as Parameters<typeof merge>[1]).coordinates;
 }
 
+/** The legislative layers, whose ids are districts' (`districtId`). */
+const DISTRICT_LAYER_NAMES = ["cd", "sd", "ad"];
+
+/** Land and water in no district: "Congressional Districts not defined", GEOID `33ZZ`. */
+function isUndefinedArea(properties: Feature["properties"]): boolean {
+  return (
+    /not defined/i.test(String(properties?.BASENAME ?? properties?.NAME ?? "")) ||
+    /ZZ$/.test(String(properties?.GEOID ?? ""))
+  );
+}
+
 /**
- * Keep only the id (and a school district's name): every byte here ships to
- * every visitor who opens the map. A GEOID loses its state prefix, leaving the
- * 5-digit LEA code that `district` paths use (`us/ca/elsd-18030`).
+ * Move a geometry's points east of the 180th meridian to west of -180 (Alaska's
+ * far Aleutians), so a state that crosses it is one piece.
  */
-function slim(collection: FeatureCollection, layer: keyof typeof LAYERS): FeatureCollection {
+function wrapWest(geometry: Geometry | null): Geometry | null {
+  const shift = (ring: Position[]): Position[] =>
+    ring.map(([x = 0, y = 0]) => [x > 0 ? x - 360 : x, y]);
+  if (geometry?.type === "Polygon")
+    return { ...geometry, coordinates: geometry.coordinates.map(shift) };
+  if (geometry?.type === "MultiPolygon")
+    return { ...geometry, coordinates: geometry.coordinates.map((p) => p.map(shift)) };
+  return geometry;
+}
+
+/**
+ * Keep only the id (and a name where the id doesn't say it): every byte here
+ * ships to every visitor who opens the map.
+ * - A school district's GEOID loses its state prefix, leaving the 5-digit LEA
+ *   code that `district` paths use (`us/ca/elsd-18030`).
+ * - A legislative district's id is its Census name as paths spell it
+ *   (`districtId`), with the name kept when that isn't a plain number
+ *   ("Third Middlesex"). A state's one at-large House district is `1`.
+ * - A county keeps its full name when it isn't "<Name> County" (a parish, a
+ *   borough, a census area, a municipio).
+ */
+function slim(
+  collection: FeatureCollection,
+  layer: keyof typeof LAYERS,
+  region: RegionProfile,
+  wrap: boolean,
+): FeatureCollection {
   const { key, name: nameKey } = LAYERS[layer] ?? { key: "" };
+  const fips = region.fips ?? "";
   return {
     type: "FeatureCollection",
-    features: collection.features.map((f): Feature => {
-      const value = f.properties?.[key];
-      if (typeof value !== "string" || !value) throw new Error(`feature without ${key}`);
-      const id = key === "GEOID" ? value.slice(STATE_FIPS.length) : value;
-      const name = nameKey ? f.properties?.[nameKey] : undefined;
-      if (nameKey && (typeof name !== "string" || !name))
-        throw new Error(`${id} without ${nameKey}`);
-      return { type: "Feature", id, properties: name ? { name } : {}, geometry: f.geometry };
-    }),
+    features: collection.features
+      .filter((f) => !isUndefinedArea(f.properties))
+      .map((f): Feature => {
+        const value = f.properties?.[key];
+        if (typeof value !== "string" || !value) throw new Error(`feature without ${key}`);
+        const geometry = wrap ? wrapWest(f.geometry) : f.geometry;
+        if (DISTRICT_LAYER_NAMES.includes(layer)) {
+          const id = censusDistrictId(value);
+          if (!id) throw new Error(`${layer}: no id for "${value}"`);
+          const named = !/^\d+$/.test(id);
+          return { type: "Feature", id, properties: named ? { name: value } : {}, geometry };
+        }
+        const id = key === "GEOID" ? value.slice(fips.length) : value;
+        const name = nameKey ? f.properties?.[nameKey] : undefined;
+        if (nameKey && (typeof name !== "string" || !name))
+          throw new Error(`${id} without ${nameKey}`);
+        // A county's name only where it isn't the usual "<Name> County".
+        const keep = layer === "county" ? name !== `${id} County` : Boolean(name);
+        return { type: "Feature", id, properties: keep ? { name } : {}, geometry };
+      }),
   };
 }
 
@@ -748,118 +865,261 @@ function whichFeature(collection: FeatureCollection, x: number, y: number): stri
     | undefined;
 }
 
-const source: Record<LayerName, FeatureCollection> = {} as Record<LayerName, FeatureCollection>;
-for (const name of Object.keys(LAYERS)) {
-  source[name] = slim(await fetchLayer(name), name);
+/** [minX, maxX] of a geometry's points, for telling which side of the map it's on. */
+function bboxOf(geometry: Geometry | null): number[] {
+  const rings: Position[][] =
+    geometry?.type === "Polygon"
+      ? geometry.coordinates
+      : geometry?.type === "MultiPolygon"
+        ? geometry.coordinates.flat()
+        : [];
+  let min = Number.POSITIVE_INFINITY;
+  let max = Number.NEGATIVE_INFINITY;
+  for (const ring of rings) {
+    for (const [x = 0] of ring) {
+      if (x < min) min = x;
+      if (x > max) max = x;
+    }
+  }
+  return Number.isFinite(min) ? [min, max] : [];
 }
-const placeNames = source.place.features.map((f) => String(f.id));
-for (const layer of new Set(OTHER_SOURCES.map((s) => s.layer))) {
-  source[layer] = await fetchOther(layer, placeNames);
+
+/** A state's outline: its counties as one shape, for the file that finds a point's state. */
+function stateOutline(counties: FeatureCollection): Feature {
+  const polygons = counties.features.flatMap((f) =>
+    f.geometry?.type === "Polygon"
+      ? [f.geometry.coordinates]
+      : f.geometry?.type === "MultiPolygon"
+        ? f.geometry.coordinates
+        : [],
+  );
+  return {
+    type: "Feature",
+    properties: {},
+    geometry: { type: "MultiPolygon", coordinates: mergePieces(polygons) },
+  };
 }
+
+/** What one state's build reports, for `index.json` and the outlines. */
+interface Built {
+  region: string;
+  file: string;
+  bytes: number;
+  counts: Record<string, number>;
+  wrap?: true;
+  /** Each legislative layer's districts: an id, or `[id, name]` where the id isn't a number. */
+  districts: Record<"cd" | "sd" | "ad", Array<string | [string, string]>>;
+  outline: Feature;
+}
+
+let vintage = "unknown";
+
+/** Fetch and build one state's file. Undefined when Census maps nothing to build it from. */
+async function build(region: RegionProfile): Promise<Built | undefined> {
+  const source: Record<LayerName, FeatureCollection> = {} as Record<LayerName, FeatureCollection>;
+  const raw: Record<string, FeatureCollection> = {};
+  for (const name of Object.keys(LAYERS)) raw[name] = await fetchLayer(region, name);
+  if (!raw.county?.features.length) {
+    console.log(`${region.name}: Census maps no counties for it; skipped`);
+    return undefined;
+  }
+  // A state that reaches across the 180th meridian (Alaska): one piece, west of -180.
+  const lons = (raw.county?.features ?? []).flatMap((f) => bboxOf(f.geometry));
+  const wrap = lons.some((x) => x > 170) && lons.some((x) => x < -170);
+  for (const name of Object.keys(LAYERS)) {
+    source[name] = slim(raw[name] as FeatureCollection, name, region, wrap);
+  }
+  const placeNames = source.place.features.map((f) => String(f.id));
+  const others = otherSources(region);
+  for (const layer of new Set(others.map((s) => s.layer))) {
+    source[layer] = await fetchOther(others, layer, placeNames);
+  }
+
+  const full = topology(source);
+  const weighted = presimplify(full);
+  // Points on borders no drawn layer uses are dropped below LOOKUP_MIN_WEIGHT:
+  // zero their weight there, and `simplify` drops them with the rest.
+  const drawn = new Set<number>();
+  for (const name of DRAWN)
+    for (const arc of arcsOf(weighted.objects[name] as GeometryCollection)) drawn.add(arc);
+  for (const [i, arc] of weighted.arcs.entries()) {
+    if (drawn.has(i)) continue;
+    for (const point of arc) if ((point[2] ?? 0) < LOOKUP_MIN_WEIGHT) point[2] = 0;
+  }
+  const simplified = quantize(simplify(weighted, MIN_WEIGHT), QUANTIZATION) as Topology & {
+    metadata?: unknown;
+  };
+  simplified.metadata = {
+    source: [
+      `${SERVICE} (layers ${Object.entries(LAYERS)
+        .map(([name, { id }]) => `${name}=${id}`)
+        .join(", ")})`,
+      ...others.map((s) => `${s.layer}: ${s.url}`),
+    ].join("; "),
+    vintage,
+    builtAt: new Date().toISOString().slice(0, 10),
+    minWeight: MIN_WEIGHT,
+    lookupMinWeight: LOOKUP_MIN_WEIGHT,
+    quantization: QUANTIZATION,
+    ...(wrap ? { wrap: true } : {}),
+  };
+
+  const outFile = join(outDir, `us-${region.code.toLowerCase()}.topo.json`);
+  mkdirSync(dirname(outFile), { recursive: true });
+  const json = JSON.stringify(simplified);
+  writeFileSync(outFile, json);
+  console.log(
+    `wrote ${outFile}: ${(json.length / 1024).toFixed(0)} KB, ${simplified.arcs.length} arcs`,
+  );
+  const counts: Record<string, number> = {};
+  for (const name of Object.keys(source)) {
+    const object = simplified.objects[name] as GeometryCollection;
+    counts[name] = object.geometries.length;
+  }
+  console.log(
+    `  ${Object.entries(counts)
+      .map(([name, n]) => `${name} ${n}`)
+      .join(", ")}`,
+  );
+
+  if (args.has("--check")) {
+    // Random points inside cities (where people live and districts follow
+    // streets): how often does the shipped file put one in a different district
+    // than full resolution does?
+    const places = source.place.features;
+    const randomCityPoint = (): [number, number] => {
+      for (;;) {
+        const place = places[Math.floor(Math.random() * places.length)] as Feature;
+        const ring = (
+          place.geometry?.type === "Polygon"
+            ? place.geometry.coordinates[0]
+            : place.geometry?.type === "MultiPolygon"
+              ? place.geometry.coordinates[0]?.[0]
+              : undefined
+        ) as Position[] | undefined;
+        if (!ring) continue;
+        const xs = ring.map((p) => p[0] as number);
+        const ys = ring.map((p) => p[1] as number);
+        const x = Math.min(...xs) + Math.random() * (Math.max(...xs) - Math.min(...xs));
+        const y = Math.min(...ys) + Math.random() * (Math.max(...ys) - Math.min(...ys));
+        if (geometryContains(place.geometry, x, y)) return [x, y];
+      }
+    };
+    for (const name of ["cd", "sd", "ad"] as const) {
+      const shipped = feature(simplified, simplified.objects[name] as GeometryCollection);
+      let compared = 0;
+      let differ = 0;
+      while (compared < 20000) {
+        const [x, y] = randomCityPoint();
+        const truth = whichFeature(source[name], x, y);
+        if (truth === undefined) continue;
+        compared++;
+        if (whichFeature(shipped, x, y) !== truth) differ++;
+      }
+      console.log(`  check ${name}: ${differ} of ${compared} random city points differ`);
+    }
+    // Lookup layers, as the app reads them (src/lib/geo.ts): a point near a line
+    // is left unknown, so what matters is how often a district it does set is
+    // wrong (a race hidden that's on the ballot), and how often it's unknown.
+    const geo = decodeStateGeo(region.path, simplified);
+    const counts = Object.fromEntries(
+      LOOKUP_LAYERS.map((l) => [l, { compared: 0, wrong: 0, unknown: 0 }]),
+    );
+    for (let i = 0; i < 20000; i++) {
+      const [x, y] = randomCityPoint();
+      const within = {
+        county: whichFeature(source.county, x, y),
+        place: whichFeature(source.place, x, y),
+      };
+      const found = lookupsAt(geo, x, y, within)?.lookups ?? {};
+      for (const layer of LOOKUP_LAYERS) {
+        const truth = whichFeature(source[layer], x, y);
+        const count = counts[layer];
+        if (truth === undefined || !count) continue;
+        count.compared++;
+        const id = found[layer]?.id;
+        if (id === undefined) count.unknown++;
+        else if (id !== truth) count.wrong++;
+      }
+    }
+    for (const [layer, { compared, wrong, unknown }] of Object.entries(counts)) {
+      console.log(
+        `  check ${layer}: of ${compared} random city points, ${wrong} wrong, ${unknown} unknown`,
+      );
+    }
+  }
+
+  const districts = (name: "cd" | "sd" | "ad") =>
+    source[name].features.map((f): [string, string] | string => {
+      const called = (f.properties as { name?: string } | null)?.name;
+      return called ? [String(f.id), called] : String(f.id);
+    });
+  return {
+    region: region.path,
+    file: `us-${region.code.toLowerCase()}.topo.json`,
+    bytes: json.length,
+    counts,
+    ...(wrap ? { wrap: true } : {}),
+    districts: { cd: districts("cd"), sd: districts("sd"), ad: districts("ad") },
+    outline: stateOutline(source.county),
+  };
+}
+
+const which = (option("--state") ?? "ca").toLowerCase();
+const regions =
+  which === "all"
+    ? allRegions().filter((region) => region.path.startsWith("us/"))
+    : [regionByCode("us", which)].filter((r): r is RegionProfile => r !== undefined);
+if (regions.length === 0) throw new Error(`no state "${which}"`);
 
 const meta = (await (await fetch(`${SERVICE}?f=json`)).json()) as {
   documentInfo?: { Comments?: string };
 };
+vintage = meta.documentInfo?.Comments ?? "unknown";
 
-const full = topology(source);
-const weighted = presimplify(full);
-// Points on borders no drawn layer uses are dropped below LOOKUP_MIN_WEIGHT:
-// zero their weight there, and `simplify` drops them with the rest.
-const drawn = new Set<number>();
-for (const name of DRAWN)
-  for (const arc of arcsOf(weighted.objects[name] as GeometryCollection)) drawn.add(arc);
-for (const [i, arc] of weighted.arcs.entries()) {
-  if (drawn.has(i)) continue;
-  for (const point of arc) if ((point[2] ?? 0) < LOOKUP_MIN_WEIGHT) point[2] = 0;
-}
-const simplified = quantize(simplify(weighted, MIN_WEIGHT), QUANTIZATION) as Topology & {
-  metadata?: unknown;
-};
-simplified.metadata = {
-  source: `${SERVICE} (layers ${Object.entries(LAYERS)
-    .map(([name, { id }]) => `${name}=${id}`)
-    .join(", ")}); ${OTHER_SOURCES.map((s) => `${s.layer}: ${s.url}`).join("; ")}`,
-  vintage: meta.documentInfo?.Comments ?? "unknown",
-  builtAt: new Date().toISOString().slice(0, 10),
-  minWeight: MIN_WEIGHT,
-  lookupMinWeight: LOOKUP_MIN_WEIGHT,
-  quantization: QUANTIZATION,
-};
-
-mkdirSync(dirname(outFile), { recursive: true });
-const json = JSON.stringify(simplified);
-writeFileSync(outFile, json);
-console.log(
-  `wrote ${outFile}: ${(json.length / 1024).toFixed(0)} KB, ${simplified.arcs.length} arcs`,
-);
-for (const name of Object.keys(source)) {
-  const object = simplified.objects[name] as GeometryCollection;
-  console.log(`  ${name}: ${object.geometries.length}`);
+const built: Built[] = [];
+const failed: string[] = [];
+for (const region of regions) {
+  try {
+    const result = await build(region);
+    if (result) built.push(result);
+  } catch (err) {
+    // One state's bad day at the Census shouldn't stop the other fifty.
+    if (regions.length === 1) throw err;
+    failed.push(region.code);
+    console.error(`${region.name}: ${err instanceof Error ? err.message : String(err)}`);
+  }
 }
 
-if (args.has("--check")) {
-  // Random points inside cities (where people live and districts follow
-  // streets): how often does the shipped file put one in a different district
-  // than full resolution does?
-  const places = source.place.features;
-  const randomCityPoint = (): [number, number] => {
-    for (;;) {
-      const place = places[Math.floor(Math.random() * places.length)] as Feature;
-      const ring = (
-        place.geometry?.type === "Polygon"
-          ? place.geometry.coordinates[0]
-          : place.geometry?.type === "MultiPolygon"
-            ? place.geometry.coordinates[0]?.[0]
-            : undefined
-      ) as Position[] | undefined;
-      if (!ring) continue;
-      const xs = ring.map((p) => p[0] as number);
-      const ys = ring.map((p) => p[1] as number);
-      const x = Math.min(...xs) + Math.random() * (Math.max(...xs) - Math.min(...xs));
-      const y = Math.min(...ys) + Math.random() * (Math.max(...ys) - Math.min(...ys));
-      if (geometryContains(place.geometry, x, y)) return [x, y];
-    }
+if (which === "all") {
+  // Which files there are, and what each state's districts are called.
+  const index = {
+    vintage,
+    builtAt: new Date().toISOString().slice(0, 10),
+    states: built.map(({ outline: _, ...state }) => state),
   };
-  for (const name of ["cd", "sd", "ad"] as const) {
-    const shipped = feature(simplified, simplified.objects[name] as GeometryCollection);
-    let compared = 0;
-    let differ = 0;
-    while (compared < 20000) {
-      const [x, y] = randomCityPoint();
-      const truth = whichFeature(source[name], x, y);
-      if (truth === undefined) continue;
-      compared++;
-      if (whichFeature(shipped, x, y) !== truth) differ++;
-    }
-    console.log(`  check ${name}: ${differ} of ${compared} random city points differ`);
-  }
-  // Lookup layers, as the app reads them (src/lib/geo.ts): a point near a line
-  // is left unknown, so what matters is how often a district it does set is
-  // wrong (a race hidden that's on the ballot), and how often it's unknown.
-  const geo = decodeStateGeo("us/ca", simplified);
-  const counts = Object.fromEntries(
-    LOOKUP_LAYERS.map((l) => [l, { compared: 0, wrong: 0, unknown: 0 }]),
+  writeFileSync(join(outDir, "index.json"), `${JSON.stringify(index)}\n`);
+
+  // Every state's outline in one small file: which state a point is in, before
+  // any state's own file is loaded. Coarse on purpose; a point near a border
+  // is settled by the states' files themselves.
+  const outlines: FeatureCollection = {
+    type: "FeatureCollection",
+    features: built.map(({ region, outline }) => ({ ...outline, id: region })),
+  };
+  const national = quantize(
+    simplify(presimplify(topology({ state: outlines })), OUTLINE_MIN_WEIGHT),
+    OUTLINE_QUANTIZATION,
+  ) as Topology & { metadata?: unknown };
+  national.metadata = { vintage, builtAt: index.builtAt };
+  const text = JSON.stringify(national);
+  writeFileSync(join(outDir, "us.topo.json"), text);
+  const total = built.reduce((sum, state) => sum + state.bytes, 0);
+  console.log(
+    `\n${built.length} states, ${(total / 1024 / 1024).toFixed(1)} MB in all; us.topo.json ${(text.length / 1024).toFixed(0)} KB`,
   );
-  for (let i = 0; i < 20000; i++) {
-    const [x, y] = randomCityPoint();
-    const within = {
-      county: whichFeature(source.county, x, y),
-      place: whichFeature(source.place, x, y),
-    };
-    const found = lookupsAt(geo, x, y, within)?.lookups ?? {};
-    for (const layer of LOOKUP_LAYERS) {
-      const truth = whichFeature(source[layer], x, y);
-      const count = counts[layer];
-      if (truth === undefined || !count) continue;
-      count.compared++;
-      const id = found[layer]?.id;
-      if (id === undefined) count.unknown++;
-      else if (id !== truth) count.wrong++;
-    }
-  }
-  for (const [layer, { compared, wrong, unknown }] of Object.entries(counts)) {
-    console.log(
-      `  check ${layer}: of ${compared} random city points, ${wrong} wrong, ${unknown} unknown`,
-    );
+  if (failed.length) {
+    console.error(`FAILED: ${failed.join(", ")}`);
+    process.exitCode = 1;
   }
 }

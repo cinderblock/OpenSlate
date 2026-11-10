@@ -77,7 +77,7 @@ export interface RegionProfile {
    * Alameda County in Court of Appeal district 1.
    */
   byCounty?: Readonly<Record<string, Readonly<Record<string, string>>>>;
-  /** The boundary file the app ships for it, under the app's base URL. */
+  /** Its boundary file's name, where the app has one (`geoUrl` in geo.ts says where they are). */
   geoFile?: string;
   /**
    * Paths the catalog once filed differently, for areas saved before

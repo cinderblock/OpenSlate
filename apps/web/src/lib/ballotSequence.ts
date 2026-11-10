@@ -211,7 +211,8 @@ function partisanRank(title: string): number {
 /** A district's number, for ordering several of one office ("District 4" before "District 12"). */
 function districtNumber(race: SequencedRace): number {
   const where = parseJurisdiction(race.jurisdiction);
-  if (where.kind === "district") return Number(where.number);
+  // A lettered district by its number (35a with 35); a named one after the numbered.
+  if (where.kind === "district") return Number.parseInt(where.number, 10) || 0;
   const n = race.district?.match(/-(\d+)$/)?.[1];
   return n ? Number(n) : 0;
 }
