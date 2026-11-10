@@ -26,6 +26,8 @@ free and unmetered. Held until after the 2026-11-03 election (see
 
 ## Decisions already made (don't re-ask)
 
+- The signing key `uri` stays on the Pages address (the user, 2026-11-10).
+
 - Run after the election, on 2026-11-04 (the user, 2026-10-30).
 - Pre-approved scope (the user, 2026-10-30 and 2026-11-02): publish alongside
   Pages from the endorsements repo's CI; an ops worker with the custom domain;
@@ -57,8 +59,9 @@ free and unmetered. Held until after the 2026-11-03 election (see
        the Alameda County GOP adoption replaced its one entry, uri only).
        `keep-unchanged.ts` and the ballot-argument scripts read the new host.
        Existing `adopts[].uri` values unchanged.
-6. [ ] **Current, needs the user:** the signing key's `uri`. See open
-       question 1.
+6. [x] Signing key `uri`: left on the Pages address (the user deferred to
+       the recommendation, 2026-11-10). Pages stays up, so it still resolves,
+       and the app never reads it. No change made.
 
 ## Findings / gotchas
 
@@ -132,18 +135,14 @@ free and unmetered. Held until after the 2026-11-03 election (see
       push events never reach Cloudflare. Confirmed: it wasn't listed; the user
       added it 2026-11-10 and the next push built.
 - [x] Verify, switch the app default, update the endorsements scripts.
-- [ ] Signing key `uri` (open question 1).
+- [x] Signing key `uri`: decided, left as is (2026-11-10).
 - [x] The scheduled task turned itself off, so it won't run again.
 
 ## Open questions for the user
 
-1. The project key's `uri` (`keys/project-public.json`,
-   `well-known/openslate.json`) still names the Pages site, and every slate's
-   `issuer.uri` does too. That value comes from the `OPENSLATE_SIGNING_KEY`
-   secret, so changing it means the user edits the secret's JSON (`uri` only)
-   and re-saves it; then the two key files change to match and every slate is
-   re-signed. Recommendation: leave it. Pages stays up, so the address still
-   works, and nothing in the app reads it.
+None. The signing key `uri` stays on Pages (decided 2026-11-10). Revisit
+only if Pages is ever retired: then the `OPENSLATE_SIGNING_KEY` secret's
+`uri` changes, the two key files follow, and every slate is re-signed.
 
 ## Things not to do
 
