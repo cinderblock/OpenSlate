@@ -11,8 +11,8 @@
 import { censusDistrictId } from "@openslate/core/districts";
 
 const CENSUS_UPSTREAM = "https://geocoding.geo.census.gov/geocoder/geographies/onelineaddress";
-/** TIGERweb layers: 120th Congress, 2026 State Senate, 2026 Assembly, counties, cities. */
-const CENSUS_LAYERS = "54,56,58,82,28";
+/** TIGERweb layers: 120th Congress, 2026 State Senate, 2026 Assembly, counties, cities, county subdivisions. */
+const CENSUS_LAYERS = "54,56,58,82,28,22";
 /** Census rejects longer addresses. */
 export const MAX_ADDRESS_LENGTH = 100;
 
@@ -27,8 +27,16 @@ export interface GeocodeMatch {
   state?: string;
   districts: { cd?: string; sd?: string; ad?: string };
   county?: string;
+  /** The county's whole name: "Orleans Parish", "Middlesex County". */
+  countyName?: string;
   /** Incorporated city, if any. */
   place?: string;
+  /**
+   * The town or township, where it is a government of its own and not an
+   * incorporated place (New England, New York, the Midwest): the Census's
+   * whole name for it ("Washington township") and the name alone.
+   */
+  town?: { name: string; basename: string };
 }
 
 export interface GeocodeResponse {
@@ -38,6 +46,9 @@ export interface GeocodeResponse {
 
 interface CensusGeography {
   BASENAME?: string;
+  NAME?: string;
+  /** `A`: an active government; `B`: one partly consolidated, with its own officers. */
+  FUNCSTAT?: string;
 }
 
 interface CensusMatch {
@@ -47,9 +58,16 @@ interface CensusMatch {
   geographies?: Record<string, CensusGeography[]>;
 }
 
-function first(geographies: Record<string, CensusGeography[]>, test: RegExp): string | undefined {
+function firstOf(
+  geographies: Record<string, CensusGeography[]>,
+  test: RegExp,
+): CensusGeography | undefined {
   const key = Object.keys(geographies).find((k) => test.test(k));
-  return key ? geographies[key]?.[0]?.BASENAME : undefined;
+  return key ? geographies[key]?.[0] : undefined;
+}
+
+function first(geographies: Record<string, CensusGeography[]>, test: RegExp): string | undefined {
+  return firstOf(geographies, test)?.BASENAME;
 }
 
 /** Census geocoder JSON → the trimmed matches the app reads. Pure. */
@@ -72,16 +90,25 @@ export function trimCensus(json: unknown): GeocodeMatch[] {
     if (cd) districts.cd = cd;
     if (sd) districts.sd = sd;
     if (ad) districts.ad = ad;
-    const county = first(g, /^Counties$/);
+    const county = firstOf(g, /^Counties$/);
     const place = first(g, /^Incorporated Places$/);
+    // A county subdivision that is a government (the others are the Census's
+    // own bookkeeping, or a city's twin).
+    const sub = firstOf(g, /^County Subdivisions$/);
+    const town =
+      sub?.NAME && sub.BASENAME && (sub.FUNCSTAT === "A" || sub.FUNCSTAT === "B")
+        ? { name: sub.NAME, basename: sub.BASENAME }
+        : undefined;
     out.push({
       address: m.matchedAddress ?? "",
       lon,
       lat,
       ...(m.addressComponents?.state ? { state: m.addressComponents.state } : {}),
       districts,
-      ...(county ? { county } : {}),
+      ...(county?.BASENAME ? { county: county.BASENAME } : {}),
+      ...(county?.BASENAME && county.NAME ? { countyName: county.NAME } : {}),
       ...(place ? { place } : {}),
+      ...(town ? { town } : {}),
     });
   }
   return out;

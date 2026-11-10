@@ -18,7 +18,8 @@
  *
  *   bun run geo                    California: fetch (cached in the OS temp
  *                                  dir) and build
- *   bun run geo --state tx         another state, by postal code
+ *   bun run geo --state tx         another state, by postal code (or several:
+ *                                  `--state ct,ma,ri`)
  *   bun run geo --state all        every state, the District and the territories
  *                                  Census maps; writes `index.json` beside them,
  *                                  and the states' outlines as `us.topo.json`
@@ -55,7 +56,9 @@ import { topology } from "topojson-server";
 import { presimplify, simplify } from "topojson-simplify";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import { decodeStateGeo, LOOKUP_LAYERS, lookupsAt } from "../src/lib/geo";
+import { slugOf } from "../src/lib/jurisdictions";
 import { allRegions, type RegionProfile, regionByCode } from "../src/lib/regions";
+import { townsAreBare } from "../src/lib/towns";
 
 const SERVICE =
   "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer";
@@ -65,12 +68,28 @@ const SERVICE =
  * and for school districts the name kept beside it (their id, the LEA code,
  * says nothing to a voter).
  */
-const LAYERS: Record<string, { id: number; key: string; name?: string }> = {
+const LAYERS: Record<
+  string,
+  { id: number; key: string; name?: string; where?: string; fields?: string[] }
+> = {
   cd: { id: 54, key: "BASENAME" }, // 120th Congressional Districts
   sd: { id: 56, key: "BASENAME" }, // 2026 State Legislative Districts - Upper
   ad: { id: 58, key: "BASENAME" }, // 2026 State Legislative Districts - Lower
   county: { id: 82, key: "BASENAME", name: "NAME" },
-  place: { id: 28, key: "BASENAME" }, // Incorporated Places
+  // Incorporated Places. NAME ("Woodstock village") is kept only for one a
+  // town goes by the name of (src/lib/towns.ts).
+  place: { id: 28, key: "BASENAME", fields: ["NAME"] },
+  // County Subdivisions that are governments of their own (FUNCSTAT A, or B:
+  // partly consolidated, with its own officers): towns and townships. A
+  // city's twin there is F, New York City's boroughs G, the Census's own
+  // divisions S or N. Ids are `<County>|<NAME>`, the name kept beside it.
+  town: {
+    id: 22,
+    key: "NAME",
+    name: "BASENAME",
+    where: "FUNCSTAT IN ('A','B')",
+    fields: ["COUNTY"],
+  },
   unsd: { id: 14, key: "GEOID", name: "NAME" }, // Unified School Districts
   elsd: { id: 18, key: "GEOID", name: "NAME" }, // Elementary School Districts
   scsd: { id: 16, key: "GEOID", name: "NAME" }, // Secondary School Districts
@@ -568,11 +587,13 @@ async function fetchGeoJSON(
 }
 
 function fetchLayer(region: RegionProfile, name: keyof typeof LAYERS): Promise<FeatureCollection> {
-  const { id, key, name: nameKey } = LAYERS[name] ?? { id: 0, key: "" };
-  const outFields = [key, "GEOID", ...(nameKey ? [nameKey] : [])].join(",");
+  const { id, key, name: nameKey, where, fields = [] } = LAYERS[name] ?? { id: 0, key: "" };
+  const outFields = [...new Set([key, "GEOID", ...(nameKey ? [nameKey] : []), ...fields])].join(
+    ",",
+  );
   return fetchGeoJSON(
     `${SERVICE}/${id}`,
-    `STATE='${region.fips}'`,
+    `STATE='${region.fips}'${where ? ` AND ${where}` : ""}`,
     outFields,
     `${region.code.toLowerCase()}-${name}`,
     undefined,
@@ -807,6 +828,12 @@ function slim(
   layer: keyof typeof LAYERS,
   region: RegionProfile,
   wrap: boolean,
+  context: {
+    /** Counties' names by their FIPS code within the state. */
+    countyByFips: ReadonlyMap<string, string>;
+    /** The names towns of the state go by bare, as path segments. */
+    bareTowns: ReadonlySet<string>;
+  },
 ): FeatureCollection {
   const { key, name: nameKey } = LAYERS[layer] ?? { key: "" };
   const fips = region.fips ?? "";
@@ -823,6 +850,31 @@ function slim(
           if (!id) throw new Error(`${layer}: no id for "${value}"`);
           const named = !/^\d+$/.test(id);
           return { type: "Feature", id, properties: named ? { name: value } : {}, geometry };
+        }
+        if (layer === "town") {
+          const county = context.countyByFips.get(String(f.properties?.COUNTY));
+          const basename = f.properties?.BASENAME;
+          if (!county || typeof basename !== "string" || !basename)
+            throw new Error(`town "${value}": no county or name`);
+          return {
+            type: "Feature",
+            id: `${county}|${value}`,
+            properties: { name: basename },
+            geometry,
+          };
+        }
+        if (layer === "place") {
+          // A village, borough or city whose name a town goes by: its whole name too.
+          const whole = f.properties?.NAME;
+          const namesake = context.bareTowns.has(slugOf(value));
+          if (namesake && (typeof whole !== "string" || !whole))
+            throw new Error(`place "${value}" needs its NAME: refetch with --refresh`);
+          return {
+            type: "Feature",
+            id: value,
+            properties: namesake ? { name: whole } : {},
+            geometry,
+          };
         }
         const id = key === "GEOID" ? value.slice(fips.length) : value;
         const name = nameKey ? f.properties?.[nameKey] : undefined;
@@ -926,8 +978,29 @@ async function build(region: RegionProfile): Promise<Built | undefined> {
   // A state that reaches across the 180th meridian (Alaska): one piece, west of -180.
   const lons = (raw.county?.features ?? []).flatMap((f) => bboxOf(f.geometry));
   const wrap = lons.some((x) => x > 170) && lons.some((x) => x < -170);
+  const fips = region.fips ?? "";
+  const context = {
+    countyByFips: new Map(
+      (raw.county?.features ?? []).map((f) => [
+        String(f.properties?.GEOID).slice(fips.length),
+        String(f.properties?.BASENAME),
+      ]),
+    ),
+    bareTowns: new Set(
+      townsAreBare(region.path)
+        ? (raw.town?.features ?? []).map((f) => slugOf(String(f.properties?.BASENAME)))
+        : [],
+    ),
+  };
   for (const name of Object.keys(LAYERS)) {
-    source[name] = slim(raw[name] as FeatureCollection, name, region, wrap);
+    source[name] = slim(raw[name] as FeatureCollection, name, region, wrap, context);
+  }
+  // Most states have no towns: their files have no town layer at all.
+  if (source.town.features.length === 0) delete (source as Partial<typeof source>).town;
+  else {
+    const ids = source.town.features.map((f) => String(f.id));
+    const twice = ids.filter((id, i) => ids.indexOf(id) !== i);
+    if (twice.length > 0) throw new Error(`towns named twice in one county: ${twice.join(", ")}`);
   }
   const placeNames = source.place.features.map((f) => String(f.id));
   const others = otherSources(region);
@@ -1069,8 +1142,12 @@ const which = (option("--state") ?? "ca").toLowerCase();
 const regions =
   which === "all"
     ? allRegions().filter((region) => region.path.startsWith("us/"))
-    : [regionByCode("us", which)].filter((r): r is RegionProfile => r !== undefined);
-if (regions.length === 0) throw new Error(`no state "${which}"`);
+    : which
+        .split(",")
+        .map((code) => regionByCode("us", code))
+        .filter((r): r is RegionProfile => r !== undefined);
+if (regions.length === 0 || (which !== "all" && regions.length !== which.split(",").length))
+  throw new Error(`no state "${which}"`);
 
 const meta = (await (await fetch(`${SERVICE}?f=json`)).json()) as {
   documentInfo?: { Comments?: string };

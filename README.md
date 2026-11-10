@@ -341,7 +341,12 @@ hand offers every state and its districts, numbered, lettered (Minnesota's
 35A) or named (Massachusetts' Third Middlesex). The map and *Use my location*
 work on the device, from a boundary file per state
 (`apps/web/public/geo/`): the app ships all 56, and fetches one only when
-someone opens that state's map. `us.topo.json` there is every state's
+someone opens that state's map. Where the land is divided into towns or
+townships that aren't cities (New England, New York, New Jersey,
+Pennsylvania, the Midwest), either lookup finds the town too, filed under
+its county (`us/pa/greene-county/washington-township`) and, where no other
+place in the state has its name, bare (`us/ma/lexington`): SPEC §3.3,
+`apps/web/src/lib/towns.ts`. `us.topo.json` there is every state's
 outline, so a location says which state it's in before any state's file is
 loaded.
 

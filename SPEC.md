@@ -121,6 +121,16 @@ write them in lower case.
      whatever a county is called there (`us/la/orleans-parish`), so that it
      can't be taken for the city of the same name. Where a ballot listing
      (§8.2) files a place under a path, others SHOULD use that path.
+   - A place MAY always be filed under the county it is in:
+     `us/ma/middlesex-county/lexington` is the same place as
+     `us/ma/lexington`. It MUST be, where another place in the region has its
+     name: Pennsylvania has 22 Washington Townships, so one of them is
+     `us/pa/greene-county/washington-township`, and
+     `us/pa/washington-township` names none. A consumer deciding whose
+     ballot a contest is on SHOULD take either form for a place whose name
+     is the only one in its region. The two forms are still two strings to
+     anything that compares paths (§3.3's identity fallback), so slates
+     about one contest SHOULD spell its place one way: the listing's.
    - A **district** is `<family>-<id>`: district `<id>` of a family of
      districts. Its `<id>` is the district's number without leading zeros
      (`cd-07` is `cd-7`); a lettered district's number and letter in lower
@@ -138,6 +148,22 @@ same keys in every state, so nobody has to look one up:
 | `ad` | The lower chamber where it is called an Assembly (California, Nevada, New Jersey, New York, Wisconsin). |
 | `hd` | The lower chamber anywhere else (a House of Representatives, a House of Delegates). |
 | `ld` | A legislature with one chamber (Nebraska). |
+
+A US town or township that isn't an incorporated city (most of New England,
+New York, New Jersey, Pennsylvania and the Midwest are divided into them) is
+a place, spelled so that it can't be taken for a city of the same name:
+
+| Kind | Path segment | Example |
+| --- | --- | --- |
+| A township, a charter township | `<name>-township` | `us/mi/wayne-county/canton-township` |
+| A town in New England | `<name>` | `us/ma/lexington` |
+| A town anywhere else | `<name>-town` | `us/ny/ithaca-town` (the City of Ithaca is `us/ny/ithaca`) |
+| A plantation (Maine) | `<name>-plantation` | `us/me/matinicus-isle-plantation` |
+
+In New England the town is the municipality, so it has the bare name, and a
+village, borough or city that shares it takes its kind instead:
+`us/vt/woodstock` is the town, `us/vt/woodstock-village` the village inside
+it, `us/vt/st-albans-city` the city beside the town of St. Albans.
 
 A state whose two chambers are elected from one set of districts
 (Washington's legislative districts) still files a Senate race under `sd` and
@@ -825,6 +851,12 @@ version by adding OPTIONAL fields (verifiers must already reject unknown fields,
 such additions ship with a coordinated spec revision). Incompatible changes bump `v`.
 
 ### 10.1 Changelog (within v1)
+
+- **2026-11-10** — A place may always be filed under its county
+  (`us/pa/greene-county/washington-township`), and must be where its name
+  repeats in the region; US towns and townships have a spelling of their own
+  (§3.3). No schema change: both were valid paths before, and no published
+  slate used either.
 
 - **2026-11-10** — `jurisdiction` paths (§3.3) are spelled out beyond one
   state: a country and its first-level division by their ISO 3166 codes, the

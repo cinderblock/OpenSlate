@@ -413,14 +413,18 @@ export function localityPathFor(state: string, name: string): string {
   const named = Object.entries(regionProfile(state)?.localityNames ?? {}).find(
     ([, label]) => label.toLowerCase() === wanted,
   );
-  const slug =
-    named?.[0] ??
-    wanted
-      .normalize("NFD")
-      .replace(/\p{M}/gu, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-  return `${state}/${slug}`;
+  return `${state}/${named?.[0] ?? slugOf(wanted)}`;
+}
+
+/** A name as a path segment (SPEC §3.3): lower case, accents dropped, anything else a hyphen. */
+export function slugOf(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 function titleCase(slug: string): string {
@@ -458,8 +462,14 @@ const labelOf = memoByString((path: string): string => {
       return part.path === "us" ? "National" : stateLabel(part.path);
     case "district":
       return `${districtFamilyLabel(part.family, part.state)} ${districtName(`${part.state}/${part.family}`, part.number)}`;
-    case "local":
-      return regionFor(part.path)?.localityNames?.[part.slug] ?? titleCase(part.slug);
+    case "local": {
+      const named = regionFor(part.path)?.localityNames?.[part.slug];
+      if (named) return named;
+      // A place filed under another (a town under its county): "Washington
+      // Township, Greene County".
+      const [last, ...outer] = part.slug.split("/").reverse();
+      return [last ?? "", ...outer].map(titleCase).join(", ");
+    }
   }
 });
 

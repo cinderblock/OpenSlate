@@ -2,8 +2,16 @@ import type { Feature, MultiPolygon, Polygon, Position } from "geojson";
 import { feature, neighbors } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import type { AreaOptions } from "./collate";
-import { type Area, areaStates, districtId, localityPathFor, NO_DISTRICT } from "./jurisdictions";
+import {
+  type Area,
+  areaStates,
+  districtId,
+  localityPathFor,
+  NO_DISTRICT,
+  slugOf,
+} from "./jurisdictions";
 import { countyLabel, layerFamily, regionPathOf, regionProfile } from "./regions";
+import { type CensusTown, townLabel, townSlug } from "./towns";
 
 /**
  * Finding someone's districts on their own device: boundary data shipped with
@@ -63,6 +71,13 @@ export interface StateGeo {
   layers: Record<GeoLayer, GeoShape[]>;
   /** Lookup layers; empty in boundary data built without them. */
   lookups: Record<LookupLayer, GeoShape[]>;
+  /**
+   * Towns and townships that are governments and aren't incorporated places
+   * (`towns.ts`); none in most states. An id is `<County>|<the Census's whole
+   * name>` (`Greene|Washington township`), the county as TIGER names it; the
+   * shape's name is the town's alone (`Washington`).
+   */
+  towns: GeoShape[];
   /** [minX, minY, maxX, maxY] of the whole state. */
   bbox: [number, number, number, number];
   /** Where the data came from, for the map's footnote. */
@@ -226,12 +241,19 @@ export function decodeStateGeo(state: string, topology: Topology): StateGeo {
       : { features: [] };
     lookups[name] = collection.features.flatMap((f) => (f.geometry ? [shapeOf(f)] : []));
   }
+  const townObject = topology.objects.town as GeometryCollection | undefined;
+  const towns = townObject
+    ? (
+        feature(topology, townObject) as unknown as { features: Feature<Polygon | MultiPolygon>[] }
+      ).features.flatMap((f) => (f.geometry ? [shapeOf(f)] : []))
+    : [];
   const bbox = (topology.bbox ?? [0, 0, 0, 0]) as [number, number, number, number];
   const metadata = (topology as { metadata?: { vintage?: string; wrap?: boolean } }).metadata;
   return {
     state,
     layers,
     lookups,
+    towns,
     bbox,
     vintage: metadata?.vintage ?? "Census TIGERweb",
     ...(metadata?.wrap ? { wrap: true as const } : {}),
@@ -338,10 +360,23 @@ export interface GeoHit {
   /** Incorporated city, if any (unincorporated areas have none). */
   place?: string;
   /**
+   * The place's whole Census name ("Woodstock village"), where a town of the
+   * state has its name and goes by it bare: the place is filed with its kind
+   * (`towns.ts`).
+   */
+  placeName?: string;
+  /**
+   * The town or township, if the point is in one (`towns.ts`). `unique`: no
+   * other town or city of the state has its path's name, so it may be filed
+   * without its county; only the state's boundaries can say, and without
+   * them it's left out.
+   */
+  town?: CensusTown & { unique?: boolean };
+  /**
    * Layers whose boundary is within `nearMeters` of the point: the lookup may
    * be wrong there (simplified boundaries, imprecise location).
    */
-  nearLine: (GeoLayer | LookupLayer)[];
+  nearLine: (GeoLayer | LookupLayer | "town")[];
   /**
    * The point's district per lookup layer (`NO_DISTRICT` id: in none), when
    * the boundary data has them. A layer is left out when the point is near one
@@ -365,9 +400,10 @@ export function locate(
   nearMeters = NEAR_LINE_METERS,
 ): GeoHit | null {
   const found: Partial<Record<GeoLayer, string>> = {};
-  const nearLine: GeoLayer[] = [];
+  const nearLine: (GeoLayer | "town")[] = [];
   const x = ownLon(geo, lon);
   let countyName: string | undefined;
+  let placeName: string | undefined;
   for (const layer of ["county", "cd", "sd", "ad", "place"] as const) {
     const shape = shapeAt(geo, layer, lon, lat);
     if (!shape) {
@@ -376,8 +412,12 @@ export function locate(
     }
     found[layer] = shape.id;
     if (layer === "county") countyName = shape.name;
+    if (layer === "place") placeName = shape.name;
     if (distanceToEdge(shape, x, lat) < nearMeters) nearLine.push(layer);
   }
+  const townShape = geo.towns.find((s) => shapeContains(s, x, lat));
+  if (townShape && distanceToEdge(townShape, x, lat) < nearMeters) nearLine.push("town");
+  const town = townShape ? townOfShape(geo, townShape) : undefined;
   const districts: GeoHit["districts"] = {};
   for (const layer of DISTRICT_LAYERS) {
     const n = found[layer];
@@ -389,9 +429,72 @@ export function locate(
     county: found.county,
     ...(countyName ? { countyName } : {}),
     place: found.place,
+    ...(placeName ? { placeName } : {}),
+    ...(town ? { town } : {}),
     nearLine: [...nearLine, ...(extra?.nearLine ?? [])],
     ...(extra ? { lookups: extra.lookups } : {}),
   };
+}
+
+/** A town's shape as a hit names it, with whether its name is the only one in the state. */
+function townOfShape(geo: StateGeo, shape: GeoShape): NonNullable<GeoHit["town"]> {
+  const name = shape.id.slice(shape.id.indexOf("|") + 1);
+  const town = { name, basename: shape.name ?? name };
+  return { ...town, unique: townIsUnique(geo, town) };
+}
+
+const townCountsOf = new WeakMap<StateGeo, ReadonlyMap<string, number>>();
+
+/**
+ * Whether a town's path name is the only one in the state: no other town
+ * has it, and no city does. Then `us/ma/lexington` is one place; a
+ * Washington Township in Pennsylvania needs its county.
+ */
+export function townIsUnique(geo: StateGeo, town: CensusTown): boolean {
+  let counts = townCountsOf.get(geo);
+  if (!counts) {
+    const table = new Map<string, number>();
+    for (const shape of geo.towns) {
+      const slug = townSlug(geo.state, townOfId(shape));
+      table.set(slug, (table.get(slug) ?? 0) + 1);
+    }
+    townCountsOf.set(geo, table);
+    counts = table;
+  }
+  const slug = townSlug(geo.state, town);
+  return (counts.get(slug) ?? 0) <= 1 && !cityPaths(geo).has(`${geo.state}/${slug}`);
+}
+
+/** A town shape's names, from its id and name. */
+function townOfId(shape: GeoShape): CensusTown {
+  const name = shape.id.slice(shape.id.indexOf("|") + 1);
+  return { name, basename: shape.name ?? name };
+}
+
+/**
+ * The town a geocoder named, with what the state's boundaries add: whether
+ * its name is the only one in the state. Without a name from the geocoder,
+ * the town the boundaries put the point in.
+ */
+export function townFor(
+  geo: StateGeo | undefined,
+  named: CensusTown | undefined,
+  lon: number,
+  lat: number,
+): GeoHit["town"] {
+  if (!geo) return named;
+  if (named) return { ...named, unique: townIsUnique(geo, named) };
+  const x = ownLon(geo, lon);
+  const shape = geo.towns.find((s) => shapeContains(s, x, lat));
+  return shape ? townOfShape(geo, shape) : undefined;
+}
+
+/** A place's whole Census name, where the state's boundaries keep one (`GeoHit.placeName`). */
+export function placeNameFor(
+  geo: StateGeo | undefined,
+  place: string | undefined,
+): string | undefined {
+  return place ? geo?.layers.place.find((s) => s.id === place)?.name : undefined;
 }
 
 /**
@@ -445,18 +548,26 @@ export function lookupsAt(
  * name when no city has that (`cities`, every city's paths, `cityPaths`):
  * `us/ca/orange` is the City of Orange's, never the county's. A city and
  * county in one (San Francisco, `sf`) has the one path.
+ *
+ * `whole`: the Census's whole name where it says more than the name alone.
+ * A county that isn't called one goes by what it is called (`orleans-parish`,
+ * `denali-borough`). A place has one only where a town of the state goes by
+ * its name (`towns.ts`): it is filed with its kind, `woodstock-village`.
  */
 export function localityCandidates(
   state: string,
   kind: "place" | "county",
   name: string,
   cities: ReadonlySet<string> = new Set(),
+  whole?: string,
 ): string[] {
   if (kind === "county") {
     const base = localityPathFor(state, name);
     if (regionProfile(state)?.consolidated?.includes(name)) return [base];
-    return cities.has(base) ? [`${base}-county`] : [`${base}-county`, base];
+    const own = whole && whole !== name ? `${state}/${slugOf(whole)}` : `${base}-county`;
+    return cities.has(base) || own === base ? [own] : [own, base];
   }
+  if (whole) return [`${state}/${slugOf(whole)}`];
   const everyday = /^(.+?)\s*\(([^)]+)\)$/.exec(name.trim());
   const names = everyday?.[1] && everyday[2] ? [everyday[1], everyday[2]] : [name];
   return names.flatMap((n) => {
@@ -471,7 +582,11 @@ const cityPathsOf = new WeakMap<StateGeo, ReadonlySet<string>>();
 export function cityPaths(geo: StateGeo): ReadonlySet<string> {
   let paths = cityPathsOf.get(geo);
   if (!paths) {
-    paths = new Set(geo.layers.place.flatMap((s) => localityCandidates(geo.state, "place", s.id)));
+    paths = new Set(
+      geo.layers.place.flatMap((s) =>
+        localityCandidates(geo.state, "place", s.id, undefined, s.name),
+      ),
+    );
     cityPathsOf.set(geo, paths);
   }
   return paths;
@@ -514,9 +629,7 @@ export function areaFromHit(
 
   const localities: string[] = [];
   const found: string[] = [];
-  const add = (kind: "place" | "county", name: string | undefined) => {
-    if (!name) return undefined;
-    const candidates = localityCandidates(state, kind, name, cities);
+  const file = (candidates: string[]) => {
     for (const path of candidates) {
       if (!found.includes(path)) found.push(path);
       if (known.localities.includes(path) && !localities.includes(path)) localities.push(path);
@@ -524,8 +637,15 @@ export function areaFromHit(
     // The one its races use, else where they'd be filed (`<name>-county`).
     return candidates.find((p) => known.localities.includes(p)) ?? candidates[0];
   };
-  const placePath = add("place", hit.place);
-  const countyPath = add("county", hit.county);
+  const add = (kind: "place" | "county", name: string | undefined, whole?: string) =>
+    name ? file(localityCandidates(state, kind, name, cities, whole)) : undefined;
+  const placePath = add("place", hit.place, hit.placeName);
+  const countyPath = add("county", hit.county, hit.countyName);
+  // A town is under its county, whatever path the county's own races use.
+  const countyOwn = hit.county
+    ? localityCandidates(state, "county", hit.county, cities, hit.countyName)[0]
+    : undefined;
+  if (hit.town && countyOwn) file(townCandidates(state, hit.town, countyOwn));
 
   const labels: Record<string, string> = {};
   for (const [layer, { id, name }] of Object.entries(hit.lookups ?? {})) {
@@ -556,8 +676,11 @@ export function areaFromHit(
   const notCovered = Object.keys(known.districts).filter(
     (family) => family.startsWith(`${state}/`) && !covered.has(family),
   );
+  const townName = hit.town ? townLabel(state, hit.town) : undefined;
   const places = [
     ...(hit.place ? [hit.place] : []),
+    // A village inside the town of the same name is said once.
+    ...(townName && townName !== hit.place ? [townName] : []),
     // A city and county in one (San Francisco): say it once.
     ...(hit.county && !(region?.consolidated?.includes(hit.county) && hit.place === hit.county)
       ? [hit.countyName ?? `${hit.county} ${region?.countyWord ?? "County"}`]
@@ -567,6 +690,49 @@ export function areaFromHit(
   if (Object.keys(labels).length > 0) area.labels = labels;
   if (found.length > 0) area.found = found;
   return { area, places, notCovered };
+}
+
+/**
+ * The paths a town may be filed under: always under its county
+ * (`us/pa/greene-county/washington-township`), and bare (`us/ma/lexington`)
+ * when the state's boundaries say no other town or city has the name.
+ * `countyPath`: the county's own path (`localityCandidates`' first).
+ */
+export function townCandidates(
+  state: string,
+  town: CensusTown & { unique?: boolean },
+  countyPath: string,
+): string[] {
+  const slug = townSlug(state, town);
+  return [`${countyPath}/${slug}`, ...(town.unique ? [`${state}/${slug}`] : [])];
+}
+
+const townPathsOf = new WeakMap<StateGeo, ReadonlySet<string>>();
+
+/** Every path a town of the state may be filed under (`townCandidates`). */
+export function townPaths(geo: StateGeo): ReadonlySet<string> {
+  let paths = townPathsOf.get(geo);
+  if (!paths) {
+    const cities = cityPaths(geo);
+    const countyNames = new Map(geo.layers.county.map((s) => [s.id, s.name]));
+    const all = new Set<string>();
+    for (const shape of geo.towns) {
+      const county = shape.id.slice(0, shape.id.indexOf("|"));
+      const countyPath = localityCandidates(
+        geo.state,
+        "county",
+        county,
+        cities,
+        countyNames.get(county),
+      )[0];
+      if (!countyPath) continue;
+      for (const path of townCandidates(geo.state, townOfShape(geo, shape), countyPath))
+        all.add(path);
+    }
+    townPathsOf.set(geo, all);
+    paths = all;
+  }
+  return paths;
 }
 
 /** An area's families from the lookup layers (`us/ca/elsd`, `us/ca/orange-county/sup`…). */
@@ -590,13 +756,26 @@ function isLookupFamily(family: string): boolean {
 export function mergeFoundArea(previous: Area, found: Area, geo?: StateGeo): Area {
   const states = areaStates(found);
   const here = (path: string) => states.size === 0 || states.has(regionPathOf(path) ?? "");
-  const cityOrCounty = new Set<string>();
+  // Cities, counties and towns: what a lookup finds, so what it replaces.
+  const cityOrCounty = new Set<string>(geo ? townPaths(geo) : []);
   for (const shape of geo?.layers.place ?? []) {
-    for (const path of localityCandidates(geo?.state ?? "", "place", shape.id))
+    for (const path of localityCandidates(
+      geo?.state ?? "",
+      "place",
+      shape.id,
+      undefined,
+      shape.name,
+    ))
       cityOrCounty.add(path);
   }
   for (const shape of geo?.layers.county ?? []) {
-    for (const path of localityCandidates(geo?.state ?? "", "county", shape.id))
+    for (const path of localityCandidates(
+      geo?.state ?? "",
+      "county",
+      shape.id,
+      undefined,
+      shape.name,
+    ))
       cityOrCounty.add(path);
   }
   const localities = [

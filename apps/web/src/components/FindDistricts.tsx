@@ -10,15 +10,16 @@ import {
   type GeoHit,
   type GeoLayer,
   hasStateGeo,
-  type LookupLayer,
   loadStateGeo,
   loadStateOutlines,
   locate,
   lookupsAt,
   mergeFoundArea,
   NEAR_LINE_METERS,
+  placeNameFor,
   type StateGeo,
   statesAt,
+  townFor,
 } from "../lib/geo";
 import {
   type Area,
@@ -119,11 +120,11 @@ interface Found {
   area: Area;
   places: string[];
   notCovered: string[];
-  nearLine: (GeoLayer | LookupLayer)[];
+  nearLine: GeoHit["nearLine"];
 }
 
 /** What to call a lookup layer's district in "near a … line". */
-const UNSURE_NAMES: Partial<Record<GeoLayer | LookupLayer, string>> = {
+const UNSURE_NAMES: Partial<Record<GeoHit["nearLine"][number], string>> = {
   unsd: "school district",
   elsd: "school district",
   scsd: "school district",
@@ -264,11 +265,18 @@ export function FindDistricts({
       // app has that state's, at the point it matched.
       const within = await geoOf(region.path);
       const extra = within ? lookupsAt(within, match.lon, match.lat, match) : undefined;
+      // The town from the Census too; whether its name needs its county, and
+      // a village that shares it, from the state's boundaries.
+      const town = townFor(within, match.town, match.lon, match.lat);
+      const placeName = placeNameFor(within, match.place);
       applyHit(
         {
           districts: match.districts,
           county: match.county,
+          ...(match.countyName ? { countyName: match.countyName } : {}),
           place: match.place,
+          ...(placeName ? { placeName } : {}),
+          ...(town ? { town } : {}),
           nearLine: extra?.nearLine ?? [],
           ...(extra ? { lookups: extra.lookups } : {}),
         },
@@ -730,8 +738,8 @@ function FoundSummary({
   onAdjust: () => void;
 }) {
   const districts = Object.entries(found.area.districts).filter(([, n]) => n !== NO_DISTRICT);
-  const near = found.nearLine.filter((l): l is "cd" | "sd" | "ad" =>
-    ["cd", "sd", "ad"].includes(l),
+  const near = found.nearLine.filter((l): l is "cd" | "sd" | "ad" | "town" =>
+    ["cd", "sd", "ad", "town"].includes(l),
   );
   // Lookup layers the spot is near a line of, so their districts weren't set.
   const unsure = [
@@ -766,7 +774,9 @@ function FoundSummary({
           This spot is within about {NEAR_LINE_METERS} m of a{" "}
           {near
             .map((l) =>
-              (layerWords(regionProfile(found.state), l)?.one ?? "district").toLowerCase(),
+              l === "town"
+                ? "town"
+                : (layerWords(regionProfile(found.state), l)?.one ?? "district").toLowerCase(),
             )
             .join(" and ")}{" "}
           line, where the maps stored with the app may be off. Check it with an address lookup (the

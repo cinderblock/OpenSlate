@@ -139,7 +139,11 @@ export interface AddressMatch {
   /** Census only: districts from the official maps. */
   districts?: { cd?: string; sd?: string; ad?: string };
   county?: string;
+  /** The county's whole name where it isn't "<Name> County": "Orleans Parish". */
+  countyName?: string;
   place?: string;
+  /** Census only: the town or township, as the Census names it (`towns.ts`). */
+  town?: { name: string; basename: string };
 }
 
 const NOMINATIM = "https://nominatim.openstreetmap.org/search";
@@ -219,7 +223,9 @@ interface RelayMatch {
   state?: string;
   districts?: AddressMatch["districts"];
   county?: string;
+  countyName?: string;
   place?: string;
+  town?: { name?: string; basename?: string };
 }
 
 /** Parse the relay's answer (apps/poll-cache/src/geocode.ts). Pure; exported for tests. */
@@ -235,7 +241,14 @@ export function parseCensusRelay(json: unknown): AddressMatch[] {
       ...(m.state ? { state: m.state } : {}),
       districts: m.districts ?? {},
       ...(m.county ? { county: m.county } : {}),
+      // Only where it says more than "<Name> County" (`GeoHit.countyName`).
+      ...(m.county && m.countyName && m.countyName !== `${m.county} County`
+        ? { countyName: m.countyName }
+        : {}),
       ...(m.place ? { place: m.place } : {}),
+      ...(m.town?.name && m.town.basename
+        ? { town: { name: m.town.name, basename: m.town.basename } }
+        : {}),
     }));
 }
 

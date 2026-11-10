@@ -100,4 +100,38 @@ describe("parseCensusRelay", () => {
     expect(parseCensusRelay({ matches: [] })).toEqual([]);
     expect(() => parseCensusRelay({ error: "x" })).toThrow();
   });
+
+  test("carries a town, and a county's whole name where it says more than County", () => {
+    const [vermont, louisiana, plain] = parseCensusRelay({
+      matches: [
+        {
+          address: "31 THE GRN, WOODSTOCK, VT, 05091",
+          lon: -72.52,
+          lat: 43.62,
+          state: "VT",
+          districts: { cd: "1" },
+          county: "Windsor",
+          countyName: "Windsor County",
+          place: "Woodstock",
+          town: { name: "Woodstock town", basename: "Woodstock" },
+        },
+        {
+          address: "1300 PERDIDO ST, NEW ORLEANS, LA, 70112",
+          lon: -90.07,
+          lat: 29.95,
+          state: "LA",
+          county: "Orleans",
+          countyName: "Orleans Parish",
+          place: "New Orleans",
+        },
+        // A relay from before towns: nothing more than it sent.
+        { address: "x", lon: 1, lat: 2, town: { name: "Half" } },
+      ],
+    });
+    expect(vermont?.town).toEqual({ name: "Woodstock town", basename: "Woodstock" });
+    expect(vermont?.countyName).toBeUndefined();
+    expect(louisiana?.countyName).toBe("Orleans Parish");
+    expect(louisiana?.town).toBeUndefined();
+    expect(plain?.town).toBeUndefined();
+  });
 });

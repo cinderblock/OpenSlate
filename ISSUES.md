@@ -115,20 +115,16 @@ of races that aren't theirs. LA's `County Measures` / `Sheriff` groups are truly
 a bare `County` category isn't.
 
 
-## Towns and townships aren't found: a lookup in twelve states finds the county and no town
+## Iowa's townships aren't found
 
-Seen 2026-11-10 (`plans/national-scale.md`). The boundary files and the address relay look a
-point up in the Census's incorporated places (TIGERweb layer 28). In New England, New Jersey,
-New York, Pennsylvania, Michigan, Minnesota and Wisconsin most people live in a town or township
-the Census calls a county subdivision (layer 22, `FUNCSTAT` `A` for the ones that are
-governments). The geocoder's answer for 1625 Massachusetts Ave, Lexington, MA has no
-`Incorporated Places` at all, and a `County Subdivisions` entry `Lexington town`.
+Seen 2026-11-10 (`plans/national-scale.md`). Towns and townships are found in twenty states now
+(`apps/web/src/lib/towns.ts`): the county subdivisions the Census marks as governments of their
+own (`FUNCSTAT` `A` or `B`). Iowa's 1,598 townships are marked `G` (subordinate to the county),
+so `apps/web/scripts/build-geo.ts` and the address relay leave them out, though Iowa elects
+township trustees and clerks. New York City's five boroughs are `G` too, and must stay out.
 
-Why it matters: a race filed under `us/ma/lexington` won't be on a Lexington voter's ballot after
-a lookup. It needs a path convention before code: township names repeat inside a state
-(Pennsylvania has many Washington Townships, New York has towns and cities of one name, Ithaca),
-so a bare `us/pa/washington-township` isn't one place. Nesting under the county
-(`us/pa/greene-county/washington-township`) is unambiguous and already a valid path (SPEC §3.3).
+Why it matters: a race filed under an Iowa township's path isn't placed on anyone's ballot by a
+lookup. Taking `G` for Iowa alone (state FIPS 19) would do it; check a real Iowa ballot first.
 
 
 ## The desktop app's offline catalog copy reads the catalog whole

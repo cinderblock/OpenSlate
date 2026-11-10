@@ -18,11 +18,47 @@ test("trimCensus keeps the address, point, districts, county and city", () => {
       state: "CA",
       districts: { cd: "11", sd: "11", ad: "17" },
       county: "San Francisco",
+      countyName: "San Francisco County",
       place: "San Francisco",
     },
   ]);
   expect(trimCensus({ result: { addressMatches: [] } })).toEqual([]);
   expect(() => trimCensus({ errors: ["nope"] })).toThrow();
+});
+
+test("trimCensus names the town or township, where it is a government of its own", () => {
+  const at = (geographies: Record<string, Record<string, string>[]>) =>
+    trimCensus({
+      result: {
+        addressMatches: [{ matchedAddress: "x", coordinates: { x: -72.5, y: 43.6 }, geographies }],
+      },
+    })[0];
+  // Woodstock, Vermont: a village inside the town of its name (as Census answered, 2026-11-10).
+  const woodstock = at({
+    "County Subdivisions": [{ BASENAME: "Woodstock", NAME: "Woodstock town", FUNCSTAT: "A" }],
+    "Incorporated Places": [{ BASENAME: "Woodstock", NAME: "Woodstock village", FUNCSTAT: "A" }],
+    Counties: [{ BASENAME: "Windsor", NAME: "Windsor County", FUNCSTAT: "A" }],
+  });
+  expect(woodstock?.town).toEqual({ name: "Woodstock town", basename: "Woodstock" });
+  expect(woodstock?.place).toBe("Woodstock");
+  expect(woodstock?.county).toBe("Windsor");
+  expect(woodstock?.countyName).toBe("Windsor County");
+  // A city's twin among the county subdivisions (F), and the Census's own divisions (S, N), aren't towns.
+  for (const FUNCSTAT of ["F", "S", "N", "G", "I"]) {
+    expect(
+      at({ "County Subdivisions": [{ BASENAME: "Boston", NAME: "Boston city", FUNCSTAT }] })?.town,
+    ).toBeUndefined();
+  }
+  // Partly consolidated, with officers of its own (B): still one.
+  expect(
+    at({
+      "County Subdivisions": [{ BASENAME: "Evanston", NAME: "Evanston township", FUNCSTAT: "B" }],
+    })?.town,
+  ).toEqual({ name: "Evanston township", basename: "Evanston" });
+  // A parish keeps its whole name.
+  expect(at({ Counties: [{ BASENAME: "Orleans", NAME: "Orleans Parish" }] })?.countyName).toBe(
+    "Orleans Parish",
+  );
 });
 
 test("trimCensus spells districts as paths do, whatever the state calls them", () => {

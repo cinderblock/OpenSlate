@@ -146,9 +146,16 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
      (`statePages` in `vite.config.ts`) and a `_redirects` for `/VA`. That is
      all a state's own address would need to be (a redirect); the Results page tells a voter outside California there's no
      live count for their state yet, and no longer hands them California's.
+   - Towns and townships, done 2026-11-10: `towns.ts` (how one is spelled),
+     a `town` layer in 21 states' files (TIGERweb layer 22, `FUNCSTAT` A or
+     B: 16,171 of them), the relay's answer (`town`, `countyName`), and
+     `geo.ts` (`GeoHit.town`, `townCandidates`: always under the county,
+     bare too where the state's file says the name is the only one). SPEC
+     §3.3 has the rule. A county that isn't called one is filed as what it is
+     called (`orleans-parish`).
    - Not done, logged in `ISSUES.md`: the Live page's watch list is built on
-     California's contest ids; towns and townships (twelve states) need a
-     path convention first; the desktop snapshot reads the catalog whole.
+     California's contest ids; Iowa's townships; the desktop snapshot reads
+     the catalog whole.
    - Checked in headless Chrome, 2026-11-10: with every state's file (a
      Vermont address, Vermont's map and a click on it, "Use my location" in
      Anchorage and on Attu east of the 180th meridian, Minnesota by hand) and
@@ -236,10 +243,20 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
 - A Bash heredoc in this harness eats backslashes even when quoted
   (`\\/` arrived as `/`, `\\n` as a newline): write JSON specs with the Write
   tool, not `cat <<'EOF'`.
-- In twelve states (New England, NJ, NY, PA, MI, MN, WI) most people live in
-  a town or township that the Census calls a county subdivision, not an
-  incorporated place. The boundary files have places only, so a lookup there
-  finds the county and no town. TIGERweb layer 22 has them. Not built yet.
+- Towns and townships, from every county subdivision's attributes (pulled
+  2026-11-10): 16,157 are `FUNCSTAT` A across 20 states and American Samoa
+  (PA 1,543, MN 1,776, OH 1,308, ND 1,305, KS 1,258, WI 1,242, MI 1,240, IL
+  1,411, IN 1,003, NY 928, SD 898, ME 459, NE 319, MA 293, MO 282, NJ 240,
+  VT 237, NH 221, CT 149, RI 31). None of them is an incorporated place:
+  a city's twin among the subdivisions is `F`. Iowa's 1,598 are `G`, as are
+  New York City's boroughs. 1,322 path names repeat within a state (OH: 857
+  of 1,308 townships share a name), none within a county. A town's name is
+  also a place's in NY (231), WI (291), VT (20) and CT (4): hence `-town`
+  outside New England, and the village or city taking its kind inside it.
+  The 21 files grew from 21.1 MB to 29.1 MB with the town layer.
+- Connecticut's counties are planning regions to the Census now
+  (`us/ct/northwest-hills-planning-region`); its town names don't repeat, so
+  the bare path works.
 - The by-hand picker listed every district family any imported race used.
   With a national group's slate imported that would be 50 states' Congress
   pickers: it shows one state's at a time now.
@@ -276,8 +293,11 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
   143 KB gzipped, and put all 20 probe points (border towns, islands, both
   sides of the 180th meridian) in the right state first. The build took
   about 2 hours, nearly all of it TIGERweb answering.
-- [ ] Step 4: state-aware UI. Finding and choosing districts done; Results
-  wording and the county-subdivision layer left.
+- [ ] Step 4: state-aware UI. Finding and choosing districts done, towns
+  and townships too (2026-11-10: real points checked in the rebuilt files,
+  Lexington by location and a Pennsylvania township by address in headless
+  Chrome). The Live page for other states is left: see "Every state's
+  results" below.
 - [x] Step 5: SPEC §3.3.
 - [ ] Step 6: federal coverage.
 - [ ] Step 7: a second state.
