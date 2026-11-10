@@ -104,6 +104,49 @@ Secret keys, when serialized (e.g. for backup), use the same scheme over the
 Two positions refer to the same real-world item when their `id` matches. Absent an
 `id`, consumers fall back to `(title, jurisdiction, election)` matching.
 
+**`jurisdiction`** is a path: lowercase segments joined by `/`, each inside
+the one before it. Paths compare without regard to case; publishers SHOULD
+write them in lower case.
+
+1. The first segment is the country, by its ISO 3166-1 alpha-2 code: `us`,
+   `de`, `nz`. A contest the whole country votes on is filed under that
+   segment alone.
+2. The second is the country's first-level division, by the part of its
+   ISO 3166-2 code after the hyphen: `us/ca` (US-CA), `de/by` (DE-BY),
+   `au/nsw` (AU-NSW). These two segments together are the path's *region*.
+   A statewide contest is filed under the region alone.
+3. Any further segment is a place or a district inside what comes before it.
+   - A **place** is a slug of its name: ASCII letters, digits and hyphens,
+     accents dropped (`us/tx/san-antonio`). A county is `<name>-county`, or
+     whatever a county is called there (`us/la/orleans-parish`), so that it
+     can't be taken for the city of the same name. Where a ballot listing
+     (§8.2) files a place under a path, others SHOULD use that path.
+   - A **district** is `<family>-<id>`: district `<id>` of a family of
+     districts. Its `<id>` is the district's number without leading zeros
+     (`cd-07` is `cd-7`); a lettered district's number and letter in lower
+     case (Minnesota's House district 35A is `hd-35a`, Alaska's Senate
+     district I is `sd-i`); a named district's name as a slug
+     (Massachusetts' Third Middlesex Senate district is `sd-third-middlesex`).
+
+For the United States, the families a state's voters all belong to have the
+same keys in every state, so nobody has to look one up:
+
+| Family | Districts of |
+| --- | --- |
+| `cd` | The US House. A state with one seat has one district, `cd-1`; so do the District of Columbia and each territory, for their delegate. |
+| `sd` | The state legislature's upper chamber. |
+| `ad` | The lower chamber where it is called an Assembly (California, Nevada, New Jersey, New York, Wisconsin). |
+| `hd` | The lower chamber anywhere else (a House of Representatives, a House of Delegates). |
+| `ld` | A legislature with one chamber (Nebraska). |
+
+A state whose two chambers are elected from one set of districts
+(Washington's legislative districts) still files a Senate race under `sd` and
+a House race under `hd`: the key says which chamber's race it is. Other
+families (`us/ca/coa-4`, a Court of Appeal district; `us/dc/ward-3`) are the
+region's own. A consumer that doesn't know a family's key MUST still treat
+`<letters>-<digits>` as a district, and MAY treat any other unknown segment as
+a place.
+
 **`district`** says who votes on a contest when that is narrower than its
 `jurisdiction`: a county lists a school board's trustee area under the county,
 but only that trustee area's voters have it on their ballot. It is a path in
@@ -782,6 +825,13 @@ version by adding OPTIONAL fields (verifiers must already reject unknown fields,
 such additions ship with a coordinated spec revision). Incompatible changes bump `v`.
 
 ### 10.1 Changelog (within v1)
+
+- **2026-11-10** — `jurisdiction` paths (§3.3) are spelled out beyond one
+  state: a country and its first-level division by their ISO 3166 codes, the
+  same district family keys in every US state (`cd`, `sd`, `ad` or `hd`,
+  `ld`), and ids for districts that are lettered (`hd-35a`) or named
+  (`sd-third-middlesex`). No schema change, and every path published before
+  means what it meant.
 
 - **2026-11-03** — A quoting `statement` (§3.4) gives the source's words
   whole, or marks each omission with an ellipsis. Consumers show a

@@ -11,10 +11,12 @@ import {
 } from "../lib/basemap";
 import type { GeoLayer, GeoShape, StateGeo } from "../lib/geo";
 import { shapeAt } from "../lib/geo";
+import { stateLabel } from "../lib/jurisdictions";
 import { webMercator } from "../lib/projection";
+import { countyLabel, layerWords, type RegionProfile, regionProfile } from "../lib/regions";
 
 /**
- * California on a map, drawn from the boundary data on this device. Under it,
+ * A state on a map, drawn from the boundary data on this device. Under it,
  * street or satellite tiles from USGS (lib/basemap.ts), unless the user turns
  * them off: tiles tell USGS roughly where they're looking.
  * Drag to pan, wheel or pinch to zoom, click to pick a spot. Keyboard: arrows
@@ -143,26 +145,15 @@ function basemapTiles(
   });
 }
 
-export const LAYER_NAMES: Record<GeoLayer, string> = {
-  cd: "Congressional district",
-  sd: "State Senate district",
-  ad: "Assembly district",
-  county: "County",
-  place: "City",
-};
-
-const LAYER_PLURALS: Record<GeoLayer, string> = {
-  cd: "congressional districts",
-  sd: "state senate districts",
-  ad: "assembly districts",
-  county: "counties",
-  place: "cities",
-};
-
-function describeShape(layer: GeoLayer, id: string): string {
-  if (layer === "county") return `${id} County`;
-  if (layer === "place") return id;
-  return `${LAYER_NAMES[layer]} ${id}`;
+/** What a shape is called under the cursor: "Assembly district 17", "Orleans Parish", "Third Middlesex". */
+function describeShape(
+  region: RegionProfile | undefined,
+  layer: GeoLayer,
+  shape: GeoShape,
+): string {
+  if (layer === "county") return shape.name ?? countyLabel(region, shape.id);
+  if (layer === "place") return shape.id;
+  return `${layerWords(region, layer)?.one ?? "District"} ${shape.name ?? shape.id}`;
 }
 
 export function DistrictMap({
@@ -197,6 +188,8 @@ export function DistrictMap({
     observer.observe(svg);
     return () => observer.disconnect();
   }, []);
+  const region = regionProfile(geo.state);
+  const stateName = stateLabel(geo.state);
   const counties = useMemo(() => projectedLayer(geo.layers.county), [geo]);
   const places = useMemo(() => projectedLayer(geo.layers.place), [geo]);
   const top = useMemo(() => projectedLayer(geo.layers[layer]), [geo, layer]);
@@ -296,7 +289,7 @@ export function DistrictMap({
       const shape = shapeAt(geo, layer, lon, lat);
       const place = layer === "place" ? undefined : shapeAt(geo, "place", lon, lat);
       setHover(
-        shape ? [describeShape(layer, shape.id), place?.id].filter(Boolean).join(" · ") : "",
+        shape ? [describeShape(region, layer, shape), place?.id].filter(Boolean).join(" · ") : "",
       );
       return;
     }
@@ -400,7 +393,10 @@ export function DistrictMap({
     id ? shapes.find((s) => s.id === id) : undefined;
   const hiTop = highlighted(top, highlight?.[layer]);
   const hiPlace = layer === "place" ? undefined : highlighted(places, highlight?.place);
-  const marker = point ? project(point[0], point[1]) : undefined;
+  // A state across the 180th meridian is drawn west of it (`StateGeo.wrap`): so is the point.
+  const marker = point
+    ? project(geo.wrap && point[0] > 0 ? point[0] - 360 : point[0], point[1])
+    : undefined;
 
   return (
     <div className={info ? `district-map basemap-${basemap}` : "district-map"}>
@@ -410,7 +406,7 @@ export function DistrictMap({
         viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
         preserveAspectRatio="xMidYMid meet"
         role="application"
-        aria-label={`Map of California's ${LAYER_PLURALS[layer]}. Arrow keys pan, plus and minus zoom, Enter picks the centre.`}
+        aria-label={`Map of ${stateName}'s ${layerWords(region, layer)?.many ?? "districts"}. Arrow keys pan, plus and minus zoom, Enter picks the centre.`}
         // biome-ignore lint/a11y/noNoninteractiveTabindex: the map is a widget (arrows pan, +/- zoom, Enter picks; see onKeyDown)
         tabIndex={0}
         onPointerDown={onPointerDown}
@@ -502,7 +498,7 @@ export function DistrictMap({
         >
           −
         </button>
-        <button type="button" aria-label="Show all of California" onClick={() => setView(home)}>
+        <button type="button" aria-label={`Show all of ${stateName}`} onClick={() => setView(home)}>
           ⌂
         </button>
       </div>

@@ -113,3 +113,39 @@ export function countyLabel(region: RegionProfile | undefined, name: string): st
   if (region.consolidated?.includes(name) || !region.countyWord) return name;
   return `${name} ${region.countyWord}`;
 }
+
+/** What a drawn layer's shapes are called: one, several, and a word for a tab. */
+export interface LayerWords {
+  /** "Assembly district". */
+  one: string;
+  /** "assembly districts". */
+  many: string;
+  /** "Assembly". */
+  tab: string;
+}
+
+function plural(word: string): string {
+  if (/[^aeiou]y$/i.test(word)) return `${word.slice(0, -1)}ies`;
+  return /(s|sh|ch|x)$/i.test(word) ? `${word}es` : `${word}s`;
+}
+
+/**
+ * What a region calls each layer its boundary file draws: the lower chamber
+ * is an Assembly here and a House there, a county a parish or a borough.
+ * Undefined for a layer the region doesn't have (Nebraska's lower chamber).
+ */
+export function layerWords(
+  region: RegionProfile | undefined,
+  layer: "cd" | "sd" | "ad" | "county" | "place",
+): LayerWords | undefined {
+  if (layer === "place") return { one: "City", many: "cities", tab: "Cities" };
+  if (layer === "county") {
+    const word = region?.countyWord || "County";
+    return { one: word, many: plural(word).toLowerCase(), tab: plural(word) };
+  }
+  const key = layerFamily(region, layer);
+  const family = key ? districtFamily(key, region?.path) : undefined;
+  if (!family) return undefined;
+  const tab = layer === "cd" ? "Congress" : (family.office ?? family.label).replace(/^State /, "");
+  return { one: family.label, many: `${family.label.toLowerCase()}s`, tab };
+}

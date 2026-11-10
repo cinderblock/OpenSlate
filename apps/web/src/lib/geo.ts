@@ -2,8 +2,8 @@ import type { Feature, MultiPolygon, Polygon, Position } from "geojson";
 import { feature, neighbors } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import type { AreaOptions } from "./collate";
-import { type Area, districtId, localityPathFor, NO_DISTRICT } from "./jurisdictions";
-import { countyLabel, layerFamily, regionProfile } from "./regions";
+import { type Area, areaStates, districtId, localityPathFor, NO_DISTRICT } from "./jurisdictions";
+import { countyLabel, layerFamily, regionPathOf, regionProfile } from "./regions";
 
 /**
  * Finding someone's districts on their own device: boundary data shipped with
@@ -581,20 +581,31 @@ function isLookupFamily(family: string): boolean {
  * (school, community college, supervisorial…) are always replaced: one the
  * lookup couldn't tell (near a line, or a lookup without them) is better
  * unknown than left over from somewhere else.
+ *
+ * A lookup says where someone votes, so anything kept is kept only within the
+ * state it found: look up an address in Texas, and California's districts
+ * go. Without the state's boundary data (`geo`) nothing can tell a city from
+ * a water district, so every locality there is replaced by what was found.
  */
-export function mergeFoundArea(previous: Area, found: Area, geo: StateGeo): Area {
+export function mergeFoundArea(previous: Area, found: Area, geo?: StateGeo): Area {
+  const states = areaStates(found);
+  const here = (path: string) => states.size === 0 || states.has(regionPathOf(path) ?? "");
   const cityOrCounty = new Set<string>();
-  for (const shape of geo.layers.place) {
-    for (const path of localityCandidates(geo.state, "place", shape.id)) cityOrCounty.add(path);
+  for (const shape of geo?.layers.place ?? []) {
+    for (const path of localityCandidates(geo?.state ?? "", "place", shape.id))
+      cityOrCounty.add(path);
   }
-  for (const shape of geo.layers.county) {
-    for (const path of localityCandidates(geo.state, "county", shape.id)) cityOrCounty.add(path);
+  for (const shape of geo?.layers.county ?? []) {
+    for (const path of localityCandidates(geo?.state ?? "", "county", shape.id))
+      cityOrCounty.add(path);
   }
   const localities = [
     ...found.localities,
-    ...previous.localities.filter((p) => !cityOrCounty.has(p) && !found.localities.includes(p)),
+    ...previous.localities.filter(
+      (p) => geo && here(p) && !cityOrCounty.has(p) && !found.localities.includes(p),
+    ),
   ];
-  const kept = (family: string) => !isLookupFamily(family);
+  const kept = (family: string) => here(family) && !isLookupFamily(family);
   const districts = {
     ...Object.fromEntries(Object.entries(previous.districts).filter(([f]) => kept(f))),
     ...found.districts,
@@ -608,6 +619,68 @@ export function mergeFoundArea(previous: Area, found: Area, geo: StateGeo): Area
   if (Object.keys(labels).length > 0) area.labels = labels;
   if (found.found) area.found = found.found;
   // The user's own answers outlast a lookup; a district it finds outranks them (`placeRace`).
-  if (previous.answers) area.answers = previous.answers;
+  const answers = Object.fromEntries(
+    Object.entries(previous.answers ?? {}).filter(([d]) => here(d)),
+  );
+  if (Object.keys(answers).length > 0) area.answers = answers;
   return area;
+}
+
+// ---- Which state a point is in ------------------------------------------------
+
+/**
+ * The states' outlines (`us.topo.json`, built with the states' files): which
+ * state's boundaries to load for a point, before any is loaded. Coarse, about
+ * a kilometre, so a point near a border may be either state's: `statesAt`
+ * names both and the states' own files settle it.
+ */
+export function decodeStateOutlines(topology: Topology): GeoShape[] {
+  const object = topology.objects.state as GeometryCollection | undefined;
+  if (!object) throw new Error("the outlines have no state layer");
+  const collection = feature(topology, object) as unknown as {
+    features: Feature<Polygon | MultiPolygon>[];
+  };
+  return collection.features.flatMap((f) => (f.geometry ? [shapeOf(f)] : []));
+}
+
+let outlines: Promise<GeoShape[] | undefined> | undefined;
+
+/** The states' outlines, fetched once. Undefined where the app wasn't built with them. */
+export function loadStateOutlines(): Promise<GeoShape[] | undefined> {
+  outlines ??= fetch(geoUrl("us.topo.json"))
+    .then((response) => (response.ok ? (response.json() as Promise<Topology>) : undefined))
+    .then((topology) => (topology ? decodeStateOutlines(topology) : undefined))
+    .catch(() => undefined);
+  return outlines;
+}
+
+/** How far outside an outline a point may be and still be worth that state's own file. */
+export const NEAR_STATE_METERS = 10_000;
+
+/**
+ * The states (region paths) a point is in or right beside, the one it's inside
+ * first. Alaska's outline sits west of -180, so a point east of the meridian
+ * is tried there too.
+ */
+export function statesAt(
+  shapes: readonly GeoShape[],
+  lon: number,
+  lat: number,
+  nearMeters = NEAR_STATE_METERS,
+): string[] {
+  const inside: string[] = [];
+  const near: string[] = [];
+  const dy = nearMeters / METERS_PER_DEGREE_LAT;
+  const dx = nearMeters / (METERS_PER_DEGREE_LON_AT_EQUATOR * Math.cos((lat * Math.PI) / 180));
+  for (const shape of shapes) {
+    for (const x of lon > 0 ? [lon, lon - 360] : [lon]) {
+      const [x0, y0, x1, y1] = shape.bbox;
+      if (x < x0 - dx || x > x1 + dx || lat < y0 - dy || lat > y1 + dy) continue;
+      if (shapeContains(shape, x, lat)) inside.push(shape.id);
+      else if (distanceToEdge(shape, x, lat) < nearMeters) near.push(shape.id);
+      else continue;
+      break;
+    }
+  }
+  return [...new Set([...inside, ...near])];
 }

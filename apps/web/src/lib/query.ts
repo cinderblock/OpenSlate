@@ -137,8 +137,12 @@ export interface Catalog {
   revision?: string;
   /** The regions it was put together for, when it came from shards; none: all of them. */
   regions?: string[];
-  /** Set on a catalog that came from shards: how much there is beyond what was loaded. */
-  sharded?: { shards: number; regions: string[] };
+  /**
+   * Set on a catalog that came from shards: how much there is beyond what was
+   * loaded. `waiting`: no state has been asked for and there are too many to
+   * load them all, so only what the whole country votes on is here.
+   */
+  sharded?: { shards: number; regions: string[]; waiting?: true };
 }
 
 /** One entry of a catalog bundle: the entry plus its signed slate. */

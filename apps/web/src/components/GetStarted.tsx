@@ -6,6 +6,7 @@ import { Code, FlaskConical, Lock, MapPin, Pencil, Server } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isPublicSite } from "../lib/alpha";
 import { catalogEntryUrl, startSetupImport } from "../lib/catalogImport";
+import { addScopeRegion, catalogScopeStore } from "../lib/catalogScope";
 import {
   basedInArea,
   type EntrySummary,
@@ -20,7 +21,13 @@ import { slatesCollection } from "../lib/collections";
 import { formatElectionDate } from "../lib/dates";
 import { REPO_URL } from "../lib/feedback";
 import { httpHref } from "../lib/httpHref";
-import { type Area, isAreaSet, jurisdictionLabel, jurisdictionRank } from "../lib/jurisdictions";
+import {
+  type Area,
+  areaStates,
+  isAreaSet,
+  jurisdictionLabel,
+  jurisdictionRank,
+} from "../lib/jurisdictions";
 import { areaStore, defaultToUnfollowed, localToday, myElectionStore } from "../lib/myVote";
 import { useSearchBox } from "../lib/pageSearch";
 import { DESKTOP_DOWNLOADS_URL, IS_DESKTOP_APP, THIS_DEVICE } from "../lib/platform";
@@ -84,6 +91,15 @@ export function GetStarted({ again }: { again: boolean }) {
   useEffect(() => {
     if (!election && elections[0]) setElection(elections[0][0]);
   }, [election, elections]);
+
+  // The catalog comes a state at a time (catalogScope.ts). The area here is a
+  // draft until it's confirmed, so its state is asked for as soon as it's
+  // known: the organizations to choose from are that state's.
+  useEffect(() => {
+    const scope = catalogScopeStore.get();
+    const next = [...areaStates(area)].reduce(addScopeRegion, scope);
+    if (next !== scope) catalogScopeStore.set(next);
+  }, [area]);
 
   const summaries = useElectionSummaries(catalog.data?.entries, election);
 

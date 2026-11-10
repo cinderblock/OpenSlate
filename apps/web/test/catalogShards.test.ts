@@ -177,6 +177,32 @@ describe("a catalog in shards", () => {
     expect(await load({ ca: "2", tx: "1" })).not.toBe(before);
   });
 
+  test("many states and nowhere said yet: only what the whole country votes on", async () => {
+    const regions = ["us", "us/ca", "us/tx", "us/va", "us/ny"];
+    const many = {
+      "shards.json": {
+        version: 2,
+        generated_at: "x",
+        shards: regions.map((region) => shard(region, `r-${region}`)),
+      },
+      ...Object.fromEntries(
+        regions.map((region) => [
+          `shards/2026-11-03/${region}/index.json`,
+          { entries: [entry(region.replace("/", "-"))] },
+        ]),
+      ),
+    };
+    const { fetchJson, asked } = host(many);
+    const catalog = await loadCatalog(URL_, [], fetchJson);
+    expect(catalog.entries.map((e) => e.slug)).toEqual(["us"]);
+    expect(catalog.sharded).toEqual({ shards: 5, regions: [...regions].sort(), waiting: true });
+    expect(asked.sort()).toEqual(["shards.json", "shards/2026-11-03/us/index.json?v=r-us"]);
+    // Once a state is asked for, it comes, with no flag.
+    const texan = await loadCatalog(URL_, ["us/tx"], host(many).fetchJson);
+    expect(texan.entries.map((e) => e.slug)).toEqual(["us", "us-tx"]);
+    expect(texan.sharded?.waiting).toBeUndefined();
+  });
+
   test("a region the catalog has nothing for: an empty catalog, not an error", async () => {
     const { fetchJson } = host({
       ...files,

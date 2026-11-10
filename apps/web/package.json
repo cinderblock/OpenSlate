@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "geo": "bun run scripts/build-geo.ts",
+    "geo:regions": "bun run scripts/geo-regions.ts",
     "snapshot": "bun run scripts/snapshot-catalog.ts"
   },
   "dependencies": {

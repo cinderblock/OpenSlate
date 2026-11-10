@@ -334,16 +334,37 @@ may not allow a public relay or mirror. Check
 [Kalshi's terms](https://kalshi.com/legal) before turning it on for anyone but
 yourself. See [plans/kalshi-forecasts-429.md](./plans/kalshi-forecasts-429.md).
 
-The district boundaries (`apps/web/public/geo/us-ca.topo.json`, ~1.4 MB
-gzipped, fetched only when someone opens the finder) are built by
-`bun run --filter '@openslate/web' geo` from Census TIGERweb, and for what
-Census doesn't map (Board of Equalization, community college, supervisorial
-and city council districts) from the state's, the community colleges', each
-county's (or its registrar's) and each city's GIS (`OTHER_SOURCES` in
-`apps/web/scripts/build-geo.ts`; how each council map was checked is in
+**Where you vote, in any state.** Typing an address and choosing the US
+Census Bureau finds the congressional and legislative districts, county and
+city for an address in any state, the District or a territory. Choosing by
+hand offers every state and its districts, numbered, lettered (Minnesota's
+35A) or named (Massachusetts' Third Middlesex). The map and *Use my location*
+work on the device, from a boundary file per state, and so only for the
+states the app ships a file for: California today (`apps/web/public/geo/`).
+`us.topo.json` there is every state's outline, so a location says which state
+it's in before any state's file is loaded.
+
+The boundary files (`us-<code>.topo.json`; California's is ~1.4 MB gzipped,
+fetched only when someone opens the finder) are built by
+`bun run --filter '@openslate/web' geo [--state <code>|all] [--out <dir>]`
+from Census TIGERweb, and for what Census doesn't map in California (Board of
+Equalization, community college, supervisorial and city council districts)
+from the state's, the community colleges', each county's (or its registrar's)
+and each city's GIS (`CA_OTHER_SOURCES` in `apps/web/scripts/build-geo.ts`;
+how each council map was checked is in
 [plans/council-districts-lookup.md](./plans/council-districts-lookup.md) and
 [plans/council-maps-missing-cities.md](./plans/council-maps-missing-cities.md));
-rerun it after redistricting.
+rerun it after redistricting. All 56 come to about 60 MB (22 MB gzipped).
+`bun run --filter '@openslate/web' geo:regions` then writes
+`src/lib/regions/usDistricts.gen.ts`: every state's districts, and which
+states' files the app ships. Set `VITE_GEO_BASE` to serve the files from
+somewhere other than beside the app.
+
+What the app knows about each state is in `apps/web/src/lib/regions/`: one
+table for every state's name, codes and chambers, and a directory for a state
+with code of its own (`us-ca/`: California's ballot order, its Secretary of
+State's and counties' counts, its voter guide links). [SPEC.md](./SPEC.md)
+§3.3 says how a jurisdiction path is spelled in any state or country.
 
 To serve the public catalog from your own copy too (for a site that works
 offline, or doesn't depend on GitHub Pages), take a snapshot and point the

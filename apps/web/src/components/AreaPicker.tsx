@@ -4,14 +4,19 @@ import type { AreaOptions } from "../lib/collate";
 import {
   type Area,
   allDistricts,
+  areaStates,
   districtFamilyLabel,
+  districtName,
+  inOneState,
   isAreaSet,
   jurisdictionLabel,
   jurisdictionRank,
   NO_DISTRICT,
   noRaceReason,
   parseJurisdiction,
+  stateLabel,
 } from "../lib/jurisdictions";
+import { allRegions, regionPathOf, regionProfile } from "../lib/regions";
 import { FindDistricts } from "./FindDistricts";
 import { Radio, RadioGroup } from "./ui/Radio";
 import { Select } from "./ui/Select";
@@ -32,7 +37,8 @@ type Mode = "find" | "manual";
  * never means scrolling past the lists: "Find them for me" (map, location or
  * address), or "Choose them myself", where localities are the ones imported
  * races use and every real district is offered, marked when it has no race
- * this election.
+ * this election. The lists are one state's at a time: the one the area is in,
+ * or the one chosen there.
  */
 export function AreaPicker({
   options,
@@ -57,16 +63,37 @@ export function AreaPicker({
     rootRef.current?.querySelector<HTMLInputElement>(".area-modes input[value='manual']")?.focus();
   }
 
+  // The state the lists are for: the one chosen here, else the area's, else
+  // the only one the imported races are in. With races from several states
+  // and no area yet, the lists wait for a choice.
+  const [chosenState, setChosenState] = useState<string>();
+  const optionStates = useMemo(
+    () =>
+      new Set(
+        [...options.localities, ...Object.keys(options.districts)].flatMap(
+          (path) => regionPathOf(path) ?? [],
+        ),
+      ),
+    [options],
+  );
+  const [areaState] = [...areaStates(area)];
+  const state =
+    chosenState ?? areaState ?? (optionStates.size === 1 ? [...optionStates][0] : undefined);
+  const needsState = state === undefined && optionStates.size > 1;
+  const inState = (path: string) => state === undefined || regionPathOf(path) === state;
+
   const localities = useMemo(() => {
+    const offered = options.localities.filter(
+      (path) => state === undefined || regionPathOf(path) === state,
+    );
     // Selected ones first, so they never hide behind the filter.
-    const selected = options.localities.filter((p) => area.localities.includes(p));
-    const rest = options.localities.filter((p) => !area.localities.includes(p));
+    const selected = offered.filter((p) => area.localities.includes(p));
+    const rest = offered.filter((p) => !area.localities.includes(p));
     const q = filter.trim().toLowerCase();
     const matching = q ? rest.filter((p) => jurisdictionLabel(p).toLowerCase().includes(q)) : rest;
-    const shown =
-      options.localities.length > CHIP_LIMIT && !q ? matching.slice(0, CHIP_LIMIT) : matching;
-    return { selected, shown, hidden: matching.length - shown.length };
-  }, [options.localities, area.localities, filter]);
+    const shown = offered.length > CHIP_LIMIT && !q ? matching.slice(0, CHIP_LIMIT) : matching;
+    return { count: offered.length, selected, shown, hidden: matching.length - shown.length };
+  }, [options.localities, area.localities, filter, state]);
 
   function toggleLocality(path: string) {
     const has = area.localities.includes(path);
@@ -76,21 +103,30 @@ export function AreaPicker({
     };
     // One taken off by hand stays off, though the lookup found it.
     if (has && area.found) next.found = area.found.filter((p) => p !== path);
-    onChange(next);
+    // Someone votes in one state: a place set in another replaces the first.
+    onChange(has ? next : inOneState(next, regionPathOf(path)));
   }
 
   function setDistrict(family: string, number: string) {
     const districts = { ...area.districts };
     if (number) districts[family] = number;
     else delete districts[family];
-    onChange({ ...area, districts });
+    const next = { ...area, districts };
+    onChange(number ? inOneState(next, regionPathOf(family)) : next);
   }
 
   // Families the races use, plus any the user has set (a district with no race
-  // this election still belongs on the list).
+  // this election still belongs on the list), plus the state's own Congress
+  // and legislature: everyone is in one of each, races imported or not.
+  const layers = regionProfile(state)?.layers;
+  const own = [layers?.congress, layers?.upper, layers?.lower].flatMap((key) =>
+    key ? [`${state}/${key}`] : [],
+  );
   const families = [
-    ...new Set([...Object.keys(options.districts), ...Object.keys(area.districts)]),
-  ].sort((a, b) => jurisdictionRank(`${a}-1`) - jurisdictionRank(`${b}-1`));
+    ...new Set([...Object.keys(options.districts), ...Object.keys(area.districts), ...own]),
+  ]
+    .filter(inState)
+    .sort((a, b) => jurisdictionRank(`${a}-1`) - jurisdictionRank(`${b}-1`));
 
   return (
     <div className="area-picker" ref={rootRef}>
@@ -131,17 +167,29 @@ export function AreaPicker({
       </div>
 
       <div hidden={mode !== "manual"}>
-        {options.localities.length === 0 && families.length === 0 && (
-          <p className="hint">Nothing on this ballot is filed under a city or district yet.</p>
+        <Select
+          className="area-state"
+          label="State"
+          placeholder="Choose your state"
+          value={state ?? null}
+          onChange={setChosenState}
+          options={allRegions().map((region) => ({ id: region.path, label: region.name }))}
+        />
+        {needsState && <p className="hint">Choose your state to see its cities and districts.</p>}
+        {state && localities.count === 0 && (
+          <p className="hint">
+            Nothing imported is filed under a city or county in {stateLabel(state)} yet. Your
+            districts below are yours whether or not anything is.
+          </p>
         )}
 
-        {options.localities.length > 0 && (
+        {!needsState && localities.count > 0 && (
           <fieldset>
             <legend>City, county or local area</legend>
-            {options.localities.length > CHIP_LIMIT && (
+            {localities.count > CHIP_LIMIT && (
               <SearchField
                 className="area-search"
-                placeholder={`search ${options.localities.length} areas…`}
+                placeholder={`search ${localities.count} areas…`}
                 value={filter}
                 onChange={setFilter}
               />
@@ -168,13 +216,14 @@ export function AreaPicker({
           </fieldset>
         )}
 
-        {families.length > 0 && (
+        {!needsState && families.length > 0 && (
           <fieldset>
             <legend>Your districts</legend>
             <div className="district-grid">
               {families.map((family) => {
                 const part = parseJurisdiction(`${family}-1`);
-                const label = part.kind === "district" ? districtFamilyLabel(part.family) : family;
+                const label =
+                  part.kind === "district" ? districtFamilyLabel(part.family, part.state) : family;
                 const present = options.districts[family] ?? [];
                 const current = area.districts[family];
                 const numbers = allDistricts(family, current ? [...present, current] : present);
@@ -187,11 +236,18 @@ export function AreaPicker({
                       onChange={(n) => setDistrict(family, n === NOT_SET ? "" : n)}
                       options={[
                         { id: NOT_SET, label: "not set", className: "ui-option-quiet" },
-                        ...numbers.map((n) =>
-                          present.includes(n)
-                            ? { id: n, label: n }
-                            : { id: n, label: n, badge: "no race", className: "district-no-race" },
-                        ),
+                        ...numbers.map((n) => {
+                          // What the state calls it: 35A, Third Middlesex.
+                          const called = districtName(family, n);
+                          return present.includes(n)
+                            ? { id: n, label: called }
+                            : {
+                                id: n,
+                                label: called,
+                                badge: "no race",
+                                className: "district-no-race",
+                              };
+                        }),
                       ]}
                     />
                     {current && !present.includes(current) && (

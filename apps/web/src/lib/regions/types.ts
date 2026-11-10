@@ -22,6 +22,13 @@ export interface DistrictFamily {
   /** How many there are, when they're numbered 1 to `count`. */
   count?: number;
   /**
+   * Every one of them, where they aren't numbered 1 to n: lettered
+   * (Minnesota's House, `35a` "35A"), named (Massachusetts' Senate,
+   * `third-middlesex` "Third Middlesex"), or numbered with gaps. Each an id
+   * and what it's called.
+   */
+  ids?: ReadonlyArray<readonly [id: string, name: string]>;
+  /**
    * Staggered terms: which half of the seats a regular election in a given
    * year fills, when the region's law says. Undefined in a year it doesn't.
    */

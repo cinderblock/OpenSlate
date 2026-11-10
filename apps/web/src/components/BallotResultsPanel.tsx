@@ -188,10 +188,11 @@ export function BallotResultsPanel() {
       </div>
       <p className="hint">
         Each race you marked on <Link to="/">My ballot</Link>
-        {election ? ` for ${formatElectionDate(election)}` : ""}, next to the count so far: the
-        California Secretary of State's for state races, your county's own for local ones,
-        civicAPI's for the rest. Nobody here calls a race: "going your way" means your vote is on
-        the winning side of the count so far. California counts for weeks after Election Day.
+        {election ? ` for ${formatElectionDate(election)}` : ""}, next to the count so far: your
+        state's own for state races and your county's for local ones, where OpenSlate reads them
+        (California today), civicAPI's for the rest. Nobody here calls a race: "going your way"
+        means your vote is on the winning side of the count so far. Counting goes on after Election
+        Day, for weeks in California.
       </p>
 
       {marked.length === 0 ? (

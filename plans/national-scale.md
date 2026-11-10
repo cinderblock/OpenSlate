@@ -90,20 +90,46 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
      copy), which copies those two. Before the catalog grows past one state,
      the snapshot has to learn shards, and the whole files have to stop
      growing (keep them California-only, or drop them).
-   - With no area set, the app loads every shard. Fine for one state; with
-     many, setup has to ask for a state before the catalog loads (step 4).
-3. **Boundaries for every state.** *(current)*
-   Generalize `build-geo.ts` to any state from
-   TIGER (congressional, both chambers, counties, places, school districts),
-   plus a small national file of state outlines so a point finds its state
-   before any state file loads. Decide where the files live (open question 1).
-4. **State-aware UI.** Find my districts, the district map, setup, Results and
-   All races work for any state with a profile: pick or detect the state,
-   labels from the profile, sources (state count, county feeds) only where the
-   profile has them, civicAPI elsewhere.
-5. **SPEC.** Jurisdiction path conventions beyond one state and one country
-   (ISO 3166 segments, district family keys, district ids that aren't
-   numbers), and the sharded catalog.
+   - With no area set, the app loads every shard while the catalog has at
+     most 3 states (`MAX_UNASKED_STATES`); past that, only what the whole
+     country votes on, until a state is known. Setup asks for its draft
+     area's state before the area is confirmed.
+3. **Boundaries for every state.** *(current)* Code done; where the files
+   are served from waits on open question 1.
+   - `bun run geo --state <code>|all [--out <dir>]` builds any state from
+     TIGERweb (`167acf6`): district ids as core's `districts.ts` spells them,
+     "not defined" areas dropped, an empty layer for a chamber a state lacks,
+     counties' own names, Alaska west of -180 (`metadata.wrap`), `index.json`
+     and the states' outlines (`us.topo.json`).
+   - `bun run geo:regions [--from <dir>] [--files <dir>|all]` writes
+     `src/lib/regions/usDistricts.gen.ts` from the state files: each chamber's
+     count, or every district where they're lettered or named, and which
+     states the app ships a file for (those in `public/geo`, or `all`).
+   - `geo.ts` reads `VITE_GEO_BASE` (a URL ending in `/`) for where the files
+     are; default `geo/` beside the app.
+   - All 56 built to the scratchpad on 2026-11-10; sizes in Findings. Only
+     California's file is in `public/geo`, so only California has a map and
+     "Use my location" in production.
+4. **State-aware UI.** Mostly done.
+   - Done: Find your districts in any state (`FindDistricts.tsx`: the Census
+     address lookup works everywhere with no boundary file; the map and "Use
+     my location" where the app has the state's file, found through the
+     outlines), the map's labels by state (`layerWords`), choosing by hand
+     with a state chooser and that state's districts (`AreaPicker.tsx`), one
+     state per area (`inOneState`, `mergeFoundArea`), the catalog's states on
+     All races and the catalog browser (`CatalogRegions.tsx`).
+   - Not done: the Live page for another state (it is built on California's
+     contest ids), and a county subdivision layer for the states where towns
+     aren't incorporated places (Findings).
+   - Checked in headless Chrome, 2026-11-10: with every state's file (a
+     Vermont address, Vermont's map and a click on it, "Use my location" in
+     Anchorage and on Attu east of the 180th meridian, Minnesota by hand) and
+     as shipped, with California's only (San Francisco by location, the
+     California map unchanged, Texas by location told to use an address, a
+     Vermont address working with no Vermont map).
+5. **SPEC.** Done: §3.3 spells out `jurisdiction` paths (ISO 3166 segments,
+   the US district family keys, lettered and named ids). The sharded catalog
+   is in the README, with the rest of the catalog's format.
 6. **Federal coverage.** National organizations' House and Senate
    endorsements, and a nationwide federal ballot listing, in
    `openslate-public-endorsements`. Data work with human review before
@@ -158,6 +184,29 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
 - `openslate sign --batch .` failed on Windows after signing everything:
   Bun's recursive `mkdir(".")` throws EEXIST. Fixed in `54b992e`; an absolute
   path works with an older pin.
+- What the Census calls districts (TIGERweb `BASENAME`, probed 2026-11-10):
+  numbers nearly everywhere, zero-padded in places (New Hampshire's Senate
+  `02`, New Jersey's Assembly `05`); letters for Alaska's Senate (`A`-`T`);
+  number and letter for Minnesota's House (`35A`) and Maryland's delegate
+  subdistricts (`38C`, mixed with plain numbers); names for both chambers in
+  Massachusetts (`Third Middlesex`, `19th Suffolk`) and Vermont (`Addison`,
+  `Orleans-3`) and for New Hampshire's House (`Hillsborough 10`). One-seat
+  states have `Congressional District (at Large)`. Water is `… not defined`
+  (GEOID ending `ZZ`): New Hampshire, Louisiana, Puerto Rico and others have
+  one. Nebraska and DC have no lower layer; DC's upper layer is its 8 wards.
+- The address relay (`apps/poll-cache/src/geocode.ts`) dropped every district
+  that wasn't a plain number, so a Vermont address came back with none and an
+  at-large state with no congressional district. Fixed in `167acf6`.
+- Boundary files, all 56 built 2026-11-10 at the same simplification as
+  California's: see the size line in the progress log. Each is the raw JSON
+  size; Cloudflare serves them brotli-compressed, about a quarter of that.
+- In twelve states (New England, NJ, NY, PA, MI, MN, WI) most people live in
+  a town or township that the Census calls a county subdivision, not an
+  incorporated place. The boundary files have places only, so a lookup there
+  finds the county and no town. TIGERweb layer 22 has them. Not built yet.
+- The by-hand picker listed every district family any imported race used.
+  With a national group's slate imported that would be 50 states' Congress
+  pickers: it shows one state's at a time now.
 - `packages/cli/test/races.test.ts` times out (5 s) when the machine is busy
   (another thread's rustc build, 2026-11-10); it passes alone on a quiet one.
 - Local end-to-end harness, outside the repo:
@@ -179,21 +228,39 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
   Texas voter is told the catalog has nothing for Texas and can add
   California. The shard revisions CI published equal the ones built locally
   from the live bundle (`64d0acca…`, `ff1ed7fc…`): the build is repeatable.
-- [ ] Step 3: nationwide boundary data.
-- [ ] Step 4: state-aware UI.
-- [ ] Step 5: SPEC.
+- [ ] Step 3: nationwide boundary data. Build and app code done; files not
+  served yet (open question 1). **Sizes, all 56, built 2026-11-10 about
+  1:20 PM PST (21:20Z):** 59.7 MB of JSON, 21.8 MB gzipped. Largest: Texas
+  4.8 MB, California 4.1 MB (with its council and supervisorial maps),
+  Illinois 3.0 MB, North Carolina 2.5 MB; smallest: Guam 6 KB, DC 13 KB,
+  American Samoa 28 KB. The outlines (`us.topo.json`, committed) are 648 KB,
+  143 KB gzipped, and put all 20 probe points (border towns, islands, both
+  sides of the 180th meridian) in the right state first. The build took
+  about 2 hours, nearly all of it TIGERweb answering.
+- [ ] Step 4: state-aware UI. Finding and choosing districts done; Results
+  wording and the county-subdivision layer left.
+- [x] Step 5: SPEC §3.3.
 - [ ] Step 6: federal coverage.
 - [ ] Step 7: a second state.
 - [ ] Step 8: the world.
 
 ## Open questions for the user
 
-1. Where do 50 states' boundary files live? About 1-5 MB each, so on the
-   order of 100 MB. In this repo they bloat git history at every
-   redistricting. My recommendation: a sibling repo `openslate-geo` that
-   builds from TIGER in CI and publishes static files, fetched per state like
-   the catalog. Until you answer, files build to a git-ignored directory and
-   only California's stays committed.
+1. Where do the states' boundary files live? Measured: see the progress
+   log's size line (tens of MB of JSON in all, a few hundred KB to a few MB
+   a state). Two ways, both ready in code:
+   - **In this repo** (`apps/web/public/geo/`): copy the built files in, run
+     `bun run geo:regions`, commit. Same origin, deploys with the app, no
+     new moving part. Costs that much git history at each rebuild (yearly at
+     most, or a mid-decade redistricting).
+   - **A sibling repo** `openslate-geo`, published like the catalog: set
+     `VITE_GEO_BASE` to its URL and run `bun run geo:regions --files all`.
+     Keeps this repo small; adds a repo, a publish workflow and a second
+     origin.
+   My recommendation changed with the measurement: in this repo. It is
+   smaller than I guessed, and the files change rarely. Say which, and it's
+   one commit. Until then only California has a map; every state has the
+   address lookup.
 2. State subdomains as redirects (`ca.openslate.us` → the app with California
    preset): want them? It's a Cloudflare change, so it waits for your yes.
 3. `openslate.org` is for sale on Afternic. Worth pricing if the project goes

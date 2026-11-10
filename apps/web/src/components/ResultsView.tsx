@@ -108,9 +108,9 @@ export function ResultsView() {
       <section className="panel">
         <h2>How your slates did</h2>
         <p className="hint">
-          Pick a slate to see each of its picks next to the outcome: the California Secretary of
-          State's count for the races it counts, civicAPI's for the rest. Read-only: it never edits
-          the slate.
+          Pick a slate to see each of its picks next to the outcome: the state's own count where
+          OpenSlate reads one (California's Secretary of State, for the races it counts), civicAPI's
+          for the rest. Read-only: it never edits the slate.
         </p>
 
         <div className="card">

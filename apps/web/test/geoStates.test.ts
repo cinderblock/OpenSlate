@@ -2,7 +2,16 @@ import { describe, expect, test } from "bun:test";
 import type { Feature, FeatureCollection } from "geojson";
 import { topology } from "topojson-server";
 import type { Topology } from "topojson-specification";
-import { areaFromHit, decodeStateGeo, locate, shapeAt } from "../src/lib/geo";
+import {
+  areaFromHit,
+  decodeStateGeo,
+  decodeStateOutlines,
+  locate,
+  mergeFoundArea,
+  shapeAt,
+  statesAt,
+} from "../src/lib/geo";
+import type { Area } from "../src/lib/jurisdictions";
 
 /**
  * What other states' boundary files hold that California's doesn't
@@ -187,5 +196,79 @@ describe("a state across the 180th meridian", () => {
     );
     expect(locate(guam, 144.7, 13.4)?.county).toBe("Guam");
     expect(locate(geo, 144.7, 13.4)).toBeNull();
+  });
+});
+
+describe("a lookup in another state", () => {
+  const california: Area = {
+    localities: ["us/ca/sf", "us/ca/ebmud"],
+    districts: { "us/ca/cd": "11", "us/ca/ad": "17", "us/ca/bart": "8", "us/ca/elsd": "34410" },
+    labels: { "us/ca/elsd": "San Francisco Unified" },
+    answers: { "us/ca/sf/council-3": true },
+  };
+  const texas: Area = {
+    localities: ["us/tx/austin"],
+    districts: { "us/tx/cd": "37", "us/tx/sd": "14", "us/tx/hd": "49" },
+    found: ["us/tx/austin", "us/tx/travis-county"],
+  };
+
+  test("replaces where the voter votes: nothing of the old state is left", () => {
+    expect(mergeFoundArea(california, texas)).toEqual(texas);
+  });
+
+  test("with the state's boundaries too", () => {
+    const geo = decodeStateGeo(
+      "us/tx",
+      state({
+        cd: layer(square("37", [-98, 30, -97, 31])),
+        county: layer(square("Travis", [-98, 30, -97, 31])),
+        place: layer(square("Austin", [-98, 30, -97, 31])),
+      }),
+    );
+    expect(mergeFoundArea(california, texas, geo)).toEqual(texas);
+  });
+
+  test("in the same state, without its boundaries: districts set by hand stay, places are the lookup's", () => {
+    const again: Area = {
+      localities: ["us/ca/oakland"],
+      districts: { "us/ca/cd": "12", "us/ca/ad": "18" },
+    };
+    const merged = mergeFoundArea(california, again);
+    // BART isn't something a lookup finds; EBMUD can't be told from a city without the maps.
+    expect(merged.localities).toEqual(["us/ca/oakland"]);
+    expect(merged.districts).toEqual({ "us/ca/cd": "12", "us/ca/ad": "18", "us/ca/bart": "8" });
+    expect(merged.labels).toBeUndefined();
+    expect(merged.answers).toEqual({ "us/ca/sf/council-3": true });
+  });
+});
+
+describe("which state a point is in", () => {
+  const outlines = decodeStateOutlines(
+    topology({
+      state: layer(
+        square("us/ca", [-124, 32, -114, 42]),
+        square("us/nv", [-114, 35, -110, 42]),
+        // As the build writes it: west of -180.
+        square("us/ak", [-188, 51, -130, 71]),
+      ),
+    }) as Topology,
+  );
+
+  test("the state it's inside", () => {
+    expect(statesAt(outlines, -120, 37)).toEqual(["us/ca"]);
+    expect(statesAt(outlines, -112, 39)).toEqual(["us/nv"]);
+    expect(statesAt(outlines, -80, 40)).toEqual([]);
+  });
+
+  test("near a border: the one it's in, then its neighbour", () => {
+    // 5 km inside California, by the Nevada line.
+    expect(statesAt(outlines, -114.05, 39)).toEqual(["us/ca", "us/nv"]);
+    // 50 km in: California alone.
+    expect(statesAt(outlines, -114.6, 39)).toEqual(["us/ca"]);
+  });
+
+  test("Alaska from either side of the 180th meridian", () => {
+    expect(statesAt(outlines, -150, 61)).toEqual(["us/ak"]);
+    expect(statesAt(outlines, 172.9, 52.9)).toEqual(["us/ak"]);
   });
 });

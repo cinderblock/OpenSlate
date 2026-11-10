@@ -43,21 +43,26 @@ export function CatalogRegions({
   const shown = asked.filter((region) => has.includes(region));
   const more = has.filter((region) => !asked.includes(region));
   const names = (regions: string[]) => listOf(regions.map(stateLabel));
+  /** Short enough to say; past that, a count. */
+  const covers = has.length > 6 ? `${has.length} states` : names(has);
+  const waiting = catalog.sharded.waiting === true;
 
   return (
     <div className="catalog-regions">
       {missing.length > 0 && (
         <p role="status">
           The public catalog has nothing for {names(missing)} yet.
-          {has.length > 0 && ` It covers ${names(has)}.`}
+          {has.length > 0 && ` It covers ${covers}.`}
         </p>
       )}
       <p className="hint">
-        {asked.length === 0
-          ? `Showing everything the catalog has: ${names(has) || "nothing yet"}.`
-          : shown.length > 0
-            ? `Showing ${names(shown)}.`
-            : "Nothing to show for where you vote."}{" "}
+        {waiting
+          ? `The catalog covers ${covers}. Set where you vote on My ballot, or choose a state here, to see its races.`
+          : asked.length === 0
+            ? `Showing everything the catalog has: ${covers || "nothing yet"}.`
+            : shown.length > 0
+              ? `Showing ${names(shown)}.`
+              : "Nothing to show for where you vote."}{" "}
         The catalog comes a state at a time: its host learns which states you look at, and nothing
         finer.
       </p>
@@ -77,10 +82,10 @@ export function CatalogRegions({
           ))}
         </ul>
       )}
-      {asked.length > 0 && more.length > 0 && (
+      {(asked.length > 0 || waiting) && more.length > 0 && (
         <div className="catalog-regions-add">
           <Select
-            label="Look at another state"
+            label={asked.length > 0 ? "Look at another state" : "Look at a state"}
             placeholder="Choose a state"
             value={adding}
             onChange={setAdding}

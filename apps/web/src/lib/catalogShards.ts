@@ -22,6 +22,19 @@ export type FetchJson = (
 /** Shard indexes fetched at once. */
 const CONCURRENCY = 6;
 
+/**
+ * How many states' worth of catalog a visitor who hasn't said where they vote
+ * is handed whole. Past this, "everything" is too much to download on a
+ * guess: they get what the whole country votes on, and the rest once the app
+ * knows their state (catalogScope.ts).
+ */
+export const MAX_UNASKED_STATES = 3;
+
+/** A region that is a state or the like (`us/ca`), not a country's own shard (`us`) or none. */
+function isState(region: string): boolean {
+  return region.split("/").length === 2;
+}
+
 function isShard(raw: unknown): raw is CatalogShard {
   if (typeof raw !== "object" || raw === null) return false;
   const s = raw as Partial<CatalogShard>;
@@ -73,10 +86,11 @@ async function getJson(url: string, fetchJson: FetchJson): Promise<unknown> {
 }
 
 /**
- * The catalog for a voter in `regions` (none: all of it). From shards when
- * the catalog has them: every wanted shard's entries, each entry once (a
- * slate that speaks to two of the voter's regions is in both shards), with
- * each shard's bundle. Otherwise the whole `index.json`.
+ * The catalog for a voter in `regions` (none: all of it, while that's a few
+ * states' worth; `MAX_UNASKED_STATES`). From shards when the catalog has
+ * them: every wanted shard's entries, each entry once (a slate that speaks to
+ * two of the voter's regions is in both shards), with each shard's bundle.
+ * Otherwise the whole `index.json`.
  */
 export async function loadCatalog(
   catalogUrl: string,
@@ -87,7 +101,13 @@ export async function loadCatalog(
   if (!list) return (await getJson(catalogUrl, fetchJson)) as Catalog;
 
   const listUrl = new URL("shards.json", catalogUrl).href;
-  const wanted = shardsFor(list.shards, regions);
+  const states = [...new Set(list.shards.map((s) => s.region))].filter(isState);
+  // Nowhere asked for, and too many states to hand over on a guess: only
+  // what isn't any one state's.
+  const waiting = regions.length === 0 && states.length > MAX_UNASKED_STATES;
+  const wanted = waiting
+    ? list.shards.filter((shard) => !isState(shard.region))
+    : shardsFor(list.shards, regions);
   const parts = new Array<CatalogEntry[]>(wanted.length);
   await forEachConcurrently(
     wanted.map((shard, index) => ({ shard, index })),
@@ -124,6 +144,7 @@ export async function loadCatalog(
     sharded: {
       shards: list.shards.length,
       regions: [...new Set(list.shards.map((s) => s.region))].sort(),
+      ...(waiting ? { waiting: true } : {}),
     },
   };
 }

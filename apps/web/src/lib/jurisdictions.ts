@@ -197,6 +197,40 @@ export function upgradeArea(area: Area): Area {
   return out;
 }
 
+/**
+ * The area with only what's in one state (`us/tx`): someone votes in one, so
+ * setting a place or district in another by hand leaves the first behind.
+ * The same area when everything is already there, or no state is given.
+ */
+export function inOneState(area: Area, state: string | undefined): Area {
+  if (!state) return area;
+  const here = (path: string) => path === state || path.startsWith(`${state}/`);
+  const pick = <T>(record: Record<string, T> | undefined) =>
+    record && Object.fromEntries(Object.entries(record).filter(([path]) => here(path)));
+  const all = [
+    ...area.localities,
+    ...Object.keys(area.districts),
+    ...(area.found ?? []),
+    ...(area.recheck ?? []),
+    ...Object.keys(area.labels ?? {}),
+    ...Object.keys(area.answers ?? {}),
+  ];
+  if (all.every(here)) return area;
+  const next: Area = {
+    localities: area.localities.filter(here),
+    districts: pick(area.districts) ?? {},
+  };
+  const labels = pick(area.labels);
+  if (labels && Object.keys(labels).length > 0) next.labels = labels;
+  const found = area.found?.filter(here);
+  if (found?.length) next.found = found;
+  const recheck = area.recheck?.filter(here);
+  if (recheck?.length) next.recheck = recheck;
+  const answers = pick(area.answers);
+  if (answers && Object.keys(answers).length > 0) next.answers = answers;
+  return next;
+}
+
 /** States the area implies (from its localities and districts). */
 export function areaStates(area: Area): Set<string> {
   const states = new Set<string>();
@@ -423,7 +457,7 @@ const labelOf = memoByString((path: string): string => {
     case "state":
       return part.path === "us" ? "National" : stateLabel(part.path);
     case "district":
-      return `${districtFamilyLabel(part.family, part.state)} ${part.number}`;
+      return `${districtFamilyLabel(part.family, part.state)} ${districtName(`${part.state}/${part.family}`, part.number)}`;
     case "local":
       return regionFor(part.path)?.localityNames?.[part.slug] ?? titleCase(part.slug);
   }
@@ -464,11 +498,22 @@ export function familyHasRaces(family: string): boolean {
   return info !== undefined && !info.narrows;
 }
 
-/** Every district number of a family (`us/ca/sd`), plus any the data uses beyond the known count. */
+/**
+ * What a district is called: its number, or for one that's lettered or named
+ * what its state calls it (`35a` "35A", `third-middlesex` "Third Middlesex").
+ * `family` as areas key it (`us/ma/sd`).
+ */
+export function districtName(family: string, id: string): string {
+  return districtFamilyAt(family)?.ids?.find(([known]) => known === id)?.[1] ?? id;
+}
+
+/** Every district of a family (`us/ca/sd`), plus any the data uses beyond the ones known. */
 export function allDistricts(family: string, present: readonly string[]): string[] {
   const count = districtCount(family);
   const numbers = new Set(present);
   for (let n = 1; n <= count; n++) numbers.add(String(n));
+  // Lettered and named ones, which no count can stand for.
+  for (const [id] of districtFamilyAt(family)?.ids ?? []) numbers.add(id);
   return [...numbers].sort(compareDistrictIds);
 }
 
@@ -503,5 +548,5 @@ export function noRaceReason(
   if (up && Number(number) % 2 !== (up === "even" ? 0 : 1)) {
     return `No ${office} race in district ${number} this election; only ${up}-numbered seats are up.`;
   }
-  return `Nothing you've imported has a ${office} race in district ${number} this election.`;
+  return `Nothing you've imported has a ${office} race in district ${districtName(family, number)} this election.`;
 }

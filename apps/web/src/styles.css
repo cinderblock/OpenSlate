@@ -1829,6 +1829,11 @@ button.source-chip {
 .area-search {
   margin-bottom: 0.4rem;
 }
+.area-state,
+.find-districts > .ui-select {
+  max-width: 20rem;
+  margin-bottom: 0.75rem;
+}
 .chips {
   display: flex;
   flex-wrap: wrap;

@@ -9,21 +9,26 @@ import {
   cityPaths,
   type GeoHit,
   type GeoLayer,
+  hasStateGeo,
   type LookupLayer,
   loadStateGeo,
+  loadStateOutlines,
   locate,
   lookupsAt,
   mergeFoundArea,
   NEAR_LINE_METERS,
   type StateGeo,
+  statesAt,
 } from "../lib/geo";
 import {
   type Area,
+  areaStates,
   districtFamilyLabel,
   familyHasRaces,
   jurisdictionLabel,
   NO_DISTRICT,
   noRaceReason,
+  stateLabel,
 } from "../lib/jurisdictions";
 import {
   type AddressMatch,
@@ -34,9 +39,11 @@ import {
   searchOpenStreetMap,
   useLookupConsent,
 } from "../lib/lookups";
-import { DistrictMap, LAYER_NAMES } from "./DistrictMap";
+import { allRegions, layerWords, regionByCode, regionProfile } from "../lib/regions";
+import { DistrictMap } from "./DistrictMap";
 import { ReportCivicProblem } from "./ReportCivicProblem";
 import { Segmented } from "./ui/Segmented";
+import { Select } from "./ui/Select";
 import { TextField } from "./ui/TextField";
 
 /**
@@ -49,8 +56,6 @@ import { TextField } from "./ui/TextField";
  * See plans/find-my-districts.md.
  */
 
-const STATE = "us/ca";
-
 type Method = "map" | "location" | "address";
 
 const METHODS: Array<{ id: Method; title: string; privacy: string }> = [
@@ -59,22 +64,46 @@ const METHODS: Array<{ id: Method; title: string; privacy: string }> = [
   { id: "address", title: "Type my address", privacy: "Sent to a service you choose" },
 ];
 
-/** Load the state's boundaries once something needs them. */
-function useStateGeo(enabled: boolean): { geo?: StateGeo; error?: string } {
-  const [state, setState] = useState<{ geo?: StateGeo; error?: string }>({});
+/** The states the app has boundary files for, by name. */
+const MAPPED = allRegions().filter((region) => hasStateGeo(region.path));
+
+/** "California", "California and Texas", "12 states". */
+function mappedStates(): string {
+  if (MAPPED.length === 0) return "no state";
+  if (MAPPED.length > 3) return `${MAPPED.length} states`;
+  const names = MAPPED.map((region) => region.name);
+  return names.length === 1
+    ? (names[0] as string)
+    : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+}
+
+/**
+ * The state to start in: the one the voter's area names, else the only one
+ * there are maps of. With neither, the map asks.
+ */
+function startingState(area: Area): string | undefined {
+  const states = [...areaStates(area)];
+  if (states.length === 1) return states[0];
+  return MAPPED.length === 1 ? MAPPED[0]?.path : undefined;
+}
+
+/** Load a state's boundaries once something needs them; none for a state the app has no file for. */
+function useStateGeo(state: string | undefined): { geo?: StateGeo; error?: string } {
+  const [loaded, setLoaded] = useState<{ state?: string; geo?: StateGeo; error?: string }>({});
   useEffect(() => {
-    if (!enabled || state.geo) return;
+    if (!state || !hasStateGeo(state)) return;
     let live = true;
-    loadStateGeo(STATE).then(
-      (geo) => live && setState({ geo }),
+    loadStateGeo(state).then(
+      (geo) => live && setLoaded({ state, geo }),
       (err: unknown) =>
-        live && setState({ error: err instanceof Error ? err.message : String(err) }),
+        live && setLoaded({ state, error: err instanceof Error ? err.message : String(err) }),
     );
     return () => {
       live = false;
     };
-  }, [enabled, state.geo]);
-  return state;
+  }, [state]);
+  // Another state's boundaries aren't this one's.
+  return loaded.state === state ? loaded : {};
 }
 
 interface Found {
@@ -82,6 +111,8 @@ interface Found {
   via: string;
   /** What it was found from: an address as matched, or a description of the spot. */
   from?: string;
+  /** The state it was found in. */
+  state?: string;
   point?: [number, number];
   hit?: GeoHit;
   area: Area;
@@ -117,6 +148,8 @@ export function FindDistricts({
 }) {
   const [method, setMethod] = useState<Method | null>(null);
   const [found, setFound] = useState<Found | null>(null);
+  // The state being looked in: the map's, and wherever the last lookup landed.
+  const [state, setState] = useState<string | undefined>(() => startingState(area));
   const [basemap] = useBasemap();
   // `google` says which Google route failed, so the error can offer a report.
   const [error, setErrorState] = useState<{ message: string; google?: CivicRoute } | null>(null);
@@ -124,7 +157,8 @@ export function FindDistricts({
     setErrorState(message === null ? null : { message, ...(google ? { google } : {}) });
   // Which lookup couldn't answer: not an error to fix, so it gets a way around it.
   const [unavailable, setUnavailable] = useState<OnlineLookup | null>(null);
-  const { geo, error: geoError } = useStateGeo(method !== null);
+  const mapped = state !== undefined && hasStateGeo(state);
+  const { geo, error: geoError } = useStateGeo(method !== null && mapped ? state : undefined);
 
   function choose(next: Method) {
     setMethod((m) => (m === next ? null : next));
@@ -132,28 +166,125 @@ export function FindDistricts({
     setUnavailable(null);
   }
 
-  /** Apply a hit (from the boundaries or a geocoder) to the area. */
+  /** A state's boundaries, when the app has them and they load. */
+  async function geoOf(path: string): Promise<StateGeo | undefined> {
+    if (!hasStateGeo(path)) return undefined;
+    return loadStateGeo(path).catch(() => undefined);
+  }
+
+  /**
+   * Apply a hit (from the boundaries or a geocoder) to the area. `within`: the
+   * state's boundaries when the app has them, which tell a city's path from a
+   * county's and keep what a lookup can't know.
+   */
   function applyHit(
     hit: GeoHit,
+    path: string,
+    within: StateGeo | undefined,
     via: string,
     extra: { point?: [number, number]; from?: string } = {},
   ) {
-    if (!geo) return;
-    const result = areaFromHit(hit, STATE, options, cityPaths(geo));
-    onChange(mergeFoundArea(area, result.area, geo));
-    setFound({ via, ...extra, hit, ...result, nearLine: hit.nearLine });
+    const result = areaFromHit(hit, path, options, within ? cityPaths(within) : undefined);
+    onChange(mergeFoundArea(area, result.area, within));
+    setState(path);
+    setFound({ via, ...extra, state: path, hit, ...result, nearLine: hit.nearLine });
     setError(null);
   }
 
-  function pickPoint(lon: number, lat: number, via: string, nearMeters = NEAR_LINE_METERS) {
-    if (!geo) return;
-    const hit = locate(geo, lon, lat, nearMeters);
+  /** A click on the map: in the state it shows. */
+  function pickPoint(lon: number, lat: number) {
+    if (!geo || !state) return;
+    const hit = locate(geo, lon, lat);
     if (!hit) {
       setFound(null);
-      setError("That spot isn't in California. OpenSlate only has California's districts so far.");
+      setError(
+        MAPPED.length > 1
+          ? `That spot isn't in ${stateLabel(state)}. Choose another state above the map.`
+          : `That spot isn't in ${stateLabel(state)}. OpenSlate only has ${stateLabel(state)}'s district maps so far: for anywhere else, type your address.`,
+      );
       return;
     }
-    applyHit(hit, via, { point: [lon, lat] });
+    applyHit(hit, state, geo, "the map, on this device", { point: [lon, lat] });
+  }
+
+  /**
+   * A point from the device or a geocoder: find its state (`hint`, when the
+   * source said; else the states' outlines), then its districts in that
+   * state's boundaries. `unmapped` words the error for a state with none.
+   */
+  async function placePoint(
+    lon: number,
+    lat: number,
+    via: string,
+    opts: {
+      nearMeters?: number;
+      hint?: string;
+      from?: string;
+      unmapped: (stateName: string) => string;
+    },
+  ) {
+    const outlines = opts.hint ? undefined : await loadStateOutlines();
+    const candidates = opts.hint
+      ? [opts.hint]
+      : outlines
+        ? statesAt(outlines, lon, lat)
+        : MAPPED.map((region) => region.path);
+    for (const path of candidates) {
+      const within = await geoOf(path);
+      const hit = within && locate(within, lon, lat, opts.nearMeters);
+      if (hit && within) {
+        applyHit(hit, path, within, via, {
+          point: [lon, lat],
+          ...(opts.from ? { from: opts.from } : {}),
+        });
+        return;
+      }
+    }
+    setFound(null);
+    // The outlines (or the source) said which state: one the app has no maps of.
+    const known = (opts.hint || outlines) && candidates[0];
+    setError(
+      known
+        ? opts.unmapped(stateLabel(known))
+        : `That spot isn't anywhere OpenSlate has district maps of (${mappedStates()} so far). Type your address instead.`,
+    );
+  }
+
+  async function matched(match: AddressMatch, service: OnlineLookup) {
+    const region = match.state ? regionByCode("us", match.state) : undefined;
+    if (match.state && !region) {
+      setFound(null);
+      setError(`OpenSlate doesn't know "${match.state}" as a US state or territory.`);
+      return;
+    }
+    if (service === "census" && match.districts && region) {
+      // The Census Bureau's own answer, from its full-resolution maps, for any
+      // state; school, supervisorial and other districts from ours where the
+      // app has that state's, at the point it matched.
+      const within = await geoOf(region.path);
+      const extra = within ? lookupsAt(within, match.lon, match.lat, match) : undefined;
+      applyHit(
+        {
+          districts: match.districts,
+          county: match.county,
+          place: match.place,
+          nearLine: extra?.nearLine ?? [],
+          ...(extra ? { lookups: extra.lookups } : {}),
+        },
+        region.path,
+        within,
+        "the US Census Bureau geocoder",
+        { point: [match.lon, match.lat], from: match.label },
+      );
+      return;
+    }
+    // OpenStreetMap finds the spot and no more: the districts come from the maps here.
+    await placePoint(match.lon, match.lat, "OpenStreetMap's point, matched on this device", {
+      from: match.label,
+      ...(region ? { hint: region.path } : {}),
+      unmapped: (name) =>
+        `OpenStreetMap only finds the spot, and OpenSlate has no district maps of ${name} yet to place it in. Look it up with the US Census Bureau instead: it answers with the districts.`,
+    });
   }
 
   return (
@@ -178,85 +309,77 @@ export function FindDistricts({
         ))}
       </fieldset>
 
-      {method && geoError && <p className="error">Couldn't load the district maps: {geoError}</p>}
-      {method && !geo && !geoError && <p className="hint">Loading California's district maps…</p>}
-
-      {geo && method === "map" && (
-        <MapPanel
-          geo={geo}
-          found={found}
-          onPick={(lon, lat) => pickPoint(lon, lat, "the map, on this device")}
+      {method === "map" && MAPPED.length > 1 && (
+        <Select
+          label="State"
+          placeholder="Choose a state"
+          value={mapped ? state : undefined}
+          onChange={(next) => {
+            setState(next);
+            setFound(null);
+            setError(null);
+          }}
+          options={MAPPED.map((region) => ({ id: region.path, label: region.name }))}
         />
       )}
-      {geo && method === "location" && (
+      {method === "map" && state && !mapped && (
+        <p className="hint" role="status">
+          OpenSlate has no district maps of {stateLabel(state)} yet
+          {MAPPED.length > 0 && ` (${mappedStates()} so far)`}.{" "}
+          <button type="button" className="link" onClick={() => choose("address")}>
+            Type your address
+          </button>{" "}
+          instead: the Census Bureau knows every state's districts.
+        </p>
+      )}
+      {method === "map" && geoError && (
+        <p className="error">Couldn't load the district maps: {geoError}</p>
+      )}
+      {method === "map" && mapped && !geo && !geoError && (
+        <p className="hint">Loading {stateLabel(state)}'s district maps…</p>
+      )}
+
+      {geo && method === "map" && <MapPanel geo={geo} found={found} onPick={pickPoint} />}
+      {method === "location" && (
         <LocationPanel
           onLocated={(lon, lat, accuracy) =>
-            pickPoint(
+            void placePoint(
               lon,
               lat,
               `your location (±${Math.round(accuracy)} m), on this device`,
-              Math.max(NEAR_LINE_METERS, accuracy),
+              {
+                nearMeters: Math.max(NEAR_LINE_METERS, accuracy),
+                unmapped: (name) =>
+                  `You're in ${name}, and OpenSlate has no district maps of ${name} yet to work it out on this device. Type your address instead: the Census Bureau knows every state's districts.`,
+              },
             )
           }
           onError={setError}
         />
       )}
-      {geo && method === "address" && (
+      {method === "address" && (
         <AddressPanel
           options={options}
-          onMatch={(match, service) => {
-            if (match.state && match.state !== "CA") {
-              setFound(null);
-              setError(
-                "That address isn't in California. OpenSlate only has California's districts so far.",
-              );
-              return;
-            }
-            if (service === "census" && match.districts) {
-              // The Census Bureau's own answer, from its full-resolution maps;
-              // school, supervisorial and other districts from ours, at the
-              // point it matched.
-              const extra = lookupsAt(geo, match.lon, match.lat, match);
-              applyHit(
-                {
-                  districts: match.districts,
-                  county: match.county,
-                  place: match.place,
-                  nearLine: extra?.nearLine ?? [],
-                  ...(extra ? { lookups: extra.lookups } : {}),
-                },
-                "the US Census Bureau geocoder",
-                { point: [match.lon, match.lat], from: match.label },
-              );
-              return;
-            }
-            const hit = locate(geo, match.lon, match.lat);
-            if (!hit) {
-              setFound(null);
-              setError(
-                "That address isn't in California. OpenSlate only has California's districts so far.",
-              );
-              return;
-            }
-            applyHit(hit, "OpenStreetMap's point, matched on this device", {
-              point: [match.lon, match.lat],
-              from: match.label,
-            });
-          }}
+          onMatch={(match, service) => void matched(match, service)}
           onCivicArea={(civicArea, from, service) => {
-            onChange(mergeFoundArea(area, civicArea, geo));
-            setFound({
-              via:
-                service === "google-key"
-                  ? "Google Civic Information, with your key"
-                  : "Google Civic Information, through OpenSlate",
-              from,
-              area: civicArea,
-              places: civicArea.localities.map(jurisdictionLabel),
-              notCovered: [],
-              nearLine: [],
+            const [path] = [...areaStates(civicArea)];
+            void (path ? geoOf(path) : Promise.resolve(undefined)).then((within) => {
+              onChange(mergeFoundArea(area, civicArea, within));
+              if (path) setState(path);
+              setFound({
+                via:
+                  service === "google-key"
+                    ? "Google Civic Information, with your key"
+                    : "Google Civic Information, through OpenSlate",
+                from,
+                ...(path ? { state: path } : {}),
+                area: civicArea,
+                places: civicArea.localities.map(jurisdictionLabel),
+                notCovered: [],
+                nearLine: [],
+              });
+              setError(null);
             });
-            setError(null);
           }}
           onError={(message, google) => {
             setUnavailable(null);
@@ -299,7 +422,11 @@ export function FindDistricts({
           found={found}
           options={options}
           election={election}
-          onShowMap={found.point && method !== "map" ? () => setMethod("map") : undefined}
+          onShowMap={
+            found.point && method !== "map" && found.state && hasStateGeo(found.state)
+              ? () => setMethod("map")
+              : undefined
+          }
           onAdjust={onAdjust}
         />
       )}
@@ -316,7 +443,10 @@ function MapPanel({
   found: Found | null;
   onPick: (lon: number, lat: number) => void;
 }) {
-  const [layer, setLayer] = useState<GeoLayer>("sd");
+  const region = regionProfile(geo.state);
+  const [picked, setLayer] = useState<GeoLayer>("sd");
+  // Another state may not have the layer the last one showed.
+  const layer = geo.layers[picked].length > 0 ? picked : "cd";
   const [basemap, setBasemap] = useBasemap();
   const highlight: Partial<Record<GeoLayer, string>> = {
     ...found?.hit?.districts,
@@ -331,12 +461,11 @@ function MapPanel({
           aria-label="Boundaries to show"
           value={layer}
           onChange={setLayer}
-          options={[
-            { id: "cd", label: "Congress" },
-            { id: "sd", label: "Senate" },
-            { id: "ad", label: "Assembly" },
-            { id: "county", label: "Counties" },
-          ]}
+          options={(["cd", "sd", "ad", "county"] as const).flatMap((id) => {
+            // A chamber the state doesn't have gets no tab.
+            const words = geo.layers[id].length > 0 ? layerWords(region, id) : undefined;
+            return words ? [{ id, label: words.tab }] : [];
+          })}
         />
         <Segmented<Basemap>
           label="Background"
@@ -634,9 +763,13 @@ function FoundSummary({
       {near.length > 0 && (
         <p className="warning">
           This spot is within about {NEAR_LINE_METERS} m of a{" "}
-          {near.map((l) => LAYER_NAMES[l].toLowerCase()).join(" and ")} line, where the maps stored
-          with the app may be off. Check it with an address lookup (the Census Bureau uses the exact
-          lines).
+          {near
+            .map((l) =>
+              (layerWords(regionProfile(found.state), l)?.one ?? "district").toLowerCase(),
+            )
+            .join(" and ")}{" "}
+          line, where the maps stored with the app may be off. Check it with an address lookup (the
+          Census Bureau uses the exact lines).
         </p>
       )}
       {unsure.length > 0 && (
@@ -648,8 +781,10 @@ function FoundSummary({
       {found.notCovered.length > 0 && (
         <p className="hint">
           Not found this way:{" "}
-          {found.notCovered.map((f) => districtFamilyLabel(f.split("/").pop() ?? f)).join(", ")}. If
-          you vote in one, set it by hand.
+          {found.notCovered
+            .map((f) => districtFamilyLabel(f.split("/").pop() ?? f, found.state))
+            .join(", ")}
+          . If you vote in one, set it by hand.
         </p>
       )}
       <p className="hint">
