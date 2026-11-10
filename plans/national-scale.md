@@ -1,0 +1,144 @@
+# National scale: every state in one app, then the world
+
+`plans/national-scale.md`
+
+## Goal
+
+OpenSlate works for California only. Make it work for every US state from one
+app at one origin, with a path to other countries, without a central server.
+The slate format is already global (`us/ca/sf` is a path; `de/by/muenchen`
+would be one too). What has to change is the app's California-only code, the
+catalog's one-file download, the boundary data, and where the data comes from.
+
+The user's words (2026-11-10): "how do we scale to the whole country… per-state
+deployments, like ca.openslate.us? How could we scale to the world?", then
+"get building. boil the ocean."
+
+## Environment / context
+
+- Repo: `C:\Users\camer\git\Personal Projects\OpenSlate` (shared tree, `master`,
+  a push deploys openslate.us through Workers Builds).
+- Sibling repos, same parent directory: `openslate-public-endorsements` (the
+  catalog: `scripts/build-site.ts` writes `index.json` and `bundle.json`; it
+  pins OpenSlate in `.openslate-version`), `openslate-ballot-ca-2026-11-03`
+  (voter guide), `openslate-source-captures`, `openslate-forecasts`.
+- Live catalog today: `https://cinderblock.github.io/openslate-public-endorsements/index.json`.
+  Measured 2026-11-10: 413 entries, `bundle.json` 12,191,498 bytes, nearly all
+  California. `catalog.openslate.us` answers 503 (its move is another thread's:
+  `plans/catalog-domain-move.md`).
+- Boundary data: `apps/web/public/geo/us-ca.topo.json`, 4.1 MB, built by
+  `apps/web/scripts/build-geo.ts` from Census TIGERweb plus county sources.
+- Checks: `bun test`, `bun run typecheck`, `bun run lint` at the repo root.
+
+## Decisions already made (don't re-ask)
+
+- **One app, one origin.** No per-state deployments. Browser storage is per
+  origin, so `ca.openslate.us` and `ny.openslate.us` would split a voter's
+  keys, picks and imports; federal races and national endorsers cross states
+  anyway. A state subdomain may exist only as a redirect that presets the
+  state (infrastructure, needs the user's yes; see open questions).
+- **A region is a registry entry, not a deployment.** Everything the app knows
+  about one state lives behind a `RegionProfile` (`apps/web/src/lib/regions/`).
+  Generic facts (name, postal code, FIPS, chamber names and sizes) come from a
+  table covering every state; California's special code (ballot order, the
+  Secretary of State's count, county feeds, Courts of Appeal) is one profile's
+  extras.
+- **Signed data keeps its paths.** Existing slates say `us/ca/ad-11`,
+  `us/ca/cd-11`; those stay valid forever. New states get family keys from the
+  registry, documented in SPEC.
+- **The catalog shards by region**, the first two path segments (`us/ca`), with
+  `us` for national contests. The host learns a voter's state and nothing
+  finer. A slate that speaks to several regions is in each one's shard; the
+  app keeps each token once.
+- **No central server** (standing project rule): shards and boundary files are
+  static files.
+
+## Plan / steps
+
+1. **Region registry and California behind it.** *(current)*
+   - `regions/` with the profile type, the table of US states, and
+     `regions/us-ca/` holding today's California modules.
+   - Every `"us/ca"` literal, `STATE = "us/ca"`, `isCalifornia`, California
+     wording in components goes through the registry.
+   - No behavior change for California; tests prove it.
+2. **Catalog shards.** `build-site.ts` writes `regions/<path>/index.json` and
+   `bundle.json` beside today's files; the catalog's `index.json` gains
+   `regions`. The app loads only the voter's regions (and `us`), keeps a copy
+   per region, and falls back to the whole bundle for an old catalog.
+3. **Boundaries for every state.** Generalize `build-geo.ts` to any state from
+   TIGER (congressional, both chambers, counties, places, school districts),
+   plus a small national file of state outlines so a point finds its state
+   before any state file loads. Decide where the files live (open question 1).
+4. **State-aware UI.** Find my districts, the district map, setup, Results and
+   All races work for any state with a profile: pick or detect the state,
+   labels from the profile, sources (state count, county feeds) only where the
+   profile has them, civicAPI elsewhere.
+5. **SPEC.** Jurisdiction path conventions beyond one state and one country
+   (ISO 3166 segments, district family keys, district ids that aren't
+   numbers), and the sharded catalog.
+6. **Federal coverage.** National organizations' House and Senate
+   endorsements, and a nationwide federal ballot listing, in
+   `openslate-public-endorsements`. Data work with human review before
+   signing.
+7. **A second state end to end.** Virginia or New Jersey, 2027-11-02
+   (governor and legislature): listing, endorsers, results adapter. The test
+   of whether step 1's interface holds.
+8. **The world.** i18n (strings, RTL, dates), ballot types the app doesn't
+   model (party lists, STV, two rounds), quiet-period rules, federated
+   catalogs run by local groups.
+
+## Findings / gotchas
+
+- California-specific modules in the web app (2026-11-10): `sosCa.ts`,
+  `sosResults.ts`, `sosCandidates.ts`, `countyCa.ts`, `ballotOrderCa.ts`,
+  `ballotOrderCounties.ts`, `ballotOrder.ts` (the 58 counties, §13111/§13112),
+  `ballotSequence.ts`, parts of `jurisdictions.ts` (`STATE_NAMES`,
+  `DISTRICT_FAMILIES`, `DISTRICT_COUNTS`, `SEATS_UP`, `REFILED_COUNTIES`),
+  `geo.ts` (`GEO_FILES`, `COURT_OF_APPEAL_BY_COUNTY`), `researchLinks.ts`
+  (`isCalifornia`), `watch.ts` (`us/ca/${family}`), `FindDistricts.tsx`
+  (`STATE = "us/ca"`), `LivePanel.tsx`, `DistrictMap.tsx`. In core:
+  `countyResults.ts` (`CA_COUNTY_FEEDS`, Clarity and other parsers).
+- `parseJurisdiction` reads a district only as `<letters>-<digits>`. Other
+  states have lettered (`12A`, Minnesota, Maryland) and named (`1st
+  Middlesex`, Massachusetts; New Hampshire; Vermont) legislative districts.
+- Washington, Arizona, Idaho, New Jersey, the Dakotas and Maryland elect both
+  chambers from the same "legislative districts"; Nebraska has one chamber.
+- The catalog's `index.json` is itself about 600 KB for 413 entries: it has
+  to shard with the bundle, not only the bundle.
+- The four files `git status` shows modified in the shared tree
+  (`Select.tsx`, three tests) have an empty `git diff`: line endings only, not
+  anyone's work.
+
+## Progress log
+
+- [x] 2026-11-10: survey of California-specific code; this plan.
+- [ ] Step 1: region registry, California behind it.
+- [ ] Step 2: catalog shards (app and catalog repo).
+- [ ] Step 3: nationwide boundary data.
+- [ ] Step 4: state-aware UI.
+- [ ] Step 5: SPEC.
+- [ ] Step 6: federal coverage.
+- [ ] Step 7: a second state.
+- [ ] Step 8: the world.
+
+## Open questions for the user
+
+1. Where do 50 states' boundary files live? About 1-5 MB each, so on the
+   order of 100 MB. In this repo they bloat git history at every
+   redistricting. My recommendation: a sibling repo `openslate-geo` that
+   builds from TIGER in CI and publishes static files, fetched per state like
+   the catalog. Until you answer, files build to a git-ignored directory and
+   only California's stays committed.
+2. State subdomains as redirects (`ca.openslate.us` → the app with California
+   preset): want them? It's a Cloudflare change, so it waits for your yes.
+3. `openslate.org` is for sale on Afternic. Worth pricing if the project goes
+   past the US.
+
+## Things not to do
+
+- Don't deploy per state, and don't key browser storage by state.
+- Don't rename paths inside signed slates (`us/ca/ad-11` stays).
+- Don't fetch per-race or per-city catalog files: the host would learn what a
+  voter looks at. A state is the finest grain.
+- Don't touch Cloudflare, DNS or the ops repo from this work without a
+  per-change yes.
