@@ -71,23 +71,28 @@ function agentTool(): Plugin {
   };
 }
 
-// Every page reads the catalog's index (CatalogUpdater, All races, Compare),
+// Every page reads the catalog's list (CatalogUpdater, All races, Compare),
 // but the app only asks for it once it has booted and, on All races, once its
 // worker has started: 1.5-3 s into a first visit on a phone. A preload in the
 // page itself starts it with the HTML, and the app's own fetch (query.ts
-// `catalogQueryOptions`, a plain cross-origin GET) is answered from it. Not for
-// a catalog shipped with the app (a relative URL): that's local, and a
-// same-origin fetch wouldn't match an anonymous preload.
+// `catalogQueryOptions`, a plain cross-origin GET) is answered from it. What
+// the app asks for first is `shards.json`, beside the catalog's index
+// (src/lib/catalogShards.ts): that's what's preloaded. The shards it names
+// depend on where the voter votes, which only the app knows, and a catalog
+// with no `shards.json` costs one small 404. Not for a catalog shipped with
+// the app (a relative URL): that's local, and a same-origin fetch wouldn't
+// match an anonymous preload.
 function preloadCatalog(catalog: string | undefined): Plugin {
   const url = catalog || "https://cinderblock.github.io/openslate-public-endorsements/index.json";
   return {
     name: "openslate:preload-catalog",
     transformIndexHtml() {
       if (!/^https:\/\//i.test(url)) return [];
+      const href = new URL("shards.json", url).href;
       return [
         {
           tag: "link",
-          attrs: { rel: "preload", href: url, as: "fetch", crossorigin: "anonymous" },
+          attrs: { rel: "preload", href, as: "fetch", crossorigin: "anonymous" },
           injectTo: "head",
         },
       ];

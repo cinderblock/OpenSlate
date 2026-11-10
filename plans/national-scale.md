@@ -79,18 +79,21 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
      `counts.ts` (`StateCounts`, `CountyCounts`), `researchLinks.ts`
      (`RegionLinks`). Adding a state is adding an entry to each it has.
    - Generic pieces pulled out: `liveCount.ts`, `nameOrder.ts`, `counties.ts`.
-2. **Catalog shards.** *(current)* App side done (`a6074de`): core's
+2. **Catalog shards.** Done and live. App (`a6074de`): core's
    `buildCatalogShards` / `shardsFor`, `catalogShards.ts` (loader with the
    whole-catalog fallback), `catalogScope.ts` + `catalogScopeKeeper.ts` (which
-   regions this browser asks for), `CatalogRegions.tsx`. Left:
-   - push OpenSlate, pin it in `openslate-public-endorsements`
-     (`.openslate-version`), have `build-site.ts` write the shard files and
-     `shards.json`, publish, check the live app reads shards;
-   - then point the page's catalog preload (`vite.config.ts`
-     `preloadCatalog`) at `shards.json`, or it preloads 800 KB nobody reads;
-   - `scripts/snapshot-catalog.ts` (the desktop app's offline copy) still
-     copies `index.json` and `bundle.json`: fine while those are published.
-3. **Boundaries for every state.** Generalize `build-geo.ts` to any state from
+   regions this browser asks for), `CatalogRegions.tsx`. Catalog repo
+   (`636cefa`): `build-site.ts` writes `shards.json` and the shard files,
+   OpenSlate pinned at `d8f205d`. The page preloads `shards.json`.
+   - `index.json` and `bundle.json` are still published whole, for older
+     apps and for `scripts/snapshot-catalog.ts` (the desktop app's offline
+     copy), which copies those two. Before the catalog grows past one state,
+     the snapshot has to learn shards, and the whole files have to stop
+     growing (keep them California-only, or drop them).
+   - With no area set, the app loads every shard. Fine for one state; with
+     many, setup has to ask for a state before the catalog loads (step 4).
+3. **Boundaries for every state.** *(current)*
+   Generalize `build-geo.ts` to any state from
    TIGER (congressional, both chambers, counties, places, school districts),
    plus a small national file of state outlines so a point finds its state
    before any state file loads. Decide where the files live (open question 1).
@@ -148,6 +151,13 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
 - Measured on the live catalog, 2026-11-10: shard `2026-11-03 us/ca` 383
   entries, bundle 11.7 MB, index 555 KB; `2026-06-02 us/ca` 30 entries, 296 KB
   and 36 KB. The live `index.json` is 811 KB.
+- Pinning OpenSlate 226 commits forward in the catalog repo changed no
+  slate: signed locally with a throwaway key, all 413 payloads equal the
+  published ones apart from signer and `issued_at`. `lean` changed on 19
+  entries (core's `leanOf` moved on).
+- `openslate sign --batch .` failed on Windows after signing everything:
+  Bun's recursive `mkdir(".")` throws EEXIST. Fixed in `54b992e`; an absolute
+  path works with an older pin.
 - `packages/cli/test/races.test.ts` times out (5 s) when the machine is busy
   (another thread's rustc build, 2026-11-10); it passes alone on a quiet one.
 - Local end-to-end harness, outside the repo:
@@ -162,8 +172,13 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
 
 - [x] 2026-11-10: survey of California-specific code; this plan.
 - [x] Step 1: region registry, California behind it (`2fa7d4f`, `0bd1d5e`).
-- [ ] Step 2: catalog shards. App: `a6074de`, checked in headless Chrome
-  against a sharded mirror and a whole catalog. Catalog repo: not yet.
+- [x] Step 2: catalog shards. App `a6074de`, catalog repo `636cefa`, both
+  live 2026-11-10 about 12:50 PM PST (20:50Z). Checked in headless Chrome
+  against a local sharded mirror, a whole catalog, and production: openslate.us
+  asks for `shards.json` and the two `us/ca` shards (1.9 MB on the wire), a
+  Texas voter is told the catalog has nothing for Texas and can add
+  California. The shard revisions CI published equal the ones built locally
+  from the live bundle (`64d0acca…`, `ff1ed7fc…`): the build is repeatable.
 - [ ] Step 3: nationwide boundary data.
 - [ ] Step 4: state-aware UI.
 - [ ] Step 5: SPEC.
