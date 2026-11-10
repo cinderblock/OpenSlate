@@ -40,20 +40,25 @@ free and unmetered. Held until after the 2026-11-03 election (see
 1. [x] Ops: worker `openslate-catalog` with custom domain
        `catalog.openslate.us` (`external: true, provision: true`). The dry run
        showed 2 to create and nothing else. Ops `7e244f85`, applied by CI.
-2. [ ] **Current:** the endorsements repo's `publish.yml` commits the signed
-       site to the `catalog-site` branch (endorsements `4e56998`). Then the user
-       connects Workers Builds to that branch in the dashboard (the one manual
-       step). Root directory `/`, no build command, deploy command
-       `npx wrangler deploy`.
-3. [ ] Verify: certificate, `Access-Control-Allow-Origin: *`, and `index.json` and
-       `bundle.json` byte-identical to Pages.
-4. [ ] Switch the default in `apps/web/src/lib/query.ts`, run the checks, push,
-       and confirm the new URL is in the production bundle.
-5. [ ] Endorsements scripts: `PAGES` in `scripts/adopt.ts`, `PUBLISHED` in
-       `scripts/keep-unchanged.ts`, and `uri` in `keys/project-public.json` and
-       `well-known/openslate.json` move to the new host. The `a.uri` match in
-       `adopt.ts` changes to issuer, `of` and election. Existing `adopts[].uri`
-       values stay as they are. Source IDs and the slate count must not change.
+2. [x] Endorsements `publish.yml` commits the signed site to `catalog-site`
+       (`4e56998`). The user connected Workers Builds (2026-11-09), then gave
+       the Cloudflare GitHub app access to the repo (2026-11-10). First build
+       succeeded 2026-11-10 1:45 PM PST (21:45Z), from `50eb14c`.
+3. [x] Verified 2026-11-10: `index.json`, `bundle.json`, `shards.json`, the
+       public key and 11 of 422 signed slates byte-identical to Pages;
+       `Access-Control-Allow-Origin: *`; 404 for a missing file; certificate
+       from Google Trust Services, valid to 2027-02-04.
+4. [x] App default, the `shards.json` preload, the CLI default and the README
+       link switched (OpenSlate `a97c46d`; 1,318 tests pass, typecheck clean).
+       Deployed 1:50 PM PST (21:50Z); the production page preloads
+       `https://catalog.openslate.us/shards.json` and its JS has no Pages URL.
+5. [x] Endorsements scripts (`b5947ba`): `adopt.ts` writes the new host and
+       matches an existing adoption by issuer, `of` and election (replaying
+       the Alameda County GOP adoption replaced its one entry, uri only).
+       `keep-unchanged.ts` and the ballot-argument scripts read the new host.
+       Existing `adopts[].uri` values unchanged.
+6. [ ] **Current, needs the user:** the signing key's `uri`. See open
+       question 1.
 
 ## Findings / gotchas
 
@@ -114,7 +119,7 @@ free and unmetered. Held until after the 2026-11-03 election (see
 - [x] Ops worker and domain (`7e244f85`).
 - [x] `publish.yml` commits to `catalog-site` (`4e56998`).
 - [x] Workers Builds connection (the user, 2026-11-09).
-- [ ] First build. **Blocked:** no push to `catalog-site` has ever reached
+- [x] First build, after fixing the GitHub app's repo access. Was blocked: no push to `catalog-site` has ever reached
       Workers Builds. The trigger is right (read through the Builds API on
       2026-11-09): branch `catalog-site`, root `/`, no build command, deploy
       `npx wrangler deploy`, path filter `*`, token
@@ -124,13 +129,21 @@ free and unmetered. Held until after the 2026-11-03 election (see
       pushed as the user (`3be46fe`, `ae50a30`). The same API shows
       `openslate-web` building the user's pushes normally. Suspect: the
       Cloudflare GitHub app's repository access doesn't cover this repo, so its
-      push events never reach Cloudflare.
-- [ ] Verify, switch the app default, update the endorsements scripts.
+      push events never reach Cloudflare. Confirmed: it wasn't listed; the user
+      added it 2026-11-10 and the next push built.
+- [x] Verify, switch the app default, update the endorsements scripts.
+- [ ] Signing key `uri` (open question 1).
 - [x] The scheduled task turned itself off, so it won't run again.
 
 ## Open questions for the user
 
-None. The deploy route is decided: (a).
+1. The project key's `uri` (`keys/project-public.json`,
+   `well-known/openslate.json`) still names the Pages site, and every slate's
+   `issuer.uri` does too. That value comes from the `OPENSLATE_SIGNING_KEY`
+   secret, so changing it means the user edits the secret's JSON (`uri` only)
+   and re-saves it; then the two key files change to match and every slate is
+   re-signed. Recommendation: leave it. Pages stays up, so the address still
+   works, and nothing in the app reads it.
 
 ## Things not to do
 
