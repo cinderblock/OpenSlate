@@ -23,8 +23,8 @@ const CA: GuideEntry = {
 describe("voter guides", () => {
   test("the list sits beside the catalog's index.json", () => {
     expect(
-      guideListUrl("https://cinderblock.github.io/openslate-public-endorsements/index.json"),
-    ).toBe("https://cinderblock.github.io/openslate-public-endorsements/guides.json");
+      guideListUrl("https://catalog.openslate.us/index.json"),
+    ).toBe("https://catalog.openslate.us/guides.json");
   });
 
   test("a list's guides resolve against the list, so a snapshot can carry them", () => {

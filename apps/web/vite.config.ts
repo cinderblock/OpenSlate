@@ -83,7 +83,7 @@ function agentTool(): Plugin {
 // the app (a relative URL): that's local, and a same-origin fetch wouldn't
 // match an anonymous preload.
 function preloadCatalog(catalog: string | undefined): Plugin {
-  const url = catalog || "https://cinderblock.github.io/openslate-public-endorsements/index.json";
+  const url = catalog || "https://catalog.openslate.us/index.json";
   return {
     name: "openslate:preload-catalog",
     transformIndexHtml() {

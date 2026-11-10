@@ -152,7 +152,7 @@ export interface CatalogBundleEntry extends CatalogEntry {
 
 /** The curated public-endorsements catalog, live. */
 export const PUBLIC_ENDORSEMENTS_CATALOG =
-  "https://cinderblock.github.io/openslate-public-endorsements/index.json";
+  "https://catalog.openslate.us/index.json";
 
 const configuredCatalog = import.meta.env.VITE_PUBLIC_ENDORSEMENTS_CATALOG as string | undefined;
 

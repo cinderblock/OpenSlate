@@ -640,7 +640,7 @@ async function cmdAdopt(rest: string[]): Promise<void> {
 }
 
 /** The catalog `races` and `check` read unless told otherwise. */
-const PUBLIC_CATALOG = "https://cinderblock.github.io/openslate-public-endorsements/index.json";
+const PUBLIC_CATALOG = "https://catalog.openslate.us/index.json";
 
 interface CatalogEntry {
   election: string;
