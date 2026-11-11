@@ -99,14 +99,18 @@ async function readFiles(
   const direct = feed.cors && getRoutingMode(PROVIDER) === "direct";
   const base = baseFor(code, feed);
   const texts: Record<string, string> = {};
+  let modified: number | undefined;
   await Promise.all(
     Object.keys(feed.files ?? {}).map(async (name) => {
       const res = await fetch(direct ? stateFeedUrl(feed, name) : `${base}/${name}`);
       if (!res.ok) throw new Error(`${feed.name}'s results site answered ${res.status}`);
       texts[name] = await res.text();
+      const at = feed.lastModified ? modifiedOf(res) : undefined;
+      if (at !== undefined && (modified === undefined || at > modified)) modified = at;
     }),
   );
   const count = parseStateFiles(feed, texts);
+  const updated = count.asOf ?? modified;
   const version = hashOf(
     count.contests
       .map(
@@ -119,7 +123,7 @@ async function readFiles(
   const out: StateResults = {
     state: code,
     version,
-    ...(count.asOf !== undefined ? { updated: count.asOf } : {}),
+    ...(updated !== undefined ? { updated } : {}),
     seenAt: Date.now(),
     ...(count.official !== undefined ? { official: count.official } : {}),
     contests: count.contests,
@@ -230,8 +234,10 @@ export function readContests(feed: StateFeed, contests: readonly CountyContest[]
       office.kind === "statewide-office" ||
       (office.kind === "other" &&
         (everywhere ||
+          // The feed files it with what the whole state votes on (Texas's justices).
+          /^statewide\b/i.test(contest.category ?? "") ||
           (contest.measure && most < 3 && isStatewideMeasureTitle(contest.title)) ||
-          (contest.measure && /^(?:state|statewide|federal)\b/i.test(contest.category ?? ""))));
+          (contest.measure && /^(?:state|federal)\b/i.test(contest.category ?? ""))));
     return { contest, office, statewide };
   });
 }

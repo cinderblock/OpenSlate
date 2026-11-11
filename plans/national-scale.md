@@ -193,13 +193,19 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
      `apps/web/src/lib/stateFeeds.ts` (fetch, sections, a slate's race to
      its contest), `regions/stateFeedCounts.ts` (each as a `StateCounts`, so
      My ballot and race pages use it), `StateLivePanel.tsx` on Results.
-   - Done, 14 states: Enhanced Voting (AZ, GA, ID, RI, UT, VA, WA) and
+   - Done, 16 states: Enhanced Voting (AZ, GA, ID, RI, UT, VA, WA) and
      Clarity (CO, IA, SC, WV), the two platforms the county feeds already
-     used; and TotalVote's CSV "media" exports (NE, NM, SD), a feed of
-     several named files (`StateFeed.files`, `parseStateFiles`), which is
-     how the next formats plug in.
+     used; TotalVote's CSV "media" exports (NE, NM, SD), a feed of several
+     named files (`StateFeed.files`, `parseStateFiles`), which is how every
+     later format plugs in; North Carolina's own JSON (`parseNcsbeResults`);
+     Texas's Civix document of base64 sections (`parseCivixEnr`).
+   - Florida is next in size and can't be read yet: its files' host
+     (`flelectionfiles.floridados.gov`) has served an expired TLS
+     certificate since 2026-11-09, so no relay can fetch it. Its tab file is
+     simple (`plans/state-results/fl.json`); add it when the certificate is
+     renewed.
    - Next, by platform: TotalVote's JSON (MT), KNOWiNK TotalResults JSON
-     (AR, ND), Civix (TX, IN), then
+     (AR, ND), Indiana's Civix "FirstTuesday" files, then
      each state's own format, biggest first: FL, PA, OH, NC, MI, MN, LA, CT,
      NV, DE, HI, AK, VT, DC. Wyoming publishes only spreadsheets.
    - Adding one: a `STATE_FEEDS` entry, a parser to `CountyContest[]` if
@@ -347,11 +353,11 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
 - [ ] Step 6: federal coverage.
 - [ ] Step 7: a second state.
 - [ ] Step 8: the world.
-- [ ] Step 9: every state's results. 14 of the 34 readable states done
+- [ ] Step 9: every state's results. 16 of the 34 readable states done
   2026-11-10 (11 live on openslate.us at `7c502fa`; the production relay
   answers `/api/state/va/data` from Cloudflare). Checked in headless Chrome
   against the states' real sites
-  through the repo's own relay code: all 14 panels show contests and vote
+  through the repo's own relay code: all 16 panels show contests and vote
   counts; a Virginia voter sees the 11th district first; a Texas voter is
   told Texas isn't read yet; California's page is as it was.
 

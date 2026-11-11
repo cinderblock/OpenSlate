@@ -169,7 +169,7 @@ describe("a race from a slate, in its state's count", () => {
 
   test("not another election's, another state's, or a town's", () => {
     expect(stateContestKey(subject("US Senate", "us/va", "2024-11-05"))).toBeUndefined();
-    expect(stateContestKey(subject("US Senate", "us/tx"))).toBeUndefined();
+    expect(stateContestKey(subject("US Senate", "us/il"))).toBeUndefined();
     expect(stateContestKey(subject("Mayor", "us/va/farmville"))).toBeUndefined();
     expect(stateContestKey(subject("Some question", "us/va"))).toBeUndefined();
     expect(stateContestKey({ title: "US Senate" })).toBeUndefined();
@@ -307,6 +307,39 @@ describe("reading a state's count", () => {
       "United States Representative",
       "Governor and Lieutenant Governor",
     ]);
+  });
+
+  test("North Carolina's file time is its count's; Texas files a justice with the statewide races", async () => {
+    const file = (name: string) =>
+      readFileSync(
+        join(import.meta.dir, "../../../packages/core/test/fixtures/state", name),
+        "utf8",
+      );
+    stub({
+      "/nc/results": {
+        body: file("nc-results.json"),
+        headers: { "Last-Modified": "Tue, 10 Nov 2026 23:05:33 GMT" },
+      },
+      "/tx/election": {
+        body: file("tx-election.json"),
+        // A page made per request: its time says nothing about the count.
+        headers: { "Last-Modified": "Wed, 11 Nov 2026 01:00:00 GMT" },
+      },
+    });
+    const north = await fetchStateResults("nc");
+    expect(north.updated).toBe(Date.parse("2026-11-10T23:05:33Z"));
+    const texas = await fetchStateResults("tx");
+    expect(texas.updated).toBe(Date.parse("2026-11-05T04:48:37Z"));
+    const sections = stateSections("us/tx", feedOf("tx"), texas.contests, {
+      districts: { "us/tx/cd": "10", "us/tx/sd": "14", "us/tx/hd": "49" },
+    });
+    expect(titles(sections.mine)).toEqual([
+      "U. S. REPRESENTATIVE DISTRICT 10",
+      "STATE REPRESENTATIVE DISTRICT 49",
+    ]);
+    expect(titles(sections.statewide)).toEqual(["U. S. SENATOR", "GOVERNOR", "ATTORNEY GENERAL"]);
+    expect(titles(sections.other)).toEqual(["DISTRICT JUDGE, 184TH JUDICIAL DISTRICT"]);
+    expect(stateContestKey(subject("US Senate", "us/tx"))).toBe("us-senate");
   });
 
   test("everyone asking at once shares one request", async () => {

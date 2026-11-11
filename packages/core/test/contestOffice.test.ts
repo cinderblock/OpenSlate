@@ -290,6 +290,9 @@ describe("every contest of eleven states' counts", () => {
     expect(seats("sd")).toEqual({ "us-house": 1, "state-upper": 35, "state-lower": 37 });
     // Nebraska's one chamber, half of it up.
     expect(seats("ne")).toEqual({ "us-house": 3, "state-upper": 25 });
+    expect(seats("nc")).toEqual({ "us-house": 14, "state-upper": 50, "state-lower": 120 });
+    // Texas: 38 in Congress, half the Senate, the whole House.
+    expect(seats("tx")).toEqual({ "us-house": 38, "state-upper": 16, "state-lower": 150 });
     // New Mexico's Senate wasn't up: one seat was filled.
     expect(seats("nm")).toEqual({ "us-house": 3, "state-upper": 1, "state-lower": 70 });
   });

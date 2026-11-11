@@ -10,6 +10,7 @@ import {
   stateFeed,
   stateFeedPathTtl,
   stateFeedUrl,
+  texasTime,
 } from "../src/stateResults";
 
 /**
@@ -230,6 +231,68 @@ describe("TotalVote's CSV exports", () => {
     );
     expect(() => parseStateFiles(feedOf("va"), {})).toThrow("isn't read from named files");
     expect(() => parseStateFeed(feedOf("sd"), {})).toThrow("isn't one document");
+  });
+});
+
+describe("states with a format of their own", () => {
+  const text = (name: string) =>
+    readFileSync(join(import.meta.dir, "fixtures/state", name), "utf8");
+
+  test("North Carolina: a row per candidate, every value a string", () => {
+    const north = feedOf("nc");
+    expect(stateFeedUrl(north, "results")).toBe(
+      "https://er.ncsbe.gov/enr/20261103/data/results_0.txt",
+    );
+    const { contests } = parseStateFiles(north, { results: text("nc-results.json") });
+    expect(contests.map((c) => c.title)).toEqual([
+      "US SENATE",
+      "US HOUSE OF REPRESENTATIVES DISTRICT 01",
+      "NC STATE SENATE DISTRICT 02",
+      "NC HOUSE OF REPRESENTATIVES DISTRICT 001",
+      "CONSTITUTIONAL AMENDMENT - REQUIRE PHOTO ID FOR VOTING",
+      "TOWN OF GRIFTON MIXED BEVERAGE ELECTION",
+    ]);
+    const senate = named(contests, "US SENATE");
+    expect(senate.choices[0]).toEqual({
+      name: "Roy Cooper",
+      party: "DEM",
+      votes: 2477264,
+      percent: 58.74,
+    });
+    expect(senate.voteFor).toBe(1);
+    expect(senate.precincts).toEqual({ total: 2626, reporting: 2626 });
+    const amendment = named(contests, "CONSTITUTIONAL AMENDMENT - REQUIRE PHOTO ID FOR VOTING");
+    expect(amendment.measure).toBe(true);
+    // A space for no party isn't a party.
+    expect(amendment.choices.map((c) => [c.name, c.party])).toEqual([
+      ["For", undefined],
+      ["Against", undefined],
+    ]);
+    expect(() => parseStateFiles(north, { results: "{}" })).toThrow("not a results list");
+  });
+
+  test("Texas: sections of base64, an incumbent's mark, and Texas's clock", () => {
+    const texas = feedOf("tx");
+    expect(stateFeedUrl(texas, "election")).toBe(
+      "https://goelect.txelections.civixapps.com/api-ivis-system/api/s3/enr/election/53815",
+    );
+    const { contests, asOf } = parseStateFiles(texas, { election: text("tx-election.json") });
+    // "Nov 04, 2026 22:48:37" in Austin is 04:48:37 the next day in UTC (standard time).
+    expect(asOf).toBe(Date.parse("2026-11-05T04:48:37Z"));
+    expect(texasTime("Jul 04, 2026 12:00:00")).toBe(Date.parse("2026-07-04T17:00:00Z"));
+    expect(texasTime("soon")).toBeUndefined();
+    const governor = named(contests, "GOVERNOR");
+    expect(governor.category).toBe("Statewide");
+    const abbott = governor.choices.find((c) => c.name === "GREG ABBOTT");
+    expect(abbott).toMatchObject({ party: "REP", votes: 4524527, incumbent: true });
+    // A declared write-in has no party.
+    expect(governor.choices.find((c) => c.name === "EDWARD EARL GILES")?.party).toBeUndefined();
+    // The feed's stray spaces are closed up.
+    expect(contests.map((c) => c.title)).toContain("U. S. SENATOR");
+    expect(named(contests, "STATE SENATOR, DISTRICT 1").category).toBe("Districts");
+    // No race in this feed says how much of it has reported.
+    expect(governor.precincts).toBeUndefined();
+    expect(() => parseStateFiles(texas, { election: "{}" })).toThrow("not an election document");
   });
 });
 
