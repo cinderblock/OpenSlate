@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { contestOffice } from "../src/contestOffice";
 import type { CountyContest } from "../src/countyResults";
 import {
   parseStateFeed,
@@ -534,6 +535,15 @@ describe("Delaware, Louisiana, the District and Montana", () => {
     );
     expect(delegate.category).toBe("Statewide");
     expect(delegate.choices.map((c) => c.name)).not.toContain("OVER VOTES");
+    // Its "United States Senator" and "Representative" are statehood seats, and say so:
+    // the Delegate is the District's only race for Congress.
+    const titles = contests.map((c) => c.title);
+    expect(titles).toContain("UNITED STATES SENATOR (statehood seat)");
+    expect(titles).toContain("UNITED STATES REPRESENTATIVE CITYWIDE (statehood seat)");
+    expect(titles.filter((title) => contestOffice(title).kind === "us-house")).toEqual([
+      "DELEGATE TO THE HOUSE OF REPRESENTATIVES FROM THE DISTRICT OF COLUMBIA",
+    ]);
+    expect(titles.filter((title) => contestOffice(title).kind === "us-senate")).toEqual([]);
     expect(delegate.choices.find((c) => c.name === "Robert White")).toMatchObject({
       party: "DEM",
       votes: 187558,

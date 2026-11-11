@@ -1116,8 +1116,14 @@ export function parseDcResults(contestsRaw: unknown, info: unknown): StateCount 
   if (!Array.isArray(contestsRaw))
     throw new Error("Unexpected answer from the District (not a list of contests)");
   const contests = (contestsRaw as WireDcContest[]).flatMap((contest): CountyContest[] => {
-    const title = contest.OfficeName?.trim();
-    if (!title) return [];
+    const office = contest.OfficeName?.trim();
+    if (!office) return [];
+    // The District elects a "United States Senator" and a "United States
+    // Representative" to press for statehood. Neither sits in Congress (its
+    // voice there is the Delegate), so the title says which they are.
+    const title = /^united states (?:senator|representative)\b/i.test(office)
+      ? `${office} (statehood seat)`
+      : office;
     // "OVER VOTES" and "UNDER VOTES" are listed beside the choices; they aren't any.
     const cast = (contest.ElectionData ?? []).filter(
       (c) => !/^(?:over|under) ?votes$/i.test((c.Contestant ?? "").trim()),

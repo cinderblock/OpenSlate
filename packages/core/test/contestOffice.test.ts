@@ -301,7 +301,7 @@ describe("every contest of eleven states' counts", () => {
     expect(seats("de")).toEqual({ "us-house": 1, "state-upper": 11, "state-lower": 41 });
     // Louisiana elects its legislature in odd years: one House seat was filled.
     expect(seats("la")).toEqual({ "us-house": 6, "state-lower": 1 });
-    // The District: its delegate (and a "United States Representative" it elects citywide).
+    // The District: its delegate. Its statehood "Senator" and "Representative" aren't Congress.
     expect(seats("dc")).toEqual({ "us-house": 1 });
     expect(seats("mt")).toEqual({ "us-house": 2, "state-upper": 25, "state-lower": 100 });
     // Arkansas types its titles by hand: "District 01", "DIST 85", "State Senate, District 32".

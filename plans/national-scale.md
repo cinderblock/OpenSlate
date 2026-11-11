@@ -314,6 +314,17 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
   Georgia puts "(I)" and the party in the candidate's name; South Carolina
   puts the party before it. A contest every county counts is statewide,
   whatever its title (Georgia's PSC districts, Rhode Island's questions).
+- More from the research, for whoever builds the rest: the District's
+  "United States Senator" and "United States Representative" are statehood
+  seats, not Congress (its parser titles them so, and `contestOffice`
+  leaves them alone). South Carolina publishes a recount as a separate
+  Clarity election (127592), not an update to the general (127300). New
+  York's results page answers a plain request and challenges one that
+  carries an `Origin` header, so only a relay could read it. Oklahoma's API
+  wants a token from a login. Missouri and Alabama show results only after
+  a form is submitted, which the research didn't do. Pennsylvania's and
+  Montana's sites carry "testing" banners over what are plainly the real
+  counts.
 - Git Bash's curl (8.8, Schannel) fails with exit 43 on some Cloudflare
   hosts (openslate.us, results.votewa.gov): use `curl -I`, or
   `C:\Windows\System32\curl.exe`.
