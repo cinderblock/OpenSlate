@@ -112,7 +112,10 @@ export function ReportingLine({
   fetching?: boolean;
 }) {
   const { percent } = result.reporting;
-  const lead = percent !== undefined ? `${percent}% of precincts` : result.reporting.text;
+  const lead =
+    percent !== undefined
+      ? `${percent}% of ${result.reporting.units ?? "precincts"}`
+      : result.reporting.text;
   const sourceAt = sourceTimeOf(result);
   const guessed = result.reporting.changedSeen;
   // Overdue for a check (the tab sat in the background, the phone slept, the

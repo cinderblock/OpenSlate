@@ -1,0 +1,99 @@
+{
+  "code": "sd",
+  "state": "South Dakota",
+  "office": "South Dakota Secretary of State",
+  "page": "https://electionresults.sd.gov/Default.aspx",
+  "platform": "bpro-totalvote",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "Media export: statewide races (US Senate, US House at-large, Governor/Lt. Governor, Secretary of State, Attorney General, Auditor, Treasurer, School and Public Lands, PUC), statewide totals only, one row per candidate",
+      "url": "https://electionresults.sd.gov/resultsCSV.aspx?text=All&type=SWR&map=CTY",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "csv",
+      "bytes": 2659,
+      "saved_as": "media-SWR.txt",
+      "notes": "Linked from https://electionresults.sd.gov/ResultsMedia.aspx ('Results Media'). No election id in the URL: the site serves the current election. Content-Type is 'application/text', Content-Disposition 'attachment;filename=Media.csv'. Header row then one row per candidate; every row ends with a trailing comma; PrecinctsReporting is written Excel-style as =\"671/671\". CandidatePercentage is a 0..1 fraction. Candidate names have doubled/trailing spaces ('Mike  Rounds '). Sets an ASP.NET_SessionId cookie that is not needed."
+    },
+    {
+      "what": "Media export: statewide ballot questions (4 constitutional amendments), Yes and No rows",
+      "url": "https://electionresults.sd.gov/resultsCSV.aspx?text=All&type=BQ&map=CTY",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "csv",
+      "bytes": 2240,
+      "saved_as": "media-BQ.txt",
+      "notes": "Same columns. CandidateName is 'Yes' or 'No' (CandidateID 9001 / 9002), PartyCode empty. RaceName is the full long title."
+    },
+    {
+      "what": "Media export: legislative races (35 State Senator + 37 State Representative contests)",
+      "url": "https://electionresults.sd.gov/resultsCSV.aspx?text=All&type=LEG&map=DIST",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "csv",
+      "bytes": 21850,
+      "saved_as": "media-LEG.txt",
+      "notes": "Same columns. RaceName is just 'State Senator' / 'State Representative'; the district is in AreaNum ('District 01', and split house districts like 'District 26A'). VoteFor is 2 for two-member house districts."
+    },
+    {
+      "what": "Candidate search list (names, party, office) used by the site's search box; no vote counts",
+      "url": "https://sdresws.azurewebsites.us/ResultsAjax.svc/GetCandidates?ElectionType=General&ElectionID=0",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 69068,
+      "saved_as": "GetCandidates.json",
+      "notes": "WCF service on sdresws.azurewebsites.us (answers Access-Control-Allow-Origin: *). Not a results feed; includes local (municipal) candidates. ElectionID=0 means current."
+    }
+  ],
+  "election_id": "The current election needs no id (Default.aspx, resultsCSV.aspx take none). Archived elections use ?eid=<n> on the HTML pages (a search result showed ResultsExport.aspx?eid=773 and SearchResults.aspx?ID=108); I did not confirm which eid is the 2026 general, nor that resultsCSV.aspx accepts eid.",
+  "discovery": "None needed for the live election: the same three resultsCSV.aspx URLs always serve whatever election the site currently shows (the HTML header says 'Unofficial Results General Election November 3, 2026'; hidden inputs hidElectionType=General, hidElectionDate=11/3/2026 on Default.aspx identify it). There is no elections-list endpoint that I found.",
+  "cors": "none on electionresults.sd.gov (resultsCSV.aspx sends no Access-Control-Allow-Origin). The azurewebsites.us Ajax service answers '*' but carries no counts.",
+  "bot_blocking": "Relay User-Agent: 200 on every request (Default.aspx, ResultsMedia.aspx, resultsCSV.aspx x3, resultsSW.aspx). Browser User-Agent not needed, not tried. Plain IIS, no Cloudflare/Akamai challenge seen.",
+  "updated_field": "No true last-updated field in the CSV. Column CurrentDateTime (example '11/10/2026 11:07:48 PM') is the server's generation time in UTC (my request's Date header was Tue, 10 Nov 2026 23:09:19 GMT), not the time of the last count; it lagged the request by ~1.5 minutes, so the export looks cached for a minute or two. The HTML pages I fetched show no 'last updated' text either.",
+  "reporting_field": "PrecinctsReporting, per contest, as =\"<fully reported>/<total>\" e.g. =\"671/671\" statewide, =\"43/43\" for State Senator District 01. Default.aspx hidden inputs also give statewide hidPrecinctsReported=671, hidPrecinctsPartial=0, hidPrecinctsNotReported=0.",
+  "titles": {
+    "governor": "Governor and Lieutenant Governor",
+    "us_senate": "United States Senator",
+    "us_house": [
+      "United States Representative (at-large; South Dakota has one seat, AreaNum is empty)"
+    ],
+    "state_upper": [
+      "State Senator + AreaNum 'District 01'",
+      "State Senator + AreaNum 'District 02'",
+      "State Senator + AreaNum 'District 08'"
+    ],
+    "state_lower": [
+      "State Representative + AreaNum 'District 01'",
+      "State Representative + AreaNum 'District 02'",
+      "State Representative + AreaNum 'District 03'"
+    ],
+    "other_statewide": [
+      "Secretary of State",
+      "Attorney General",
+      "State Auditor",
+      "State Treasurer",
+      "Commissioner of School and Public Lands",
+      "Public Utilities Commissioner"
+    ],
+    "measures": [
+      "Constitutional Amendment I: An Amendment to the South Dakota Constitution that Repeals Expanded Medicaid Coverage if Federal Funding for the Program Drops below 90%.",
+      "Constitutional Amendment J: An Amendment to the South Dakota Constitution Clarifying that an Individual Must Be a Citizen of the United States to be Eligible to Vote."
+    ]
+  },
+  "choice_format": "One CSV row per candidate: 14412,\"United States Senator\",\"REP\",\"\",\"\",110,,24967,\"Mike  Rounds \",11/10/2026 11:07:48 PM,1,184589,0.605007505686623,=\"671/671\",  -- party is the PartyCode column (REP, DEM, IND, LIB), name is CandidateName with stray spaces; a ticket is 'Larry Rhoden and Tony Venhuizen '. Measures: CandidateName \"Yes\" (CandidateID 9001) and \"No\" (9002), PartyCode empty.",
+  "district_field": "Separate field: AreaNum ('District 01' ... 'District 35', house also 'District 26A' style). RaceName does not contain the district. AreaType is empty in all three files.",
+  "contest_count": 85,
+  "terms": "none found (no terms-of-use or robots statement on Default.aspx, ResultsMedia.aspx or ResultsExport.aspx; the site itself offers the 'Media' exports for reuse)",
+  "confidence": "high",
+  "tried": [
+    "WebSearch found electionresults.sd.gov (Default.aspx, ResultsMedia.aspx, ResultsExport.aspx?eid=773)",
+    "GET Default.aspx with relay UA: 200, header 'Unofficial Results General Election November 3, 2026', 671/671 precincts fully reported, 310,298 ballots cast",
+    "GET ResultsExport.aspx: the Statewide/Legislative/per-county exports there are ASP.NET __doPostBack form posts; not used (read-only rule: no form submits)",
+    "GET ResultsMedia.aspx: five plain GET links /resultsCSV.aspx?text=All&type={SWR|BQ|LEG|CTY|MUN}&map={CTY|DIST}",
+    "Fetched type=SWR, BQ, LEG: 200, real numbers. Did not fetch type=CTY (county races) or type=MUN (local) since they are outside the brief",
+    "GET sdresws.azurewebsites.us/ResultsAjax.svc/GetCandidates?ElectionType=General&ElectionID=0: JSON candidate list only, no votes",
+    "Looked for a 'last updated' stamp in Default.aspx and resultsSW.aspx?type=SWR&map=CTY: none present"
+  ]
+}

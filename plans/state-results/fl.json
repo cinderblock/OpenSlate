@@ -1,0 +1,97 @@
+{
+  "code": "fl",
+  "state": "Florida",
+  "office": "Florida Department of State, Division of Elections (Florida Election Watch)",
+  "page": "https://floridaelectionwatch.gov/",
+  "platform": "custom-text",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every contest of the election, one row per contest × county × candidate (3,063 rows, 176 contests, 67 counties), tab-delimited with a header row. No statewide total rows: sum CanVotes over counties.",
+      "url": "https://flelectionfiles.floridados.gov/enightfilespublic/20261103_ElecResultsFL.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 365373,
+      "saved_as": "20261103_ElecResultsFL.txt",
+      "notes": "URL = <YYYYMMDD of election day>_ElecResultsFL.txt on an Azure blob store behind Azure Front Door (x-ms-blob-type: BlockBlob, ETag present, not compressed). The Downloads page links it with a cache-buster '?v=181934787' that is not needed. UTF-8 without BOM, CRLF. Columns: ElectionDate, PartyCode, PartyName, RaceCode, RaceName, CountyCode, CountyName, Juris1num, Juris2num, Precincts, PrecinctsReporting, CanNameLast, CanNameFirst, CanNameMiddle, CanVotes. IMPORTANT: this host's TLS certificate (CN=*.floridados.gov, GoDaddy) expired on 2026-11-09 14:09:06 GMT, the day before this fetch; curl refuses it (SEC_E_CERT_EXPIRED) and so will a Worker's fetch. The files here were fetched with certificate checking turned off (curl -k), so their bytes are unauthenticated. Last-Modified was Fri, 06 Nov 2026 23:10:54 GMT (the site header says '1st Set of Unofficial Returns')."
+    },
+    {
+      "what": "pipe-delimited 'Informational File': the lookup tables (races, candidates, counties, precinct totals per race × county)",
+      "url": "https://flelectionfiles.floridados.gov/enightfilespublic/20261103_ElecResultsFL_PipeDlm_Info.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 68873,
+      "saved_as": "20261103_ElecResultsFL_PipeDlm_Info.txt",
+      "notes": "Bracketed records, one per line: [r|FLDOS|seq|race name|General Election|race id] (176), [c|FLDOS|seq|race id|last|first|candidate id] (406), [u|FLDOS|seq|county name|county FIPS] (67), [p|FLDOS|seq|race id|county FIPS|precincts] (1,137). Race ids encode office and district: 120000 = United States Senator, 140010 = Representative in Congress District 1, 900001 = Amendment No. 1. Fetched with -k (expired certificate)."
+    },
+    {
+      "what": "pipe-delimited 'Votes File': one record per race × county × candidate",
+      "url": "https://flelectionfiles.floridados.gov/enightfilespublic/20261103_ElecResultsFL_PipeDlm_Votes.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 141306,
+      "saved_as": "20261103_ElecResultsFL_PipeDlm_Votes.txt",
+      "notes": "[V|FLDOS|seq|I|race id|county FIPS|precincts reporting|candidate id|votes], e.g. [V|FLDOS|385939|I|120000|12001|0|89119|34832]. Field meanings are read off the data and the layout PDF's name, not checked line by line against the PDF. Fetched with -k."
+    },
+    {
+      "what": "the office's file-layout document for the pipe-delimited format (PDF)",
+      "url": "https://flelectionfiles.floridados.gov/enightfilespublic/ResultsFileLayoutPipeDelimited.pdf",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "other:pdf",
+      "bytes": 249019,
+      "saved_as": "ResultsFileLayoutPipeDelimited.pdf",
+      "notes": "Saved, not read in detail. Fetched with -k. The Downloads page also offers 20261103_ElecResultsFL.xls (not fetched)."
+    }
+  ],
+  "election_id": "20261103 (the election date), the filename prefix: 20261103_ElecResultsFL.txt.",
+  "discovery": "No list endpoint. https://floridaelectionwatch.gov/Downloads always shows the current election's files; the name is predictable from the election date. floridaelectionwatch.gov only shows one election at a time.",
+  "cors": "none (no Access-Control-Allow-Origin on the files when sent Origin: https://openslate.us)",
+  "bot_blocking": "floridaelectionwatch.gov pages: 200 with the plain relay User-Agent, no challenge. flelectionfiles.floridados.gov: no bot blocking either, but the TLS handshake fails for every client that checks certificates because the certificate expired 2026-11-09 14:09:06 GMT (verified with openssl s_client: notAfter=Nov 9 14:09:06 2026 GMT). With checking off, relay UA got 200 on all four files. Browser User-Agent not tried (the failure is TLS, not the UA).",
+  "updated_field": "None inside the files. Use the HTTP Last-Modified header ('Fri, 06 Nov 2026 23:10:54 GMT', UTC) or the ETag. The site header names the set of returns: '1st Set of Unofficial Returns (pursuant to s. 102.141, F.S.)'.",
+  "reporting_field": "Per row (race × county): Precincts and PrecinctsReporting, e.g. Alachua 63 / 0 while Baker is 9 / 9 and Bay 30 / 30 — note a county can show 0 reporting while already carrying votes (early and mail ballots). Sum both over a race's counties for the statewide figure; each county repeats on every candidate row, so count it once.",
+  "titles": {
+    "governor": "Governor and Lieutenant Governor",
+    "us_senate": "United States Senator",
+    "us_house": [
+      "Representative in Congress, District 1",
+      "Representative in Congress, District 2",
+      "Representative in Congress, District 3"
+    ],
+    "state_upper": [
+      "State Senator, District 2",
+      "State Senator, District 6",
+      "State Senator, District 8"
+    ],
+    "state_lower": [
+      "State Representative, District 1",
+      "State Representative, District 2",
+      "State Representative, District 3"
+    ],
+    "other_statewide": [
+      "Attorney General",
+      "Chief Financial Officer",
+      "Commissioner of Agriculture",
+      "Shall Justice Carlos G. Muñiz be retained in Office?"
+    ],
+    "measures": [
+      "Budget Stabilization Fund",
+      "Exemption of Tangible Personal Property on Agricultural Land From Taxation"
+    ]
+  },
+  "choice_format": "Name split over three columns with party in its own columns: PartyCode 'REP', PartyName 'Republican Party', CanNameLast 'Moody', CanNameFirst 'Ashley', CanNameMiddle ''. The governor ticket is packed oddly: CanNameLast 'Avila', CanNameFirst 'Donalds', CanNameMiddle '/' (i.e. 'Donalds / Avila'). Measures (RaceCode AMD): CanNameLast 'Yes for Approval' / 'No for Rejection', PartyCode NOP. Judicial retention: CanNameLast 'Yes' / 'No'. In the tab file an amendment's RaceName is only its subject ('Budget Stabilization Fund'; the third has a leading space); the number is only in the Info file's race name ('Amendment No. 1: Budget Stabilization Fund').",
+  "district_field": "Separate fields: RaceCode gives the office (USS, USR, GOV, ATG, CFO, AGR, STS, STR, SCJ, DCA, CTJ, AMD) and Juris1num the district, zero-padded to 3 ('001'); it is three spaces for statewide races and empty for amendments. Juris2num carries a seat/group number for judges and special districts. The district is also in RaceName ('…, District 1').",
+  "contest_count": 176,
+  "terms": "none found (Downloads and FAQs pages read; no statement on automated access or reuse)",
+  "confidence": "high",
+  "tried": [
+    "GET https://floridaelectionwatch.gov/ with the relay UA: 200, server-rendered ASP.NET MVC site; headless Chrome saw no data requests (pages are HTML)",
+    "GET https://floridaelectionwatch.gov/Downloads : links to the five files on flelectionfiles.floridados.gov",
+    "curl of the files: TLS error SEC_E_CERT_EXPIRED; openssl s_client shows the *.floridados.gov certificate ran from Oct 8 2025 to Nov 9 2026 14:09:06 GMT",
+    "curl -k of the tab file, both pipe files and the layout PDF: 200; summed Governor = Donalds/Avila 4,135,701, Graham 4,029,461",
+    "GET https://floridaelectionwatch.gov/FAQs : nothing about update frequency or data reuse"
+  ]
+}

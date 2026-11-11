@@ -1,0 +1,60 @@
+{
+  "code": "ma",
+  "state": "Massachusetts",
+  "office": "Secretary of the Commonwealth of Massachusetts, Elections Division",
+  "page": "https://www.sec.state.ma.us/divisions/elections/voting-information/announcing-certifying.htm (the office's 'Where Do I Find Election Results?' page; certified results later appear at https://electionstats.state.ma.us/)",
+  "platform": "none",
+  "status": "none",
+  "feeds": [
+    {
+      "what": "the office's statement that it publishes no unofficial results",
+      "url": "https://www.sec.state.ma.us/divisions/elections/voting-information/announcing-certifying.htm",
+      "method": "GET",
+      "headers_needed": {
+        "note": "www.sec.state.ma.us answers curl with an Imperva (Incapsula) JavaScript challenge; this copy is the DOM saved from headless Chrome"
+      },
+      "format": "html",
+      "bytes": 45131,
+      "saved_as": "announcing-certifying.headless-chrome.html",
+      "notes": "Verbatim: 'Unofficial results are announced by poll workers shortly after polls close on Election Night. These results are typically shared with media organizations and may be posted online by local election officials. ... We do not publish unofficial election results.' and 'local officials don't report unofficial results to the state. We receive election results from cities and towns only after local clerks finalize and certify them.' Local officials have 15 days after a state election to submit official results; final certification by the Governor and Governor's Council 'typically occurs in late November or early December'."
+    },
+    {
+      "what": "the certified-results archive (PD43+), search for 2026: lists the September primaries and 2026 special elections, no November 3 general yet",
+      "url": "https://electionstats.state.ma.us/elections/search/year_from:2026/year_to:2026",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 1180878,
+      "saved_as": "electionstats-search.html",
+      "notes": "512 contests listed for 2026: 253 'Democratic Primary', 253 'Republican Primary', and six special-election rows. No row with stage 'General Election' as of 2026-11-10. Each contest has an id (tr id=\"election-id-172905\" = 2026 U.S. Senate Democratic primary) and a page /elections/view/<id>. This is where the certified November results will be published, weeks after the election; it is an archive, not a count in progress."
+    }
+  ],
+  "election_id": "none (no live feed). In the certified archive every contest has its own numeric id (/elections/view/172905); there is no single election id, but searches can be narrowed by date, e.g. https://electionstats.state.ma.us/elections/search/date:2026-09-01 (the link the office uses for '2026 State Primary Results').",
+  "discovery": "For certified results: https://electionstats.state.ma.us/elections/search/date:2026-11-03 should list the general's contests once they are published (URL pattern taken from the office's own primary link; it was not fetched and has no data yet).",
+  "cors": "none (no feed). electionstats.state.ma.us sent no Access-Control-Allow-Origin on the search page.",
+  "bot_blocking": "www.sec.state.ma.us: Imperva (Incapsula); curl with the relay User-Agent got a 200 that is only a 212-byte JavaScript challenge; headless Chrome passed it and loaded pages normally. electionstats.state.ma.us: the relay User-Agent got HTTP 200 with the full page (server header 'ElStats V', X-Cache: HIT), no challenge.",
+  "updated_field": "not applicable",
+  "reporting_field": "not applicable",
+  "titles": {
+    "governor": null,
+    "us_senate": null,
+    "us_house": [],
+    "state_upper": [],
+    "state_lower": [],
+    "other_statewide": [],
+    "measures": []
+  },
+  "choice_format": "not applicable (no live feed). In the certified archive's search table a contest row reads, for example: '2026 | U.S. Senate | Statewide | Democratic Primary | Edward J. Markey won (65%) against 1 opponent ...' with a candidate table (name, votes, percent); the district is its own column ('Statewide', '1st Middlesex').",
+  "district_field": "not applicable (no live feed). In the certified archive the office ('U.S. Senate', 'State Senate') and the district ('1st Middlesex') are separate table columns.",
+  "contest_count": 0,
+  "terms": "none found on the pages read.",
+  "confidence": "high",
+  "tried": [
+    "curl https://www.sec.state.ma.us/divisions/elections/research-and-statistics/election-results.htm (a guessed path) with the relay UA: 200 but only the Incapsula challenge; in headless Chrome that path is a 404.",
+    "Headless Chrome on https://www.sec.state.ma.us/divisions/elections/elections-and-voting.htm: links 'Where Do I Find Election Results?' (announcing-certifying.htm), '2026 State Primary Results' (electionstats search by date) and 'Certified Election Results' (electionstats).",
+    "Read announcing-certifying.htm in headless Chrome: 'We do not publish unofficial election results.'",
+    "curl https://electionstats.state.ma.us/elections/search/year_from:2026/year_to:2026 with the relay UA: 200; only primaries and specials for 2026.",
+    "Conclusion: Massachusetts has no state count before certification. Election-night numbers exist only at the 351 cities and towns (and in news organizations' collections of them).",
+    "The titles block is empty because there is no feed. For contest mapping: the 2026 state ballot has Governor/Lt. Governor, Attorney General, Secretary of State, Treasurer, Auditor, U.S. Senate, nine U.S. House seats, the full legislature and several ballot questions (general knowledge and news search results, not from a state feed)."
+  ]
+}

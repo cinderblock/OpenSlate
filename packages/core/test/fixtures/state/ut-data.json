@@ -1,0 +1,295 @@
+{
+  "election": {
+    "asOf": "2026-11-10T23:06:22.6634728Z",
+    "isOfficialResults": false,
+    "contestGroups": []
+  },
+  "ballotItems": [
+    {
+      "id": "18bd0000-4292-09ee-2072-08df2b02c31c",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "U.S. House District 1"
+        }
+      ],
+      "voteFor": [],
+      "contestType": "Candidate",
+      "contestGroupId": null,
+      "reportingStatus": {
+        "reportingUnits": 1,
+        "totalUnits": 1
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "BEN MCADAMS"
+              }
+            ],
+            "voteCount": 174492,
+            "party": {
+              "abbreviation": null,
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Democratic"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "RILEY OWEN"
+              }
+            ],
+            "voteCount": 65190,
+            "party": {
+              "abbreviation": null,
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Republican"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "JESSE WEST"
+              }
+            ],
+            "voteCount": 5707,
+            "party": {
+              "abbreviation": null,
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Libertarian"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "ELIAS HENRY MONTGOMERY"
+              }
+            ],
+            "voteCount": 3593,
+            "party": {
+              "abbreviation": null,
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Unaffiliated"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "BABAK \"BOBBY\" DARVISH "
+              }
+            ],
+            "voteCount": 76,
+            "party": {
+              "abbreviation": null,
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Unaffiliated"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "18bd0000-4292-09ee-f6a5-08df2b02c31b",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "State Senate District 1 (Multi-County)"
+        }
+      ],
+      "voteFor": [],
+      "contestType": "Candidate",
+      "contestGroupId": null,
+      "reportingStatus": {
+        "reportingUnits": 3,
+        "totalUnits": 3
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "SCOTT SANDALL"
+              }
+            ],
+            "voteCount": 24400,
+            "party": {
+              "abbreviation": null,
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Republican"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "CLAUDIA BIGLER"
+              }
+            ],
+            "voteCount": 9410,
+            "party": {
+              "abbreviation": null,
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Democratic"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "JULIE QUINLAN"
+              }
+            ],
+            "voteCount": 3125,
+            "party": {
+              "abbreviation": null,
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Forward"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "b4e60000-c0a3-7204-962c-08df3933fc5c",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "State House District 2"
+        }
+      ],
+      "voteFor": [],
+      "contestType": "Candidate",
+      "contestGroupId": null,
+      "reportingStatus": {
+        "reportingUnits": 1,
+        "totalUnits": 1
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "MIKE PETERSEN"
+              }
+            ],
+            "voteCount": 8704,
+            "party": {
+              "abbreviation": null,
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Republican"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "BARBARA J. HAGGERTY"
+              }
+            ],
+            "voteCount": 5321,
+            "party": {
+              "abbreviation": null,
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Democratic"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "18bd0000-4292-09ee-b4f8-08df2b02c2fc",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Constitutional Amendment A"
+        }
+      ],
+      "voteFor": [],
+      "contestType": "BallotMeasure",
+      "contestGroupId": null,
+      "reportingStatus": {
+        "reportingUnits": 29,
+        "totalUnits": 29
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "FOR"
+              }
+            ],
+            "voteCount": 605095,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "AGAINST"
+              }
+            ],
+            "voteCount": 384065,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

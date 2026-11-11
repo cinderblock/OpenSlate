@@ -1,0 +1,112 @@
+{
+  "code": "nh",
+  "state": "New Hampshire",
+  "office": "New Hampshire Secretary of State, Elections Division",
+  "page": "https://www.sos.nh.gov/2026-general-election-results",
+  "platform": "other:xlsx-workbooks",
+  "status": "blocked",
+  "feeds": [
+    {
+      "what": "Governor, statewide summary by county (one Excel workbook)",
+      "url": "https://www.sos.nh.gov/sites/g/files/ehbemt561/files/media/media_document/2026-ge-governor-summary.xlsx",
+      "method": "GET",
+      "headers_needed": {
+        "note": "curl is refused (HTTP 403 from Akamai) with the relay UA and with a Chrome UA plus Accept headers; the bytes saved here were fetched with fetch() from inside headless Chrome on the results page"
+      },
+      "format": "other: xlsx (Excel workbook, one sheet laid out for people)",
+      "bytes": 10988,
+      "saved_as": "2026-ge-governor-summary.xlsx",
+      "notes": "NOT a live feed. The page says: 'Election results will be linked on this page upon completion following the Election. Tallies accurately reflect the returns of votes reported by clerks but are subject to change if clerks submit amendments.' Workbooks appear one office at a time over the days after the election (Last-Modified on the six I fetched ran from Wed 04 Nov 2026 21:24 GMT to Tue 10 Nov 2026 14:25 GMT). Layout: title rows, then a header row whose cells are 'Cinde Warmington, d', 'Kelly Ayotte, r', 'Stephen Villee, l', '', 'Write-Ins', then one row per county, then 'TOTALS'. File names follow https://www.sos.nh.gov/sites/g/files/ehbemt561/files/media/media_document/2026-ge-<office>-<county or district or 'summary'>.xlsx ; 76 workbooks are linked from the page."
+    },
+    {
+      "what": "United States Senator, statewide summary by county",
+      "url": "https://www.sos.nh.gov/sites/g/files/ehbemt561/files/media/media_document/2026-ge-us-senator-summary.xlsx",
+      "method": "GET",
+      "headers_needed": { "note": "browser only, as above" },
+      "format": "other: xlsx",
+      "bytes": 10964,
+      "saved_as": "2026-ge-us-senator-summary.xlsx",
+      "notes": "Same layout as the governor summary. Per-county town-level workbooks also exist (2026-ge-us-senator-belknap.xlsx ...), not fetched."
+    },
+    {
+      "what": "Representative in Congress, District 1, by town",
+      "url": "https://www.sos.nh.gov/sites/g/files/ehbemt561/files/media/media_document/2026-ge-congressional-district-1.xlsx",
+      "method": "GET",
+      "headers_needed": { "note": "browser only, as above" },
+      "format": "other: xlsx",
+      "bytes": 15223,
+      "saved_as": "2026-ge-congressional-district-1.xlsx",
+      "notes": "One row per town, last row 'TOTALS'. District 2 is ...-congressional-district-2.xlsx."
+    },
+    {
+      "what": "State Senate District 1, by town",
+      "url": "https://www.sos.nh.gov/sites/g/files/ehbemt561/files/media/media_document/2026-ge-state-senate-1.xlsx",
+      "method": "GET",
+      "headers_needed": { "note": "browser only, as above" },
+      "format": "other: xlsx",
+      "bytes": 12315,
+      "saved_as": "2026-ge-state-senate-1.xlsx",
+      "notes": "Districts 1-9 have one workbook each; the rest are grouped: state-senate-10-11, 12-13, 14-16, 17-18, 19-21, 22-24 (15 workbooks for 24 districts)."
+    },
+    {
+      "what": "State Representatives, all districts of one county (Belknap) in one sheet",
+      "url": "https://www.sos.nh.gov/sites/g/files/ehbemt561/files/media/media_document/2026-ge-house-belknap.xlsx",
+      "method": "GET",
+      "headers_needed": { "note": "browser only, as above" },
+      "format": "other: xlsx",
+      "bytes": 13398,
+      "saved_as": "2026-ge-house-belknap.xlsx",
+      "notes": "Blocks stacked down the sheet: a header row 'District No. 1 (1)' (the number in brackets is seats to fill) with candidate cells, then town rows, then 'Totals'; repeated per district. 10 county workbooks cover the 400-seat House."
+    },
+    {
+      "what": "Constitutional Amendment Question No. 1, summary by county",
+      "url": "https://www.sos.nh.gov/sites/g/files/ehbemt561/files/media/media_document/2026-ge-constitutional-question-summary.xlsx",
+      "method": "GET",
+      "headers_needed": { "note": "browser only, as above" },
+      "format": "other: xlsx",
+      "bytes": 11440,
+      "saved_as": "2026-ge-constitutional-question-summary.xlsx",
+      "notes": "Columns 'Yes' and 'No', one row per county, last row 'Totals'."
+    }
+  ],
+  "election_id": "No id. The page slug is 2026-general-election-results and every file name starts with 2026-ge-.",
+  "discovery": "https://www.sos.nh.gov/elections links '2026 Election Results' (https://www.sos.nh.gov/2026-election-results), which links the general and the primary pages. A future election's page would have to be found by following those links; file names must be scraped from the page (the 2024 and 2026 pages sit at the site root, 2022 and earlier under /elections/...).",
+  "cors": "none seen (the workbook responses, read from inside the page, exposed no Access-Control-Allow-Origin header)",
+  "bot_blocking": "Akamai. curl got HTTP 403 'Access Denied' (errors.edgesuite.net reference) on the HTML page and on the .xlsx files, with the relay User-Agent and equally with a desktop Chrome User-Agent plus Accept/Accept-Language headers, so the refusal is not about the User-Agent string (probably the TLS/HTTP fingerprint of the client). Headless Chrome loaded the pages and the files normally (HTTP 200).",
+  "updated_field": "None in the workbooks. Only the HTTP Last-Modified header of each file, e.g. 'last-modified: Fri, 06 Nov 2026 15:55:03 GMT' (GMT; = 10:55 AM EST) for the governor summary.",
+  "reporting_field": "None. A town either has a row with numbers or does not; there is no reporting count.",
+  "titles": {
+    "governor": "Governor",
+    "us_senate": "United States Senator",
+    "us_house": [
+      "Congressional District 1",
+      "Congressional District 2 (link label; workbook not opened)"
+    ],
+    "state_upper": [
+      "State Senate District 1",
+      "State Senate District 2 (link label)",
+      "State Senate District 3 (link label)"
+    ],
+    "state_lower": [
+      "State Representatives - BELKNAP COUNTY / District No. 1 (1)",
+      "State Representatives - BELKNAP COUNTY / District No. 2 (2)",
+      "State Representatives - BELKNAP COUNTY / District No. 3 (1)"
+    ],
+    "other_statewide": ["Executive Council District 1 (link label; five districts, not statewide)"],
+    "measures": ["Constitutional Amendment Question / Question No. 1"]
+  },
+  "choice_format": "A column header cell 'Name, x' where x is a lower-case party letter: 'Cinde Warmington, d', 'Kelly Ayotte, r', 'Stephen Villee, l', 'Edmond Laplante, c'; a final column 'Write-Ins'. Votes are the numbers under each header, one row per town or county, with a 'TOTALS' / 'Totals' row. Measure: columns 'Yes' and 'No'.",
+  "district_field": "Only in titles and file names: the sheet's second row ('Congressional District 1', 'State Senate District 1'), the file name (2026-ge-state-senate-1.xlsx), and for the House the block header 'District No. 2 (2)' inside a county workbook.",
+  "contest_count": 0,
+  "terms": "none found on the results page. Footer links 'Accessibility Policy' and 'Privacy Policy' only (not opened).",
+  "confidence": "medium",
+  "tried": [
+    "curl https://www.sos.nh.gov/elections/election-results (a guessed path) with the relay UA and with a Chrome UA: 403 Access Denied (Akamai) both times.",
+    "Headless Chrome: that guessed path is a 404 page; https://www.sos.nh.gov/elections links https://www.sos.nh.gov/2026-election-results -> https://www.sos.nh.gov/2026-general-election-results, which lists 76 .xlsx links (saved as 2026-general-election-results.headless-chrome.html).",
+    "curl on 2026-ge-governor-summary.xlsx with the relay UA, then with a Chrome UA and Accept headers: 403 both times (saved governor-summary.relay-ua.403.html).",
+    "Fetched six workbooks with fetch() inside the headless Chrome page and saved the exact bytes; their .headers.txt files are the response headers as the browser exposed them (not curl -D output).",
+    "No election-night site found: a web search for the state's 2026 general results returned only news organizations' tallies, and the office's page says results are linked 'upon completion following the Election'. So New Hampshire has no live state count; what exists is this set of post-election workbooks, readable only by a real browser.",
+    "contest_count is left 0 because the contests are spread over 76 workbooks and I opened six: by link labels there are governor, US Senate, 2 US House, 5 Executive Council, 24 State Senate, the House districts of 10 counties, county offices of 10 counties, and 1 constitutional question.",
+    "Status choice: 'blocked' because real 2026 numbers exist in files that refuse a non-browser client; it could equally be read as 'none' for live-count purposes."
+  ]
+}

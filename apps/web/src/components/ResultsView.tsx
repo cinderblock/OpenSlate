@@ -10,13 +10,17 @@ import { shortKey } from "../lib/identities";
 import { areaStates, stateLabel } from "../lib/jurisdictions";
 import { useArea } from "../lib/myVote";
 import { usePageSearch } from "../lib/pageSearch";
+import { pageRegion } from "../lib/regions";
 import { matchesSearch, searchTextOf } from "../lib/search";
+import { stateFeedRegions } from "../lib/stateFeeds";
 import { firsthandSubjectKeys, supersessionFor } from "../lib/supersession";
 import { useWatch } from "../lib/watch";
 import { Leaderboard } from "./Leaderboard";
 import { LivePanel } from "./LivePanel";
 import { matchCount, PageSearch } from "./PageSearch";
+import { StateLivePanel } from "./StateLivePanel";
 import { ProgressBar } from "./ui/ProgressBar";
+import { Select } from "./ui/Select";
 import { TokenField } from "./ui/Token";
 
 // Listing page for /results. The user picks an imported slate (or pastes a
@@ -33,17 +37,32 @@ export function ResultsView() {
   const navigate = useNavigate();
   const [pasted, setPasted] = useState("");
 
-  // The live count is the states' own, and OpenSlate reads California's alone
-  // so far: a voter somewhere else is told so, not handed California's page.
-  // Anyone already watching places there keeps it.
+  // The live count is the states' own. A voter sees their own state's: the
+  // feed states' on one page each (`StateLivePanel`), California's on its own
+  // (`LivePanel`, with its watch list). A voter in a state OpenSlate doesn't
+  // read yet is told so, not handed another state's page; anyone can look at
+  // another state's, and a link that names one (`/va`) opens with it.
   const [area] = useArea();
   const [watching] = useWatch();
   const [liveAnyway, setLiveAnyway] = useState(false);
   const counted = stateCountRegions();
+  const feeds = stateFeedRegions();
+  // States with a Live page of their own, not a feed's.
+  const ownPages = counted.filter((state) => !feeds.includes(state));
   const mine = [...areaStates(area)];
   const uncounted = mine.filter((state) => !counted.includes(state));
+  const myFeeds = mine.filter((state) => feeds.includes(state));
+  const [other, setOther] = useState<string | undefined>(() => {
+    const linked = pageRegion();
+    return linked && feeds.includes(linked) && !mine.includes(linked) ? linked : undefined;
+  });
+  const otherShown = other && !myFeeds.includes(other) ? other : undefined;
   const showLive =
-    liveAnyway || watching.length > 0 || mine.length === 0 || uncounted.length < mine.length;
+    liveAnyway ||
+    watching.length > 0 ||
+    mine.some((state) => ownPages.includes(state)) ||
+    (mine.length === 0 && !otherShown);
+  const others = feeds.filter((state) => !myFeeds.includes(state) && state !== otherShown);
 
   const rows = useMemo(() => {
     // SPEC §3.9: surface when a secondhand report has firsthand coverage
@@ -120,28 +139,45 @@ export function ResultsView() {
           </Link>
         </div>
       </section>
-      {showLive ? (
-        <LivePanel />
-      ) : (
+      {myFeeds.map((state) => (
+        <StateLivePanel key={state} region={state} />
+      ))}
+      {otherShown && <StateLivePanel key={otherShown} region={otherShown} />}
+      {showLive && <LivePanel />}
+      {uncounted.length > 0 && (
         <section className="panel">
           <h2>Live count</h2>
           <p className="hint">
-            OpenSlate reads a live count from {counted.map(stateLabel).join(", ")} so far, not yet
-            from {uncounted.map(stateLabel).join(" or ")}. Your races' counts, where civicAPI has
-            them, are on <Link to="/results/my-ballot">how my ballot is doing</Link> and on each
-            race's own page.{" "}
-            <button type="button" className="link" onClick={() => setLiveAnyway(true)}>
-              Watch {counted.map(stateLabel).join(", ")}'s count anyway
-            </button>
+            OpenSlate doesn't read {uncounted.map(stateLabel).join(" or ")}'s own count yet: it
+            reads {counted.length} states' so far. Your races' counts, where civicAPI has them, are
+            on <Link to="/results/my-ballot">how my ballot is doing</Link> and on each race's own
+            page.
           </p>
         </section>
       )}
+      <section className="panel live-other-states">
+        <Select
+          label="See another state's count"
+          placeholder="Choose a state"
+          value={null}
+          onChange={(state) => setOther(state ?? undefined)}
+          options={others.map((state) => ({ id: state, label: stateLabel(state) }))}
+        />
+        {!showLive &&
+          ownPages.map((state) => (
+            <p key={state}>
+              <button type="button" className="link" onClick={() => setLiveAnyway(true)}>
+                Watch {stateLabel(state)}'s count
+              </button>
+            </p>
+          ))}
+      </section>
       <section className="panel">
         <h2>How your slates did</h2>
         <p className="hint">
           Pick a slate to see each of its picks next to the outcome: the state's own count where
-          OpenSlate reads one (California's Secretary of State, for the races it counts), civicAPI's
-          for the rest. Read-only: it never edits the slate.
+          OpenSlate reads one (for the races the state counts), civicAPI's for the rest. Read-only:
+          it never edits the slate.
         </p>
 
         <div className="card">

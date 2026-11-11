@@ -1,0 +1,92 @@
+{
+  "code": "sc",
+  "state": "South Carolina",
+  "office": "South Carolina State Election Commission",
+  "page": "https://www.enr-scvotes.org/SC/127300/web.345435/#/summary",
+  "platform": "clarity",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "version pointer for the 2026-11-03 Statewide General Election",
+      "url": "https://www.enr-scvotes.org/SC/127300/current_ver.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 6,
+      "saved_as": "current_ver.txt",
+      "notes": "Body was 386661. Cache-Control: no-cache. Clarity ENR on the state's own host (www.enr-scvotes.org) instead of results.enr.clarityelections.com; path layout is the same."
+    },
+    {
+      "what": "every contest of the election in one document (171 contests)",
+      "url": "https://www.enr-scvotes.org/SC/127300/386661/json/en/summary.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 148367,
+      "saved_as": "summary.json",
+      "notes": "…/SC/<election id>/<version from current_ver.txt>/json/en/summary.json. Cache-Control: max-age=86400 on the versioned file (the version changes instead). Includes three 'STRAIGHT PARTY n' pseudo-contests that must be filtered out."
+    },
+    {
+      "what": "election settings: date, last update time, precincts reporting, per-county election ids and versions, winners",
+      "url": "https://www.enr-scvotes.org/SC/127300/386661/json/en/electionsettings.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 47515,
+      "saved_as": "electionsettings.json",
+      "notes": "settings.electiondetails.participatingcounties lists each county as 'Name|county election id|version|last update|n' (e.g. 'Abbeville|127301|385871|11/6/2026 10:52:28 AM EST|16'), which gives the county-level Clarity sites."
+    },
+    {
+      "what": "the separate 'Statewide General Election Recount' election (3 contests, in progress on 2026-11-10): pointer, summary, settings",
+      "url": "https://www.enr-scvotes.org/SC/127592/386677/json/en/summary.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 2523,
+      "saved_as": "recount-127592-summary.json",
+      "notes": "Recounts are published as a different Clarity election id (127592), not as an update of 127300. Also saved: recount-127592-current_ver.txt (386677) and recount-127592-electionsettings.json. Two of its three contests still showed zero votes."
+    }
+  ],
+  "election_id": "127300, the path segment after /SC/. The current version (386661 when fetched) follows it. The recount is a separate id, 127592.",
+  "discovery": "No elections-list endpoint found. The ids are linked by hand from https://scvotes.gov/elections-statistics/election-results/ (anchor text 'Statewide General Election' -> https://www.enr-scvotes.org/SC/127300/web.345435/#/summary). Within an election, current_ver.txt gives the version.",
+  "cors": "*  (Access-Control-Allow-Origin: * on current_ver.txt, summary.json and electionsettings.json)",
+  "bot_blocking": "None. Relay User-Agent got 200 on everything (CloudFront, no challenge). Browser User-Agent not needed, not tried.",
+  "updated_field": "electionsettings.json top-level \"websiteupdatedat\":\"11/10/2026 5:20:41 PM EST\" (US Eastern, zone abbreviation in the string). Per county in participatingcounties. summary.json has no timestamp.",
+  "reporting_field": "electionsettings.json top level: \"stateprecinctsreporting\":2312, \"stateprecinctsparticipating\":2312, \"stateprecinctspartiallyreporting\":0. In summary.json, TP is the number of COUNTIES in the contest (Governor TP 46) and PR was 0 on every contest, so per-contest precincts reporting is not usable from the summary.",
+  "titles": {
+    "governor": "Governor and Lieutenant Governor",
+    "us_senate": "U.S.  Senate",
+    "us_house": [
+      "U.S.  House of Representatives, District  1",
+      "U.S.  House of Representatives, District  2",
+      "U.S.  House of Representatives, District  3"
+    ],
+    "state_upper": ["State Senate District 15 (Unexpired Term)"],
+    "state_lower": [
+      "State  House of Representatives, District  1",
+      "State  House of Representatives, District  2",
+      "State  House of Representatives, District  3"
+    ],
+    "other_statewide": [
+      "Secretary of State",
+      "State Treasurer",
+      "Attorney General",
+      "Comptroller General",
+      "State Superintendent of Education",
+      "Commissioner of Agriculture"
+    ],
+    "measures": []
+  },
+  "choice_format": "Party abbreviation is prefixed to the name, and also given in the parallel P array: CH \"REP Alan Wilson / Mike Reichenbach\", P \"REP\", V 1051334 (governor is a joint ticket with ' / '). Write-ins are \"Write-In\" with P \"NON\". Nonpartisan local candidates have no prefix and P \"NON\". Local referenda: \"Yes, In Favor of the Question\" / \"No, Opposed to the Question\" (capitalisation varies: 'In favor' on one contest).",
+  "district_field": "Only in the title, and with DOUBLE spaces: \"U.S.  House of Representatives, District  1\", \"State  House of Representatives, District  1\". No separate district field (K is the contest key).",
+  "contest_count": 171,
+  "terms": "none found (not searched beyond the results site and the scvotes.gov results page).",
+  "confidence": "high",
+  "tried": [
+    "https://www.enr-scvotes.org/ root: a meta refresh to clarityelections.com, no index",
+    "scvotes.gov home page links two Clarity ids: 127592 and 127300",
+    "127592 first (it was the bare link): only 3 contests; the scvotes.gov results page labels it 'Statewide General Election Recount'",
+    "127300 ('Statewide General Election'): current_ver.txt -> 386661, summary.json and electionsettings.json 200 with the relay User-Agent",
+    "No statewide ballot measure and no regular State Senate contests appear in the feed (the Senate is not up in 2026; one unexpired-term seat, District 15, is)"
+  ]
+}

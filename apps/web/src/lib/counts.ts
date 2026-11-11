@@ -3,6 +3,7 @@ import type { UseQueryOptions } from "@tanstack/react-query";
 import type { Area } from "./jurisdictions";
 import type { ContestResult } from "./liveCount";
 import { regionFor } from "./regions";
+import { STATE_FEED_COUNTS } from "./regions/stateFeedCounts";
 import { CA_COUNTY_COUNTS, CA_STATE_COUNTS } from "./regions/us-ca/counts";
 
 /**
@@ -11,8 +12,9 @@ import { CA_COUNTY_COUNTS, CA_STATE_COUNTS } from "./regions/us-ca/counts";
  * election, a state whose own count OpenSlate doesn't read yet.
  *
  * - `StateCounts`: a state election office's own count, for the races it
- *   reports (California's Secretary of State: statewide offices and measures,
- *   Congress, the Legislature).
+ *   reports (statewide offices and measures, Congress, the legislature):
+ *   California's Secretary of State through its own API, and the states that
+ *   publish one feed of everything (`regions/stateFeedCounts.ts`).
  * - `CountyCounts`: counties' own counts, for the local races the state
  *   doesn't carry.
  *
@@ -95,7 +97,7 @@ export interface CountyCounts {
   ) => ContestResult;
 }
 
-const STATE_COUNTS: readonly StateCounts[] = [CA_STATE_COUNTS];
+const STATE_COUNTS: readonly StateCounts[] = [CA_STATE_COUNTS, ...STATE_FEED_COUNTS];
 const COUNTY_COUNTS: readonly CountyCounts[] = [CA_COUNTY_COUNTS];
 
 /** A contest in a state's own count. */

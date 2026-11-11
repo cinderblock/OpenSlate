@@ -1,0 +1,425 @@
+{
+  "election": {
+    "asOf": "2026-11-10T22:19:26.9976753Z",
+    "isOfficialResults": false,
+    "contestGroups": [
+      {
+        "id": "01000000-8424-b2df-db37-08df24b9637a",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "State Measures"
+          }
+        ]
+      },
+      {
+        "id": "01000000-c099-693d-b5ea-08df1b3c1049",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "U.S. Congressional Representative"
+          }
+        ]
+      },
+      {
+        "id": "01000000-16cf-7dbd-1625-08df1b3c1983",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Legislative"
+          }
+        ]
+      },
+      {
+        "id": "01000000-c099-693d-9a78-08df1b3c211a",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Judicial"
+          }
+        ]
+      },
+      {
+        "id": "other",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Other Contests"
+          }
+        ]
+      }
+    ]
+  },
+  "ballotItems": [
+    {
+      "id": "01000000-c099-693d-d4e5-08df1b1fe635",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Initiative Measure No. IP26-645"
+        }
+      ],
+      "voteFor": [],
+      "contestType": "BallotMeasure",
+      "contestGroupId": "01000000-8424-b2df-db37-08df24b9637a",
+      "reportingStatus": {
+        "reportingUnits": 39,
+        "totalUnits": 39
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Yes"
+              }
+            ],
+            "voteCount": 1285941,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "No"
+              }
+            ],
+            "voteCount": 1777746,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "54c40000-9064-bbec-bcf8-08df15c0a829",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Congressional District 1 - U.S. Representative"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Congressional"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-c099-693d-b5ea-08df1b3c1049",
+      "reportingStatus": {
+        "reportingUnits": 2,
+        "totalUnits": 2
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Suzan DelBene"
+              }
+            ],
+            "voteCount": 195433,
+            "party": {
+              "abbreviation": "DEM",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "(Prefers Democratic Party)"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Mary Silva"
+              }
+            ],
+            "voteCount": 93901,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "(Prefers Republican Party)"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Write-in"
+              }
+            ],
+            "voteCount": 882,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "54c40000-9064-bbec-e24a-08df15c0a82a",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Legislative District 1 - State Representative Pos. 1"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "LEGISLATIVE"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-16cf-7dbd-1625-08df1b3c1983",
+      "reportingStatus": {
+        "reportingUnits": 2,
+        "totalUnits": 2
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Davina Duerr"
+              }
+            ],
+            "voteCount": 50823,
+            "party": {
+              "abbreviation": "DEM",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "(Prefers Democratic Party)"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Maggie Wang"
+              }
+            ],
+            "voteCount": 18758,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "(Prefers Republican Party)"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Write-in"
+              }
+            ],
+            "voteCount": 87,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "54c40000-9064-bbec-fc42-08df15c0a82a",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Legislative District 1 - State Representative Pos. 2"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "LEGISLATIVE"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-16cf-7dbd-1625-08df1b3c1983",
+      "reportingStatus": {
+        "reportingUnits": 2,
+        "totalUnits": 2
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Shelley Kloba"
+              }
+            ],
+            "voteCount": 50260,
+            "party": {
+              "abbreviation": "DEM",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "(Prefers Democratic Party)"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Cliff Moon"
+              }
+            ],
+            "voteCount": 19081,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "(Prefers Republican Party)"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Write-in"
+              }
+            ],
+            "voteCount": 132,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "54c40000-9064-bbec-d3aa-08df15c0a82b",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Legislative District 6 - State Senator"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Legislative"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-16cf-7dbd-1625-08df1b3c1983",
+      "reportingStatus": {
+        "reportingUnits": 1,
+        "totalUnits": 1
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Jeff Holy"
+              }
+            ],
+            "voteCount": 41240,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "(Prefers Republican Party)"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Write-in"
+              }
+            ],
+            "voteCount": 3766,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "54c40000-9064-bbec-cddb-08df15c0a835",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "City of Bothell - Proposition No. 1"
+        }
+      ],
+      "voteFor": [],
+      "contestType": "BallotMeasure",
+      "contestGroupId": "other",
+      "reportingStatus": {
+        "reportingUnits": 2,
+        "totalUnits": 2
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Yes"
+              }
+            ],
+            "voteCount": 16201,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "No"
+              }
+            ],
+            "voteCount": 3372,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

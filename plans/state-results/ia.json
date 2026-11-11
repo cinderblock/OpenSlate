@@ -1,0 +1,89 @@
+{
+  "code": "ia",
+  "state": "Iowa",
+  "office": "Iowa Secretary of State",
+  "page": "https://electionresults.iowa.gov/IA/127077/",
+  "platform": "clarity",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every contest of the election in one document (Clarity summary.json, 274 contests)",
+      "url": "https://electionresults.iowa.gov/IA/127077/385624/json/en/summary.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 235190,
+      "saved_as": "summary.json",
+      "notes": "Clarity ENR on the state's own host instead of results.enr.clarityelections.com; same layout: https://electionresults.iowa.gov/IA/<EID>/<version>/json/en/summary.json. EID 127077; version 385624 came from current_ver.txt. 235,190 bytes uncompressed (23,124 gzip). Cache-Control: max-age=86400 on the versioned file, no-cache on current_ver.txt."
+    },
+    {
+      "what": "version pointer",
+      "url": "https://electionresults.iowa.gov/IA/127077/current_ver.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 6,
+      "saved_as": "current_ver.txt",
+      "notes": "Body is the bare version number, '385624'. Last-Modified: Wed, 04 Nov 2026 18:25:30 GMT."
+    },
+    {
+      "what": "election settings (name, date, last-updated time, labels)",
+      "url": "https://electionresults.iowa.gov/IA/127077/385624/json/en/electionsettings.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 34230,
+      "saved_as": "electionsettings.json",
+      "notes": "settings.websiteupdatedat, settings.electiondetails.internalname = '2026 General Election', settings.electiondetails.electiondate = '11/3/2026'."
+    },
+    {
+      "what": "elections list for the state",
+      "url": "https://electionresults.iowa.gov/IA/elections.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 143,
+      "saved_as": "elections.json",
+      "notes": "Whole body: [{\"State\":\"IA\",\"StateId\":\"608\",\"County\":\"\",\"CountyId\":\"\",\"EID\":\"127077\",\"ElectionName\":\"2026 General Election\",\"Date\":\"11/3/2026 12:00:00 AM\"}]. Only the current election is listed."
+    }
+  ],
+  "election_id": "EID '127077', the first path segment after /IA/ (https://electionresults.iowa.gov/IA/127077/…). The version '385624' is the next segment.",
+  "discovery": "GET https://electionresults.iowa.gov/IA/elections.json and take EID from the entry whose Date matches; then GET /IA/<EID>/current_ver.txt for the version. https://electionresults.iowa.gov/ redirects (301) to /IA/, the 'List Elections' page that reads that file.",
+  "cors": "*",
+  "bot_blocking": "Relay User-Agent: 200 on everything (Amazon CloudFront). Browser User-Agent not needed, not tried with curl. Headless Chrome (playwright, whose User-Agent says HeadlessChrome) got CloudFront's '403 ERROR The request could not be satisfied. Request blocked.' on /IA/, so there is a WAF rule against headless browsers but not against a plain named client.",
+  "updated_field": "electionsettings.json settings.websiteupdatedat = '11/4/2026 12:25:40 PM CST' (US Central, the zone abbreviation is in the string). The HTTP Last-Modified of summary.json agrees: Wed, 04 Nov 2026 18:25:20 GMT. The count had not been republished between then and 2026-11-10.",
+  "reporting_field": "Per contest in summary.json: PR (reporting) and TP (total). In Iowa the units are counties, not precincts: United States Senator TP 99, PR 95; United States Representative District 1 TP 20, PR 18; State Senator District 1 TP 1, PR 1.",
+  "titles": {
+    "governor": "Governor and Lt. Governor",
+    "us_senate": "United States Senator",
+    "us_house": [
+      "United States Representative District 1",
+      "United States Representative District 2",
+      "United States Representative District 3"
+    ],
+    "state_upper": [
+      "State Senator District 1",
+      "State Senator District 3",
+      "State Senator District 49"
+    ],
+    "state_lower": [
+      "State Representative District 1",
+      "State Representative District 2",
+      "State Representative District 100"
+    ],
+    "other_statewide": ["Secretary of State", "Auditor of State", "Attorney General"],
+    "measures": ["Constitutional Amendment 1", "City of Bellevue - Public Measure LI"]
+  },
+  "choice_format": "Parallel arrays per contest: CH names, P parties, V votes. Example (United States Senator): \"CH\":[\"Ashley Hinson\",\"Josh Turek\",\"Thomas Laehn\",\"Write-in\"], \"P\":[\"REP\",\"DEM\",\"LIB\",\"\"], \"V\":[630615,686486,42052,1686]. Parties seen: REP, DEM, LIB and '' (write-in, no-party and nonpartisan). The governor ticket is one choice: 'Rob Sand and Dave Muhlbauer'. Measures: \"CH\":[\"Yes\",\"No\"] with empty parties. Judicial retentions are one contest per judge ('Court of Appeals Judge - John M. Sandy').",
+  "district_field": "Only in the title ('State Senator District 1'). Contests also carry CAT / SUBCAT groupings ('Federal' / 'United States Representative'; 'State' / 'State Senate District 1 - 25', 'State Representative District 26 - 50', 'Statewide Executive Branch', 'Constitutional Amendment'); SUBCAT is missing (key absent) on City and School contests. K is a numeric contest key (US Senator 1000, US Rep District 1 1100, Governor 1500, State Senator District 1 2100, Constitutional Amendment 1 14600).",
+  "contest_count": 274,
+  "terms": "none found",
+  "confidence": "high",
+  "tried": [
+    "GET https://electionresults.iowa.gov/ (relay User-Agent): 301 to /IA/, an Angular 'List Elections' page (Clarity's newer front end).",
+    "Headless Chrome on /IA/ to log requests: CloudFront 403 'Request blocked'.",
+    "GET /IA/elections.json with the relay User-Agent: 200, one election, EID 127077.",
+    "GET /IA/127077/current_ver.txt: 200, '385624'.",
+    "GET /IA/127077/385624/json/en/summary.json and electionsettings.json with the relay User-Agent and Origin: https://openslate.us: 200, Access-Control-Allow-Origin: *."
+  ]
+}

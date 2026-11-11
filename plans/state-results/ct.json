@@ -1,0 +1,131 @@
+{
+  "code": "ct",
+  "state": "Connecticut",
+  "office": "Connecticut Secretary of the State (Election Management System public reporting)",
+  "page": "https://ctemspublic.tgstg.net/#/home",
+  "platform": "custom-json",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "statewide vote totals for every office of the election (363 offices, including town offices), ids only",
+      "url": "https://ctemspublic.tgstg.net/ng-app/data/election/108/53582/stateVotes_Electiondata.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 35851,
+      "saved_as": "stateVotes_Electiondata.json",
+      "notes": "Shape: { officeId: [ { candidateId: { V: '742720', TO: '57.26%' } }, … ] }. Numbers are strings. URL = /ng-app/data/election/<electionId>/<version>/stateVotes_Electiondata.json. 35,851 bytes decoded, 8,430 on the wire (gzip). Each party line of a cross-endorsed candidate is a separate candidateId (see candidateGrouping)."
+    },
+    {
+      "what": "version pointer for the election",
+      "url": "https://ctemspublic.tgstg.net/ng-app/data/election/108/Version.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 23,
+      "saved_as": "Version.json",
+      "notes": "{\"Version\":53582}. Fetch this first on every poll; the data files live under that version number."
+    },
+    {
+      "what": "lookup tables: offices (title, type, district), candidates (name, party id), parties, towns, counties, polling places",
+      "url": "https://ctemspublic.tgstg.net/ng-app/data/election/108/53582/Lookupdata.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 213573,
+      "saved_as": "Lookupdata.json",
+      "notes": "Needed to name anything. officeList[] = [{ '19663': {ID, NM:'Governor and Lieutenant Governor', OT:'SW', OO:'1', DT:'', D:'0'} }, …]; candidateIds = { '44186': {NM, LN, FN, MN, P: partyId, AD, CO} }; partyIds = { '1': {CD:'D', NM:'Democratic Party', P:'250'} }. PRIVACY: candidateIds[].AD is each candidate's street address — do not republish it."
+    },
+    {
+      "what": "fusion totals: each cross-endorsed candidate's votes combined across party lines",
+      "url": "https://ctemspublic.tgstg.net/ng-app/data/election/108/53582/candidateGrouping_Electiondata.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 7527,
+      "saved_as": "candidateGrouping_Electiondata.json",
+      "notes": "Same shape as stateVotes but only for offices that have cross-endorsements, keyed by the candidate's major-party candidateId. Governor: stateVotes has Lamont/Bysiewicz D 742,720 and WF 29,831 as two rows; here one row 772,551 (59.56%). Offices absent from this file have no fusion candidates."
+    },
+    {
+      "what": "statewide header numbers: ballots cast, precincts and towns reporting, turnout",
+      "url": "https://ctemspublic.tgstg.net/ng-app/data/election/108/53582/election_Electiondata.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 134,
+      "saved_as": "election_Electiondata.json",
+      "notes": "{\"ID\":\"108\",\"BC\":\"1,305,498\",\"PR\":\"774 of 774 (100%)\",\"RV\":\"2,276,080\",\"T\":\"169 of 169\",\"PT\":\"0 of 169\",\"TO\":\"57.36\",\"SVT\":true}"
+    },
+    {
+      "what": "ballot questions, keyed by town name (24 towns; all local — no statewide question in 2026)",
+      "url": "https://ctemspublic.tgstg.net/ng-app/data/election/108/53582/ballotQuestion_Electiondata.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 18279,
+      "saved_as": "ballotQuestion_Electiondata.json",
+      "notes": "{ 'Ansonia': [ {QN: '1.  \"Shall Section 43 …', YES:'4124', NO:'805', NTH:'-', NTL:'-'} ] }"
+    },
+    {
+      "what": "per-town reporting status",
+      "url": "https://ctemspublic.tgstg.net/ng-app/data/election/108/53582/townStatus_Electiondata.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 10586,
+      "saved_as": "townStatus_Electiondata.json",
+      "notes": "{ townId: {TS:'( *Unofficial Results )', PR:'7 of 7 (100.00%)'} }"
+    },
+    {
+      "what": "town → polling places",
+      "url": "https://ctemspublic.tgstg.net/ng-app/data/election/108/53582/districts_Electiondata.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 56428,
+      "saved_as": "districts_Electiondata.json",
+      "notes": "Not needed for statewide totals. The site also loads townVotes_, officePrecincts_, voterTurnout_ and reports_Electiondata.json from the same folder (seen in the request log, not fetched)."
+    },
+    {
+      "what": "the list of elections",
+      "url": "https://ctemspublic.tgstg.net/ng-app/data/Elections.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 5949,
+      "saved_as": "Elections.json",
+      "notes": "64 entries: [{\"ID\":\"108\",\"Name\":\"11/03/2026 -- November 2026 State Election\",\"DefaultElection\":\"Y\"}, …]. The date is only inside Name (MM/DD/YYYY prefix)."
+    }
+  ],
+  "election_id": "108 (the site's election ID), the path segment after /election/. Version at fetch time: 53582, the next segment.",
+  "discovery": "GET https://ctemspublic.tgstg.net/ng-app/data/Elections.json → entry with DefaultElection 'Y' or a Name starting with the election date; then /ng-app/data/election/<ID>/Version.json for the version.",
+  "cors": "none (no Access-Control-Allow-Origin on the JSON files when sent Origin: https://openslate.us)",
+  "bot_blocking": "Plain relay User-Agent: 200 on all files (Server: cloudflare, cf-cache-status DYNAMIC, no challenge). Browser User-Agent not needed, not tried.",
+  "updated_field": "No timestamp in any file looked at. Version.json's number (53582) changes on each publish; Elections.json answered last-modified 'Tue, 10 Nov 2026 20:00:00 GMT'. The last-modified header of the versioned files was not checked for meaning.",
+  "reporting_field": "Statewide only, as display strings in election_Electiondata.json: PR '774 of 774 (100%)' (polling places), T '169 of 169' (towns reported), PT '0 of 169' (towns partially reported). Per town in townStatus_Electiondata.json: PR '7 of 7 (100.00%)'. No per-contest reporting figure in stateVotes.",
+  "titles": {
+    "governor": "Governor and Lieutenant Governor",
+    "us_senate": null,
+    "us_house": [
+      "Representative in Congress 1",
+      "Representative in Congress 2",
+      "Representative in Congress 3"
+    ],
+    "state_upper": ["State Senator 1", "State Senator 2", "State Senator 3"],
+    "state_lower": ["State Representative 1", "State Representative 2", "State Representative 3"],
+    "other_statewide": ["Secretary of the State", "Treasurer", "Comptroller"],
+    "measures": []
+  },
+  "choice_format": "Candidate and party are joined through ids: stateVotes row { '44186': {V:'742720', TO:'57.26%'} } → candidateIds['44186'] = {NM:'Ned Lamont and Susan Bysiewicz', LN, FN, MN, P:'1'} → partyIds['1'] = {CD:'D', NM:'Democratic Party'}. Because of fusion voting the same ticket appears again under another party ('WF' Working Families Party, 29,831) with a different candidateId; add the lines, or read candidateGrouping. Write-ins are candidates with party CD 'WI'. Questions: YES / NO string counts per town.",
+  "district_field": "Separate fields in officeList: OT is the office type (SW statewide, C Congress, S State Senate, A State Representative, PD probate, SM municipal), D is the district number ('1'), DT a label ('Connecticut 01'). The number is also the end of the title ('State Senator 1').",
+  "contest_count": 363,
+  "terms": "none found on the site",
+  "confidence": "high",
+  "tried": [
+    "GET https://ctemspublic.tgstg.net/ with the relay UA: 200, an AngularJS app",
+    "Headless Chrome on the home page: logged Elections.json, election/108/Version.json and twelve *_Electiondata.json / Lookupdata.json files under election/108/53582/",
+    "curl of nine of those with relay UA + Origin: all 200; Governor = Lamont/Bysiewicz 772,551 (D 742,720 + WF 29,831), Fazio/Corey 524,594",
+    "Looked for a statewide ballot question: ballotQuestion_Electiondata.json has only 24 towns' local questions",
+    "Not fetched: townVotes_, officePrecincts_, voterTurnout_, reports_Electiondata.json (town/precinct detail)"
+  ]
+}

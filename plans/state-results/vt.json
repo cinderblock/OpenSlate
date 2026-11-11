@@ -1,0 +1,131 @@
+{
+  "code": "vt",
+  "state": "Vermont",
+  "office": "Vermont Secretary of State, Elections Division",
+  "page": "https://electionresults.vermont.gov/",
+  "platform": "custom-json",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every contest of the election in one document, statewide/district totals only (202 offices: US House, 6 statewide, 16 State Senator districts, 109 State Representative districts, 70 county offices), the 'RSS' the site advertises",
+      "url": "https://static.electionresults.vermont.gov/elections/rss/68d61e96-1d28-4210-8c1d-8e90512ae105/election-summary.xml",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "xml",
+      "bytes": 2363166,
+      "saved_as": "rss-election-summary.xml",
+      "notes": "Stable URL per election (no timestamp in it): …/elections/rss/<electionGuid>/election-summary.xml. 126,561 bytes gzipped. Cache-Control: public, max-age=60; Last-Modified matched the JSON publish. <rss><channel><ElectionSummary><ElectionDate>11/03/2026</ElectionDate><ElectionType>G</ElectionType><Office><OfficeName>…</OfficeName><OfficeDistrict/>…<VoteFor>1</VoteFor><Candidate><CandidateId/><Name/><PartyName/><Votes/><CandidateType>Registered|Write-in</CandidateType><Winner>True|False</Winner></Candidate>…<OtherWriteInVotes/><BlankVotes/><Overvotes/></Office>. It is big because every individual write-in name is a <Candidate> (8,281 write-in entries vs 422 registered): filter on CandidateType. It has no last-updated stamp and no towns-reporting count; get those from the pointer JSON."
+    },
+    {
+      "what": "pointer document for the election: names the current timestamped result files, last-updated time, towns reporting, town and district lookup tables",
+      "url": "https://static.electionresults.vermont.gov/elections/68d61e96-1d28-4210-8c1d-8e90512ae105.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 119973,
+      "saved_as": "election-pointer.json",
+      "notes": "…/elections/<electionGuid>.json. Served as application/octet-stream (it is JSON). Fields federal.path, stateWide.path, senate.path, house.path, county.path, town.path, turnOut.path are relative paths with BACKSLASHES ('elections\\\\68d61e96-…-f-20261110182305.json'): replace '\\\\' with '/' and resolve against https://static.electionresults.vermont.gov/. The suffix 20261110182305 is the publish time (yyyyMMddHHmmss, matches lastUpdatedDate '11/10/2026 06:23 PM'), so this file is the version pointer and must be re-read on every poll. rss.electionSummary / rss.electionResultData / rss.turnOutData give the stable RSS paths. The page showed 'NEXT UPDATE 04:52' counting down, i.e. roughly a 5-minute cycle."
+    },
+    {
+      "what": "elections list (148 entries: statewide elections and many town-level local ones)",
+      "url": "https://static.electionresults.vermont.gov/elections/elections.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 77033,
+      "saved_as": "elections.json",
+      "notes": "Array of {electionGuid, electionName, electionDate, electionDateWithName, isDefault, isStateWideElection, isGeneralElection, isSync, electionTypeCode, electionCategoryCode, isOfficial, electionYear, isHomeLinks, town}."
+    },
+    {
+      "what": "federal contests with town-by-town detail (1 office: Representative to Congress)",
+      "url": "https://static.electionresults.vermont.gov/elections/68d61e96-1d28-4210-8c1d-8e90512ae105-f-20261110182305.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 324255,
+      "saved_as": "results-f.json",
+      "notes": "Shape: d[] (party groups; one group with pid 0 in a general) -> o[] offices {oid, on (office name), vf (vote for), otc ('F' federal, 'S' statewide, 'GA' general assembly), cs[] (one summary row per town plus one total row), cd[] (flat per-town table)}. The total row is the cs entry with tid 0 and tn 'STATE WIDE' (or 'District Wide' in the senate/house files): {sc (votes cast), sv (overvotes), bv (blank votes), rc[] registered candidates {cid, cn, vc, isWriteIn, isWinner, pn, pco}, wc[] write-ins}. This URL changes with every publish."
+    },
+    {
+      "what": "statewide offices with town detail (6 offices)",
+      "url": "https://static.electionresults.vermont.gov/elections/68d61e96-1d28-4210-8c1d-8e90512ae105-s-20261110182305.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 1329283,
+      "saved_as": "results-s.json",
+      "notes": "Same shape."
+    },
+    {
+      "what": "State Senate (16 districts) with town detail",
+      "url": "https://static.electionresults.vermont.gov/elections/68d61e96-1d28-4210-8c1d-8e90512ae105-sn-20261110182305.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 356624,
+      "saved_as": "results-sn.json",
+      "notes": "Same shape plus district fields on each office: dc ('ADD 1'), dn ('ADDISON_'), isrep false."
+    },
+    {
+      "what": "State House (109 districts) with town detail",
+      "url": "https://static.electionresults.vermont.gov/elections/68d61e96-1d28-4210-8c1d-8e90512ae105-h-20261110182305.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 454761,
+      "saved_as": "results-h.json",
+      "notes": "Same shape; dc ('ADD RUT', 'ADD 1'), dn ('ADDISON RUTLAND', 'ADDISON-1'), isrep true."
+    },
+    {
+      "what": "town-by-town results for every contest (RSS), 6,886,908 bytes",
+      "url": "https://static.electionresults.vermont.gov/elections/rss/68d61e96-1d28-4210-8c1d-8e90512ae105/election-result-data.xml",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "xml",
+      "bytes": 6886908,
+      "saved_as": "rss-election-result-data.first1MB.xml",
+      "notes": "Over 5 MB (316,436 bytes gzipped), so only the first 1,048,576 bytes are kept; not needed for statewide totals."
+    }
+  ],
+  "election_id": "electionGuid '68d61e96-1d28-4210-8c1d-8e90512ae105' ('2026 GENERAL ELECTION'; internal electionId 7100). It is the file name of the pointer (…/elections/<guid>.json), the prefix of every result file, and the folder of the RSS feeds (…/elections/rss/<guid>/).",
+  "discovery": "GET https://static.electionresults.vermont.gov/elections/elections.json and take the entry with isStateWideElection true and the wanted electionDate (for the general also isGeneralElection true). Do not use isDefault alone: several entries are isDefault true (the 2026 general, the August primary, a town meeting). Beware the many town-level entries on the same date (isStateWideElection false, town set).",
+  "cors": "* (access-control-allow-origin: * on elections.json, the pointer, the result JSON files and the RSS XML). A browser on openslate.us can read these directly.",
+  "bot_blocking": "Relay User-Agent: 200 on everything (served from Azure blob storage behind F5 Distributed Cloud, 'server: volt-adc'); no challenge. Browser User-Agent not needed, not tried with curl. Headless Chrome with a desktop User-Agent also loaded the site.",
+  "updated_field": "Pointer JSON lastUpdatedDate = '11/10/2026 06:23 PM' (US Eastern local time, no zone in the string; it equals the publish stamp 20261110182305 in the file names, and the page shows it as 'UNOFFICIAL 11/10/2026 06:23 PM'). HTTP Last-Modified on the pointer was Tue, 10 Nov 2026 23:23:51 GMT.",
+  "reporting_field": "Vermont reports by TOWN, not precinct. Statewide, in the pointer: townsReporting = '247/247', townsReportingFormat = '247 OF 247', townReportingPercent = 100. Per district contest, on the total row of the senate/house files: townsReported = '25/25'. Per town row: distReported = '1/1'. (The statewide total row has distReported '0/0' and townsReported null: use the pointer for statewide offices.)",
+  "titles": {
+    "governor": "GOVERNOR",
+    "us_senate": null,
+    "us_house": ["REPRESENTATIVE TO CONGRESS (at-large; Vermont has one seat)"],
+    "state_upper": [
+      "STATE SENATOR + dn 'ADDISON_' (dc 'ADD 1')",
+      "STATE SENATOR + dn 'BENNINGTON_' (dc 'BEN 1')",
+      "STATE SENATOR + dn 'CALEDONIA_' (dc 'CAL 1')"
+    ],
+    "state_lower": [
+      "STATE REPRESENTATIVE + dn 'ADDISON RUTLAND' (dc 'ADD RUT')",
+      "STATE REPRESENTATIVE + dn 'ADDISON-1' (dc 'ADD 1')",
+      "STATE REPRESENTATIVE + dn 'ADDISON-2' (dc 'ADD 2')"
+    ],
+    "other_statewide": [
+      "LIEUTENANT GOVERNOR",
+      "STATE TREASURER",
+      "SECRETARY OF STATE",
+      "AUDITOR OF ACCOUNTS",
+      "ATTORNEY GENERAL"
+    ],
+    "measures": []
+  },
+  "choice_format": "JSON: rc[] entries {\"cid\": 225757, \"cn\": \"BECCA BALINT\", \"vc\": 198758, \"isWriteIn\": false, \"isWinner\": true, \"pn\": \"DEMOCRATIC\", \"pco\": \"007ABC\"} - names ALL CAPS, party is the full name in pn (REPUBLICAN, DEMOCRATIC, PROGRESSIVE, INDEPENDENT, fusion as 'DEM/PROG', minor ones like 'PEACE AND JUSTICE'), pco is a hex colour, isWinner is filled in. Write-ins are a separate wc[] array ('OTHER WRITE-IN' plus each named write-in). XML: <Candidate><CandidateId>225757</CandidateId><Name>BECCA BALINT</Name><PartyName>DEMOCRATIC</PartyName><Votes>198758</Votes><CandidateType>Registered</CandidateType><Winner>True</Winner></Candidate>. No ballot measures in this election's files, so the yes/no form was not seen.",
+  "district_field": "A separate field. JSON senate/house offices: dn (district name, e.g. 'ADDISON_', 'CHITTENDEN-CENTRAL_' for senate with a trailing underscore; 'ADDISON-1', 'ADDISON RUTLAND' for house) and dc (short code 'ADD 1'); the office name on is just 'STATE SENATOR' / 'STATE REPRESENTATIVE', so 16 + 109 offices share two names. XML: <OfficeDistrict>ADDISON_ SENATE</OfficeDistrict>. Districts are named, not numbered, and many elect 2 or 3 members (vf / <VoteFor>).",
+  "contest_count": 202,
+  "terms": "none found on the results site (footer is only '© 2026 Copyright 128 State Street, Montpelier, Vermont 05633 sos.vermont.gov Version 1.0'). The site itself offers the RSS feeds under an 'RSS' tab. I did not search sos.vermont.gov for a general terms page.",
+  "confidence": "high",
+  "tried": [
+    "WebSearch pointed to electionresults.vermont.gov; GET https://electionresults.vermont.gov/ with relay UA: 200, an Angular shell",
+    "Headless Chrome (desktop UA) logged the data requests: static.electionresults.vermont.gov/elections/elections.json, …/<guid>.json, …/<guid>-f-20261110182305.json",
+    "curl with relay UA + Origin on elections.json, the pointer, the -f-, -s-, -sn-, -h- files and both RSS feeds named in the pointer: all 200 with real numbers (Representative to Congress: BECCA BALINT 198,758; GERALD MALLOY 94,078; 247 of 247 towns)",
+    "Not fetched: the -cty- (county offices), -t- (town) and -turnout- JSON files and rss turnout-data.xml",
+    "No US Senate contest and no ballot measure appear, which matches Vermont's 2026 ballot as far as the files show"
+  ]
+}

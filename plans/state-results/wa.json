@@ -1,0 +1,80 @@
+{
+  "code": "wa",
+  "state": "Washington",
+  "office": "Washington Secretary of State",
+  "page": "https://results.votewa.gov/results/public/washington/elections/20261103",
+  "platform": "enhanced-voting",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every state-level contest of the election in one document (173 ballot items: 3 state measures, 10 US House, 122 legislative, judicial, a few multi-county local), plus per-county election stubs, turnout statistics and voter registration",
+      "url": "https://results.votewa.gov/results/public/api/elections/washington/20261103/data",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 558715,
+      "saved_as": "data.json",
+      "notes": "Standard Enhanced Voting shape: …/results/public/api/elections/<slug>/<publicElectionId>/data. slug 'washington' (lower case), id '20261103'. 29,686 bytes gzipped on the wire. Cache-Control: public, max-age=60. The page says 'This page auto-refreshes and is updated in real-time'. The page also polls …/elections/washington/20261103/closeraces (returned '[]')."
+    },
+    {
+      "what": "jurisdiction document with the elections list (4 elections in 2026) and the 39 counties",
+      "url": "https://results.votewa.gov/results/public/api/jurisdictions/washington",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 31075,
+      "saved_as": "jurisdiction.json",
+      "notes": "NOTE the path: the elections list is at api/jurisdictions/<slug> (key 'elections': [{publicElectionId, electionDate, name, dateText}]). The older guess api/elections/<slug> answers 404 (saved as elections-list.json, 0 bytes)."
+    }
+  ],
+  "election_id": "'20261103' (publicElectionId = the election date as YYYYMMDD). Appears in the page URL /results/public/washington/elections/20261103 and the API URL /api/elections/washington/20261103/data. The internal GUID is election.id = 01000000-a578-3971-654b-08defdf81b1d.",
+  "discovery": "GET https://results.votewa.gov/results/public/api/jurisdictions/washington and read .elections[] (publicElectionId, electionDate, name). Washington's ids have so far all been the date: 20261103, 20260804, 20260428, 20260210.",
+  "cors": "none on 200 responses (no Access-Control-Allow-Origin, and the response carries 'cross-origin-resource-policy: same-origin'). Oddly a 404 from the same API does answer 'access-control-allow-origin: *'. A browser on openslate.us cannot read this directly; it needs the relay.",
+  "bot_blocking": "Relay User-Agent: 200 for jurisdictions and data (behind Cloudflare, cf-cache-status DYNAMIC, no challenge). Browser User-Agent not needed. Headless Chrome also loaded the page fine. (Git Bash's curl 8.8.0/Schannel fails on this host with 'curl: (43)' during TLS renegotiation; Windows' own curl 8.22 works. That is a client bug, not blocking.)",
+  "updated_field": "election.asOf = '2026-11-10T22:19:26.9976753Z' (UTC, ISO 8601 with 7 fractional digits) is what the page shows as 'Last Updated Tuesday, November 10, 2026 at 2:19:26 PM' (Pacific). Also election.lastUpdated = '2026-11-10T22:18:12.0964996Z', election.publishDate, election.publishVersionId (a GUID that changes with each publish). Each ballot item repeats it in reportingStatus.asOf.",
+  "reporting_field": "Per contest: ballotItems[].reportingStatus.reportingUnits / .totalUnits, and in Washington the units are COUNTIES, not precincts (e.g. {\"reportingUnits\": 39, \"totalUnits\": 39} for a statewide measure, 2/2 for Congressional District 1; the page words it 'Counties reporting 39/39'). election.precinctsReporting is null and localityElections[].precinctsReporting is null: Washington (vote-by-mail) publishes no precinct progress. There is instead a statistics[] block 'Estimated Ballots Left to Count' by county.",
+  "titles": {
+    "governor": null,
+    "us_senate": null,
+    "us_house": [
+      "Congressional District 1 - U.S. Representative",
+      "Congressional District 2 - U.S. Representative",
+      "Congressional District 3 - U.S. Representative"
+    ],
+    "state_upper": [
+      "Legislative District 6 - State Senator",
+      "Legislative District 7 - State Senator",
+      "Legislative District 8 - State Senator"
+    ],
+    "state_lower": [
+      "Legislative District 1 - State Representative Pos. 1",
+      "Legislative District 1 - State Representative Pos. 2",
+      "Legislative District 2 - State Representative Pos. 1"
+    ],
+    "other_statewide": [
+      "Supreme Court - Justice Position #01",
+      "Supreme Court - Justice Position #03",
+      "Supreme Court - Justice Position #04",
+      "Supreme Court - Justice Position #05",
+      "Supreme Court - Justice Position #07"
+    ],
+    "measures": [
+      "Initiative Measure No. IP26-645",
+      "Initiative Measure No. IL26-001",
+      "Initiative Measure No. IL26-638"
+    ]
+  },
+  "choice_format": "ballotItems[].summaryResults.ballotOptions[]: name is a language array [{\"languageId\":\"en\",\"text\":\"Suzan DelBene\"}], voteCount 195433, party {abbreviation:\"DEM\", name:[{\"languageId\":\"en\",\"text\":\"(Prefers Democratic Party)\"}]} (Washington's top-two 'prefers' wording, parentheses included; abbreviations seen REP, DEM, IND, LIB, NO, NON and oddities like DE2 '(Prefers Democrat Party)', LDP, NKP, CAC). Write-ins are a separate option 'Write-in' (or 'Write-In') with isWriteIn true and a null party. Nonpartisan judges have party.abbreviation null. Measures: contestType 'BallotMeasure', options named 'Yes' and 'No' with null party; the measure's explanatory text is HTML in ballotItems[].referendum. isWinner is null throughout.",
+  "district_field": "Only in the title (name[0].text, e.g. 'Legislative District 6 - State Senator'). contestGroupId groups contests ('State Measures', 'U.S. Congressional Representative', 'Legislative', 'Judicial', and the literal 'other'); voteFor holds a loose label ('Legislative', 'Congressional', sometimes upper case), not a number. crossCounties lists the counties a multi-county contest spans.",
+  "contest_count": 173,
+  "terms": "none found on the results page or in the API (footer links only to https://www.sos.wa.gov/elections/data-research/election-data-and-maps/election-results-and-voters-pamphlets). I did not search sos.wa.gov for a general terms page.",
+  "confidence": "high",
+  "tried": [
+    "Brief said Washington is flat files on results.vote.wa.gov. https://results.vote.wa.gov/results/20261103/ answers 404 (x-ms-error-code: WebContentNotFound), and https://results.vote.wa.gov/ 301-redirects to https://results.votewa.gov/results/public/washington: the old flat-file site is gone for this election; Washington moved to Enhanced Voting",
+    "GET …/results/public/api/elections/washington (the elections-list path in the brief): 404",
+    "Headless Chrome on https://results.votewa.gov/results/public/washington showed the real list call: api/jurisdictions/washington",
+    "Headless Chrome on …/washington/20261103 (redirects to …/washington/elections/20261103) showed api/elections/washington/20261103/data and …/closeraces",
+    "curl with relay UA + Origin: 200 for both; saved data.json, jurisdiction.json with headers",
+    "Not fetched: the 'Download Reports' Excel files named in election.publicReportCategories (blobName 'All Results_53c858e5-….xlsx'); their download URL was not worked out"
+  ]
+}

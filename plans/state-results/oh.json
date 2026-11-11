@@ -1,0 +1,66 @@
+{
+  "code": "oh",
+  "state": "Ohio",
+  "office": "Ohio Secretary of State",
+  "page": "https://liveresults.ohiosos.gov/",
+  "platform": "custom-xml",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every contest of the election in one document, with statewide and per-county totals ('Election Results XML Feed' on the page)",
+      "url": "https://liveresults.ohiosos.gov/Api/v1/download?filename=VSSC1622XmlFileBlob",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "xml",
+      "bytes": 1234749,
+      "saved_as": "VSSC1622XmlFileBlob.xml",
+      "notes": "IEEE 1622.2 / NIST election results reporting XML (root <ElectionReport xmlns=\"http://grouper.ieee.org/groups/1622/groups/2/V1/1622_2-election_results_reporting.xsd\" Format=\"SummaryContest\" Status=\"UnofficialComplete\" VendorApplicationId=\"Ohio-ENR 1.0.02\">). Served as text/plain, Cache-Control: max-age=15, with ETag and Last-Modified (Tue, 10 Nov 2026 23:31:14 GMT), gzip. No election id in the URL: it is always the current election. Relational: Contest/BallotSelection holds VoteCounts (first one is the Statewide GpUnit, then one per county after a <!--begin county totals--> comment) and CandidateId(s); names come from Election/CandidateCollection/Candidate/BallotName, joined via PersonId/PartyId to PersonCollection and PartyCollection. The site documents the format at https://liveresults.ohiosos.gov/Content/PDF/P1622Documentation.pdf (not fetched). Other filenames the page offers through the same endpoint: GeneralElectionXlsFile and EMSReporting<name>Results (spreadsheets, not fetched)."
+    }
+  ],
+  "election_id": "None in the URL. In the document: <Election Date=\"2026-11-03\" Type=\"General\"> with Name \"November 3, 2026 General Unofficial Canvass\".",
+  "discovery": "Nothing to discover: the same URL always serves the current election; read Election/@Date in the document to know which one. No elections list was found.",
+  "cors": "none (no Access-Control-Allow-Origin; only Access-Control-Expose-Headers: Request-Context)",
+  "bot_blocking": "None seen: 200 with the relay User-Agent (Cloudflare in front, cf-cache-status DYNAMIC, no challenge). CAVEAT about this machine only: Git Bash curl 8.8.0 (Schannel) dies on this host with 'curl: (43) A libcurl function was given a bad argument' (same as North Dakota's hosts), so the page, the XML and the .headers.txt were fetched with Python urllib sending the relay User-Agent and Origin header; the headers file was written by that script, not curl -D. Browser User-Agent not needed, not tried.",
+  "updated_field": "Root attribute GeneratedDate=\"2026-11-10T11:30:51Z\". WARNING: it looks like a 12-hour clock written without AM/PM and labelled Z: the HTTP Last-Modified on the same response was Tue, 10 Nov 2026 23:31:14 GMT, so 11:30:51 is almost certainly 23:30:51 UTC. Prefer the Last-Modified header (or ETag) for change detection.",
+  "reporting_field": "Per county, on GpUnit elements with Type=\"County\" and IsElectoralDistrict=\"false\": SubUnitsReported / TotalSubUnits (precincts), e.g. <GpUnit … Name=\"Adams\" SubUnitsReported=\"21\" TotalSubUnits=\"21\" Type=\"County\" VotersParticipated=\"9169\" VotersRegistered=\"17079\">, with a child <CountStatus Status=\"Completed\" Type=\"Total\"/>. There is no per-contest or statewide precinct figure; sum the 88 counties (the Statewide GpUnit has no counts).",
+  "titles": {
+    "governor": "Governor and Lieutenant Governor",
+    "us_senate": "U.S. Senator",
+    "us_house": [
+      "Representative to Congress - District 01",
+      "Representative to Congress - District 02",
+      "Representative to Congress - District 03"
+    ],
+    "state_upper": [
+      "State Senator - District 01",
+      "State Senator - District 03",
+      "State Senator - District 05"
+    ],
+    "state_lower": [
+      "State Representative - District 01",
+      "State Representative - District 02",
+      "State Representative - District 03"
+    ],
+    "other_statewide": [
+      "Attorney General",
+      "Auditor of State",
+      "Secretary of State",
+      "Treasurer of State",
+      "Justice of the Supreme Court (two contests share this exact Name; tell them apart by ObjectId / SequenceOrder 05500000 and 05750000)"
+    ],
+    "measures": [
+      "State Issue 3 To require voters to present photo identification in order to vote (Abbreviation \"State Issue 3\"; the only statewide issue in the file)"
+    ]
+  },
+  "choice_format": "Indirect. <BallotSelection xsi:type=\"CandidateSelection\" IsWriteIn=\"false\"> has <VoteCounts Type=\"Total\" Count=\"2404178\"><GpUnitId>…</GpUnitId></VoteCounts> and one or two <CandidateId> (two for the governor ticket: governor, then lieutenant governor with a _CO prefix). The candidate is <Candidate ObjectId=…><BallotName><LanguageString Language=\"en\">Munira Abdullahi</LanguageString></BallotName><PartyId>…</PartyId><PersonId>…</PersonId></Candidate>; party is <Party Abbreviation=\"DEM\"> (also REP, LIB, Indep, Nonprtycan, Non-partis, Other-part, Write-in, None). Measures: <BallotSelection xsi:type=\"BallotMeasureSelection\" Selection=\"YES\"> and Selection=\"NO\" (ObjectId prefixed _YES / _NO).",
+  "district_field": "In the title, zero-padded to two digits (\"Representative to Congress - District 01\"). Also derivable two other ways: the contest's <Code OtherType=\"ContestType\" Value=\"Representative to Congress\"/> gives the office without the district, and JurisdictionalScopeId points to a GpUnit of Type Congressional / StateSenate / StateHouse / Judicial; SequenceOrder ends in the district number (07000001). No plain district-number attribute.",
+  "contest_count": 162,
+  "terms": "Not read. The page links a disclaimer at https://www.ohiosos.gov/elections/election-night-unofficial-results-disclaimer/ (not fetched). Nothing about automated access on the results page itself.",
+  "confidence": "high",
+  "tried": [
+    "curl on https://liveresults.ohiosos.gov/ : error 43 (local Schannel curl problem); Python urllib with the relay User-Agent: 200",
+    "Page has a link 'Election Results XML Feed' -> javascript:downloadReport('VSSC1622XmlFileBlob'); the bundle /bundles/all defines downloadReport as window.open('Api/v1/download?filename=' + n)",
+    "Fetched Api/v1/download?filename=VSSC1622XmlFileBlob: 200, 1.23 MB XML with real counts (Governor first ticket 2,404,178 statewide)",
+    "The bundle also names JSON endpoints the page uses (/Api/v1/Contest/getContestList, getTabs, getMarquee, getCountyList, GetContestsByCounty?countyId=, getMyResults?cId=, GetElectionSummaryCsv); not fetched, the XML already covers everything"
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "code": "or",
+  "state": "Oregon",
+  "office": "Oregon Secretary of State",
+  "page": "https://results.oregonvotes.gov/",
+  "platform": "bpro-totalvote",
+  "status": "html-only",
+  "feeds": [
+    {
+      "what": "server-rendered HTML page of every FEDERAL contest with statewide totals (US Senator, six US Representative districts)",
+      "url": "https://results.oregonvotes.gov/resultsSW.aspx?type=FED&map=CTY",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 103630,
+      "saved_as": "resultsSW-FED.html",
+      "notes": "One page per contest type; the type list is on the home page. Saved the same way: type=SWPAR 'State' (Governor only; resultsSW-SWPAR.html 37313 bytes), SENATE (15 contests; 184292), HOUSE (30 contests seen, districts 1-30; 335581), SWNON 'Nonpartisan' (judges, district attorneys; 123461), MCR 'Shared County, City And District Races And Measures' (866234), LMEA 'Local Measure' (772561). Responses carry cache-control: public, max-age=60. Markup per contest: <div class=\"display-results-box-a\"><h1>TITLE</h1> … <div class=\"precinct-fully\"> N out of M Precincts Reported </div> … then per choice <div class=\"col display-results-box-d\"><h1>NAME</h1><h2 class=\"Party\">Party list</h2></div> … <div class=\"col display-results-box-f\"><div>VOTES</div></div>, and a total in <div id=\"<raceid>totals\">. Race ids appear in id=\"chk-<n>\" and raceid=\"300038695\" attributes."
+    },
+    {
+      "what": "the office's export page (CSV / Excel / RSS / XML of Statewide, Governor, Legislative, Statewide Nonpartisan, and per-county). NOT usable read-only",
+      "url": "https://results.oregonvotes.gov/ResultsExport.aspx",
+      "method": "POST",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 42598,
+      "saved_as": "ResultsExport.html",
+      "notes": "Only the GET of the page was done (saved). Every export link is an ASP.NET postback (javascript:__doPostBack('ctl00$MainContent$Statewide','') etc.) that must POST the form with __VIEWSTATE / __EVENTVALIDATION and the chosen format radio ctl00$MainContent$rblTypes (1 CSV, 2 Excel, 3 RSS, 4 XML). The brief forbids submitting forms, so no export was downloaded and its columns are unknown. No GET equivalent found."
+    }
+  ],
+  "election_id": "None in the URLs: the site shows the current election (header: 'November 3, 2026', 'Unofficial'). The page's JS reads an optional ?eid=<number> query parameter for other elections; no value for this election was seen.",
+  "discovery": "Nothing to discover for the current election (fixed URLs). A list of past elections is at https://results.oregonvotes.gov/ResultsList.aspx (linked from the page, not fetched).",
+  "cors": "*  (access-control-allow-origin: * on the HTML pages)",
+  "bot_blocking": "None seen: 200 with the relay User-Agent on every page (Cloudflare/Azure front; sets an ASP.NET_SessionId cookie that was not needed). CAVEAT about this machine only: Git Bash curl 8.8.0 (Schannel) fails on this host with 'curl: (43) A libcurl function was given a bad argument' (as on North Dakota's and Ohio's hosts), so pages and .headers.txt were fetched with Python urllib sending the relay User-Agent and Origin header; the headers files were written by that script, not curl -D. Browser User-Agent not needed, not tried.",
+  "updated_field": "HTML text: <div class=\"next-count\">Results last updated: 11/10/2026 | 3:30 PM PT</div> (Pacific time, labelled PT), on every results page.",
+  "reporting_field": "HTML text per contest: <div class=\"precinct-fully\"> 0 out of 1318 Precincts Reported </div>. On 2026-11-10 EVERY contest read '0 out of N Precincts Reported' while showing full vote totals (US Senator 1,099,192 for the leader), so the reported count is not maintained and only the total N is meaningful. The header also shows ballots counted (1,924,959) and Active Registered Voters (3,109,082).",
+  "titles": {
+    "governor": "Governor",
+    "us_senate": "US Senator",
+    "us_house": [
+      "US Representative, 1st District",
+      "US Representative, 2nd District",
+      "US Representative, 3rd District"
+    ],
+    "state_upper": [
+      "State Senator, 3rd District",
+      "State Senator, 4th District",
+      "State Senator, 6th District"
+    ],
+    "state_lower": [
+      "State Representative, 1st District",
+      "State Representative, 2nd District",
+      "State Representative, 3rd District"
+    ],
+    "other_statewide": [],
+    "measures": []
+  },
+  "choice_format": "HTML: <h1>Jeff Merkley</h1><h2 class=\"Democrat\">Democrat, Working Families</h2> … <div>1,099,192</div> — the name alone in the h1, and the h2 text lists every nominating party in full words (fusion), with the first party as the CSS class. Votes have thousands separators. Write-ins are one row <h1>Write-in</h1> with an empty h2. Measures (local ones seen): <h1>Yes</h1> and <h1>No</h1> with an empty h2; local measure titles start with the measure number, e.g. \"02-157 North Albany Rural Fire Protection District: Measure proposing a five-year operating local option levy.\"",
+  "district_field": "Only in the title, as an ordinal: \"US Representative, 1st District\", \"State Senator, 3rd District\". No separate district field in the HTML.",
+  "contest_count": 199,
+  "terms": "none found on the results site.",
+  "confidence": "medium",
+  "tried": [
+    "https://results.sos.oregon.gov/ (guess): does not resolve",
+    "https://results.oregonvotes.gov/ : curl error 43 locally; Python urllib with the relay User-Agent: 200, BPro TotalVote, 'November 3, 2026', 'Unofficial'",
+    "/ResultsExport.aspx: 200, but every export is a __doPostBack form POST; not submitted",
+    "/resultsCSV.aspx?text=All&type=SW&map=CTY (the GET export New Mexico's BPro site has): redirects to /ErrorPages/Error.aspx here",
+    "Headless Chrome on resultsSW.aspx?type=FED: no JSON/XML/CSV requests at all; results are in the HTML (the page's own analytics beacons fired, nothing else)",
+    "The page names an ajax host, https://orresultswebservices.azureedge.us/ (ResultsAjax.svc/GetCandidates?ElectionType=General&ElectionID=0 for the search box; CreateMap()/BuildCounty() for per-contest county data); its Scripts/utils.js has no .svc paths, and I did not probe the service further",
+    "Fetched the seven resultsSW.aspx type pages: 199 contests in total. Open points, hence 'medium': the HOUSE page lists only districts 1-30 (Oregon has 60) with no paging control found, and there is no statewide-measure or other-statewide-office type in the menu, so none were seen"
+  ]
+}

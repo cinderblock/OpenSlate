@@ -1,0 +1,116 @@
+{
+  "code": "nc",
+  "state": "North Carolina",
+  "office": "North Carolina State Board of Elections",
+  "page": "https://er.ncsbe.gov/?election_dt=11/03/2026&county_id=0&office=FED&contest=0",
+  "platform": "custom-json",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every contest the state reports at the statewide level (federal, legislature, judicial, statewide measures, multi-county local), one row per candidate/choice",
+      "url": "https://er.ncsbe.gov/enr/20261103/data/results_0.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 192360,
+      "saved_as": "results_0.txt",
+      "notes": "JSON array served as text/plain. URL is enr/<YYYYMMDD>/data/results_<county id>.txt; county id 0 is the state, 1..100 are counties (ids in county.txt). The page appends ?v=<day-hour-minute> as a cache buster. A flat array: one object per candidate, the contest repeated on every row (cnm title, gid/lid contest id, vfr vote-for, prt/ptl precincts, ogl office group, ref 1 for a referendum). Last-Modified was Tue, 10 Nov 2026 23:05:33 GMT."
+    },
+    {
+      "what": "per-county header rows: title, precincts reporting, ballots cast, last-updated times",
+      "url": "https://er.ncsbe.gov/enr/20261103/data/county.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 27070,
+      "saved_as": "county.txt",
+      "notes": "Row cid 0 is STATE. Holds the only timestamps (imp, sub)."
+    },
+    {
+      "what": "list of every contest in every county (3068 rows) with county id, contest id, office group",
+      "url": "https://er.ncsbe.gov/enr/20261103/data/contest.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 393625,
+      "saved_as": "contest.txt",
+      "notes": "cid county, cni/lci contest ids, cnm title, ogl office group, ref, crt/ctl counties reporting/total."
+    },
+    {
+      "what": "office group codes (FED, COS, NCS, NCH, JUD, REF, CCL...)",
+      "url": "https://er.ncsbe.gov/enr/20261103/data/office.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 939,
+      "saved_as": "office.txt",
+      "notes": ""
+    },
+    {
+      "what": "list of elections the site knows",
+      "url": "https://er.ncsbe.gov/enr/elections.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 4280,
+      "saved_as": "elections.txt",
+      "notes": "edt is MM/DD/YYYY; first row is the newest election. arc 1 = archived."
+    },
+    {
+      "what": "media / precinct-level file (not fetched in full, only HEAD: 200, 2,085,895 bytes zip)",
+      "url": "https://s3.amazonaws.com/dl.ncsbe.gov/ENRS/2026_11_03/results_pct_20261103.zip",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 2085895,
+      "saved_as": "",
+      "notes": "Linked from https://er.ncsbe.gov/downloads.html as 'Election Night Media Results' (tab-separated, layout at http://dl.ncsbe.gov/ENRS/layout_results_pct.txt). Not downloaded; HEAD only."
+    }
+  ],
+  "election_id": "The election date as YYYYMMDD (20261103) in the path enr/20261103/data/; the page URL uses election_dt=11/03/2026.",
+  "discovery": "GET https://er.ncsbe.gov/enr/elections.txt lists every election date (edt, MM/DD/YYYY), newest first; turn the date into YYYYMMDD for the data folder.",
+  "cors": "'*' (access-control-allow-origin: *, access-control-allow-methods: GET) when CloudFront misses its cache; some cached answers ('x-cache: RefreshHit from cloudfront') came back with no CORS header at all for the same Origin request. Adding a ?v= cache buster got the header back. So: present but not reliable from cache.",
+  "bot_blocking": "None. Relay User-Agent got 200 on every file (behind Cloudflare in front of CloudFront/S3, no challenge). Browser User-Agent not needed, not tried.",
+  "updated_field": "county.txt row cid=0: \"imp\":\"November 10, 2026 6:00 pm\" (last import) and \"sub\":\"November 10, 2026 6:03 pm\" (published). No zone in the value; North Carolina is Eastern time. results_0.txt has no timestamp; the HTTP Last-Modified header is the other signal.",
+  "reporting_field": "On every results row: prt (precincts reported) and ptl (precincts total) for that contest, e.g. \"prt\":\"290\",\"ptl\":\"290\". Statewide in county.txt row 0: prt 2626, ptl 2626, ppt \"100.00%\", bct ballots cast 4237426, rtl registered 7885046.",
+  "titles": {
+    "governor": null,
+    "us_senate": "US SENATE (VOTE FOR 1)",
+    "us_house": [
+      "US HOUSE OF REPRESENTATIVES DISTRICT 01 (VOTE FOR 1)",
+      "US HOUSE OF REPRESENTATIVES DISTRICT 02 (VOTE FOR 1)",
+      "US HOUSE OF REPRESENTATIVES DISTRICT 03 (VOTE FOR 1)"
+    ],
+    "state_upper": [
+      "NC STATE SENATE DISTRICT 01 (VOTE FOR 1)",
+      "NC STATE SENATE DISTRICT 02 (VOTE FOR 1)",
+      "NC STATE SENATE DISTRICT 03 (VOTE FOR 1)"
+    ],
+    "state_lower": [
+      "NC HOUSE OF REPRESENTATIVES DISTRICT 001 (VOTE FOR 1)",
+      "NC HOUSE OF REPRESENTATIVES DISTRICT 002 (VOTE FOR 1)",
+      "NC HOUSE OF REPRESENTATIVES DISTRICT 003 (VOTE FOR 1)"
+    ],
+    "other_statewide": [
+      "NC SUPREME COURT ASSOCIATE JUSTICE SEAT 01 (VOTE FOR 1)",
+      "NC COURT OF APPEALS JUDGE SEAT 01 (VOTE FOR 1)",
+      "NC COURT OF APPEALS JUDGE SEAT 02 (VOTE FOR 1)",
+      "NC COURT OF APPEALS JUDGE SEAT 03 (VOTE FOR 1)"
+    ],
+    "measures": [
+      "CONSTITUTIONAL AMENDMENT - MAXIMUM INCOME TAX RATE OF 3.5%",
+      "CONSTITUTIONAL AMENDMENT - PROPERTY TAX LEVY LIMIT"
+    ]
+  },
+  "choice_format": "Name and party are separate fields: {\"bnm\":\"Roy Cooper\",\"dtx\":\"\",\"pty\":\"DEM\",\"vct\":\"2477264\",\"pct\":\"0.5874\"}. Every value is a string. Measures: \"bnm\":\"For\" / \"bnm\":\"Against\" with \"pty\":\" \" (a single space), \"ref\":\"1\", \"ogl\":\"\" (local bond referenda use Yes / No). Vote-method split per row: evc election day, ovc one-stop early, avc absentee by mail, pvc provisional.",
+  "district_field": "Only in the title (zero-padded: 2 digits for US House and NC Senate, 3 digits for NC House). No separate district field; ogl gives the chamber (FED, NCS, NCH, JUD, COS).",
+  "contest_count": 412,
+  "terms": "none found on er.ncsbe.gov (results page and downloads page checked).",
+  "confidence": "high",
+  "tried": [
+    "https://er.ncsbe.gov/enr/20261103/data/summary_0.txt (guess from memory): 404 NoSuchKey from S3",
+    "Read the inline JavaScript of https://er.ncsbe.gov/ : it loads enr/elections.txt, then enr/<YYYYMMDD>/data/county.txt, office.txt, contest.txt and results_<countyid>.txt",
+    "Fetched all five with the relay User-Agent: 200",
+    "HEAD on the media zip linked from downloads.html: 200, 2.1 MB (not downloaded)"
+  ]
+}

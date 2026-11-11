@@ -1,0 +1,90 @@
+{
+  "code": "ga",
+  "state": "Georgia",
+  "office": "Georgia Secretary of State",
+  "page": "https://results.sos.ga.gov/results/public/Georgia/elections/11032026GeneralAndSpecialElection",
+  "platform": "enhanced-voting",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every state-level contest of the election in one document (statewide totals, with a per-count-group breakdown per choice; no per-county rows)",
+      "url": "https://results.sos.ga.gov/results/public/api/elections/Georgia/11032026GeneralAndSpecialElection/data",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 1303481,
+      "saved_as": "data.json",
+      "notes": "Standard Enhanced Voting shape: /results/public/api/elections/<slug>/<publicElectionId>/data with slug 'Georgia'. 1,303,481 bytes decoded, 61,202 on the wire (gzip). Cache-Control: public, max-age=60. election.publishVersionId changes on each publish."
+    },
+    {
+      "what": "the list of every election the state has on this site (118 entries, newest first)",
+      "url": "https://results.sos.ga.gov/results/public/api/jurisdictions/Georgia",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 88224,
+      "saved_as": "jurisdictions.json",
+      "notes": "elections[] of {publicElectionId, electionDate, name[], dateText[]}. NOTE: the older list path /results/public/api/elections/Georgia answers 404 here (headers saved as elections-list-404.headers.txt)."
+    },
+    {
+      "what": "media export: statewide results plus all 159 counties' results (localResults[]) in one file",
+      "url": "https://results.sos.ga.gov/cdn/results/Georgia/export-11032026GeneralAndSpecialElection.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 47494814,
+      "saved_as": "media-export.first1MB.json",
+      "notes": "47,494,814 bytes (served as application/octet-stream, not compressed), so only the first 1 MB is kept. Path comes from jurisdiction.mediaExportPath ('Georgia/export-11032026GeneralAndSpecialElection.json') in the data document, under /cdn/results/. Top level: electionDate, electionName, createdAt, results{id,name,ballotItems[273],reportingStatuses[]}, localResults[159]{id,name,ballotItems[],reportingStatuses[]}. Simpler field names than /data (name is a plain string, ids like 'US2'). Too big for a relay to poll; use /data."
+    }
+  ],
+  "election_id": "11032026GeneralAndSpecialElection (the site calls it publicElectionId). It is the last path segment of the page URL and sits between the slug and /data in the API URL.",
+  "discovery": "GET https://results.sos.ga.gov/results/public/api/jurisdictions/Georgia and read elections[] (publicElectionId + electionDate). Ids are hand-typed and follow no pattern (2024NovGen, GeneralPrimary51926, 11032026GeneralAndSpecialElection), so they must be looked up by electionDate, never constructed.",
+  "cors": "none on /data and /jurisdictions (no Access-Control-Allow-Origin in the 200 answers when sent Origin: https://openslate.us). The 47 MB media export under /cdn/results/ answers access-control-allow-origin: *.",
+  "bot_blocking": "Plain relay User-Agent: 200 on every request (page, /data, /jurisdictions, media export). Site is behind Cloudflare (Server: cloudflare, cf-cache-status: DYNAMIC) in front of Azure Front Door, and the page injects Cloudflare's JS-detection script, but no challenge was served. Browser User-Agent not needed, not tried.",
+  "updated_field": "election.asOf, e.g. '2026-11-10T22:30:12.40547Z' (UTC, ISO 8601 with Z). Also election.lastUpdated '2026-11-10T22:28:22.2933153Z' and election.publishDate '2026-11-10T22:31:52.6882792Z'; each ballotItem has reportingStatus.asOf.",
+  "reporting_field": "Per contest: ballotItems[].reportingStatus.reportingUnits / totalUnits, counted in COUNTIES, not precincts (US Senate: 159 / 159; US House District 1: 15 / 15). Per county: jurisdiction.childLocalities[].percentReporting and precinctsReporting as fractions 0..1 (Appling: 1.0). election.precinctsReporting is null at state level.",
+  "titles": {
+    "governor": "Governor",
+    "us_senate": "US Senate",
+    "us_house": [
+      "US House of Representatives - District 1",
+      "US House of Representatives - District 2",
+      "US House of Representatives - District 3"
+    ],
+    "state_upper": [
+      "State Senate - District 1",
+      "State Senate - District 2",
+      "State Senate - District 5/ Senador Estatal del Distrito 5"
+    ],
+    "state_lower": [
+      "State House of Representatives - District 1",
+      "State House of Representatives - District 2",
+      "State House of Representatives - District 3"
+    ],
+    "other_statewide": [
+      "Lieutenant Governor",
+      "Secretary of State",
+      "Attorney General",
+      "Commissioner of Agriculture",
+      "Commissioner of Insurance",
+      "State School Superintendent",
+      "Commissioner of Labor",
+      "PSC - District 3",
+      "PSC - District 5"
+    ],
+    "measures": ["Proposed Constitutional Amendment 1", "Proposed Constitutional Amendment 2"]
+  },
+  "choice_format": "Party is inside the name text and also a separate object: name[0].text 'Mike Collins (Rep)' with party.abbreviation 'Rep'; incumbents carry '(I)' before the party: 'Jon Ossoff (I) (Dem)'. Measures are ballotOptions named 'Yes' and 'No' with an empty-named party; note a measure's contestType is 'Candidate' too, and referendum[] is empty, so measures can only be told apart by title or by the Yes/No options.",
+  "district_field": "Only in the title ('… - District 7'). No separate district field. Districts that touch Gwinnett County carry a Spanish suffix in the title ('State Senate - District 5/ Senador Estatal del Distrito 5'), so parse the number with a pattern like /District (\\d+)/.",
+  "contest_count": 273,
+  "terms": "none found on the results site (the page has no terms or robots statement; not searched further on sos.ga.gov)",
+  "confidence": "high",
+  "tried": [
+    "GET https://results.sos.ga.gov/results/public/Georgia with the relay UA: 200, an Angular app shell",
+    "GET https://results.sos.ga.gov/results/public/api/elections/Georgia (the elections-list path from the brief): 404",
+    "Headless Chrome on /results/public/Georgia: it calls /results/public/api/jurisdictions/Georgia, which lists the elections",
+    "Headless Chrome on /results/public/Georgia/11032026GeneralAndSpecialElection (redirects to /Georgia/elections/11032026GeneralAndSpecialElection): it calls …/api/elections/Georgia/11032026GeneralAndSpecialElection/data and …/closeraces",
+    "curl of /data with relay UA + Origin: 200, 273 contests, asOf 2026-11-10T22:30Z, isOfficialResults false",
+    "curl of the media export named by jurisdiction.mediaExportPath under /cdn/results/: 200, 47.5 MB (more than the brief's 30 MB guideline for one state; fetched once, trimmed to 1 MB on disk)"
+  ]
+}

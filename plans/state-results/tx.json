@@ -1,0 +1,79 @@
+{
+  "code": "tx",
+  "state": "Texas",
+  "office": "Texas Secretary of State",
+  "page": "https://results.texas-election.com/races",
+  "platform": "civix",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every contest of the election in one document: statewide offices (14), federal offices (39: US Senator + 38 US Representatives), district offices (531: 16 State Senator, 150 State Representative, State Board of Education, courts), the statewide header (counties/polling places reporting, last updated), plus lookups and an office summary that also cover county-level offices",
+      "url": "https://goelect.txelections.civixapps.com/api-ivis-system/api/s3/enr/election/53815",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 1648956,
+      "saved_as": "election-53815.json",
+      "notes": "A JSON envelope whose values are BASE64-encoded JSON: {\"Version\":\"enr/53815/117/\", \"Districted\":\"<b64>\", \"Federal\":\"<b64>\", \"Home\":\"<b64>\", \"Lookups\":\"<b64>\", \"OfficeSummary\":\"<b64>\", \"Race\":\"<b64>\", \"StateWide\":\"<b64>\", \"StateWideQ\":\"<b64>\", \"ReportList\":\"<b64>\", \"ElementControl\":\"<b64>\"}. Decode each value separately. 283,007 bytes gzipped. Cache-Control: no-cache, no-store. Home.RefreshTime = 5 (the site's refresh interval, presumably minutes). I saved the decoded sections beside it as election-53815.<Section>.decoded.json; those are derived by base64-decoding, byte for byte, not fetched."
+    },
+    {
+      "what": "list of elections with their ids (by year and type)",
+      "url": "https://goelect.txelections.civixapps.com/api-ivis-system/api/s3/enr/electionConstants",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 2953,
+      "saved_as": "electionConstants.json",
+      "notes": "{\"upload\":\"<b64 JSON>\"}. Decoded: electionInfo[year][typeCode][id] = {ID, N (name), O ('Y'/'N', looks like official), Y, ET, EC ('SW' statewide, 'PS' partial/special)}, plus currentelectionInfo."
+    }
+  ],
+  "election_id": "53815 = '2026 NOVEMBER GENERAL ELECTION' (electionInfo['2026']['GE']['53815']). It is the last path segment of the API URL. The feed's Version string 'enr/53815/117/' looks like an S3 prefix with a publish counter (117).",
+  "discovery": "GET …/api/s3/enr/electionConstants, base64-decode .upload, and pick electionInfo[<year>]['GE'] (general), 'P' (primaries, one id per party), 'RU' (primary runoffs), 'S'/'SR' (specials). Do NOT rely on currentelectionInfo: when fetched it still pointed at 51031 '2025 NOVEMBER 4TH CONSTITUTIONAL AMENDMENT', not the 2026 general.",
+  "cors": "Broken for browsers: the API answers with TWO Access-Control-Allow-Origin headers, 'https://openslate.us' (the request Origin reflected, with Access-Control-Allow-Credentials: true) and '*'. Browsers reject a response with multiple ACAO values, so treat it as needing the relay.",
+  "bot_blocking": "API host goelect.txelections.civixapps.com (Cloudflare): relay User-Agent 200 on both endpoints, no challenge. The human page https://results.texas-election.com/races is different: relay User-Agent gets 403 with a Cloudflare 'Just a moment...' challenge page; a desktop Chrome User-Agent string with curl gets 200 (the Angular shell). The relay only needs the API host.",
+  "updated_field": "Home.LastUpdatedTime = 'Nov 04, 2026 22:48:37' (inside the base64 'Home' section). No zone in the string; presumably US Central (Texas SOS, Austin) - not confirmed. Home.ElecDate = '11032026' (MMDDYYYY).",
+  "reporting_field": "Statewide only, in Home: CountiesReporting {CR: 254, CT: 254}, PollingReporting {PLR: 5303, PLT: 5303} (polling locations reporting / total), PrecinctsReporting {PR: 202, PT: 200} (odd: reporting exceeds total, so do not trust it). Races in StateWide/Federal/Districted carry no per-contest reporting counts, only T (total votes) and per-candidate V (votes), EV (early votes), PE (percent).",
+  "titles": {
+    "governor": "GOVERNOR",
+    "us_senate": "U. S. SENATOR  (note the spaces after the periods and a trailing space in the feed: 'U. S. SENATOR ')",
+    "us_house": [
+      "U. S. REPRESENTATIVE DISTRICT 1",
+      "U. S. REPRESENTATIVE DISTRICT 2",
+      "U. S. REPRESENTATIVE DISTRICT 3"
+    ],
+    "state_upper": [
+      "STATE SENATOR, DISTRICT 1",
+      "STATE SENATOR, DISTRICT 11",
+      "STATE SENATOR, DISTRICT 13"
+    ],
+    "state_lower": [
+      "STATE REPRESENTATIVE DISTRICT 1",
+      "STATE REPRESENTATIVE DISTRICT 2",
+      "STATE REPRESENTATIVE DISTRICT 3"
+    ],
+    "other_statewide": [
+      "LIEUTENANT GOVERNOR",
+      "ATTORNEY GENERAL",
+      "COMPTROLLER OF PUBLIC ACCOUNTS",
+      "COMMISSIONER OF THE GENERAL LAND OFFICE",
+      "COMMISSIONER OF AGRICULTURE",
+      "RAILROAD COMMISSIONER ",
+      "CHIEF JUSTICE, SUPREME COURT",
+      "JUSTICE, SUPREME COURT, PLACE 7",
+      "JUDGE, COURT OF CRIMINAL APPEALS, PLACE 3"
+    ],
+    "measures": []
+  },
+  "choice_format": "Races[].Candidates[]: {\"ID\": 39537, \"N\": \"GREG ABBOTT (I)\", \"P\": \"REP\", \"V\": 4524527, \"PE\": 45.67, \"C\": \"#E30202\", \"O\": 1, \"EV\": 3421415, \"LN\": \"ABBOTT\", \"FN\": \"GREG\"}. Names ALL CAPS; an incumbent has ' (I)' appended to N (LN/FN are clean). P is the party code: REP, DEM, LIB, and 'W' for a declared write-in candidate. V = total votes, EV = early votes (a subset of V), PE = percent (0-100, precision varies by section), O = ballot order. No measures on this ballot: StateWideQ decodes to {\"OffType\":null,\"OffTypeID\":null,\"Races\":[]} (Texas votes on constitutional propositions in odd-year November elections; Lookups.OfficeType has an id 2077 'STATEWIDE PROPOSITIONS' for them).",
+  "district_field": "In the title N, and also as a number: Races[].SO (sub-office) is the district for districted offices ('U. S. REPRESENTATIVE DISTRICT 19' has SO 19, 'STATE REPRESENTATIVE DISTRICT 1' has O 51, SO 1), with O the office code (4 = US Representative, 3 = US Senator, 10 = Governor, 51 = State Representative, 80 = a court). Lookups.Office[] maps ID -> ON (name), OT (office type id), SO, SSO.",
+  "contest_count": 584,
+  "terms": "none found (the API and the Angular shell carry no terms statement; I did not search sos.state.tx.us for a general policy page).",
+  "confidence": "high",
+  "tried": [
+    "GET https://results.texas-election.com/races with relay UA: 403, Cloudflare 'Just a moment...' challenge. With a Chrome UA string: 200, the single-page app shell",
+    "GET https://goelect.txelections.civixapps.com/api-ivis-system/api/s3/enr/electionConstants with relay UA + Origin: 200; decoded list shows 53815 = 2026 NOVEMBER GENERAL ELECTION",
+    "GET …/api/s3/enr/election/53815 with relay UA + Origin: 200, 1.65 MB; base64-decoded all ten sections",
+    "Sanity check of the numbers: GOVERNOR shows GINA HINOJOSA (DEM) 5,230,789 and GREG ABBOTT (I) (REP) 4,524,527 with 254/254 counties; news reports of the 2026-11-03 result agree on the winner, so this is the live election and not test data",
+    "Not explored: per-county endpoints (the site has county pages), the Race and OfficeSummary sections beyond their shape, and whether the 'O' flag in electionConstants means 'official'"
+  ]
+}

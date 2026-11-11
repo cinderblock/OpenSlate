@@ -1,0 +1,85 @@
+{
+  "code": "de",
+  "state": "Delaware",
+  "office": "Delaware Department of Elections (State Election Commissioner)",
+  "page": "https://elections.delaware.gov/results/enr/GE2026.html",
+  "platform": "custom-json",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every contest of the election in one document: a flat array, one row per contest × candidate (124 rows, 77 contests, statewide totals; includes county offices)",
+      "url": "https://elections.delaware.gov/results/enr/Election_StatewideResults_ID_GE2026.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 65002,
+      "saved_as": "Election_StatewideResults_ID_GE2026.json",
+      "notes": "URL = /results/enr/Election_StatewideResults_ID_<ELECTIONID>.json; the page adds a cache-buster ?t=<ms> that is not needed. 65,002 bytes decoded, 6,529 on the wire (gzip). Cache-Control: max-age=180; Last-Modified Tue, 10 Nov 2026 19:16:30 GMT. Keys contain spaces: 'Election Id', 'Election Name', 'Election Date', 'Results Type', 'Total Precincts', 'Precincts Reported', 'Party Id', 'Party Name', 'Contest Sorting Order', 'Contest Title', 'Candidate Id', 'Candidate Name', 'Pos', 'Machine Votes', 'Absentee Votes', 'Early Voting Votes', 'Total Votes', 'Percentage', 'ReportTime'. Vote counts are STRINGS with thousands separators ('240,587'); Percentage is a number. At fetch time 'Results Type' was already 'OFFICIAL RESULTS'."
+    },
+    {
+      "what": "turnout per representative district",
+      "url": "https://elections.delaware.gov/results/enr/Election_VoterTurnout_ID_GE2026.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 8166,
+      "saved_as": "Election_VoterTurnout_ID_GE2026.json",
+      "notes": "[{'Election Id':'GE2026', 'Representative District':'01', 'Ballots Cast':'8,082', 'Reg Voters':'18,925', 'Percentage':42.71}, …]"
+    },
+    {
+      "what": "the page's script, which names the other files of the set",
+      "url": "https://elections.delaware.gov/results/enr/js/results.js",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 20315,
+      "saved_as": "results.js",
+      "notes": "Other files it builds (NOT fetched): /results/enr/Election_ByRepresentativeDistrict_ID_<ID>.json, Election_ByElectionDistrict_ID_<ID>.json, Election_ByCountyWithWilmington_ID_<ID>.json (fields New Castle, Kent, Sussex, Wilmington, Rest of New Castle, State). electionId is taken from the page's file name (GE2026.html → GE2026)."
+    },
+    {
+      "what": "the state's open-data copy of the same statewide table (Socrata), first 20 rows only",
+      "url": "https://data.delaware.gov/resource/4hbv-7brf.csv?electiondate=2026-11-03T00:00:00.000&$limit=20",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "csv",
+      "bytes": 3724,
+      "saved_as": "data.delaware.gov-4hbv-7brf.first20.csv",
+      "notes": "The results page links 'Download CSV Report' → https://data.delaware.gov/resource/4hbv-7brf.csv?electiondate=2026-11-03T00:00:00.000 ; I added $limit=20 to sample it. Columns: office, candidatename, partyname, electiondate, machinevotessum, absenteevotessum, earlyvotessum, totalvotessum, totalvotespercentage, xmlreporttime, electionname. Plain integers (no commas). This one answers Access-Control-Allow-Origin: *, and Socrata also serves .json. It has no precinct-reporting columns, and how soon after the main file it updates is unknown (xmlreporttime matched: 2026-11-10T13:49:42)."
+    }
+  ],
+  "election_id": "GE2026: in the page name (GE2026.html), in the JSON file names (…_ID_GE2026.json) and as 'Election Id' in every row.",
+  "discovery": "No list endpoint found. The id is formulaic (GE + year for a general; the home page also links PR/other elections). https://elections.delaware.gov/index.html links the current results page as /results/enr/<ID>.html; https://elections.delaware.gov/results/index.html is the results index (not fetched). The old address /results/html/index.shtml?electionId=GE2026 now redirects to a 404.",
+  "cors": "none on elections.delaware.gov (no Access-Control-Allow-Origin on the JSON when sent Origin: https://openslate.us). data.delaware.gov answers Access-Control-Allow-Origin: *.",
+  "bot_blocking": "Plain relay User-Agent: 200 on the page, both JSON files, the script and the Socrata CSV. elections.delaware.gov is behind Cloudflare (Server: cloudflare, cf-cache-status MISS), no challenge. Browser User-Agent not needed, not tried.",
+  "updated_field": "'ReportTime' on every row, e.g. '2026-11-10T13:49:42.721-05:00' (ISO 8601 with offset, US Eastern). All 124 rows carried the same value.",
+  "reporting_field": "'Precincts Reported' and 'Total Precincts' on every row, per contest (election districts): U.S. Senator 530 / 530; a State Senator district e.g. 20 / 20.",
+  "titles": {
+    "governor": null,
+    "us_senate": "U.S. Senator",
+    "us_house": ["Representative In Congress"],
+    "state_upper": [
+      "State Senator District 1",
+      "State Senator District 5",
+      "State Senator District 7"
+    ],
+    "state_lower": [
+      "State Representative District 1",
+      "State Representative District 2",
+      "State Representative District 3"
+    ],
+    "other_statewide": ["Attorney General", "Auditor of Accounts", "State Treasurer"],
+    "measures": []
+  },
+  "choice_format": "'Candidate Name' in capitals with 'Party Name' spelled out in its own field: 'CHRIS COONS' / 'Democratic Party'; nicknames in quotes: 'MICHAEL \"DR. MIKE\" KATZ' / 'Republican Party'; also 'Independent Party of Delaware'. 'Party Id' is numeric (9 = Democratic Party). No measures in this election (Delaware has no statewide ballot questions on this ballot), so yes/no format not seen.",
+  "district_field": "Only in the title ('State Senator District 5', 'State Representative District 12'). No separate district field. Delaware has one at-large US House seat, titled 'Representative In Congress'. 'Contest Sorting Order' is an ordering key (200 for U.S. Senator), not a district.",
+  "contest_count": 77,
+  "terms": "none found on the results page",
+  "confidence": "high",
+  "tried": [
+    "GET https://elections.delaware.gov/results/html/index.shtml?electionId=GE2026 (the address used in past years): 301 to index.html?electionId=GE2026, which is 404",
+    "GET https://elections.delaware.gov/index.html: links 'Official Results' → /results/enr/GE2026.html",
+    "Headless Chrome on that page: fetches Election_StatewideResults_ID_GE2026.json and Election_VoterTurnout_ID_GE2026.json",
+    "curl of both JSON files and results.js with relay UA + Origin: 200; U.S. Senator = Coons 240,587, Katz 137,837, 530/530 precincts, OFFICIAL RESULTS, ReportTime 2026-11-10T13:49:42-05:00",
+    "curl of the Socrata CSV the page links, limited to 20 rows: 200, same numbers"
+  ]
+}

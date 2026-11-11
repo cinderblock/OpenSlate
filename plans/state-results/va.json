@@ -1,0 +1,67 @@
+{
+  "code": "va",
+  "state": "Virginia",
+  "office": "Virginia Department of Elections",
+  "page": "https://enr.elections.virginia.gov/results/public/virginia/elections/2026-November-General",
+  "platform": "enhanced-voting",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every state-level and multi-locality contest of the election in one document (32 ballot items: US Senate, 11 US House, 3 constitutional amendment questions, one House of Delegates special, and 16 town/shared local offices), plus 133 locality election stubs with precinct progress, turnout statistics and voter registration",
+      "url": "https://enr.elections.virginia.gov/results/public/api/elections/virginia/2026-November-General/data",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 1968236,
+      "saved_as": "data.json",
+      "notes": "Standard Enhanced Voting shape: …/results/public/api/elections/<slug>/<publicElectionId>/data. slug 'virginia' (jurisdiction.shortName, lower case; 'Virginia' in the elections-list guess 404'd but that path is wrong anyway). 106,836 bytes gzipped. Cache-Control: public, max-age=<60 counting down> (Akamai in front). Text fields are arrays with four languages (en, '1' Spanish, '2' Korean, '5' Vietnamese): pick languageId 'en', not index 0 blindly (en is first here). Contests wholly inside one locality (most local offices) are not in this file; they live in the locality's own election."
+    },
+    {
+      "what": "jurisdiction document with the elections list (32 elections) and the 133 localities",
+      "url": "https://enr.elections.virginia.gov/results/public/api/jurisdictions/virginia",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 122520,
+      "saved_as": "jurisdiction.json",
+      "notes": "I fetched it as …/api/jurisdictions/Virginia (capital V) and got 200 with shortName 'virginia', so the slug is case-insensitive at least here. Elections list is .elections[]."
+    }
+  ],
+  "election_id": "'2026-November-General' (publicElectionId). In the page URL /results/public/virginia/elections/2026-November-General and the API URL /api/elections/virginia/2026-November-General/data. Internal GUID election.id = 01000000-ebdd-00dc-0143-08df1fee4ade.",
+  "discovery": "GET https://enr.elections.virginia.gov/results/public/api/jurisdictions/virginia and read .elections[] (publicElectionId, electionDate, name). Virginia runs many elections a year (specials: '2026-April-21-Special', party primaries as two separate elections '2026-August-Republican-Primary' / '2026-August-Democratic-Primary'), so match on electionDate and name rather than building the id.",
+  "cors": "none on 200 responses (no Access-Control-Allow-Origin; 'cross-origin-resource-policy: same-origin'). The 404 for the wrong list path did carry 'Access-Control-Allow-Origin: *'. Needs the relay.",
+  "bot_blocking": "Relay User-Agent: 200 for jurisdictions and data (Akamai CDN, Server-Timing ak_p; no challenge). Browser User-Agent not needed, not tried. https://enr.elections.virginia.gov/ itself redirects to https://www.elections.virginia.gov/results/ (the department's landing page), also 200.",
+  "updated_field": "election.asOf = '2026-11-10T23:10:33.124623Z' (UTC). Also election.lastUpdated = '2026-11-10T23:09:50.0837474Z', election.publishDate, election.publishVersionId. Repeated per contest in ballotItems[].reportingStatus.asOf. It was republishing roughly every few minutes a week after the election (asOf was under 4 minutes old when fetched).",
+  "reporting_field": "Per contest: ballotItems[].reportingStatus.reportingUnits / .totalUnits where the units are LOCALITIES (counties and independent cities): {\"reportingUnits\": 133, \"totalUnits\": 133} for US Senate, 18/18 for the 1st congressional district. Precinct progress exists only per locality: localityElections[].precinctsReporting (a 0..1 fraction, e.g. 1.0), localityElections[].precinctReportingStatus [{groupName 'Fully Reported', value 8}, {'Partially Reported', …}], and jurisdiction.childLocalities[].percentReporting / precinctsReporting. election.totalVoters = 6513546.0; election.ballotsCast is 0.0 at state level (localities have their own, e.g. 6677.0).",
+  "titles": {
+    "governor": null,
+    "us_senate": "Member, United States Senate",
+    "us_house": [
+      "Member, House of Representatives (1st District)",
+      "Member, House of Representatives (2nd District)",
+      "Member, House of Representatives (3rd District)"
+    ],
+    "state_upper": [],
+    "state_lower": [
+      "Member, House of Delegates (20th District) (a special election; the only legislative contest, since Virginia elects its legislature in odd years)"
+    ],
+    "other_statewide": [],
+    "measures": [
+      "Proposed Constitutional Amendment Question 1",
+      "Proposed Constitutional Amendment Question 2",
+      "Proposed Constitutional Amendment Question 3"
+    ]
+  },
+  "choice_format": "ballotItems[].summaryResults.ballotOptions[]: name [{\"languageId\":\"en\",\"text\":\"Mark R. Warner\"}, …3 more languages], voteCount 2216084, party {abbreviation:\"D\", name:[{\"languageId\":\"en\",\"text\":\"Democratic\"}, …]} (single-letter abbreviations D, R). Nicknames are in straight double quotes inside the name: 'Robert J. \"Rob\" Wittman'. Write-ins are one option 'Write-In' with isWriteIn true and null party. Measures: contestType 'BallotMeasure', options 'Yes' and 'No'. isWinner null throughout.",
+  "district_field": "Only in the title, as an ordinal in parentheses: 'Member, House of Representatives (1st District)', 'Member, House of Delegates (20th District)'. Local items put the place in parentheses the same way ('Mayor - Farmville (Town of Farmville)'). contestGroupId is null for every item; voteFor is the instruction text 'Vote for only one'.",
+  "contest_count": 32,
+  "terms": "none found on the results site or in the API. I did not search elections.virginia.gov for a general terms page.",
+  "confidence": "high",
+  "tried": [
+    "GET …/results/public/api/elections/Virginia (the list path in the brief): 404",
+    "GET https://enr.elections.virginia.gov/ : redirects to https://www.elections.virginia.gov/results/ (HTML landing page)",
+    "GET …/results/public/api/jurisdictions/Virginia (path learned from Washington's site): 200, 32 elections, shortName 'virginia'",
+    "GET …/api/elections/virginia/2026-November-General/data with relay UA + Origin: 200, real numbers (US Senate: Mark R. Warner 2,216,084, Bert Mizusawa 1,385,698)",
+    "Not fetched: the CSV reports named in election.publicReportCategories ('EnrAbsenteeRawCSV_….csv', 'Election Turnout_….csv'); their download URL was not worked out. Not fetched: any locality's own /data document"
+  ]
+}

@@ -105,6 +105,20 @@ export const PROVIDERS: Record<string, ProviderInfo> = {
     privacyNote:
       "Clarity counties' feeds (Santa Clara, Contra Costa, Marin, Sonoma, Ventura) allow browser-direct access; the livevoterturnout.com counties' (San Diego, Orange, Riverside, San Bernardino, San Mateo, Solano), Los Angeles', Sacramento's, Alameda's and San Joaquin's (read from their results pages) don't, so those always go through our backend. Through it, a crowd of browsers costs a county one request a minute, and the county sees us instead of you.",
   },
+  "state-feeds": {
+    key: "state-feeds",
+    name: "Other states' election offices",
+    homepage: "https://www.usa.gov/state-election-office",
+    canDirect: true,
+    // As for California's counties: through the relay a crowd costs a state
+    // one request a minute. Never switched to direct on failure.
+    defaultMode: configured("VITE_STATE_FEEDS_BASE", "VITE_API_BASE") ? "proxy" : "direct",
+    // Shown in Settings; each state's own feed root is in @openslate/core/stateResults.
+    directUrl: "https://results.enr.clarityelections.com",
+    proxyUrl: envBase("VITE_STATE_FEEDS_BASE", `${apiBase()}/api/state`),
+    privacyNote:
+      "A few states' results sites allow browser-direct access (Colorado, Iowa, Rhode Island, South Carolina, West Virginia); most don't, so those always go through our backend. Through it, a crowd of browsers costs a state one request a minute, and the state sees us instead of you.",
+  },
   votehub: {
     key: "votehub",
     name: "VoteHub",

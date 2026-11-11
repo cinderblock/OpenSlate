@@ -1,0 +1,84 @@
+{
+  "code": "la",
+  "state": "Louisiana",
+  "office": "Louisiana Secretary of State",
+  "page": "https://voterportal.sos.la.gov/graphical",
+  "platform": "custom-json",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "the vote counts for every multi-parish contest of the election (federal, statewide, amendments, multi-parish districts), one document",
+      "url": "https://voterportal.sos.la.gov/ElectionResults/ElectionResults/Data?blob=20261103/Votes_Multiparish.htm",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 32769,
+      "saved_as": "Votes_Multiparish.json",
+      "notes": "The URL is a fixed endpoint with a 'blob' query parameter: <YYYYMMDD of the election>/<name>.htm. Despite '.htm' the answer is application/json. Counts only: Races.Race[] with ID, PrecinctsReporting, PrecinctsExpected, NumAbsenteeReporting, NumAbsenteeExpected, VoterCountQualified, and Choice[] with ID, VoteTotal, Outcome. Every number is a string. It must be joined by race ID and choice ID to RacesCandidates_Multiparish for titles and names. Cache-Control: public, max-age=0; Configuration.htm says RefreshTimerInterval = 120 (seconds)."
+    },
+    {
+      "what": "titles and choices for the same contests (the static half of the pair)",
+      "url": "https://voterportal.sos.la.gov/ElectionResults/ElectionResults/Data?blob=20261103/RacesCandidates_Multiparish.htm",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 51488,
+      "saved_as": "RacesCandidates_Multiparish.json",
+      "notes": "Races.WriteTime, Races.Race[] with ID, SpecificTitle, GeneralTitle, OfficeLevel, IsMultiParish, NumberToBeElected, SummaryText, FullText, IsClosedParty, CanHaveRunoff, Choice[] {ID, Desc, Color}. 97 races. OfficeLevel codes seen: 140 U.S. Senator, 145 U.S. Representative, 160 Public Service Commission, 165 BESE, 205 State Representative, 210 District Judge, 215 District Attorney, 250 city court, 300 Mayor, 310 council, 998 Constitutional Amendment."
+    },
+    {
+      "what": "list of every election the site holds, and which is the default",
+      "url": "https://voterportal.sos.la.gov/ElectionResults/ElectionResults/Data?blob=ElectionDates.htm",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 91491,
+      "saved_as": "ElectionDates.json",
+      "notes": "Dates.DefaultElectionDate = '11/03/2026'; Dates.Date[] (319 elections back to 09/11/1982) with PKElectionID ('344' for this one), ElectionDate, ResultsOfficial ('0')."
+    },
+    {
+      "what": "site configuration",
+      "url": "https://voterportal.sos.la.gov/ElectionResults/ElectionResults/Data?blob=Configuration.htm",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 436,
+      "saved_as": "Configuration.json",
+      "notes": "IsLive 'True', RefreshTimerInterval '120'. Also saved: ElectionMode.json ({\"ElectionMode\":null}) and CurrentVersion.json ({\"Current\":null})."
+    }
+  ],
+  "election_id": "The election date as YYYYMMDD, '20261103', is the folder inside the blob parameter (blob=20261103/Votes_Multiparish.htm). The site's numeric id (PKElectionID 344) is not used in these URLs.",
+  "discovery": "GET …/Data?blob=ElectionDates.htm: Dates.DefaultElectionDate, or the Date[] entry for the day wanted; rewrite MM/DD/YYYY as YYYYMMDD. Other blobs named in the site's script (/bundles/graphicalresults), not fetched: <date>/ElectionRaces.htm, <date>/ParishesInElection.htm, <date>/RacesCandidates/ByParish_<parish>.htm and <date>/VotesParish/Votes_<parish>.htm (contests inside one parish, and per-parish counts), <date>/StatsRace/Stats_<race>.htm.",
+  "cors": "none",
+  "bot_blocking": "Relay User-Agent: 200 on the page, the script bundle and every data blob (IIS behind an AWS load balancer, no challenge). Browser User-Agent not needed, not tried. Headless Chrome also loaded the page normally.",
+  "updated_field": "RacesCandidates_Multiparish: Races.WriteTime = '2026-11-10T05:00:11.470', no zone (Louisiana is on US Central time; not confirmed from the data). Votes_Multiparish has Races.VersionDateTime but it was the placeholder '1900-01-01T00:00:00', and the HTTP Last-Modified is just the request time, so the vote file itself carries no usable update time; compare content instead.",
+  "reporting_field": "Votes_Multiparish per race: PrecinctsReporting / PrecinctsExpected ('3722' / '3722' for U. S. Senator), plus NumAbsenteeReporting / NumAbsenteeExpected ('64' / '64', the parishes' early and absentee counts).",
+  "titles": {
+    "governor": null,
+    "us_senate": "U. S. Senator",
+    "us_house": [
+      "U. S. Representative -- 1st Congressional District",
+      "U. S. Representative -- 2nd Congressional District",
+      "U. S. Representative -- 6th Congressional District"
+    ],
+    "state_upper": [],
+    "state_lower": ["State Representative --  92nd Representative District"],
+    "other_statewide": ["PSC -- District 1", "PSC -- District 5", "BESE -- District 1"],
+    "measures": [
+      "CA No.  1 (ACT No. 39, 2026-RS - SB 180) -- Allows a one-time transfer of a property tax exemption for surviving spouse of a disabled veteran",
+      "CA No.  2 (ACT No. 273, 2026-RS - HB 521) -- Allows taxing authority to continue lower millage rate without losing ability to adjust to max rate"
+    ]
+  },
+  "choice_format": "Name with the party in brackets at the end, in Choice[].Desc: 'Julia Letlow (REP)', '\"Jamie\" Davis (DEM)', 'E. \"Liddy\" Glass (NOPTY)', 'Lisa Ballay (LBT)'. Nicknames are in double quotes inside the name. Amendments have two choices, {\"ID\":\"3\",\"Desc\":\"YES\"} and {\"ID\":\"4\",\"Desc\":\"NO\"} (the same ids 3 and 4 on every amendment), with the short name in SummaryText ('Amendment No. 1') and the ballot question in FullText. Outcome in the votes file is 'Elected', 'Defeated', 'Runoff', 'Approved' or null.",
+  "district_field": "Only in the title, after ' -- ', as an ordinal ('1st Congressional District', ' 92nd Representative District'; note the double spaces used for alignment in 'CA No.  1' and '--  92nd'). GeneralTitle is the office without the district ('U.S. Representative') and OfficeLevel is a numeric office code.",
+  "contest_count": 97,
+  "terms": "none found",
+  "confidence": "high",
+  "tried": [
+    "GET https://voterportal.sos.la.gov/graphical (relay User-Agent): 200, an AngularJS page.",
+    "Headless Chrome on that page: it requests …/ElectionResults/ElectionResults/Data?blob= Configuration.htm, ElectionDates.htm, ElectionMode.htm, 20261103/RacesCandidates_Multiparish.htm and 20261103/Votes_Multiparish.htm.",
+    "Fetched all five with the relay User-Agent and Origin: https://openslate.us: 200, application/json, no Access-Control-Allow-Origin.",
+    "Read /bundles/graphicalresults for the other blob names (listed under discovery).",
+    "GET …/Data?blob=20261103/CurrentVersion.htm: 404. GET …/Data?blob=CurrentVersion.htm: 200, {\"Current\":null}."
+  ]
+}

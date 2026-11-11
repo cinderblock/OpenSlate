@@ -1,0 +1,49 @@
+{
+  "code": "ky",
+  "state": "Kentucky",
+  "office": "Kentucky State Board of Elections",
+  "page": "https://vrsws.sos.ky.gov/liveresults/",
+  "platform": "custom-xml",
+  "status": "blocked",
+  "feeds": [
+    {
+      "what": "the live results site itself; refused, nothing but the refusal page was fetched",
+      "url": "https://vrsws.sos.ky.gov/liveresults/",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 2469,
+      "saved_as": "liveresults.relay-403.html (the 403 body) with liveresults.relay-403.html.headers.txt; liveresults.chrome-403.headers.txt for the browser User-Agent try",
+      "notes": "Akamai answers 403 with a page titled 'KY SBE Acceptable Use Policy'. Not a results feed. Kept as a fixture of what a refusal looks like."
+    }
+  ],
+  "election_id": "Not fetched. A search engine's index lists a page titled '2026 General Election Election' at https://vrsws.sos.ky.gov/liveresults/?id=14 next to pages ?id=21, 43, 58, 61, 63, 75, 107, 122; whether 'id' there is an election or a county was not confirmed.",
+  "discovery": "Not established. The State Board of Elections home page (https://elect.ky.gov/Pages/default.aspx) links to https://vrsws.sos.ky.gov/liveresults/. Secondhand and unverified, from a search engine's summary of a document on the same host that I could not open (https://vrsws.sos.ky.gov/liveresults/Areas/Data/Documentation/Data Website Guide.pdf, 'Data Website Guide'): the office documents a media data site at https://vrsws.sos.ky.gov/liveresults/data serving XML files (elections, political parties, geopolitical units, and 'Current Results' with a CandidateDataList of total and election-day votes, 'updated every two minutes'). My one request to https://vrsws.sos.ky.gov/liveresults/data returned 404 with the body 'Reference ID: …' and the guide itself returned 403, so the real file URLs are unknown.",
+  "cors": "unknown (never got past the 403)",
+  "bot_blocking": "Refused both ways. Relay User-Agent: 403. curl with a desktop Chrome User-Agent: 403, same page. WebFetch of the guide PDF: 403. Server is Akamai (header Akamai-GRN). The body says: 'The Kentucky State Board of Elections firewall system has identified website scraping (\"bot\") activity originating from your IP address. For security and website stability reasons we strictly limit this type of activity. If you believe you have received this page in error, please contact us using this form: Contact Us. Please include this reference ID…'. I did not try headless Chrome against it: the office states the limit is deliberate, so going around it is not my call.",
+  "updated_field": "unknown",
+  "reporting_field": "unknown",
+  "titles": {
+    "governor": null,
+    "us_senate": null,
+    "us_house": [],
+    "state_upper": [],
+    "state_lower": [],
+    "other_statewide": [],
+    "measures": []
+  },
+  "choice_format": "unknown (no results document was fetched; titles above are empty for that reason, not because the contests are absent: Kentucky did have a US Senate race and six US House races in 2026)",
+  "district_field": "unknown",
+  "contest_count": 0,
+  "terms": "The 403 page is itself an 'Acceptable Use Policy' notice (quoted under bot_blocking), served from https://vrsws.sos.ky.gov/liveresults/. It names 'website scraping (\"bot\") activity' as strictly limited and points to https://elect.ky.gov/About-Us/Pages/Contact-Us.aspx. No fuller policy text was found.",
+  "confidence": "low",
+  "tried": [
+    "GET https://elect.ky.gov/results/Pages/default.aspx and /results/2020-2029/Pages/2026.aspx (relay User-Agent): 200; they hold certified results only (the 2026 page has the primary certification PDF, nothing for November).",
+    "GET https://elect.ky.gov/Pages/default.aspx: 200; it links the live site https://vrsws.sos.ky.gov/liveresults/.",
+    "GET https://vrsws.sos.ky.gov/liveresults/ with the relay User-Agent and Origin: 403 'KY SBE Acceptable Use Policy' (Akamai).",
+    "Same URL with a desktop Chrome User-Agent through curl: 403, same page.",
+    "Web search for the site's data URLs: found the indexed 'Data Website Guide' PDF and the /liveresults/data address (described under discovery).",
+    "GET the guide PDF with the relay User-Agent: 403. GET https://vrsws.sos.ky.gov/liveresults/data: 404. WebFetch of the guide PDF: 403.",
+    "Stopped there: no headless browser, no further paths guessed."
+  ]
+}

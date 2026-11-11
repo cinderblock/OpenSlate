@@ -1,0 +1,88 @@
+{
+  "code": "id",
+  "state": "Idaho",
+  "office": "Idaho Secretary of State",
+  "page": "https://results.voteidaho.gov/results/public/id/elections/nov2026",
+  "platform": "enhanced-voting",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every contest of the election in one document (statewide totals, 145 contests), the Enhanced Voting data endpoint the page itself reads",
+      "url": "https://results.voteidaho.gov/results/public/api/elections/id/nov2026/data",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 523187,
+      "saved_as": "data.json",
+      "notes": "Standard Enhanced Voting shape: …/results/public/api/elections/<slug>/<publicElectionId>/data with slug 'id' and publicElectionId 'nov2026'. Top-level keys: jurisdiction, election, localityElections (44 counties), ballotItems (145), precincts, pollingPlaces, statistics, voterRegistration, voterTurnout, ballotItemWithBreakdown. 523,187 bytes uncompressed (34,144 gzip). Cache-Control: public, max-age=60. No CORS header on this endpoint (and cross-origin-resource-policy: same-origin)."
+    },
+    {
+      "what": "the media export: every contest with county and precinct breakdowns, one file",
+      "url": "https://results.voteidaho.gov/cdn/results/id/export-nov2026.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 8233693,
+      "saved_as": "export-nov2026.first1MB.json (first 1 MB) and export-nov2026.sample.json (six contests cut out verbatim: US Senator, Governor, US Representative District 1, State Senator District 1, State Representative District 1 Seat A, HJR 4)",
+      "notes": "8,233,693 bytes, served as application/octet-stream with access-control-allow-origin: * and a real Last-Modified. The path comes from data.json: jurisdiction.mediaExportPath = 'id/export-nov2026.json', appended to https://results.voteidaho.gov/cdn/results/. Shape: {electionDate, electionName, createdAt, results:{id,name,ballotItems[145],reportingStatuses}, localResults[]}. Simpler than /data: contest 'name' and option 'name' are plain strings, 'politicalParty' is a plain string, contests have short ids ('ussen', 'usrep1'). The statewide part is in the first ~100 KB, but the file has to be downloaded whole."
+    },
+    {
+      "what": "the list of elections for the state (and the 44 county sub-sites)",
+      "url": "https://results.voteidaho.gov/results/public/api/jurisdictions/id",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 32250,
+      "saved_as": "jurisdiction.json",
+      "notes": "elections[] has publicElectionId, electionDate, name. On 2026-11-10: nov2026, may2026, dec2025, nov2025."
+    }
+  ],
+  "election_id": "'nov2026' (the site's publicElectionId), with jurisdiction slug 'id'. It appears in the page URL (/results/public/id/elections/nov2026), the data URL (/api/elections/id/nov2026/data) and the export name (export-nov2026.json).",
+  "discovery": "GET https://results.voteidaho.gov/results/public/api/jurisdictions/id and read elections[] (publicElectionId + electionDate); pick the entry for the date. Note that the path OpenSlate may expect, …/results/public/api/elections/id (elections list), answers 404 here; the list is under /api/jurisdictions/<slug>.",
+  "cors": "none on /results/public/api/… (data and jurisdictions); '*' on the media export at /cdn/results/id/export-nov2026.json",
+  "bot_blocking": "Relay User-Agent: 200 on everything (Cloudflare in front of Azure Front Door, no challenge). Browser User-Agent not needed, not tried. One trap on this machine only: Git Bash's curl 8.8.0 (Schannel) fails on this host with 'curl: (43) A libcurl function was given a bad argument' during TLS renegotiation; Windows' own curl 8.22 and headless Chrome work.",
+  "updated_field": "data.json: election.asOf = '2026-11-09T18:48:10.2302686Z' (UTC, ISO 8601 with Z); also election.lastUpdated '2026-11-09T18:31:57.4205767Z' and publishDate. Each contest repeats it at ballotItems[].reportingStatus.asOf. Export: createdAt = '2026-11-09T18:48:12.1268162Z'. election.isOfficialResults = false.",
+  "reporting_field": "Per contest: ballotItems[].reportingStatus.reportingUnits / totalUnits, where the units are counties (US Senator 44/44, US Representative District 1 19/19, State Senator District 1 2/2). Per county: localityElections[].precinctReportingStatus[] with groupName 'Fully Reported' / 'Partially Reported' / … and a precinct count in 'value' (Ada County: Fully Reported 197), plus jurisdiction.childLocalities[].percentReporting (1.0). In the export, precinctsParticipating and precinctsReporting are null at state level.",
+  "titles": {
+    "governor": "Governor",
+    "us_senate": "United States Senator",
+    "us_house": [
+      "United States Representative District 1",
+      "United States Representative District 2"
+    ],
+    "state_upper": [
+      "State Senator District 1",
+      "State Senator District 2",
+      "State Senator District 35"
+    ],
+    "state_lower": [
+      "State Representative District 1 Seat A",
+      "State Representative District 1 Seat B",
+      "State Representative District 35 Seat B"
+    ],
+    "other_statewide": [
+      "Lieutenant Governor",
+      "Secretary of State",
+      "State Controller",
+      "State Treasurer",
+      "Attorney General",
+      "Superintendent of Public Instruction"
+    ],
+    "measures": [
+      "Idaho Constitutional Amendment: House Joint Resolution 4",
+      "Proposition 1: Reproductive Freedom & Privacy Act"
+    ]
+  },
+  "choice_format": "data.json: name is a language list and party an object, e.g. {\"nativeId\":\"JimRisch-1-Republican\",\"name\":[{\"languageId\":\"en\",\"text\":\"Jim Risch\"}],\"voteCount\":401751,\"party\":{\"name\":[{\"languageId\":\"en\",\"text\":\"Republican\"}],\"abbreviation\":\"REP\"}}. Export: {\"id\":\"JimRisch-1-Republican\",\"name\":\"Jim Risch\",\"voteCount\":401751,\"politicalParty\":\"Republican\"}. Measures have contestType 'BallotMeasure' and options named 'YES' and 'NO' (nativeId 'InFavor-1-' and 'Against-2-'; in data.json their 'party' object is named 'Yes' / 'No'); the question text is in 'referendum' as HTML and 'voteFor' holds the threshold ('Requires 50% + 1 vote to pass').",
+  "district_field": "Only in the title ('State Senator District 1', 'State Representative District 1 Seat A': Idaho house districts have two seats, A and B, each its own contest). No separate district field. The export's short contest id encodes it for Congress ('usrep1'). contestGroupId maps to election.contestGroups[] headings: Federal, Statewide, State Legislature, State Measures, Judicial, Local Districts, Local Measures.",
+  "contest_count": 145,
+  "terms": "none found (the Enhanced Voting page has no terms link; jurisdiction.footerLinkText and footerLinkUrl are null)",
+  "confidence": "high",
+  "tried": [
+    "GET https://results.voteidaho.gov/ : 307 to /results/public/id, an Enhanced Voting single-page app.",
+    "GET https://results.voteidaho.gov/results/public/api/elections/id (the elections list path used on other Enhanced Voting sites): 404.",
+    "Headless Chrome on /results/public/id: the page calls /results/public/api/jurisdictions/id, whose elections[] names 'nov2026'.",
+    "GET /results/public/api/elections/id/nov2026/data with the relay User-Agent and Origin: 200, JSON, real numbers, no CORS header.",
+    "Found jurisdiction.mediaExportPath in that document and fetched https://results.voteidaho.gov/cdn/results/id/export-nov2026.json: 200, 8.2 MB, CORS *."
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "code": "wy",
+  "state": "Wyoming",
+  "office": "Wyoming Secretary of State, Election Division",
+  "page": "https://sos.wyo.gov/Elections/Docs/2026/2026GeneralResults.aspx",
+  "platform": "other:static-pdf-and-xlsx-documents",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "zip of three Excel workbooks with the whole election: statewide summaries by county (statewide candidates, State Senate, State House, judicial retentions, ballot proposition, total ballots cast) and precinct-by-precinct results",
+      "url": "https://sos.wyo.gov/Elections/Docs/2026/Results/General/2026_Wyoming_General_Results.zip",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "other: zip of .xlsx (no json/xml/csv is published)",
+      "bytes": 647239,
+      "saved_as": "2026_Wyoming_General_Results.zip",
+      "notes": "This is a document download, NOT a live feed. Last-Modified: Mon, 09 Nov 2026 22:52:35 GMT. Members: '2026 General Results Summaries - OFFICIAL.xlsx' (1,068,257 bytes; sheets 'Statewide Total Ballots Cast', 'Statewide Candidates', 'Statewide Senate Odd', 'Statewide House', 'Statewide Judicial', 'Statewide Ballot Issue'), '2026 County General PbP - OFFICIAL.xlsx', '2026 County General PbP TBC - OFFICIAL.xlsx'. Each summary sheet is a wide human layout: row 1 a title, a row of office names in merged cells, a row of choice headers ('Harriet\\nHageman (R)', 'Write-Ins', 'Overvotes', 'Undervotes'), then one row per county; a '-' means the county is not in that district. Statewide totals must be summed (or read from a totals row I did not look for). The files already say OFFICIAL: the page is headed '2026 Official General Election Results'. I do not know whether the same URLs carried unofficial numbers on election night, nor how often they were replaced."
+    },
+    {
+      "what": "Statewide Candidates Summary as PDF (US Senator, US Representative, Governor, Secretary of State, State Auditor, State Treasurer, Superintendent of Public Instruction, by county)",
+      "url": "https://sos.wyo.gov/Elections/Docs/2026/Results/General/2026_General_Statewide_Candidates_Summary.pdf",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "other: pdf",
+      "bytes": 130447,
+      "saved_as": "2026_General_Statewide_Candidates_Summary.pdf",
+      "notes": "Last-Modified: Sat, 07 Nov 2026 17:44:56 GMT. Sibling PDFs linked from the page: 2026_General_Statewide_Senate_Candidates_Summary.pdf, 2026_General_Statewide_House_Candidates_Summary.pdf, 2026_General_Statewide_Judicial_Summary.pdf, 2026_General_Statewide_Ballot_Proposition_Summary.pdf, 2026_General_Statewide_Total_Ballots_Cast_Summary.pdf, 2026_General_Statewide_Provisional_Ballot_Summary.pdf, 2026_Wyoming_General_Election_Results.pdf (everything), and per county 2026_<County>_County_General_PbP.pdf / …_PbP_TBC.pdf (not fetched)."
+    },
+    {
+      "what": "the results page itself (index of the documents)",
+      "url": "https://sos.wyo.gov/Elections/Docs/2026/2026GeneralResults.aspx",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 54408,
+      "saved_as": "2026GeneralResults.html",
+      "notes": "Says: 'All summaries include the races for all statewide and legislative contests, judicial retentions, and ballot issues as well as Write-Ins, Undervotes, and Overvotes for each race.' and that local and county results are on each county's website."
+    }
+  ],
+  "election_id": "none as such: the year and election type are in the path, /Elections/Docs/2026/2026GeneralResults.aspx and /Elections/Docs/2026/Results/General/2026_…",
+  "discovery": "https://sos.wyo.gov/Elections/ElectionResults.aspx lists each year's pages ('Primary Election' -> /Elections/Docs/2026/2026PrimaryResults.aspx, 'General Election' -> /Elections/Docs/2026/2026GeneralResults.aspx). The 2024 page followed the same pattern (/Elections/Docs/2024/2024GeneralResults.aspx), so /Elections/Docs/<year>/<year>GeneralResults.aspx is a fair guess for future years; file names inside are hand-made, so read the links from the page.",
+  "cors": "none (no Access-Control-Allow-Origin on the page or the files)",
+  "bot_blocking": "Relay User-Agent: 200 on the page, the zip and the PDF. An F5 BIG-IP style cookie (TS01d52b4c) is set but nothing was challenged. Browser User-Agent not needed, not tried.",
+  "updated_field": "none in the data. Only the HTTP Last-Modified header of each file (zip: Mon, 09 Nov 2026 22:52:35 GMT; candidates summary PDF: Sat, 07 Nov 2026 17:44:56 GMT) and the zip members' internal timestamps (2026-11-09 15:51 local).",
+  "reporting_field": "none: the documents give no precincts-reporting or counties-reporting figure (they are complete canvass summaries, one row per county for all 23 counties).",
+  "titles": {
+    "governor": "Governor",
+    "us_senate": "United States Senator",
+    "us_house": ["United States Representative (at-large; Wyoming has one seat)"],
+    "state_upper": ["Senate District 1", "Senate District 3", "Senate District 5"],
+    "state_lower": ["House District 1", "House District 2", "House District 3"],
+    "other_statewide": [
+      "Secretary of State",
+      "State Auditor",
+      "State Treasurer",
+      "Superintendent of Public Instruction",
+      "Supreme Court Justice, Wyoming Supreme Court\\nBridget Hill (judicial retention; office and judge's name in one cell, separated by a line break)"
+    ],
+    "measures": ["Statewide Ballot Proposition\\nProposed Initiative Proposition Number One"]
+  },
+  "choice_format": "A column header cell per choice with the first name, a line break, then surname and party letter in parentheses: 'Harriet\\nHageman (R)', 'James\\nByrd (D)', 'Shawn\\nJohnson (L)', 'Jeffrey\\nHaggit (C)'; then columns 'Write-Ins', 'Overvotes', 'Undervotes' for each office. Judicial retentions use 'Yes' / 'No'; the ballot proposition uses 'For' / 'Against'.",
+  "district_field": "Only in the office header text ('Senate District 1', 'House District 12'); no separate field. The senate sheet is named 'Statewide Senate Odd' (odd-numbered districts plus any others up this year, e.g. 'Senate District 6' appears).",
+  "contest_count": 0,
+  "terms": "none found on the results page. The footer reads '© 2025 Wyoming Secretary of State's Office. All Rights Reserved.' and links a state Privacy Policy at https://sites.google.com/a/wyo.gov/wy-ag/privacy (not read).",
+  "confidence": "medium",
+  "tried": [
+    "WebSearch found only the 2024 page https://sos.wyo.gov/Elections/Docs/2024/2024GeneralResults.aspx; guessed the 2026 equivalent",
+    "GET https://sos.wyo.gov/Elections/Docs/2026/2026GeneralResults.aspx with relay UA: 200, '2026 Official General Election Results', links only to PDFs and one zip",
+    "GET https://sos.wyo.gov/Elections/ElectionResults.aspx: confirms that page is the one linked for the 2026 General; no link to any live or election-night results application",
+    "GET the zip (647,239 bytes) and the Statewide Candidates Summary PDF: 200; opened the summaries workbook and read sheet names and the first rows of each sheet (real numbers, e.g. Albany County: Harriet Hageman (R) 5,450, James Byrd (D) 7,678)",
+    "contest_count is 0 because I did not count the columns of the workbook; it holds 7 statewide offices, the State Senate and State House districts up this year, judicial retentions and 1 ballot proposition",
+    "Not determined: whether Wyoming showed unofficial numbers on election night at these same URLs or anywhere else on sos.wyo.gov. If the app needs election-night Wyoming numbers, that has to be checked on an election night"
+  ]
+}

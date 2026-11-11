@@ -1,0 +1,36 @@
+{
+  "code": "me",
+  "state": "Maine",
+  "office": "Maine Department of the Secretary of State, Bureau of Corporations, Elections and Commissions",
+  "page": "https://www.maine.gov/sos/elections-voting/election-results-data",
+  "platform": "none",
+  "status": "none",
+  "feeds": [],
+  "election_id": "not applicable",
+  "discovery": "Nothing live to discover. Official tabulations are posted on https://www.maine.gov/sos/elections-voting/election-results-data as Excel and PDF files about three weeks after the election (file names are free-form, under /sos/sites/maine.gov.sos/files/inline-files/). Earlier years are under /sos/elections-voting/election-results-data/previous-election-results. Ranked-choice contests also get cast-vote-record exports there.",
+  "cors": "none (no feed)",
+  "bot_blocking": "www.maine.gov (Amazon CloudFront) refuses the relay User-Agent: 403 'ERROR: The request could not be satisfied … Request blocked.' on https://www.maine.gov/sos/cec/elec/results/index.html. The same URL with a desktop Chrome User-Agent through curl: 301 to /sos/elections-voting/election-results-data, then 200. So even the post-certification files would need a browser User-Agent.",
+  "updated_field": "none",
+  "reporting_field": "none",
+  "titles": {
+    "governor": null,
+    "us_senate": null,
+    "us_house": [],
+    "state_upper": [],
+    "state_lower": [],
+    "other_statewide": [],
+    "measures": []
+  },
+  "choice_format": "No live feed. (Titles above are empty for that reason; Maine did elect a governor, a US senator and two US representatives in 2026.)",
+  "district_field": "not applicable",
+  "contest_count": 0,
+  "terms": "none found",
+  "confidence": "medium",
+  "tried": [
+    "GET https://www.maine.gov/sos/cec/elec/results/index.html (the old results address) with the relay User-Agent: CloudFront 403 'Request blocked'.",
+    "Same URL with a desktop Chrome User-Agent: redirected to https://www.maine.gov/sos/elections-voting/election-results-data, 200.",
+    "Read that page (saved as results-index.chrome.html): on 2026-11-10 its '2026 Elections' section holds only the June 9, 2026 primary (candidate lists, ranked-choice summary reports, cast vote record spreadsheets). The strings 'November 3, 2026', 'unofficial' and 'election night' do not appear anywhere in its main content.",
+    "Web search for a state election-night page: none. News reports describe towns reporting to the Secretary of State after election day and the state posting results when it certifies to the governor, about 20 days after the election; election-night numbers in Maine come from municipal clerks and the press.",
+    "Did not find a sentence on maine.gov that states this policy outright, hence medium confidence."
+  ]
+}

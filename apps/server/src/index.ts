@@ -10,6 +10,7 @@ import {
 import { handleCountyCa } from "@openslate/poll-cache/countyCa";
 import { GEOCODE_PATH, handleGeocode } from "@openslate/poll-cache/geocode";
 import { handleSosCa } from "@openslate/poll-cache/sosCa";
+import { handleStateFeed } from "@openslate/poll-cache/stateFeeds";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createForecastsSource, type ForecastsProxySource } from "./forecasts";
@@ -75,6 +76,10 @@ app.get("/api/sos-ca/returns/*", (c) => handleSosCa(c.req.path, {}));
 // Counties' own election-night feeds (apps/poll-cache/src/countyCa.ts): only
 // the counties and files @openslate/core/countyResults lists, cached and shared.
 app.get("/api/county-ca/*", (c) => handleCountyCa(c.req.path, {}));
+
+// Other states' own results feeds (apps/poll-cache/src/stateFeeds.ts): only the
+// states and files @openslate/core/stateResults lists, cached and shared.
+app.get("/api/state/*", (c) => handleStateFeed(c.req.path, {}));
 
 // Address → districts via the Census geocoder, the same relay the public
 // worker runs (apps/poll-cache/src/geocode.ts): opt-in in the web app, the

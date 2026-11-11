@@ -9,7 +9,8 @@
     "./civic": "./src/civic.ts",
     "./countyCa": "./src/countyCa.ts",
     "./geocode": "./src/geocode.ts",
-    "./sosCa": "./src/sosCa.ts"
+    "./sosCa": "./src/sosCa.ts",
+    "./stateFeeds": "./src/stateFeeds.ts"
   },
   "scripts": {
     "dev": "wrangler dev",

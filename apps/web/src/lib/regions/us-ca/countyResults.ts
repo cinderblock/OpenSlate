@@ -17,8 +17,9 @@ import {
   type Subject,
   samePerson,
 } from "@openslate/core";
+import { feedContestResult } from "../../feedContest";
 import { type Area, parseJurisdiction } from "../../jurisdictions";
-import { type ContestResult, LIVE_REFRESH_MS, measureThreshold } from "../../liveCount";
+import { type ContestResult, LIVE_REFRESH_MS } from "../../liveCount";
 import { liveRefetchInterval, noteAnswer, withVersion } from "../../liveFeed";
 import { regionPathOf } from "../../regions";
 import { getRoutingMode, PROVIDERS } from "../../routing";
@@ -95,74 +96,17 @@ export interface CountyResults {
 
 // ---- To the Live page's shape ------------------------------------------------
 
-const timeFmt = new Intl.DateTimeFormat("en-US", {
-  hour: "numeric",
-  minute: "2-digit",
-  timeZoneName: "short",
-});
-
 /**
- * A county contest in the Live page's shape. `updated` is the county's own
- * time for the count; without one, `seenAt` (when OpenSlate first read it)
- * stands in, marked as such.
+ * A county contest in the Live page's shape (`feedContestResult`). `updated`
+ * is the county's own time for the count; without one, `seenAt` (when
+ * OpenSlate first read it) stands in, marked as such.
  */
 export function countyContestResult(
   c: CountyContest,
   updated?: number,
   seenAt?: number,
 ): ContestResult {
-  const changed = updated
-    ? { changedAt: updated }
-    : seenAt
-      ? { changedAt: seenAt, changedSeen: true }
-      : {};
-  const p = c.precincts;
-  // Mail ballots are counted before any precinct "reports": "0% of precincts"
-  // beside thousands of votes would mislead, so precincts show once one reports.
-  const precincts = p && p.total > 0 && p.reporting > 0 ? p : undefined;
-  const percent = precincts
-    ? Math.round((precincts.reporting / precincts.total) * 1000) / 10
-    : undefined;
-  const reporting = {
-    text: precincts ? `${precincts.reporting} of ${precincts.total} precincts reporting` : "",
-    ...(percent !== undefined ? { percent } : {}),
-    ...(updated ? { time: timeFmt.format(updated) } : {}),
-    ...changed,
-  };
-  if (c.measure) {
-    const threshold = c.threshold ?? measureThreshold(c.title);
-    const yes = c.choices.find((x) => /yes/i.test(x.name));
-    const no = c.choices.find((x) => /no/i.test(x.name));
-    return {
-      kind: "measure",
-      title: c.title,
-      reporting,
-      measure: {
-        number: "",
-        // The card's heading already says it.
-        name: "",
-        yes: yes?.votes ?? 0,
-        no: no?.votes ?? 0,
-        yesPercent: yes?.percent ?? 0,
-        noPercent: no?.percent ?? 0,
-        ...(threshold ? { threshold } : {}),
-      },
-    };
-  }
-  return {
-    kind: "candidates",
-    title: c.title,
-    reporting,
-    candidates: c.choices
-      .map((x) => ({
-        name: x.name,
-        ...(x.party ? { party: x.party } : {}),
-        votes: x.votes,
-        percent: x.percent,
-        incumbent: Boolean(x.incumbent),
-      }))
-      .sort((a, b) => b.votes - a.votes),
-  };
+  return feedContestResult(c, updated, seenAt);
 }
 
 /** The county's contests the Secretary of State doesn't already report. */

@@ -1,0 +1,91 @@
+{
+  "code": "wv",
+  "state": "West Virginia",
+  "office": "West Virginia Secretary of State",
+  "page": "https://results.enr.clarityelections.com/WV/127496/web.345435/#/summary",
+  "platform": "clarity",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every state-level contest of the election in one document (126 contests: US Senate, 2 US House, 19 State Senate incl. 2 unexpired terms, 100 House of Delegates, 3 judicial, 1 constitutional amendment)",
+      "url": "https://results.enr.clarityelections.com/WV/127496/386563/json/en/summary.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 100790,
+      "saved_as": "summary.json",
+      "notes": "Standard Clarity: …/WV/<electionId>/<version>/json/en/summary.json, version from current_ver.txt. 11,433 bytes gzipped. Versioned files are Cache-Control: max-age=86400 (immutable per version); current_ver.txt is no-cache. A JSON array of contests with parallel arrays CH (choices), P (parties), V (votes), PCT."
+    },
+    {
+      "what": "version pointer",
+      "url": "https://results.enr.clarityelections.com/WV/127496/current_ver.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 6,
+      "saved_as": "current_ver.txt",
+      "notes": "Body is the bare version '386563' (no newline). Last-Modified: Tue, 10 Nov 2026 16:26:19 GMT."
+    },
+    {
+      "what": "election settings: last-updated stamp, statewide precinct counts, list of all published versions",
+      "url": "https://results.enr.clarityelections.com/WV/127496/386563/json/en/electionsettings.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 29688,
+      "saved_as": "electionsettings.json",
+      "notes": "websiteupdatedat, stateprecinctsreporting, stateprecinctsparticipating, stateprecinctspartiallyreporting, versions[], settings.electiondetails.{electionid, electiondate '11/3/2026', internalname '2026 General'}."
+    },
+    {
+      "what": "the un-localized summary (same 126 contests under key 'Contests', with ballots-cast fields filled)",
+      "url": "https://results.enr.clarityelections.com/WV/127496/386563/json/sum.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 102271,
+      "saved_as": "sum.json",
+      "notes": "Differs from en/summary.json for the same contest: sum.json has PR 55, BC 465425, TV 1210385, AggID '100' and null CAT; en/summary.json has PR 52, BC 0, TV 0 and CAT 'Federal'. Vote arrays (V) match. See reporting_field."
+    }
+  ],
+  "election_id": "'127496', the Clarity election id, the path segment after /WV/. The page URL also carries a web build 'web.345435' that is not needed for data. Found from the link '2026 General Election Results' on https://sos.wv.gov/elections.",
+  "discovery": "https://results.enr.clarityelections.com/WV/elections.json exists but currently returns '[]' (2 bytes), so it cannot be used. The reliable route is the link on https://sos.wv.gov/elections (an <a> to results.enr.clarityelections.com/WV/<id>/web.<n>/#/summary under the heading '2026 General Election'), then <id>/current_ver.txt.",
+  "cors": "* (Access-Control-Allow-Origin: * on current_ver.txt, summary.json, electionsettings.json, sum.json)",
+  "bot_blocking": "Relay User-Agent with curl: 200 on everything (CloudFront). Browser User-Agent not needed. Note: headless Chrome (its default 'HeadlessChrome' User-Agent) was refused by CloudFront with '403 ERROR The request could not be satisfied. Request blocked.' on https://results.enr.clarityelections.com/WV/, so there is a WAF rule on some user agents, but the relay's UA passes.",
+  "updated_field": "electionsettings.json websiteupdatedat = '11/10/2026 11:26:29 AM EST' (US Eastern, zone abbreviation included in the string). summary.json itself has no timestamp; its Last-Modified header was Tue, 10 Nov 2026 16:25:46 GMT.",
+  "reporting_field": "Per contest in summary.json: PR (reporting) and TP (total), which on this statewide site count COUNTIES, not precincts: US Senator TP 55 (West Virginia has 55 counties), PR 52 in en/summary.json but PR 55 in sum.json for the same version (I could not tell which is right; likely 52 fully reported vs 55 with any results). Statewide precincts are in electionsettings.json: stateprecinctsreporting 1642, stateprecinctsparticipating 1642, stateprecinctspartiallyreporting 0.",
+  "titles": {
+    "governor": null,
+    "us_senate": "U.S. SENATOR",
+    "us_house": [
+      "U.S. HOUSE OF REPRESENTATIVES, 1st Congressional District",
+      "U.S. HOUSE OF REPRESENTATIVES, 2nd Congressional District"
+    ],
+    "state_upper": [
+      "STATE SENATOR, 1st Senatorial District",
+      "STATE SENATOR, 2nd Senatorial District",
+      "STATE SENATOR, 3rd Senatorial District - UNEXPIRED TERM"
+    ],
+    "state_lower": [
+      "HOUSE OF DELEGATES, 1st District",
+      "HOUSE OF DELEGATES, 2nd District",
+      "HOUSE OF DELEGATES, 3rd District"
+    ],
+    "other_statewide": [],
+    "measures": [
+      "AMENDMENT NO 1: CITIZENSHIP REQUIREMENT TO VOTE IN WEST VIRGINIA ELECTIONS AMENDMENT"
+    ]
+  },
+  "choice_format": "Parallel arrays per contest: \"CH\": [\"SHELLEY MOORE CAPITO\",\"RACHEL FETTY ANDERSON\",\"S. MARSHALL WILSON\"], \"P\": [\"REP\",\"DEM\",\"CST\"], \"V\": [266772,173656,17183], \"PCT\": [58.29…, 37.94…, 3.75…]. Names are ALL CAPS; party codes seen: REP, DEM, CST, IND, LBN, MTN, NP and '' (empty). The amendment: \"CH\": [\"FOR\",\"AGAINST\"], \"P\": [\"\",\"\"].",
+  "district_field": "Only in the title C, as an ordinal after a comma ('STATE SENATOR, 4th Senatorial District', 'HOUSE OF DELEGATES, 4th District', 'U.S. HOUSE OF REPRESENTATIVES, 1st Congressional District'); special seats add ' - UNEXPIRED TERM'. K is a contest key ('100', '150', '250', '1200', '6350'), not the district. CAT gives the group: 'Federal', 'State', 'Judicial', 'Amendment'.",
+  "contest_count": 126,
+  "terms": "none found on the results site or on https://sos.wv.gov/elections.",
+  "confidence": "high",
+  "tried": [
+    "GET https://results.enr.clarityelections.com/WV/ with relay UA: 200, an Angular 'List Elections' shell",
+    "Headless Chrome on the same URL: CloudFront 403 'Request blocked'",
+    "GET …/WV/elections.json: 200 but body '[]'",
+    "WebSearch for the 2026 results page, then GET https://sos.wv.gov/elections: link to results.enr.clarityelections.com/WV/127496/web.345435/#/summary",
+    "GET …/WV/127496/current_ver.txt: '386563'",
+    "GET …/386563/json/en/summary.json, …/json/en/electionsettings.json, …/json/sum.json: all 200 with real numbers (US Senator: Capito 266,772, Anderson 173,656, Wilson 17,183)"
+  ]
+}

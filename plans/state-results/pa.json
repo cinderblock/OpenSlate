@@ -1,0 +1,110 @@
+{
+  "code": "pa",
+  "state": "Pennsylvania",
+  "office": "Pennsylvania Department of State",
+  "page": "https://www.electionreturns.pa.gov/",
+  "platform": "custom-json",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "the offices on the ballot (id, code, name) plus statewide districts-reporting and the election's id/name",
+      "url": "https://www.electionreturns.pa.gov/api/ElectionReturn/GetOfficeNames?countyName=&methodName=GetOfficeNames&electionid=117&electiontype=G&isactive=1",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 1490,
+      "saved_as": "GetOfficeNames.json",
+      "notes": "EVERY response of this API is DOUBLE-ENCODED: the body is a JSON string whose content is JSON (JSON.parse twice), and some inner fields (DashboardMessage, ElectionDetails) are JSON strings again. Offices in 2026: 3 GOV Governor, 11 USC Representative in Congress, 12 STS Senator in the General Assembly, 13 STH Representative in the General Assembly."
+    },
+    {
+      "what": "all contests of one office with statewide totals per candidate — one request per office; there is no single all-contests document",
+      "url": "https://www.electionreturns.pa.gov/api/ElectionReturn/GetOfficeData?officeId=11&methodName=GetOfficeDetails&electionid=117&electiontype=G&isactive=1",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 24108,
+      "saved_as": "GetOfficeDetails-11.json",
+      "notes": "Same URL with officeId=3 (GetOfficeDetails-3.json, 2070 bytes, 1 contest), 12 (GetOfficeDetails-12.json, 34194 bytes, 25 contests), 13 (GetOfficeDetails-13.json, 252917 bytes, 203 contests). Shape: Election[<office name>][0][\"<district name>$$<DistrictId>$$\"][0] = {DistrictId, District, Candidates[]}. Four requests cover the whole election."
+    },
+    {
+      "what": "home-page summary (only the top race, Governor)",
+      "url": "https://www.electionreturns.pa.gov/api/ElectionReturn/GET?methodName=GetSummaryData&electionid=117&electiontype=G&isactive=1",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 2060,
+      "saved_as": "GetSummaryData.json",
+      "notes": ""
+    },
+    {
+      "what": "current election, and the list of all elections since 2000",
+      "url": "https://www.electionreturns.pa.gov/api/ElectionReturn/GetLatestElection?methodName=GetLatestElectionsData",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 183,
+      "saved_as": "GetLatestElection.json",
+      "notes": "Returns [{ElectionID:117, ElectionName:'2026 General Election', ElectionDate:'2026-11-03T00:00:00', ElectionType:'G'}]. The full list is https://www.electionreturns.pa.gov/api/ElectionReturn/GetAllElections?methodName=GetAllElections (saved GetAllElections.json, 39134 bytes). Election detail/banner text: …/GetElectionTesting?methodName=GetElectionDetail&electionid=117&electiontype=G&isactive=1 (saved GetElectionDetail.json)."
+    },
+    {
+      "what": "last-updated timestamp",
+      "url": "https://www.electionreturns.pa.gov/api/ElectionReturn/GetUpdatedTimeStamp?methodName=LastUpdatedTimeStamp",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 25,
+      "saved_as": "GetUpdatedTimeStamp.json",
+      "notes": "Returned \"2026-11-10 18:29:08.157\" when fetched at 23:29 UTC, i.e. it matched the moment of the request in Eastern time, so it may be server 'now' rather than the time of the last count. Treat with care."
+    },
+    {
+      "what": "the office's own 'Election Feed' (RSS for newsrooms): results by office, with county rows",
+      "url": "https://www.electionreturns.pa.gov/electionFeed.aspx?ID=83&FeedName=2026+General+Election+-+Results+by+Office",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "xml",
+      "bytes": 463760,
+      "saved_as": "electionFeed-83-by-office.xml",
+      "notes": "RSS 2.0, 246 <item>s (one per contest). The numbers are NOT XML: each <description> is a CDATA block holding an HTML <table> (County, Candidate Name, Party, Election Day Votes, Mail Votes, Provisional Votes, Total Votes, % of Vote), per county, with thousands separators in Total Votes. Feed ids come from /api/ElectionFeeds/GetElectionFeedList (saved; 81 by election, 82 by county, 83 by office) and the base from /api/ElectionFeeds/GetConfigData. ID=81 saved as electionFeed-81-by-election.xml (391470 bytes, a single item). Cache-Control: public. channel/lastBuildDate 'Nov 10 2026  4:23PM'."
+    }
+  ],
+  "election_id": "electionid=117 with electiontype=G (query parameters), plus isactive=1. From GetLatestElection.",
+  "discovery": "GET …/api/ElectionReturn/GetLatestElection?methodName=GetLatestElectionsData gives the current ElectionID and ElectionType; …/GetAllElections?methodName=GetAllElections lists every election (ids are reused across types: id 9 is both the 2000 primary 'P' and general 'G', so id+type is the key). Then GetOfficeNames for the office ids.",
+  "cors": "none (no Access-Control-Allow-Origin; the API also sends Cross-Origin-Resource-Policy: same-origin)",
+  "bot_blocking": "API and feeds: 200 with the plain relay User-Agent, no cookies (also 200 with a browser User-Agent on the one call tried both ways). But the site is behind Imperva/Incapsula (visid_incap_ / nlbi_ cookies) and the HTML page loads an obfuscated challenge script (src=\"/Built-with-the-For-hopence-Hurleysurfecting-the-\") that posts an 'interrogation' and calls api.hcaptcha.com; headless Chrome never reached network idle on the page and made no API call. So the JSON API is open today, but a challenge could be switched on for it; requests were spaced 3-4 s apart.",
+  "updated_field": "Best: RSS channel <lastBuildDate>Nov 10 2026  4:23PM</lastBuildDate> (no zone; Eastern). The JSON GetUpdatedTimeStamp returned \"2026-11-10 18:29:08.157\" (no zone, Eastern, and apparently the request time). GetOfficeDetails has no timestamp.",
+  "reporting_field": "Statewide only, in GetOfficeNames Table1[0].DashboardMessage (a JSON string): \"ReportingDistrict\":\"8932\",\"VotingDistrict\":\"9065\",\"Percentage\":\"98.53\", with \"DistrictMessage\":\" 8,932 Out of 9,065 Districts (98.53%)  - IN PERSON BALLOT REPORTING ONLY\". No per-contest precincts in GetOfficeDetails. The RSS channel title repeats the statewide message.",
+  "titles": {
+    "governor": "Governor (district key \"Statewide$$1$$\")",
+    "us_senate": null,
+    "us_house": [
+      "Representative in Congress / 1st Congressional District",
+      "Representative in Congress / 2nd Congressional District",
+      "Representative in Congress / 3rd Congressional District"
+    ],
+    "state_upper": [
+      "Senator in the General Assembly / 2nd Senatorial District",
+      "Senator in the General Assembly / 4th Senatorial District",
+      "Senator in the General Assembly / 6th Senatorial District"
+    ],
+    "state_lower": [
+      "Representative in the General Assembly / 1st Legislative District",
+      "Representative in the General Assembly / 2nd Legislative District",
+      "Representative in the General Assembly / 3rd Legislative District"
+    ],
+    "other_statewide": [],
+    "measures": []
+  },
+  "choice_format": "Separate fields, name in capitals, all values strings: {\"OfficeName\":\"Governor\",\"PartyName\":\"DEM\",\"CandidateName\":\"JOSH SHAPIRO\",\"Votes\":\"3019001\",\"Percentage\":\"60.45\",\"RunningMateName\":\"DAVIS, AUSTIN \",\"ElectionDayVotes\":\"2096410\",\"MailInVotes\":\"916964\",\"ProvisionalVotes\":\"5615\"}. Yes/no contests (retention, questions) use the same row with YesVotes / NoVotes / YesVotesPercent / NoVotesPercent and IsRetention; none were on this ballot's office list, so that form was not seen with real numbers.",
+  "district_field": "Separate: the office is one field (OfficeName) and the district another (District \"1st Congressional District\", plus DistrictId \"2\", an internal id that is NOT the district number: 1st Congressional = 2, 2nd Senatorial = 24, 1st Legislative = 73). The district number is only in the ordinal text (1st, 2nd, 3rd…). In the RSS feed the title joins them: \"Representative in Congress (1st Congressional District)\".",
+  "contest_count": 246,
+  "terms": "none found on the results site. The RSS feed carries <copyright>Copyright 2026 PA-ENR Team</copyright>. The office's own instructions for the feed (GetElectionFeedsInstructions) invite reuse: \"Pennsylvania makes its election night returns available via RSS … Subscribing to our feed removes the need to manually check our site for updated content.\" URL: https://www.electionreturns.pa.gov/ (Reports > Election Feed).",
+  "confidence": "medium",
+  "tried": [
+    "https://www.electionreturns.pa.gov/ with curl: 200, an AngularJS shell; read /Scripts/AppScripts/Service.js and the controllers for the API paths and method names",
+    "Headless Chrome on the page: only the Imperva challenge POST and hcaptcha checksiteconfig were seen, navigation timed out at 60 s, no API calls",
+    "API directly with the relay User-Agent: 200 on GetLatestElection, GetSummaryData, GetOfficeNames, GetOfficeData x4, GetAllElections, GetElectionTesting, GetUpdatedTimeStamp, ElectionFeeds/*",
+    "GetUpdatedTimeStamp?methodName=GetUpdatedTime returned \"\"; the right method name is LastUpdatedTimeStamp",
+    "electionFeed.aspx?ID=83 and ID=81: 200, RSS wrapping HTML tables",
+    "Confidence is medium only because the page's banner API says \"IsTesting\": true and the feed title ends '(Unofficial, Testing)' while the numbers are plainly the real count, and because of the bot challenge on the HTML"
+  ]
+}

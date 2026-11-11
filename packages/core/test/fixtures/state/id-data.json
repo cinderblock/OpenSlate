@@ -1,0 +1,399 @@
+{
+  "election": {
+    "asOf": "2026-11-09T18:48:10.2302686Z",
+    "isOfficialResults": false,
+    "contestGroups": [
+      {
+        "id": "01000000-8385-8f9a-96fe-08df23e190ce",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Federal"
+          }
+        ]
+      },
+      {
+        "id": "01000000-8385-8f9a-eaab-08df23e197c8",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Statewide"
+          }
+        ]
+      },
+      {
+        "id": "01000000-8385-8f9a-861e-08df23e19dba",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "State Legislature"
+          }
+        ]
+      },
+      {
+        "id": "01000000-8385-8f9a-80f4-08df23e4cb07",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "State Measures"
+          }
+        ]
+      },
+      {
+        "id": "01000000-8385-8f9a-3147-08df23e4ced2",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Judicial"
+          }
+        ]
+      },
+      {
+        "id": "01000000-14c1-2be1-2a7c-08df2634df25",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Local Districts"
+          }
+        ]
+      },
+      {
+        "id": "01000000-0767-a0c4-b20d-08df256e48d2",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Local Measures"
+          }
+        ]
+      },
+      {
+        "id": "other",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Other Contests"
+          }
+        ]
+      }
+    ]
+  },
+  "ballotItems": [
+    {
+      "id": "01000000-70f4-ca87-27ba-08df23e9954c",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "United States Senator"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-8385-8f9a-96fe-08df23e190ce",
+      "reportingStatus": {
+        "reportingUnits": 44,
+        "totalUnits": 44
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Jim Risch"
+              }
+            ],
+            "voteCount": 401751,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Republican"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Todd Achilles"
+              }
+            ],
+            "voteCount": 238329,
+            "party": {
+              "abbreviation": "IND",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Independent"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Natalie M Fleming"
+              }
+            ],
+            "voteCount": 49925,
+            "party": {
+              "abbreviation": "IND",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Independent"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Matt Loesby"
+              }
+            ],
+            "voteCount": 20674,
+            "party": {
+              "abbreviation": "LIB",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Libertarian"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-9b8a-13bb-1e26-08df23ede22e",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "State Representative District 1 Seat A"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-8385-8f9a-861e-08df23e19dba",
+      "reportingStatus": {
+        "reportingUnits": 2,
+        "totalUnits": 2
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Jane Sauter"
+              }
+            ],
+            "voteCount": 17307,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Republican"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Karen Matthee"
+              }
+            ],
+            "voteCount": 8445,
+            "party": {
+              "abbreviation": "DEM",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Democratic"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-9b8a-13bb-cd39-08df23edf450",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "State Representative District 1 Seat B"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-8385-8f9a-861e-08df23e19dba",
+      "reportingStatus": {
+        "reportingUnits": 2,
+        "totalUnits": 2
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Cornel Rasor"
+              }
+            ],
+            "voteCount": 16545,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Republican"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Kathryn Larson"
+              }
+            ],
+            "voteCount": 9327,
+            "party": {
+              "abbreviation": "IND",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Independent"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-d17b-5755-4868-08df23f626d4",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Advisory Question: House Bill 932"
+        }
+      ],
+      "voteFor": [],
+      "contestType": "BallotMeasure",
+      "contestGroupId": "01000000-8385-8f9a-80f4-08df23e4cb07",
+      "reportingStatus": {
+        "reportingUnits": 44,
+        "totalUnits": 44
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Winchester Model 1873 “Gun that Won the West” (.44-40)"
+              }
+            ],
+            "voteCount": 164394,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Winchester Model 1894 (.30-30)"
+              }
+            ],
+            "voteCount": 133882,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "1873 Colt Single Action Army Revolver “Peacemaker” (.45 Colt)"
+              }
+            ],
+            "voteCount": 80691,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Remington Model 700 bolt-action rifle (.30-06)"
+              }
+            ],
+            "voteCount": 65820,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Colt M1911 .45 automatic Colt pistol (.45 ACP)"
+              }
+            ],
+            "voteCount": 46403,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "M1 Garand rifle (.30-06)"
+              }
+            ],
+            "voteCount": 37505,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

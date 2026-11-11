@@ -175,6 +175,34 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
 8. **The world.** i18n (strings, RTL, dates), ballot types the app doesn't
    model (party lists, STV, two rounds), quiet-period rules, federated
    catalogs run by local groups.
+9. **Every state's results.** *(current)* The user: "why not build each
+   state's results too?" What each state's election office publishes was
+   researched on 2026-11-10 (five helpers, ten states each): one file per
+   state in `plans/state-results/<code>.json` (the page, the platform, the
+   exact feed URLs, CORS, bot blocking, how contests are titled), with a
+   line per state in `group-A.md` to `group-E.md` there. Of the 50 beyond
+   California: 34 publish a feed a program can read, 7 only web pages (AL,
+   KS, MD, MO, NY, OR, TN), 6 no live statewide count at all (IL, MA, ME,
+   MS, NJ, WI), 3 refuse automated readers (KY, NH, OK).
+   - How it's built: `packages/core/src/stateResults.ts` (`STATE_FEEDS`:
+     who, where, which platform; `parseStateFeed`),
+     `packages/core/src/contestOffice.ts` (one reader of contest titles for
+     every state: Senate, House district, governor, chambers, seats,
+     specials), the relay's `/api/state/<code>/<file>`
+     (`apps/poll-cache/src/stateFeeds.ts`, only listed files),
+     `apps/web/src/lib/stateFeeds.ts` (fetch, sections, a slate's race to
+     its contest), `regions/stateFeedCounts.ts` (each as a `StateCounts`, so
+     My ballot and race pages use it), `StateLivePanel.tsx` on Results.
+   - Done, 11 states, on the two platforms the county feeds already used:
+     Enhanced Voting (AZ, GA, ID, RI, UT, VA, WA) and Clarity (CO, IA, SC,
+     WV).
+   - Next, by platform: KNOWiNK/BPro TotalVote CSV exports (NE, NM, SD;
+     MT's is JSON), KNOWiNK TotalResults JSON (AR, ND), Civix (TX, IN), then
+     each state's own format, biggest first: FL, PA, OH, NC, MI, MN, LA, CT,
+     NV, DE, HI, AK, VT, DC. Wyoming publishes only spreadsheets.
+   - Adding one: a `STATE_FEEDS` entry, a parser to `CountyContest[]` if
+     the platform is new, a fixture cut from the real feed, and its seat
+     counts in `test/contestOffice.test.ts`.
 
 ## Findings / gotchas
 
@@ -235,6 +263,21 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
 - Boundary files, all 56 built 2026-11-10 at the same simplification as
   California's: see the size line in the progress log. Each is the raw JSON
   size; Cloudflare serves them brotli-compressed, about a quarter of that.
+- State results, what the feeds taught (2026-11-10): Enhanced Voting's
+  elections list is at `…/results/public/api/jurisdictions/<slug>` (the
+  `…/api/elections/<slug>` path 404s everywhere); its 200 answers carry no
+  CORS header (Rhode Island's do), so those go through the relay; a state
+  site's "reporting units" are counties (towns in RI, localities in VA), not
+  precincts. Measures are worded Yes/No, Approve/Reject (RI), For/Against
+  (UT, WV), Yes/For and No/Against (CO): core's `measureSide` reads them all.
+  Georgia puts "(I)" and the party in the candidate's name; South Carolina
+  puts the party before it. A contest every county counts is statewide,
+  whatever its title (Georgia's PSC districts, Rhode Island's questions).
+- Git Bash's curl (8.8, Schannel) fails with exit 43 on some Cloudflare
+  hosts (openslate.us, results.votewa.gov): use `curl -I`, or
+  `C:\Windows\System32\curl.exe`.
+- A Python heredoc in this harness turns `\b` into a backspace character:
+  edits with backslashes go through the Edit or Write tool.
 - TIGERweb's `tigerWMS_Current` (January 1, 2026 vintage) has the **120th**
   Congress's districts (layer 54, `CDSESSN` 120) and the 2026 legislative
   districts: the maps the 2026-11-03 election used, the 2025 redraws (Texas,
@@ -302,6 +345,11 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
 - [ ] Step 6: federal coverage.
 - [ ] Step 7: a second state.
 - [ ] Step 8: the world.
+- [ ] Step 9: every state's results. 11 of the 34 readable states done
+  2026-11-10. Checked in headless Chrome against the states' real sites
+  through the repo's own relay code: all 11 panels show contests and vote
+  counts; a Virginia voter sees the 11th district first; a Texas voter is
+  told Texas isn't read yet; California's page is as it was.
 
 ## Open questions for the user
 

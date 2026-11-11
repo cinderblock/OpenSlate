@@ -1,0 +1,107 @@
+{
+  "code": "nd",
+  "state": "North Dakota",
+  "office": "North Dakota Secretary of State",
+  "page": "https://resultsnd.sos.nd.gov/#election=348",
+  "platform": "other:knowink-totalresults (new React site with a JSON API at api.resultsnd.sos.nd.gov; the JS bundle calls it 'totalResultsBaseUrl'. It replaced the old BPro TotalVote site results.sos.nd.gov, which still shows the 2024 general.)",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "vote counts for every contest of the election (531), with a per-location breakdown, keyed by contest id and choice id. NO names in it.",
+      "url": "https://api.resultsnd.sos.nd.gov/Contest/GetContestResults?cId=north-dakota&electionID=348",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 849926,
+      "saved_as": "ContestResults-ALL.json",
+      "notes": "Leaving contestType off returns everything (response.contestType comes back \"_ALL_\"). The site itself asks per type: &contestType=SW (12 statewide contests with all 53 counties each, saved as ContestResults-SW.json, 310469 bytes) or LEG (51, saved as ContestResults-LEG.json, 84967 bytes); other codes JUD, CW, CON, MUN, SCH. Envelope: versionID \"v876\", lastUpdated, isOfficial, turnout, response.contests[]."
+    },
+    {
+      "what": "names: every contest's title, type code, vote-for, and its choices (name, partyID, order) keyed by the same ids",
+      "url": "https://api.resultsnd.sos.nd.gov/Contest/GetContestSearchList?cid=north-dakota&electionID=348",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 375852,
+      "saved_as": "ContestSearchList.json",
+      "notes": "Must be joined to GetContestResults: results.contests[].contestID -> searchList response.contests[<id>].contestName; results choices[].choiceID -> contests[<id>].choices[<choiceID>].name. Note the parameter is spelled cid here and cId elsewhere (both lower/upper seen in the site's own calls)."
+    },
+    {
+      "what": "election info: name, date, parties, contest types, locations; plus statewide turnout and precincts",
+      "url": "https://api.resultsnd.sos.nd.gov/Election/GetElectionInfo?cId=north-dakota&electionID=348",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 159124,
+      "saved_as": "ElectionInfo.json",
+      "notes": ""
+    },
+    {
+      "what": "list of elections",
+      "url": "https://api.resultsnd.sos.nd.gov/Election/GetElectionList?cid=north-dakota",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 230,
+      "saved_as": "ElectionList.json",
+      "notes": "[{\"electionID\":\"348\",\"electionName\":\"2026 General Election\",\"electionDate\":\"2026-11-03T00:00:00\",\"isDefault\":true},{\"electionID\":\"346\",…}]"
+    },
+    {
+      "what": "display flags for the election",
+      "url": "https://api.resultsnd.sos.nd.gov/Election/GetElectionConfig?cId=north-dakota&electionID=348",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 118,
+      "saved_as": "ElectionConfig.json",
+      "notes": "Other calls the page makes, not saved: /Client/GetClientConfig?cId=north-dakota, /Client/GetLanguageConfig?cId=north-dakota, /Turnout/GetTurnout?cId=north-dakota&electionID=348."
+    }
+  ],
+  "election_id": "348 (electionID query parameter; also the page fragment #election=348). Client id cId=north-dakota.",
+  "discovery": "GET https://api.resultsnd.sos.nd.gov/Election/GetElectionList?cid=north-dakota : the entry with isDefault true is the current election. Only elections on the new site are listed (348 general, 346 primary); older ones are on results.sos.nd.gov.",
+  "cors": "*  (access-control-allow-origin: * on every API response)",
+  "bot_blocking": "None seen: the relay User-Agent got 200 on every call (Cloudflare in front, cf-cache-status DYNAMIC, no challenge; it sets __cf_bm and ARRAffinity cookies, which were not needed). CAVEAT about this machine only: Git Bash curl 8.8.0 (Schannel) fails on every *.sos.nd.gov host with 'curl: (43) A libcurl function was given a bad argument' after a TLS renegotiation, with either User-Agent, so the files and .headers.txt here were fetched with Python urllib sending the same relay User-Agent and Origin header (headers file written by the script, not curl -D). Headless Chrome also loads the API fine. Browser User-Agent not needed.",
+  "updated_field": "Envelope field lastUpdated = \"2026-11-10T23:21:28.7881788Z\" (UTC, ISO 8601 with Z) and versionID \"v876\", on GetContestResults, GetContestSearchList and GetElectionInfo.",
+  "reporting_field": "Per contest (and per location inside it): precinctsReporting, precinctsPartiallyReporting, totalPrecincts, e.g. 358 / 0 / 358. Statewide in the envelope: turnout {\"registeredVoters\":600394,\"precinctsReporting\":358,\"precinctsPartiallyReporting\":0,\"totalPrecincts\":358,\"totalBallotsCast\":239057,\"reportingPercent\":100,\"votePercent\":39.82}.",
+  "titles": {
+    "governor": null,
+    "us_senate": null,
+    "us_house": ["Representative in Congress (at large: one seat, no district number)"],
+    "state_upper": [
+      "State Senator District 01",
+      "State Senator District 03",
+      "State Senator District 05"
+    ],
+    "state_lower": [
+      "State Representative District 01",
+      "State Representative District 03",
+      "State Representative District 05"
+    ],
+    "other_statewide": [
+      "Secretary of State",
+      "Attorney General",
+      "Agriculture Commissioner",
+      "Public Service Commissioner",
+      "Public Service Commissioner Unexpired 2-Year Term",
+      "Tax Commissioner",
+      "Superintendent of Public Instruction Unexpired 2-Year Term",
+      "Justice of the Supreme Court"
+    ],
+    "measures": [
+      "Constitutional Measure No. 1 relating to the threshold for approving a constitutional amendment from a simple majority to sixty percent ",
+      "Initiated Constitutional Measure No. 2 relating to funding of school lunches "
+    ]
+  },
+  "choice_format": "Names live only in GetContestSearchList, padded and double-spaced: {\"id\":\"37665\",\"name\":\"Julie  Fedorchak \",\"partyID\":\"REP\",\"order\":1} (trailing space, two spaces between first and last name). Party is a separate code (REP, DEM = Democratic-NPL, IND, LIB, NON; names in ElectionInfo.response.parties). Write-in is \"  write-in \" with partyID NON, id 9901. Measures: choices \"Yes \" (id 9001) and \"No \" (id 9002) with partyID \"\" in the search list and \"   \" (three spaces) in results. Counts are in GetContestResults: {\"choiceID\":\"37386\",\"totalVotes\":146373,\"partyID\":\"REP\",\"votePercent\":62.74,\"isWinner\":false}.",
+  "district_field": "Both. Title has it zero-padded (\"State Senator District 01\"), and GetContestResults has a separate districtID (\"01\", \"37\") on legislative contests; on local contests districtID holds a place name (\"Harwood\"), and it is \"\" on statewide ones. contestTypeCode (SW, LEG, JUD, CW, CON, MUN, SCH) is in the search list. Only odd-numbered legislative districts are up in 2026; State Representative contests are vote-for-2.",
+  "contest_count": 531,
+  "terms": "none found.",
+  "confidence": "high",
+  "tried": [
+    "https://results.sos.nd.gov/ (old BPro TotalVote site, has ResultsExport.aspx): loads, but shows 'Official — November 5, 2024'; saved as old-bpro-site-2024.html. Not the 2026 election.",
+    "https://www.sos.nd.gov/elections/election-results links 'General Election Unofficial Results - November 3, 2026' to https://resultsnd.sos.nd.gov/#election=348",
+    "resultsnd.sos.nd.gov is a 433-byte shell plus a 2 MB JS bundle; loaded it in headless Chrome and logged requests to find api.resultsnd.sos.nd.gov",
+    "curl (Schannel) error 43 on all nd.gov hosts; switched to Python urllib with the relay User-Agent: 200 everywhere",
+    "GetContestResults without contestType: 200, all 531 contests"
+  ]
+}

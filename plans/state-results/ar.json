@@ -1,0 +1,135 @@
+{
+  "code": "ar",
+  "state": "Arkansas",
+  "office": "Arkansas Secretary of State",
+  "page": "https://arkansas.tally-enr.com/#election=11b07106-031e-4d7c-911a-d01fb473d6dd",
+  "platform": "other:knowink-tally-enr (arkansas.tally-enr.com front end, enr-results-api.totalresults.com API; the successor of BPro/KNOWiNK TotalResults)",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "names: every contest of the election (1,315, including county and city races) with its title, type and choices (names, party ids). No vote counts.",
+      "url": "https://enr-results-api.totalresults.com/Contest/GetContestSearchList?cid=arkansas&electionID=11b07106-031e-4d7c-911a-d01fb473d6dd",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 1299137,
+      "saved_as": "GetContestSearchList.json",
+      "notes": "response.contests is a map contestId → {contestName, contestTypeCode, contestOrder, voteFor, choices{choiceId → {name, partyID, order, isWriteIn, isWinner}}}. Results documents only carry ids, so this file is needed to name anything. 366,846 bytes on the wire (gzip). Note the parameter is spelled cid here and cId on the other calls; both spellings were sent exactly as the site sends them."
+    },
+    {
+      "what": "counts for one contest type: Federal (US Senate + 4 US House), statewide totals plus per-county breakdown",
+      "url": "https://enr-results-api.totalresults.com/Contest/GetContestResults?cId=arkansas&electionID=11b07106-031e-4d7c-911a-d01fb473d6dd&contestType=Federal",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 102308,
+      "saved_as": "GetContestResults-Federal.json",
+      "notes": "One call per contest type; there is no all-contests results call that the site uses. contestType values come from GetElectionInfo response.contestTypes: Federal, Statewide, Judge, State Senate, State Representative, County, City, Council, School, Other, Fire. response.contests is a map contestID → {precinctsReporting, totalPrecincts, totalVotes, choices[{choiceID, totalVotes, partyID, votePercent, isWinner}], locations{countyFIPS → same shape}}."
+    },
+    {
+      "what": "counts: Statewide (Governor, 6 other constitutional offices, ISSUE NO. 1–4)",
+      "url": "https://enr-results-api.totalresults.com/Contest/GetContestResults?cId=arkansas&electionID=11b07106-031e-4d7c-911a-d01fb473d6dd&contestType=Statewide",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 431985,
+      "saved_as": "GetContestResults-Statewide.json",
+      "notes": "11 contests. 431,985 bytes decoded, 44,746 on the wire."
+    },
+    {
+      "what": "counts: State Senate (18 contests)",
+      "url": "https://enr-results-api.totalresults.com/Contest/GetContestResults?cId=arkansas&electionID=11b07106-031e-4d7c-911a-d01fb473d6dd&contestType=State%20Senate",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 34391,
+      "saved_as": "GetContestResults-StateSenate.json",
+      "notes": "5,322 bytes on the wire."
+    },
+    {
+      "what": "counts: State Representative (101 contests)",
+      "url": "https://enr-results-api.totalresults.com/Contest/GetContestResults?cId=arkansas&electionID=11b07106-031e-4d7c-911a-d01fb473d6dd&contestType=State%20Representative",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 137707,
+      "saved_as": "GetContestResults-StateRepresentative.json",
+      "notes": "21,502 bytes on the wire."
+    },
+    {
+      "what": "election info: parties (id → name), contest types, vote types, counties and their precincts, statewide turnout and precincts reporting",
+      "url": "https://enr-results-api.totalresults.com/Election/GetElectionInfo?cId=arkansas",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 598187,
+      "saved_as": "GetElectionInfo.json",
+      "notes": "Called without an electionID it answers for the default election (isDefault in the list). Parties map is needed to turn partyID into 'Republican' etc. County keys are 5-digit FIPS ('05001' = Arkansas County)."
+    },
+    {
+      "what": "the list of elections",
+      "url": "https://enr-results-api.totalresults.com/Election/GetElectionList?cid=arkansas",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 3321,
+      "saved_as": "GetElectionList.json",
+      "notes": "Array of {electionID, electionName, electionDate, isDefault}. First entry: 11b07106-…, '2026 General Election & Judical Runoff' (sic), '2026-11-03T00:00:00', isDefault true."
+    },
+    {
+      "what": "per-election site config",
+      "url": "https://enr-results-api.totalresults.com/Election/GetElectionConfig?cId=arkansas&electionID=11b07106-031e-4d7c-911a-d01fb473d6dd",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 313,
+      "saved_as": "GetElectionConfig.json",
+      "notes": "showVoteBuckets, showPrecincts, passwordRequired:false. Not needed for counts."
+    }
+  ],
+  "election_id": "11b07106-031e-4d7c-911a-d01fb473d6dd (a GUID), the electionID query parameter. Client id is cId=arkansas. Older elections on the same site use small integers (1846 = 2024 general).",
+  "discovery": "GET https://enr-results-api.totalresults.com/Election/GetElectionList?cid=arkansas and match electionDate (or take isDefault:true). The Secretary of State's own index of elections is https://www.sos.arkansas.gov/elections/research/election-results.",
+  "cors": "*  (Access-Control-Allow-Origin: * on every API answer)",
+  "bot_blocking": "Plain relay User-Agent: 200 on all eight API calls (Microsoft-IIS/10.0, no CDN challenge). Browser User-Agent not needed, not tried. The old Clarity address https://results.enr.clarityelections.com/AR/ now answers 403 to everything (Arkansas left Clarity).",
+  "updated_field": "Top-level lastUpdated on every API answer, e.g. '2026-11-10T22:31:52.2059921Z' (UTC), with versionID 'v195' that increments on each publish. isOfficial:false.",
+  "reporting_field": "Per contest: precinctsReporting / precinctsPartiallyReporting / totalPrecincts (U.S. Senate: 2768 / 0 / 2768), and the same three per county under locations. Statewide: turnout.precinctsReporting 2768, turnout.totalPrecincts 2768, turnout.reportingPercent 100 in GetElectionInfo.",
+  "titles": {
+    "governor": "Governor",
+    "us_senate": "U.S. Senate",
+    "us_house": [
+      "U.S. Congress District 01",
+      "U.S. Congress District 02",
+      "U.S. Congress District 03"
+    ],
+    "state_upper": [
+      "State Senate District 01",
+      "STATE SENATE DISTRICT 30",
+      "State Senate, District 32"
+    ],
+    "state_lower": [
+      "State Representative District 01",
+      "State Representative District 02",
+      "State Representative District 03"
+    ],
+    "other_statewide": [
+      "Lieutenant Governor",
+      "Secretary of State",
+      "Attorney General",
+      "State Treasurer",
+      "Auditor of State",
+      "Commissioner of State Lands"
+    ],
+    "measures": ["ISSUE NO. 1", "ISSUE NO. 2"]
+  },
+  "choice_format": "Party is a prefix inside the name and also a partyID: name 'REP Tom Cotton' with partyID 4c1a540e-… → parties[…].partyName 'Republican'; 'DEM Hallie Shoffner', 'LIB Jeff Wadlin'. Names live in GetContestSearchList (contests[id].choices[choiceId].name); results rows only have choiceID. Measures: choices named 'FOR ISSUE NO. 1' and 'AGAINST ISSUE NO. 1', both with the 'Independent' party id (the 'Affirmative'/'Negative' parties exist in the party list but are not used on the issues).",
+  "district_field": "Only in the title, zero-padded and inconsistently typed by hand: 'State Senate District 01', 'STATE SENATE DISTRICT 30', 'State Senate, District 32'. districtID is null on every contest looked at, and locationType/locationID are null. Use contestTypeCode ('State Senate', 'State Representative', 'Federal') for the chamber and a case-insensitive /District (\\d+)/ for the number.",
+  "contest_count": 1315,
+  "terms": "none found on arkansas.tally-enr.com or the API (sos.arkansas.gov not searched for terms)",
+  "confidence": "high",
+  "tried": [
+    "GET https://results.enr.clarityelections.com/AR/ and /AR/elections.json with the relay UA: 403 (nginx); headless Chrome also gets a CloudFront error. Arkansas no longer publishes on Clarity.",
+    "GET https://www.sos.arkansas.gov/elections/research/election-results: 200; its '2026 General Election & Judicial Runoff' link points at https://arkansas.tally-enr.com/",
+    "Headless Chrome on arkansas.tally-enr.com: logged the enr-results-api.totalresults.com calls listed in feeds (plus Client/GetClientConfig, Client/GetLanguageConfig, Turnout/GetTurnout, and GIS files on gis.tally-enr.com)",
+    "curl of each API call with relay UA + Origin: 200, real counts (U.S. Senate 886,250 votes, 2768/2768 precincts)"
+  ]
+}

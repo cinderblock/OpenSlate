@@ -1,0 +1,74 @@
+{
+  "code": "ks",
+  "state": "Kansas",
+  "office": "Kansas Secretary of State",
+  "page": "https://ent.sos.ks.gov/kssos_ent.html",
+  "platform": "html-only",
+  "status": "html-only",
+  "feeds": [
+    {
+      "what": "every contested contest of the election in one static HTML page (statewide totals plus a per-county table for each contest)",
+      "url": "https://ent.sos.ks.gov/kssos_ent.html",
+      "method": "GET",
+      "headers_needed": {
+        "User-Agent": "a desktop browser User-Agent; the relay User-Agent gets a Cloudflare challenge (403)"
+      },
+      "format": "html",
+      "bytes": 861343,
+      "saved_as": "ent.chrome.html (the 200 answer to a Chrome User-Agent) and ent.relay-403.html (the challenge page the relay User-Agent got)",
+      "notes": "A generated static page (IIS/ASP.NET behind Cloudflare), 861,343 bytes uncompressed (71,163 gzip), Cache-Control: no-cache, with a real Last-Modified header. 107 contests, each a block: <h3>title</h3>, <p>Precincts Reporting: 4168 of 4168</p>, then rows of <p>D-Adam Hamilton</p><p>561,143</p><p>51%</p>, then 'Total Votes'. Each block has an anchor id='all-races-<raceid>' (1001 = United States Senate). No JSON, XML or CSV was found anywhere on the site."
+    },
+    {
+      "what": "the same blocks split by group: federal contests only",
+      "url": "https://ent.sos.ks.gov/national.html",
+      "method": "GET",
+      "headers_needed": {
+        "User-Agent": "a desktop browser User-Agent"
+      },
+      "format": "html",
+      "bytes": 228358,
+      "saved_as": "national.html",
+      "notes": "Sibling pages, same markup: statewide.html, ks-senate.html, ks-house.html, ks-boe.html, judicial.html, constitutional.html, Uncontested.html, and one page per county (allen.html … wyandotte.html). ks-senate.html, ks-house.html and constitutional.html are saved too. statewide.html answered 403 (challenge) even with the Chrome User-Agent on the one try."
+    }
+  ],
+  "election_id": "None. The host serves one election at a time at fixed file names (kssos_ent.html, national.html, …). The challenge page's own metadata still says '2026 Primary Election Results', so the same URLs were used for the August primary.",
+  "discovery": "Nothing to discover: the URL is the same every election and shows whichever election the office last loaded. The only check available is the banner image name (ks_images/header_general.jpg) and the date in 'Last Updated'.",
+  "cors": "none",
+  "bot_blocking": "Relay User-Agent: 403 with 'Cf-Mitigated: challenge' (Cloudflare managed challenge). The 403 body is a 659 KB custom challenge page styled as the results page (title 'Unofficial Kansas Election Results', a meta refresh every 5 seconds), so it must be told apart by status code, not by content. curl with a desktop Chrome User-Agent: 200 on kssos_ent.html, national.html, ks-senate.html, ks-house.html and constitutional.html, but 403 challenge on statewide.html in the same minute, so a browser User-Agent is not a reliable pass either.",
+  "updated_field": "In the page: <span id = 'time-stamp' >11/08/2026 9:14 PM </span> after 'Last Updated:', no zone given; Kansas's capital is on US Central time, and the HTTP Last-Modified header of the same page was 'Mon, 09 Nov 2026 03:15:50 GMT' (= 9:15 PM CST), which confirms Central. Each county also has 'Last Reported: 11/06/2026 03:54 PM'.",
+  "reporting_field": "Per contest, text: 'Precincts Reporting: 4168 of 4168'. Per county, text: 'Allen County 22 of 22 precincts'.",
+  "titles": {
+    "governor": "Governor / Lt. Governor",
+    "us_senate": "United States Senate",
+    "us_house": [
+      "United States House of Representatives 1",
+      "United States House of Representatives 2",
+      "United States House of Representatives 3"
+    ],
+    "state_upper": ["Kansas Senate 25"],
+    "state_lower": [
+      "Kansas House of Representatives 2",
+      "Kansas House of Representatives 3",
+      "Kansas House of Representatives 123"
+    ],
+    "other_statewide": [
+      "Secretary of State",
+      "Attorney General",
+      "State Treasurer",
+      "Commissioner of Insurance"
+    ],
+    "measures": ["Constitutional Amendment"]
+  },
+  "choice_format": "Party letter, hyphen, name, in one text node: 'D-Adam Hamilton', 'R-Roger Marshall', 'L-David C Graham'. Votes have thousands separators ('561,143'); percentages are whole numbers ('51%'). The measure's statewide rows read 'Constitutional Amendment - \"YES\"' and 'Constitutional Amendment - \"NO\"'; its county tables say 'Yes' / 'No'.",
+  "district_field": "Only in the title, as a bare trailing number with no word 'District' ('United States House of Representatives 1', 'Kansas House of Representatives 123', 'Member, State Board of Education 3', 'Supreme Court Justice 4').",
+  "contest_count": 107,
+  "terms": "none found",
+  "confidence": "medium",
+  "tried": [
+    "GET https://ent.sos.ks.gov/kssos_ent.html with the relay User-Agent and Origin: 403, Cf-Mitigated: challenge, a results-page-shaped challenge body.",
+    "Same URL with a desktop Chrome User-Agent through curl: 200, static HTML with real numbers ('Last Updated: 11/08/2026 9:14 PM').",
+    "Searched the page for script, JSON, XML, CSV, export or download references: only bootstrap, jquery, popper, tooltipster and maintainscroll.js; every number is in the HTML itself.",
+    "Fetched national.html, ks-senate.html, ks-house.html, constitutional.html with the Chrome User-Agent: 200. statewide.html: 403 challenge. Did not retry, to stay gentle.",
+    "Did not look for a media feed elsewhere on sos.ks.gov; none is linked from the results site."
+  ]
+}

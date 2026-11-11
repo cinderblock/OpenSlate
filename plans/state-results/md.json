@@ -1,0 +1,105 @@
+{
+  "code": "md",
+  "state": "Maryland",
+  "office": "Maryland State Board of Elections",
+  "page": "https://elections.maryland.gov/elections/2026/general_results/index.html",
+  "platform": "html-only",
+  "status": "html-only",
+  "feeds": [
+    {
+      "what": "all eight US House contests, statewide totals, one static HTML page",
+      "url": "https://elections.maryland.gov/elections/2026/general_results/gen_results_2026_4.html",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 32586,
+      "saved_as": "gen_results_2026_4.html",
+      "notes": "Each office has one page holding all of its districts: gen_results_2026_<n>.html with n = 1 Governor / Lt. Governor, 2 Comptroller, 3 Attorney General, 4 Representative in Congress, 5 State Senator, 6 House of Delegates, 7 Judge of the Circuit Court, 8 Justice, Supreme Court of Maryland, 9 Judge, Appellate Court of Maryland At Large. Per-district pages are gen_results_2026_<n>_<k>.html; note k is a running index, not the district (for the House of Delegates k=4 is district 2A). So the whole state count is nine office pages plus the questions page. Markup per contest: <h2>office</h2><h3>District 1</h3><h4>Vote for 1</h4>, a line '(309 of 309 election day precincts reported)', then <table class=\"table-banded\"> with columns Name, Party, Early Voting, Election Day, Mail-In Ballot, Provisional, Total, Percentage and a Totals row. A count not yet in is the text 'NR'."
+    },
+    {
+      "what": "Governor / Lt. Governor",
+      "url": "https://elections.maryland.gov/elections/2026/general_results/gen_results_2026_1.html",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 18718,
+      "saved_as": "gen_results_2026_1.html",
+      "notes": "Statewide offices have <h2> only, no <h3> district heading."
+    },
+    {
+      "what": "all 47 State Senator contests",
+      "url": "https://elections.maryland.gov/elections/2026/general_results/gen_results_2026_5.html",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 96768,
+      "saved_as": "gen_results_2026_5.html",
+      "notes": "Same markup."
+    },
+    {
+      "what": "all 71 House of Delegates contests",
+      "url": "https://elections.maryland.gov/elections/2026/general_results/gen_results_2026_6.html",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 166695,
+      "saved_as": "gen_results_2026_6.html",
+      "notes": "Same markup. Multi-member districts say 'Vote for up to 2' or 'Vote for up to 3' in the <h4>."
+    },
+    {
+      "what": "the three statewide ballot questions",
+      "url": "https://elections.maryland.gov/elections/2026/general_results/gen_qresults_2026_1_00_ALL.html",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 21866,
+      "saved_as": "gen_qresults_2026_1_00_ALL.html",
+      "notes": "Local questions are on gen_qresults_2026_1_ALL.html and per county on gen_qresults_2026_by_county_<1..24>.html (not fetched)."
+    }
+  ],
+  "election_id": "The year and 'general_results' in the path, and 'gen_…_2026_' in every file name: /elections/2026/general_results/gen_results_2026_<office>.html. The board's own short code for the election would be 'GG26' (the primary's data files are named GP26_…), but it does not appear in the live pages.",
+  "discovery": "By pattern: https://elections.maryland.gov/elections/<year>/general_results/index.html (linked from /elections/<year>/index.html as 'Unofficial General Results'). The index lists every office page and district page. Machine-readable CSVs do exist, but only after the canvass: https://elections.maryland.gov/elections/2026/election_data/index.html ('Data files') on 2026-11-10 lists only primary files (GP26_…Results.csv, GP26_AllPrecincts….csv) and still shows an unfilled template placeholder for the general ('{*GENERAL_ELECTION_CODE*}_Precincts_and_Polling_Places.xlsx').",
+  "cors": "none",
+  "bot_blocking": "Relay User-Agent: 200 on every page (Cloudflare in front, no challenge). Browser User-Agent not needed, not tried.",
+  "updated_field": "Text in each page: '<div>Last refreshed: 11/10/2026 04:17:34 PM</div>', no zone; Maryland is on US Eastern time (I fetched it at about 6:30 PM Eastern, so this is the time the static page was last regenerated, not the request time). The responses carry no Last-Modified or Cache-Control header.",
+  "reporting_field": "Text per contest: '(309 of 309 election day precincts reported)' next to the 'County Break Down' link. It counts election-day precincts only; early voting, mail-in and provisional are separate columns, each 'NR' until reported (Provisional was still NR for every contest on 2026-11-10). The index also links a 'Results Reporting Status by County' page (not fetched).",
+  "titles": {
+    "governor": "Governor / Lt. Governor",
+    "us_senate": null,
+    "us_house": [
+      "Representative in Congress — District 1",
+      "Representative in Congress — District 2",
+      "Representative in Congress — District 3"
+    ],
+    "state_upper": [
+      "State Senator — District 1",
+      "State Senator — District 2",
+      "State Senator — District 3"
+    ],
+    "state_lower": [
+      "House of Delegates — District 1A",
+      "House of Delegates — District 1B",
+      "House of Delegates — District 47B"
+    ],
+    "other_statewide": [
+      "Comptroller",
+      "Attorney General",
+      "Justice, Supreme Court of Maryland",
+      "Judge, Appellate Court of Maryland At Large"
+    ],
+    "measures": ["Question 1: Constitutional Amendment", "Question 2: Constitutional Amendment"]
+  },
+  "choice_format": "Name and party are separate table cells: '<td><div>Andy Harris</div></td><td>Republican</td>'. Party is spelled out ('Democratic', 'Republican', 'Green', 'Working Class Party', 'Unaffiliated'). Tickets are one name: 'Wes Moore and Aruna Miller'. Declared write-ins are 'Edward Shlikas (Write-In)'; the rest are a row 'Other Write-Ins' with an empty party. Votes have thousands separators and a leading space. Questions: rows 'For the Constitutional Amendment' and 'Against the Constitutional Amendment'; the heading is followed by the chapter and the short title ('(Ch. 155 of the 2026 Legislative Session) Arbitration Reform for State Employees Act of 2026').",
+  "district_field": "The title is split across headings: the office is the <h2> ('Representative in Congress', 'State Senator', 'House of Delegates') and the district is the <h3> under it ('District 1', 'District 1A'). (The titles above join the two with a dash for readability; the dash is mine.) House of Delegates districts carry sub-district letters (1A, 1B, 1C, 2A … 47B).",
+  "contest_count": 132,
+  "terms": "none found on the results pages (footer: 'Copyright ©2025 Maryland State Board of Elections'). https://elections.maryland.gov/elections/using_election_data_instructions.html (saved) explains that Election Law §11-402 requires the board to 'make available in an electronic format a report of election results', which is what the post-canvass CSVs are.",
+  "confidence": "high",
+  "tried": [
+    "GET https://elections.maryland.gov/elections/2026/general_results/index.html (relay User-Agent): 200, 'Unofficial 2026 Gubernatorial General Election Results', 197 links to static gen_*.html pages.",
+    "Searched the index and an office page for scripts or data references: only analytics, Google Translate and /js/base.js; the numbers are in the HTML tables.",
+    "GET /elections/2026/index.html: it links 'Data files' (election_data/index.html). GET that: only 2026 primary CSVs, nothing for the general yet.",
+    "GET gen_results_2026_1.html, _4.html, _5.html, _6.html and gen_qresults_2026_1_00_ALL.html: 200, real numbers ('Last refreshed: 11/10/2026 04:17:34 PM').",
+    "Did not guess at media-feed or GG26 file names.",
+    "Note on contest_count: 132 = 3 statewide offices + 8 US House + 47 State Senator + 71 House of Delegates districts + 3 statewide questions; judges and local questions are not counted."
+  ]
+}

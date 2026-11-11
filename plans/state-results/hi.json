@@ -1,0 +1,76 @@
+{
+  "code": "hi",
+  "state": "Hawaii",
+  "office": "State of Hawaii Office of Elections",
+  "page": "https://elections.hawaii.gov/election-results/",
+  "platform": "custom-text",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every contest of the election in one document: one row per contest x candidate, statewide totals (the 'Statewide Summary' text file)",
+      "url": "https://elections.hawaii.gov/wp-content/results/2026%20General/summary.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 22026,
+      "saved_as": "summary.txt",
+      "notes": "Tab-separated, CRLF, ASCII. Line 1 is '#FormatVersion 1', line 2 is the header row starting '#Contest ID'. Fields are double-quoted only when they contain a comma or a newline; the Governor ticket's candidate name is a quoted field with embedded line breaks, so it must be parsed as CSV-with-tab-delimiter, not split on newlines. The folder is '<year> <General|Primary>' with a literal space (2026 Primary is at '…/results/2026 Primary/summary.txt'). 22,026 bytes uncompressed (6,745 gzip on the wire). The office posts numbered 'printouts' (Report 1..4 on election night and the day after) rather than a continuous feed; the file has no timestamp or report number in it."
+    },
+    {
+      "what": "the same count by precinct ('Statewide Precinct Detail' text file): one row per precinct x contest x candidate, with mail and in-person votes",
+      "url": "https://elections.hawaii.gov/wp-content/results/2026%20General/media.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 1885035,
+      "saved_as": "media.txt",
+      "notes": "Tab-separated, 28,733 lines. Line 1 is a junk header 'Column1…Column16', line 2 '#FormatVersion 1', line 3 the real header (its first cell is literally \"#\"\"Precinct_Name\"\"\"). Columns: Precinct_Name, Split_Name, precinct_splitId, Reg_voters, Ballots, Reporting, Contest_id, Contest_title, Contest_party, Choice_id, Candidate_name, Choice_party, Candidate_Type, Mail votes, In-Person votes. Contest_id matches summary.txt's Contest ID."
+    },
+    {
+      "what": "the human report (PDF) that carries the report number and print time the text files lack",
+      "url": "https://elections.hawaii.gov/wp-content/results/2026%20General/histatewide.pdf",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "other:pdf",
+      "bytes": 40135,
+      "saved_as": "histatewide.pdf",
+      "notes": "Page header reads 'SUMMARY REPORT REPORT 4 … Printed on: 11/04/2026 at 09:43:14 pm' (Hawaii time). Its HTTP Last-Modified is real (Thu, 05 Nov 2026 07:51:59 GMT); the .txt files' Last-Modified is not (see updated_field)."
+    }
+  ],
+  "election_id": "No id. The election is a folder name with a space: '2026 General' in https://elections.hawaii.gov/wp-content/results/2026 General/<file>. Older elections (to 2024) live on another host with another pattern: https://files.hawaii.gov/elections/files/results/<year>/<general|primary>/<file>.",
+  "discovery": "No list endpoint. Read https://elections.hawaii.gov/election-results/ and take the href whose text is 'Statewide Summary' under 'Text Files' in the newest election's block (the page lists every election back to 1992). The pattern '<year> General' / '<year> Primary' held for both 2026 elections.",
+  "cors": "none",
+  "bot_blocking": "Relay User-Agent: 200 on the page, both text files and the PDF (Cloudflare in front, no challenge). Browser User-Agent not needed, not tried.",
+  "updated_field": "None in the feed. summary.txt and media.txt carry no timestamp, and their HTTP Last-Modified header is just the time of the request (it equalled the Date header: 'Tue, 10 Nov 2026 23:08:46 GMT'), with Cache-Control: public, max-age=2592000. The only real update time is in the PDF: 'Printed on: 11/04/2026 at 09:43:14 pm' with 'REPORT 4', Hawaii Standard Time (Pacific/Honolulu, UTC-10, no DST); the PDF's Last-Modified header (Thu, 05 Nov 2026 07:51:59 GMT) agrees. A relay would have to detect change by content hash.",
+  "reporting_field": "summary.txt columns 'Total Precincts' and 'Counted Precincts', per contest. Example for Governor: Total Precincts 494, Counted Precincts 247. Beware: in this final report the counted number is exactly half the total for every contest (223/112, 273/137, 494/247, 18/9), so 'Total Precincts' appears to count each precinct twice (mail and in-person) and the ratio is not a percent reporting. media.txt has a per-precinct 'Reporting' column (1 = reported).",
+  "titles": {
+    "governor": "Governor and Lieutenant Governor",
+    "us_senate": null,
+    "us_house": ["U.S. Representative, Dist I", "U.S. Representative, Dist II"],
+    "state_upper": [
+      "State Senator, Dist 2",
+      "State Senator, Dist 9",
+      "State Senator, Dist 18 (Vacancy)"
+    ],
+    "state_lower": [
+      "State Representative, Dist 2",
+      "State Representative, Dist 3",
+      "State Representative, Dist 40"
+    ],
+    "other_statewide": ["Maui Resident Trustee", "Oahu Resident Trustee", "At-Large Trustee"],
+    "measures": ["Question #1", "Question #2"]
+  },
+  "choice_format": "Party is a prefix inside the name, surname first in capitals: \"(D) CASE, Ed\", \"(R) LAM, Adriel C.\", \"(G) CONLEY, Jordan S.\", \"(N) BERNING, Nathan M.\" (N = nonpartisan). The separate 'Candidate Party' column is empty. Nonpartisan offices have no prefix: \"AKAKA, Kalei\". The Governor ticket is one multi-line quoted field: \"(D) GREEN, Josh\\nFor GOVERNOR\\nKAWAKAMI, Derek S.K.\\nFor LIEUTENANT GOVERNOR\". Measures: Contest Type 'MS' (offices are 'OF') with candidate names 'YES' and 'NO'. Blank and over votes are per-contest columns (Mail/In-Person Blank Votes, Over Votes), which matters because Hawaii constitutional amendments count blanks as no.",
+  "district_field": "Only in the title. US House uses Roman numerals ('Dist I', 'Dist II'), the legislature uses Arabic ('Dist 2'), county councils mix both ('Councilmember, Dist 4', 'Councilmember, Dist IV'). County contests share titles across counties ('Mayor' appears twice, for Maui and Kauai) and nothing in summary.txt says which county; only Contest ID tells them apart, and media.txt's precinct ids would be needed to place them.",
+  "contest_count": 92,
+  "terms": "none found. The page footer links https://portal.ehawaii.gov/terms-of-use.html, which says nothing about automated access or reuse (only '© 2026 State of Hawaiʻi. All Rights Reserved.').",
+  "confidence": "high",
+  "tried": [
+    "Web search for the 2026 results page: only news sites came back.",
+    "GET https://elections.hawaii.gov/election-results/ with the relay User-Agent: 200; the 2026 General block links six PDFs and two text files under /wp-content/results/2026 General/.",
+    "GET summary.txt and media.txt (relay User-Agent, Origin: https://openslate.us): 200, text/plain, no Access-Control-Allow-Origin.",
+    "GET histatewide.pdf to find the report number and print time that the text files do not carry.",
+    "Read https://portal.ehawaii.gov/terms-of-use.html for reuse terms: nothing relevant.",
+    "Note: No US Senate seat was up in Hawaii in 2026. Contests decided in the primary or unopposed do not appear at all (only 6 of the state senate and 30 of the house districts are in the file). Hawaii votes almost entirely by mail and the office releases a handful of numbered reports, so this is a file that changes a few times, not a live ticker."
+  ]
+}

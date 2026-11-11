@@ -1,0 +1,36 @@
+{
+  "code": "il",
+  "state": "Illinois",
+  "office": "Illinois State Board of Elections",
+  "page": "https://www.elections.il.gov/electionoperations/ElectionResults.aspx",
+  "platform": "none",
+  "status": "none",
+  "feeds": [],
+  "election_id": "Not applicable for the live count. The certified-totals pages use opaque encrypted ids in the query string (for example ElectionVoteTotals.aspx?ID=63aIZoIunYs%3D&OfficeType=…); the 2026 general has none yet.",
+  "discovery": "There is nothing to discover on election night. After the board certifies (about a month after the election), the election appears in the 'Elections' drop-down on https://www.elections.il.gov/ElectionOperations/ElectionVoteTotals.aspx with a 'Download Vote Totals' option. Election-night numbers come only from the local election authorities (county clerks and city election boards); the board publishes a directory of their results sites at https://elections.il.gov/Downloads/ElectionOperations/PDF/ILElectionDayDirectory.pdf (seen in search results, not fetched).",
+  "cors": "none (no feed). The HTML pages answer with no Access-Control-Allow-Origin.",
+  "bot_blocking": "Relay User-Agent: 200 on the home page, ElectionResults.aspx and ElectionVoteTotals.aspx (Cloudflare in front, no challenge). Browser User-Agent not needed, not tried.",
+  "updated_field": "none",
+  "reporting_field": "none",
+  "titles": {
+    "governor": null,
+    "us_senate": null,
+    "us_house": [],
+    "state_upper": [],
+    "state_lower": [],
+    "other_statewide": [],
+    "measures": []
+  },
+  "choice_format": "No live feed. For reference, the certified page for the March 2026 primary shows titles in capitals ('UNITED STATES SENATOR', 'GOVERNOR AND LIEUTENANT GOVERNOR', 'ATTORNEY GENERAL', 'SECRETARY OF STATE', 'COMPTROLLER') and candidates as 'JULIANA STRATTON' with a separate party column 'DEMOCRATIC'.",
+  "district_field": "not applicable",
+  "contest_count": 0,
+  "terms": "none found",
+  "confidence": "high",
+  "tried": [
+    "GET https://www.elections.il.gov/ (relay User-Agent): 200; no results link on the home page, and 'Next Election' already shows the February 23, 2027 consolidated primary.",
+    "GET https://www.elections.il.gov/ElectionOperations/ElectionVoteTotals.aspx: 200; on 2026-11-10 the newest entry in the Elections drop-down is '2026 GENERAL PRIMARY'. There is no '2026 GENERAL ELECTION' entry, a week after the election.",
+    "GET https://www.elections.il.gov/electionoperations/ElectionResults.aspx: 200; it says, verbatim: 'Unofficial local results are not reported to the State Board of Elections or posted to the Agency's website. Unofficial Election Day results may be obtained by accessing the local jurisdiction's website as provided. Some jurisdictions do not have web sites; phone numbers are provided for all jurisdictions.'",
+    "Web search limited to elections.il.gov for any election-night page: found only the page above, the certified vote-totals pages, and the Election Day directory PDF of local authorities' results sites.",
+    "Note: Illinois has no statewide count until certification. A live Illinois count would have to be assembled from the local election authorities (county clerks plus city election boards), each on its own platform; the board's ILElectionDayDirectory.pdf is the list of their results URLs."
+  ]
+}

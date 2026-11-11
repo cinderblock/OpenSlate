@@ -1,0 +1,81 @@
+{
+  "code": "mo",
+  "state": "Missouri",
+  "office": "Missouri Secretary of State",
+  "page": "https://enr.sos.mo.gov/",
+  "platform": "html-only",
+  "status": "html-only",
+  "feeds": [
+    {
+      "what": "the results site's landing page: election selector and the 'Unofficial Results as of' stamp, but NO vote numbers (those appear only after pressing Submit, an ASP.NET form POST with __VIEWSTATE)",
+      "url": "https://enr.sos.mo.gov/",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 23139,
+      "saved_as": "page.html",
+      "notes": "Custom ASP.NET WebForms site behind Cloudflare. The election dropdown (ctl00$MainContent$cboElectionNames) has one option, value 750007086 = 'State of Missouri - General Election, November  03, 2026'. I did not submit the form (the brief forbids form submissions), so I have NOT seen the results markup or any 2026 numbers from this site."
+    },
+    {
+      "what": "the 'Pick a Race' page: the full list of contests with the site's own race ids (no votes)",
+      "url": "https://enr.sos.mo.gov/PickaRace.aspx",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 56704,
+      "saved_as": "PickaRace.html",
+      "notes": "The <select id=\"cboRaces\"> options give every state-level contest title and id (e.g. 460006719 = State Auditor, 100 = U.S. Representative - District 1, 750017089 = Constitutional Amendment No. 3). Showing one race's numbers again needs a form POST. CountyResults.aspx (saved as CountyResults.html) is the same idea per county."
+    }
+  ],
+  "election_id": "750007086, the value of the election dropdown on every page. It is sent in the POST body, not in a URL; a GET with ?eid=750007086 was refused by Cloudflare (403).",
+  "discovery": "The election dropdown on https://enr.sos.mo.gov/ lists the elections the site currently serves (only the 2026-11-03 general today). Older elections are on a separate archive site linked as 'Elections Archives' (not explored).",
+  "cors": "access-control-allow-origin: https://www.sos.mo.gov (fixed; not our origin) on the pages that answered 200",
+  "bot_blocking": "Cloudflare in front. With the relay User-Agent: /, /PickaRace.aspx and /CountyResults.aspx answered 200; /default.aspx?eid=750007086, /APFeed/Apfeed.asmx and two made-up control paths answered 403 with 'Cf-Mitigated: challenge'. A desktop Chrome UA from curl got the same 403 on the query-string URL. Headless Chrome loaded / fine but got Cloudflare's 'Sorry, you have been blocked' page on /APFeed/Apfeed.asmx and on the ?eid= URL. So anything outside a short list of plain page paths is refused, to browsers too.",
+  "updated_field": "Text on the page: 'Unofficial Results as of 11/10/2026 5:25:10 PM' (Central time; it tracked the request time on two fetches a minute apart, so it may be the server clock rather than the last count).",
+  "reporting_field": "Not seen (results not fetched). From earlier elections I remember this site printing 'Precincts Reporting N of M' above each race, but I did not verify that for 2026.",
+  "titles": {
+    "governor": null,
+    "us_senate": null,
+    "us_house": [
+      "U.S. Representative - District 1",
+      "U.S. Representative - District 2",
+      "U.S. Representative - District 3"
+    ],
+    "state_upper": [
+      "State Senator - District 2",
+      "State Senator - District 4",
+      "State Senator - District 6"
+    ],
+    "state_lower": [
+      "State Representative - District 1",
+      "State Representative - District 2",
+      "State Representative - District 3"
+    ],
+    "other_statewide": [
+      "State Auditor",
+      "Missouri Supreme Court",
+      "Court of Appeals - Eastern District"
+    ],
+    "measures": [
+      "Constitutional Amendment No. 3",
+      "Constitutional Amendment No. 6",
+      "Constitutional Amendment No. 7",
+      "Constitutional Amendment No. 8",
+      "Proposition A"
+    ]
+  },
+  "choice_format": "Not seen: the results markup needs the form POST. Titles above are verbatim from the PickaRace.aspx dropdown.",
+  "district_field": "In the title only, as far as the dropdown shows ('State Representative - District 115'). Each race also has a numeric id (the option value), but ids are not derived from the district (District 3 is 149, District 84 is 239).",
+  "contest_count": 253,
+  "terms": "none found on the pages fetched. The landing page says: 'These results are unofficial results. Missouri election law requires the local election authorities to transmit the certified election results to our office no later than the second Tuesday after the election (November 17, 2026).'",
+  "confidence": "low",
+  "tried": [
+    "curl https://enr.sos.mo.gov/ with the relay UA: 200. The page has the election dropdown and a Submit button; no results until the form is posted.",
+    "GET https://enr.sos.mo.gov/default.aspx?eid=750007086 (relay UA, then Chrome UA): 403, Cf-Mitigated: challenge.",
+    "GET /PickaRace.aspx and /CountyResults.aspx: 200; they list races and counties but also need a POST to show numbers.",
+    "A third-party page (results.moscout.com, found by search, described as test data) says it refreshes 'from the official state APFeed'. From memory the state has offered newsrooms an XML web service at /APFeed/Apfeed.asmx that needs an access key; GET https://enr.sos.mo.gov/APFeed/Apfeed.asmx returned Cloudflare 403, and so did two made-up control paths, so the 403 neither confirms nor denies that the feed exists. Treat the AP feed as unverified; if it exists it needs a key issued by the Secretary of State.",
+    "Headless Chrome: / loaded; /APFeed/Apfeed.asmx and ?eid= were hard-blocked ('Sorry, you have been blocked').",
+    "Did NOT submit the 'Choose election' form (a POST), per the brief's rule against submitting forms. That one postback is what a person does to see results; if the orchestrator allows it, the next step is a headless-Chrome click on Submit and saving the resulting HTML.",
+    "contest_count 253 = options in the race dropdown (saved PickaRace.html) minus group headings and blanks: 1 statewide office (State Auditor), 8 US House, 17 State Senate, 163 State House, 59 judicial, 5 ballot issues."
+  ]
+}

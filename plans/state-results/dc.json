@@ -1,0 +1,106 @@
+{
+  "code": "dc",
+  "state": "District of Columbia",
+  "office": "District of Columbia Board of Elections",
+  "page": "https://electionresults.dcboe.org/election_results/2026-General-Election",
+  "platform": "custom-json",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every citywide and ward contest of the election in one document (16 contests, district-wide totals)",
+      "url": "https://electionresults.dcboe.org/cityWide/getCityWide/2026-General-Election",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 21982,
+      "saved_as": "getCityWide.json",
+      "notes": "JSON served as text/plain; charset=utf-8. A top-level array of {OfficeName, ContestNumber, WardNumber, IsRCV, ElectionData[{Contestant, Votes, TotalVotes, IsWinner, CandidateNumber, PartyCode, VotesPercentage}]}. 21,982 bytes decoded, 2,129 on the wire (gzip). Does NOT include the Advisory Neighborhood Commission seats (those are …/citywide/GetANC/2026-General-Election, seen in the request log, not fetched). ElectionData includes pseudo-rows 'Write-in', 'OVER VOTES' and 'UNDER VOTES' that must be filtered out (their PartyCode is junk: OVER VOTES carries 'IND' or 'REP')."
+    },
+    {
+      "what": "election header: last updated, precincts counted, links to the CSV/XML/PDF downloads, RCV status",
+      "url": "https://electionresults.dcboe.org/electionResults/getElectionInfo/2026-General-Election",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 1251,
+      "saved_as": "getElectionInfo.json",
+      "notes": "Carries LastUpdated, PrecinctsCounted, TotalPrecincts, ElectionResultsTypeName ('Election Night Unofficial Results'), CsvLink, XmlLink, PdfLink, IsRCV:true, RCVPublishedDisplayNames ['Preliminary RCV Results 3 - Published November 10, 2026', …]."
+    },
+    {
+      "what": "the list of elections",
+      "url": "https://electionresults.dcboe.org/electionResults/getElectionResultsId",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 8375,
+      "saved_as": "getElectionResultsId.json",
+      "notes": "Array of {ElectionResultsId, ElectionName, ElectionDate, UrlText, IsLive, IsPublished, LinkName, HasPublishedRCV}; first is {ElectionResultsId:1164, ElectionDate:'2026-11-03T00:00:00', UrlText:'2026-General-Election'}."
+    },
+    {
+      "what": "party codes → names and colours",
+      "url": "https://electionresults.dcboe.org/electionResults/getAllParties",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 811,
+      "saved_as": "getAllParties.json",
+      "notes": "[{PartyCode:'DEM', PartyName:'Democrat', ColorCode:'#2295f4'}, …]"
+    },
+    {
+      "what": "media download, XML: every contest including ANC seats (363 ContestName entries), district-wide totals",
+      "url": "https://electionresults.dcboe.org/Downloads/Reports/November_3_2026_General_Election_Election_Night_Unofficial_Results.xml",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "xml",
+      "bytes": 330306,
+      "saved_as": "Unofficial_Results.xml",
+      "notes": "<XmlExportViewModel><ElectionName/><ElectionDate/><ContestList><ContestDataExportViewModel><ContestName/><ElectionData><ElectionDataExportViewModel><Candidate/><Party/><Votes/>…. The first two 'contests' are REGISTERED VOTERS - TOTAL and BALLOTS CAST - TOTAL. The file name is built from the election date, name and results type, so read it from getElectionInfo.XmlLink rather than constructing it (it will change when results become certified). 330,306 bytes decoded, 11,816 on the wire."
+    },
+    {
+      "what": "media download, CSV: one row per contest × precinct × candidate",
+      "url": "https://electionresults.dcboe.org/Downloads/Reports/November_3_2026_General_Election_Election_Night_Unofficial_Results.csv",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "csv",
+      "bytes": 1026422,
+      "saved_as": "Unofficial_Results.csv",
+      "notes": "Header: ElectionDate,ElectionName,ContestNumber,ContestName,PrecinctNumber,WardNumber,Candidate,Party,Votes. Content-Type application/txt. ContestNumber -2 and -1 are the registered-voters and ballots-cast pseudo-contests."
+    }
+  ],
+  "election_id": "2026-General-Election (the site calls it UrlText), the last path segment of the page and of the API calls. Numeric ElectionResultsId is 1164 (not used in URLs seen).",
+  "discovery": "GET https://electionresults.dcboe.org/electionResults/getElectionResultsId and match ElectionDate; use its UrlText in the other URLs.",
+  "cors": "none (no Access-Control-Allow-Origin on the API answers or the downloads when sent Origin: https://openslate.us)",
+  "bot_blocking": "Plain relay User-Agent: 200 on all six fetches. Behind Cloudflare (Server: cloudflare, cf-cache-status DYNAMIC) and the page loads Cloudflare's JS-detection script, but no challenge was served. Browser User-Agent not needed, not tried.",
+  "updated_field": "getElectionInfo.LastUpdated, e.g. '2026-11-10T20:15:24.937Z' (written with a Z; whether it is true UTC or local time labelled Z was not verified).",
+  "reporting_field": "Election-wide only: getElectionInfo.PrecinctsCounted 144 and TotalPrecincts 144. No per-contest reporting figure in getCityWide.",
+  "titles": {
+    "governor": null,
+    "us_senate": null,
+    "us_house": ["DELEGATE TO THE HOUSE OF REPRESENTATIVES FROM THE DISTRICT OF COLUMBIA"],
+    "state_upper": [],
+    "state_lower": [
+      "CHAIRMAN OF THE COUNCIL OF THE DISTRICT OF COLUMBIA",
+      "AT-LARGE MEMBER OF THE COUNCIL OF THE DISTRICT OF COLUMBIA",
+      "WARD ONE MEMBER OF THE COUNCIL OF THE DISTRICT OF COLUMBIA"
+    ],
+    "other_statewide": [
+      "MAYOR OF THE DISTRICT OF COLUMBIA",
+      "ATTORNEY GENERAL FOR THE DISTRICT OF COLUMBIA",
+      "UNITED STATES SENATOR",
+      "UNITED STATES REPRESENTATIVE CITYWIDE",
+      "WARD ONE MEMBER OF THE STATE BOARD OF EDUCATION"
+    ],
+    "measures": ["INITIATIVE MEASURE NO. 86"]
+  },
+  "choice_format": "Party code is a prefix of the name and also a separate field: Contestant 'DEM Janeese Lewis George', PartyCode 'DEM'; 'REP Denise Rosado' / 'REP'; 'STG' = Statehood Green. Measure: Contestant 'Yes, to approve' / 'No, to reject' with PartyCode 'NPN'. Every contest also has 'Write-in', 'OVER VOTES' and 'UNDER VOTES' rows.",
+  "district_field": "Only in the title, spelled out: 'WARD ONE MEMBER OF THE COUNCIL OF THE DISTRICT OF COLUMBIA'. WardNumber is a field but was null on the citywide document, even for ward seats. DC has no state legislature: the 13-member Council is the unicameral body, listed here under state_lower. 'UNITED STATES SENATOR' and 'UNITED STATES REPRESENTATIVE CITYWIDE' are DC's unpaid 'shadow' statehood seats, NOT seats in Congress — do not map them to us_senate / us_house; the real federal race is the Delegate.",
+  "contest_count": 16,
+  "terms": "none found on the results site",
+  "confidence": "high",
+  "tried": [
+    "GET https://electionresults.dcboe.org/ with the relay UA: 200, a React app",
+    "Headless Chrome on the home page: calls /electionResults/getElectionResultsId; on the 2026 page: getElectionInfo, cityWide/getCityWide, getAllParties, citywide/GetANC, cityWide/getWardPrecinct, and shows CSV / XML / PDF download links",
+    "curl of getCityWide, getElectionInfo, getElectionResultsId, getAllParties, the CSV and the XML with relay UA + Origin: all 200; Mayor = Lewis George 180,086, Hamilton 21,427 (first-round counts)",
+    "Ranked-choice note: IsRCV is true for candidate contests in this election. The counts in these feeds are first-choice tallies; RCV round results are published separately ('Preliminary RCV Results 3 - Published November 10, 2026') and their feed was not looked for."
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "code": "ms",
+  "state": "Mississippi",
+  "office": "Mississippi Secretary of State",
+  "page": "https://www.sos.ms.gov/elections-voting/election-results (certified results only; no page for the 2026-11-03 general exists yet)",
+  "platform": "none",
+  "status": "none",
+  "feeds": [
+    {
+      "what": "the Secretary of State's 'Election Results' index: a list of certified-results pages per election; newest entries are the March 10, 2026 primaries",
+      "url": "https://www.sos.ms.gov/elections-voting/election-results",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 182556,
+      "saved_as": "page.html",
+      "notes": "151 entries, 2003 to 2026. For 2026 only '/elections-voting/election-results/2026/march-10-2026-republican-primary-results' and '...-democratic-primary-results'. Nothing for November 3, 2026 a week after the election. Past general-election pages (e.g. /elections-voting/election-results/2024/2024-general-election-results) appear after certification; I did not open one, so their format (PDF/Excel/HTML) is not confirmed here."
+    }
+  ],
+  "election_id": "none: there is no live feed. Certified results pages use a slug like /elections-voting/election-results/2024/2024-general-election-results.",
+  "discovery": "Watch https://www.sos.ms.gov/elections-voting/election-results for a new 2026 general-election entry; by the pattern of earlier years it would be /elections-voting/election-results/2026/2026-general-election-results (a guess, not an existing URL).",
+  "cors": "none (not applicable: no feed; the index page sent no Access-Control-Allow-Origin)",
+  "bot_blocking": "www.sos.ms.gov is behind Cloudflare but answered the relay User-Agent with HTTP 200 on both pages fetched.",
+  "updated_field": "not applicable",
+  "reporting_field": "not applicable",
+  "titles": {
+    "governor": null,
+    "us_senate": null,
+    "us_house": [],
+    "state_upper": [],
+    "state_lower": [],
+    "other_statewide": [],
+    "measures": []
+  },
+  "choice_format": "not applicable (no feed). Note for whoever maps contests: Mississippi's 2026 ballot has US Senate and four US House seats; state offices and the legislature are elected in odd years (2027), so there is no governor or regular legislative contest this year.",
+  "district_field": "not applicable",
+  "contest_count": 0,
+  "terms": "none found",
+  "confidence": "medium",
+  "tried": [
+    "curl https://www.sos.ms.gov/elections-voting/election-results with the relay UA: 200. The newest results listed are the March 10, 2026 primaries; no November 2026 entry.",
+    "Guessed https://electionresults.sos.ms.gov/ (in case of a vendor election-night site): the host name does not resolve.",
+    "Two web searches for a Mississippi Secretary of State election-night reporting site: none found. News coverage of the still-uncalled 2026 US Senate race says the same thing from the other side: WGCU/NPR, 2026-11-06 (https://www.wgcu.org/2026-11-06/no-one-knows-how-many-ballots-are-outstanding-in-mississippis-senate-race) reports counties are 'not required to transmit election results to the state until next week', and quotes Secretary of State Watson that 'the individual counties will be the best source of the latest and most up-to-date information' (quotes as returned by a fetch-and-summarize tool; I did not read the article's raw text).",
+    "A search summary also described a 2020 Secretary of State statement that the office would not announce unofficial results and would post only certified county results (given as https://www.sos.ms.gov/node/908). I fetched that URL and today it is an unrelated page, so that statement is unverified.",
+    "Conclusion: the state office publishes no live statewide count; election-night numbers come from the 82 counties (and from news organizations' tallies of them). Confidence is medium rather than high because this is an absence finding: I checked the office's results index and searched, but could not prove no unlinked page exists."
+  ]
+}

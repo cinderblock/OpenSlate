@@ -99,23 +99,32 @@ function answerFor(upstream: CountyUpstream): Promise<Answer> {
   return answer;
 }
 
-export async function handleCountyCa(
-  pathname: string,
+export function handleCountyCa(pathname: string, cors: Record<string, string>): Promise<Response> {
+  return relayFeed(countyCaUpstream(pathname), cors, "County election office");
+}
+
+/**
+ * An election office's file, from the cache or fetched once for everyone
+ * asking: the counties' feeds here, the states' in `stateFeeds.ts`. `upstream`
+ * is null for a path no registry allows.
+ */
+export async function relayFeed(
+  upstream: CountyUpstream | null,
   cors: Record<string, string>,
+  source: string,
 ): Promise<Response> {
-  const upstream = countyCaUpstream(pathname);
   if (!upstream) return new Response("Not Found", { status: 404, headers: cors });
   let answer: Answer;
   try {
     answer = await answerFor(upstream);
   } catch {
-    return new Response("County results unreachable", { status: 502, headers: cors });
+    return new Response("Election results unreachable", { status: 502, headers: cors });
   }
   const headers = new Headers(cors);
   headers.set("Content-Type", answer.contentType);
   headers.set("Cache-Control", `public, max-age=${ttlOf(answer.status, upstream.ttl)}`);
   if (answer.lastModified) headers.set("Last-Modified", answer.lastModified);
-  headers.set("X-Data-Source", "County election office");
+  headers.set("X-Data-Source", source);
   return new Response(answer.body, { status: answer.status, headers });
 }
 

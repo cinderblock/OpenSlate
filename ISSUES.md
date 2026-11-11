@@ -138,18 +138,30 @@ growing or go, and the snapshot then needs to take the shards for chosen states.
 no boundary files beyond what's in `public/geo`.
 
 
-## The Live results page is built on California's contest ids
+## California's Live page and the other states' are two pages
 
 `apps/web/src/components/LivePanel.tsx` and `apps/web/src/lib/watch.ts` keep what a voter
 watches as the California Secretary of State's contest ids (`governor`, `us-rep/district/16`)
-and its counties' feeds. A voter whose area is in another state is told there's no live count
-for it yet (`ResultsView.tsx`), which is true today.
+and its counties' feeds: places, a watch list, a sort order, each race's history. The states read
+from one feed (`StateLivePanel.tsx`, `apps/web/src/lib/stateFeeds.ts`, 2026-11-10) get a simpler
+page: statewide, the voter's districts, the rest behind a search. No watch list, no "another
+place", no history, and no push from the relay's recorder (they are polled each minute).
 
-Why it matters: the shared results code already asks each state's sources through
-`apps/web/src/lib/counts.ts`; the Live page doesn't. When a second state's own count is read (a
-Clarity feed, as many states and counties publish), the watch list needs contest ids that say
-whose count they're from, and that is also what would show whether `StateCounts` is the right
-shape.
+Why it matters: a voter who watches a parent's races in Virginia from California can't put them
+on one page. Unifying them means watch-list ids that say whose count a contest is from
+(`st-va:us-house/11` already does, as a race id), and the recorder taking state feeds.
+
+
+## State results feeds are one election's, entered by hand
+
+`STATE_FEEDS` in `packages/core/src/stateResults.ts` holds each state's feed for the 2026-11-03
+general: an Enhanced Voting election id (`2026-November-General`) or a Clarity election number
+(`CO/127407`). The next election has new ones. Each platform lists a state's elections
+(Enhanced Voting: `…/results/public/api/jurisdictions/<slug>`; Clarity: `…/<ST>/elections.json`,
+though West Virginia's is empty), noted per state in `plans/state-results/<code>.json`.
+
+Why it matters: after certification the pages keep showing November 2026, and the next
+election's count needs someone to enter its ids, or code that finds them by date.
 
 ## `bun run lint` fails on `apps/web/scripts/ca-district-overlaps/2-classify.ts`
 

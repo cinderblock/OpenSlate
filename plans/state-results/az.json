@@ -1,0 +1,97 @@
+{
+  "code": "az",
+  "state": "Arizona",
+  "office": "Arizona Secretary of State",
+  "page": "https://app.enhancedvoting.com/results/public/Arizona/elections/110326GeneralElection",
+  "platform": "enhanced-voting",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every state-level contest of the election in one document (99 contests, statewide totals with a per-count-group breakdown per choice)",
+      "url": "https://app.enhancedvoting.com/results/public/api/elections/Arizona/110326GeneralElection/data",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 821274,
+      "saved_as": "data.json",
+      "notes": "Standard Enhanced Voting: /results/public/api/elections/<slug>/<publicElectionId>/data on app.enhancedvoting.com, slug 'Arizona'. 821,274 bytes decoded, 40,894 on the wire (gzip). cache-control: public, max-age=60."
+    },
+    {
+      "what": "the list of the state's elections on Enhanced Voting (only 1 so far: this one)",
+      "url": "https://app.enhancedvoting.com/results/public/api/jurisdictions/Arizona",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 34493,
+      "saved_as": "jurisdictions.json",
+      "notes": "elections[] = [{publicElectionId:'110326GeneralElection', electionDate:'2026-11-03', …}]. Arizona's earlier elections (including the 2026 primary) are NOT here; they are on the state's old site results.arizona.vote."
+    },
+    {
+      "what": "media export (statewide plus the 15 counties' results) — NOT downloaded, size only",
+      "url": "https://app.enhancedvoting.com/cdn/results/Arizona/export-110326GeneralElection.json",
+      "method": "HEAD",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 72691077,
+      "saved_as": "media-export.HEAD.headers.txt",
+      "notes": "Only a HEAD request was made: 200, Content-Length 72,691,077, application/octet-stream, Last-Modified Tue, 10 Nov 2026 23:01:02 GMT. Too big for the brief's 30 MB limit, so the body was not fetched and its shape is unverified (Georgia's export of the same kind is described in ga/findings.json). Path comes from jurisdiction.mediaExportPath in data.json."
+    },
+    {
+      "what": "the state's landing page that links each election to its results site (HTML), kept as evidence of the platform switch",
+      "url": "https://results.arizona.vote/default.html",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 26122,
+      "saved_as": "results.arizona.vote-default.html",
+      "notes": "Its first 'Unofficial Election Night Results' link is https://app.enhancedvoting.com/results/public/Arizona/110326GeneralElection; older elections link to https://results.arizona.vote/#/featured/<eid>/0 (68, 72, 71, 47 …). No response headers were saved for this file (fetched with curl -v, headers not written to disk)."
+    }
+  ],
+  "election_id": "110326GeneralElection (publicElectionId): last segment of the page URL, and between the slug 'Arizona' and /data in the API URL.",
+  "discovery": "GET https://app.enhancedvoting.com/results/public/api/jurisdictions/Arizona and read elections[] by electionDate. Because Arizona only just moved here, also check https://results.arizona.vote/default.html, the state's own index, which says which site holds a given election.",
+  "cors": "none (no Access-Control-Allow-Origin on /data, /jurisdictions, or the HEAD of the media export, when sent Origin: https://openslate.us)",
+  "bot_blocking": "app.enhancedvoting.com: plain relay User-Agent got 200 on everything; no challenge. The state's OLD site results.arizona.vote is different: it is behind a Cloudflare managed challenge ('Just a moment…'). Windows system curl 8.22 with the relay UA got 403 + challenge page; headless Chrome never got past the challenge (60 s timeout); Git Bash curl 8.8 with the same relay UA got 200 on the home page, default.html and four of five script files (one 403). That site is not needed for 2026-11-03.",
+  "updated_field": "election.asOf, e.g. '2026-11-10T23:00:55.866264Z' (UTC). Also election.lastUpdated '2026-11-10T04:02:19.9733708Z', election.publishDate '2026-11-10T23:00:56.3424059Z', and reportingStatus.asOf per contest.",
+  "reporting_field": "Per contest: ballotItems[].reportingStatus.reportingUnits / totalUnits, counted in COUNTIES (Governor: 15 / 15; US House District 2: 9 / 9). Per county: jurisdiction.childLocalities[].percentReporting (0.8333333 for the first county) and precinctsReporting (1.0), both fractions. election.precinctsReporting is null.",
+  "titles": {
+    "governor": "Governor and Lieutenant Governor",
+    "us_senate": null,
+    "us_house": [
+      "U.S. Representative in Congress - District No. 1",
+      "U.S. Representative in Congress - District No. 2",
+      "U.S. Representative in Congress - District No. 3"
+    ],
+    "state_upper": [
+      "State Senator - District No.  1",
+      "State Senator - District No.  2",
+      "State Senator - District No. 10"
+    ],
+    "state_lower": [
+      "State Representative - District No.  1",
+      "State Representative - District No.  2",
+      "State Representative - District No. 10"
+    ],
+    "other_statewide": [
+      "Secretary of State",
+      "Attorney General",
+      "State Treasurer",
+      "Superintendent of Public Instruction",
+      "State Mine Inspector",
+      "Corporation Commissioner"
+    ],
+    "measures": ["PROPOSITION 141", "PROPOSITION 316"]
+  },
+  "choice_format": "Party is inside the name text and also a separate object: 'Katie Hobbs (DEM) / John Giles (PND)' with party.abbreviation 'DEM' (governor is a ticket; each half carries its own party in parentheses). Write-in lines appear as options: 'Unofficial Write-in', 'Unassigned Write-in', and named write-ins with a trailing space ('Alice Novoa '). Measures have contestType 'BallotMeasure' with options 'YES' and 'NO' (order varies: options are not always YES first). Judicial retention is also BallotMeasure, options 'Be retained YES' / 'Be retained NO'.",
+  "district_field": "Only in the title, as 'District No. N'; state legislative titles pad single digits with an extra space ('State Senator - District No.  1' has two spaces, 'District No. 10' one). No separate district field. State Representative is vote-for-2.",
+  "contest_count": 99,
+  "terms": "none found on the results site",
+  "confidence": "high",
+  "tried": [
+    "GET https://results.arizona.vote/ with the relay UA via Windows curl: 403 Cloudflare challenge; via Git Bash curl: 200 (an AngularJS app, the state's own ENR)",
+    "Headless Chrome on https://results.arizona.vote/: stuck on the Cloudflare challenge",
+    "Read app/enrApp.js of the old site: its data is at //cdn1.arizona.vote/data/<eid>/<jid>/election_<eid>_<jid>.json (not fetched; not used for this election)",
+    "GET https://results.arizona.vote/default.html: its 2026 General link goes to app.enhancedvoting.com/results/public/Arizona/110326GeneralElection",
+    "curl of …/api/elections/Arizona/110326GeneralElection/data with relay UA + Origin: 200, 99 contests, asOf 2026-11-10T23:00Z, isOfficialResults false",
+    "HEAD of the media export: 72.7 MB, not downloaded"
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "code": "nj",
+  "state": "New Jersey",
+  "office": "New Jersey Department of State, Division of Elections",
+  "page": "https://www.nj.gov/state/elections/election-night-results.shtml",
+  "platform": "none",
+  "status": "none",
+  "feeds": [
+    {
+      "what": "the Division's '2026 Election Night Results' page: a statement that the state posts no results, and links to all 21 county results sites",
+      "url": "https://www.nj.gov/state/elections/election-night-results.shtml",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 47708,
+      "saved_as": "election-night-results.html",
+      "notes": "Verbatim: 'The Division of Elections does not post any official or unofficial results on Election Night. The best source for election night results are the local county websites linked below.' County links on the page: Atlantic https://results.enr.clarityelections.com/NJ/Atlantic/127487/ ; Bergen https://www.bergencountyclerk.gov/Election/ ; Burlington .../NJ/Burlington/127582/ ; Camden https://www.camdencounty.com/service/voting-and-elections/election-results/ ; Cape May .../NJ/Cape_May/127585/ ; Cumberland .../NJ/Cumberland/127562/ ; Essex .../NJ/Essex/127486/ ; Gloucester .../NJ/Gloucester/127298/ ; Hudson .../NJ/Hudson/127495/ ; Hunterdon https://www.co.hunterdon.nj.us/236/County-Clerk ; Mercer .../NJ/Mercer/127554/ ; Middlesex .../NJ/Middlesex/127580/ ; Monmouth .../NJ/Monmouth/127586/ ; Morris .../NJ/Morris/127576/ ; Ocean .../NJ/Ocean/127556/ ; Passaic https://results.enr.clarityelections.com/NJ/Passaic/ (no election id) ; Salem https://www.livevoterturnout.com/ENR/salemnjenr/13/en/Index_13.html ; Somerset https://results.enr.clarityelections.com/NJ/Somerset/ (no election id) ; Sussex https://www.sussexcountyclerk.org/939/General-Election ; Union .../NJ/Union/127567/ ; Warren https://www.warrencountyvotes.com/elections/past-election-results . ('...' = https://results.enr.clarityelections.com). 16 of 21 are Clarity ENR."
+    },
+    {
+      "what": "example county feed (Atlantic County, Clarity ENR): every contest on that county's ballot",
+      "url": "https://results.enr.clarityelections.com/NJ/Atlantic/127487/385042/json/en/summary.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 57581,
+      "saved_as": "county-atlantic-summary.json",
+      "notes": "Standard Clarity: https://results.enr.clarityelections.com/NJ/Atlantic/127487/current_ver.txt returned 385042 (saved county-atlantic-current_ver.txt), then .../127487/385042/json/en/summary.json. Relay UA got 200, Access-Control-Allow-Origin: *. This is a COUNTY office's count, not the state's; a statewide number would have to be built by adding up 21 counties on four or more different platforms. Only Atlantic was fetched."
+    },
+    {
+      "what": "the state's 'Unofficial Periodic Election Reporting' page: daily per-county PDF reports of ballots received / counted / remaining (ballot counts, not votes per candidate)",
+      "url": "https://www.nj.gov/state/elections/election-results-information.shtml",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 176000,
+      "saved_as": "election-results-information.html",
+      "notes": "Page header 'Page Last Updated: 11/10/26 6:28 PM'. PDFs are at https://www.nj.gov/state/elections/assets/pdf/periodic-report/2026/2026-<MMDD>-<county>-periodic-report.pdf ; one saved as 2026-1110-bergen-periodic-report.pdf (82802 bytes, not parsed). Per the page, P.L.2023, c.131 requires each county clerk to post 'an unofficial report detailing the number and types of ballots that have been received and, to the extent practicable, the number and types of ballots that have been counted and that remain to be counted', and the Secretary of State to repost them."
+    }
+  ],
+  "election_id": "none at state level. Each Clarity county has its own election id in its URL (Atlantic 127487, Burlington 127582, Cape May 127585, Cumberland 127562, Essex 127486, Gloucester 127298, Hudson 127495, Mercer 127554, Middlesex 127580, Monmouth 127586, Morris 127576, Ocean 127556, Union 127567).",
+  "discovery": "For each election the Division republishes https://www.nj.gov/state/elections/election-night-results.shtml with that election's county links; scrape it for the county URLs and Clarity ids. Certified statewide results appear later on https://www.nj.gov/state/elections/election-information-results.shtml (the archive page; no 2026 general entry yet).",
+  "cors": "none on www.nj.gov pages. The Atlantic County Clarity feed answered Access-Control-Allow-Origin: *.",
+  "bot_blocking": "None seen. The relay User-Agent got HTTP 200 on every www.nj.gov page and PDF fetched, and on the Clarity files (CloudFront).",
+  "updated_field": "not applicable for the state. In Clarity county feeds, the HTTP Last-Modified header and electionsettings.json carry the time (not fetched here); Atlantic's summary.json was Last-Modified Wed, 04 Nov 2026 04:14:16 GMT.",
+  "reporting_field": "not applicable for the state. In Clarity county summary.json: PR (precincts reporting) and TP (total precincts), e.g. \"TP\" : 145 , \"PR\" : 145.",
+  "titles": {
+    "governor": null,
+    "us_senate": "United States Senate (as titled in Atlantic County's Clarity feed; each county titles contests itself)",
+    "us_house": [],
+    "state_upper": [],
+    "state_lower": [],
+    "other_statewide": [],
+    "measures": []
+  },
+  "choice_format": "State: not applicable. Atlantic County Clarity example: \"CH\" : [ \"REP Justin MURPHY\",\"DEM Cory BOOKER\",...] with \"P\" : [ \"REP\",\"DEM\",\"NPC\",\"NPD\" ] and \"V\" : [ 38536,51378,1406,685 ] (party prefix inside the name string, surname upper-cased). Other counties may format differently.",
+  "district_field": "not applicable for the state; county feeds were not surveyed for this.",
+  "contest_count": 0,
+  "terms": "none found on the state pages fetched.",
+  "confidence": "high",
+  "tried": [
+    "curl https://www.nj.gov/state/elections/election-information-results.shtml (results archive): 200; newest items are 2026 pre-election documents, no general-election results.",
+    "https://www.nj.gov/state/elections/election-results.shtml: 'The Division of Elections does not post running results on Election Night, either official or unofficial. The best source for election night results are the local county websites.'",
+    "https://www.nj.gov/state/elections/election-night-results.shtml: the same statement and the 21 county links.",
+    "https://www.nj.gov/state/elections/election-results-information.shtml: periodic ballot-count PDFs per county per day; fetched one PDF, did not parse it.",
+    "Fetched Atlantic County's Clarity current_ver.txt and summary.json to confirm the county links are live with 2026-11-03 numbers.",
+    "titles are mostly empty because the state has no feed; New Jersey's 2026 ballot has US Senate and 12 US House seats, with no governor or legislature this year (those are odd-year elections)."
+  ]
+}

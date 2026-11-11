@@ -1,0 +1,94 @@
+{
+  "code": "co",
+  "state": "Colorado",
+  "office": "Colorado Secretary of State",
+  "page": "https://results.enr.clarityelections.com/CO/127407/",
+  "platform": "clarity",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every contest of the election in one document (302 contests, statewide totals)",
+      "url": "https://results.enr.clarityelections.com/CO/127407/386671/json/en/summary.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 245848,
+      "saved_as": "summary.json",
+      "notes": "Standard Clarity: …/CO/<EID>/<version>/json/en/summary.json. 245,848 bytes decoded, 25,119 on the wire (gzip). Version-pinned URL is Cache-Control: max-age=86400; a new count gets a new version number."
+    },
+    {
+      "what": "version pointer",
+      "url": "https://results.enr.clarityelections.com/CO/127407/current_ver.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 6,
+      "saved_as": "current_ver.txt",
+      "notes": "Body was '386671' (no newline). Cache-Control: no-cache."
+    },
+    {
+      "what": "election settings: update time, statewide precinct counts, party colours",
+      "url": "https://results.enr.clarityelections.com/CO/127407/386671/json/en/electionsettings.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 36891,
+      "saved_as": "electionsettings.json",
+      "notes": "36,891 bytes decoded, 12,981 on the wire. Holds websiteupdatedat and stateprecinctsreporting / stateprecinctsparticipating."
+    },
+    {
+      "what": "the list of the state's elections on Clarity",
+      "url": "https://results.enr.clarityelections.com/CO/elections.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 3397,
+      "saved_as": "elections.json",
+      "notes": "Array of {State, StateId, County, CountyId, EID, ElectionName, Date}; first entry is {EID:'127407', ElectionName:'2026 General', Date:'11/3/2026 12:00:00 AM'}. Cache-Control: max-age=60."
+    }
+  ],
+  "election_id": "127407 (Clarity EID), the path segment after /CO/. Version at fetch time: 386671.",
+  "discovery": "GET https://results.enr.clarityelections.com/CO/elections.json and take the EID whose Date is the election day; then …/CO/<EID>/current_ver.txt for the version.",
+  "cors": "*  (Access-Control-Allow-Origin: * on elections.json, current_ver.txt, summary.json and electionsettings.json)",
+  "bot_blocking": "Plain relay User-Agent: 200 on all four files (CloudFront). Browser User-Agent not needed, not tried.",
+  "updated_field": "electionsettings.json → websiteupdatedat, e.g. '11/10/2026 3:56:49 PM MST' (US Mountain local time with the zone abbreviation in the string). summary.json itself carries no timestamp; its Last-Modified header was Tue, 10 Nov 2026 22:54:36 GMT.",
+  "reporting_field": "Per contest in summary.json: PR (reporting) and TP (total), counted in COUNTIES for Colorado, not precincts (United States Senator: PR 25, TP 64 — 64 counties, a county counts as reporting only when complete). Statewide in electionsettings.json: stateprecinctsreporting 712, stateprecinctspartiallyreporting 3568, stateprecinctsparticipating 4297.",
+  "titles": {
+    "governor": "Governor / Lieutenant Governor",
+    "us_senate": "United States Senator",
+    "us_house": [
+      "Representative to the 120th United States Congress - District 1",
+      "Representative to the 120th United States Congress - District 2",
+      "Representative to the 120th United States Congress - District 3"
+    ],
+    "state_upper": [
+      "State Senator - District 1",
+      "State Senator - District 3",
+      "State Senator - District 4"
+    ],
+    "state_lower": [
+      "State Representative - District 1",
+      "State Representative - District 2",
+      "State Representative - District 3"
+    ],
+    "other_statewide": [
+      "Secretary of State",
+      "State Treasurer",
+      "Attorney General",
+      "Colorado Supreme Court Justice - Hood",
+      "State Board of Education Member - Congressional District 1",
+      "Regent of the University of Colorado - Congressional District 2"
+    ],
+    "measures": ["Amendment 81 (CONSTITUTIONAL)", "Proposition NN (STATUTORY)"]
+  },
+  "choice_format": "Parallel arrays per contest: CH (names) ['Mark Baisley', 'John Hickenlooper', …], P (party codes) ['REP', 'DEM', 'FWD', 'APV', 'LBR', 'UNI'], V (votes) [934667, 1613055, …], PCT. Governor is a ticket: 'Phil Weiser / Lesley Dahlkemper'. Measures: CH ['Yes/For', 'No/Against'] with P ['Y', 'N']; judicial retention: CH ['Yes', 'No'], P ['Y', 'N']. Nonpartisan RTD seats have P ['1', '2'] (ballot positions, not parties).",
+  "district_field": "Only in the title C ('… - District 7'). K is a contest key (20, 110, 1010, 2001 …) whose digits loosely track the district (State Representative District 1 = K 2001) but it is not a district field. CAT gives the group ('Federal Offices').",
+  "contest_count": 302,
+  "terms": "none found (the Clarity pages carry no terms-of-use statement; sos.state.co.us not searched)",
+  "confidence": "high",
+  "tried": [
+    "GET https://results.enr.clarityelections.com/CO/ with the relay UA: 200, an Angular 'List Elections' shell",
+    "Guessed https://results.enr.clarityelections.com/CO/elections.json: 200, lists EID 127407 '2026 General'",
+    "current_ver.txt → 386671; summary.json and electionsettings.json under that version: 200 with real counts (US Senate 2,668,209 votes)"
+  ]
+}

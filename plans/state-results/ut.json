@@ -1,0 +1,69 @@
+{
+  "code": "ut",
+  "state": "Utah",
+  "office": "Utah Lieutenant Governor's Office (Elections)",
+  "page": "https://electionresults.utah.gov/results/public/Utah/elections/General11032026",
+  "platform": "enhanced-voting",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every state-level contest of the election in one document (135 ballot items: 4 US House, 15 State Senate, 75 State House, 8 State School Board, 2 constitutional amendments, 31 judicial retention questions), plus 29 county election stubs",
+      "url": "https://electionresults.utah.gov/results/public/api/elections/Utah/General11032026/data",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 343564,
+      "saved_as": "data.json",
+      "notes": "Standard Enhanced Voting shape: …/results/public/api/elections/<slug>/<publicElectionId>/data. slug is 'Utah' with a capital U (that is jurisdiction.shortName and what the site's own redirect uses; I did not test lower case). 24,925 bytes gzipped. Cache-Control: public, max-age=60."
+    },
+    {
+      "what": "jurisdiction document with the elections list (10 elections back to 2024) and the 29 counties",
+      "url": "https://electionresults.utah.gov/results/public/api/jurisdictions/Utah",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 29220,
+      "saved_as": "jurisdiction.json",
+      "notes": "Elections list is at api/jurisdictions/<slug> (.elections[]). api/elections/utah and api/elections/Utah both answer 404."
+    }
+  ],
+  "election_id": "'General11032026' (publicElectionId: a hand-typed slug, type + MMDDYYYY). In the page URL /results/public/Utah/elections/General11032026 and the API URL /api/elections/Utah/General11032026/data. Internal GUID election.id = 01000000-3eb9-2098-2ce9-08df22ebab67.",
+  "discovery": "GET https://electionresults.utah.gov/results/public/api/jurisdictions/Utah and read .elections[] (publicElectionId, electionDate, name). Ids are not predictable: casing varies between elections ('General11032026', 'Primary06232026', but 'general11042025', 'primary08122025', 'general11052024'), so always look the id up by electionDate.",
+  "cors": "none on 200 responses (no Access-Control-Allow-Origin; 'cross-origin-resource-policy: same-origin'). 404s from the API do carry 'access-control-allow-origin: *'. Needs the relay.",
+  "bot_blocking": "Relay User-Agent: 200 for the site root, jurisdictions and data (Azure Front Door, X-Cache headers; no challenge). Browser User-Agent not needed, not tried.",
+  "updated_field": "election.asOf = '2026-11-10T23:06:22.6634728Z' (UTC). Also election.lastUpdated = '2026-11-10T22:59:17.6196599Z', election.publishDate, election.publishVersionId. Repeated per contest in ballotItems[].reportingStatus.asOf.",
+  "reporting_field": "Per contest: ballotItems[].reportingStatus.reportingUnits / .totalUnits, where the units are COUNTIES (29/29 for a statewide amendment, 3/3 for 'State Senate District 1 (Multi-County)', 1/1 for a single-county district). No precinct progress: election.precinctsReporting null, localityElections[].precinctsReporting null, precinctReportingStatus []. election.totalVoters and ballotsCast are 0.0 (not published).",
+  "titles": {
+    "governor": null,
+    "us_senate": null,
+    "us_house": ["U.S. House District 1", "U.S. House District 2", "U.S. House District 3"],
+    "state_upper": [
+      "State Senate District 1 (Multi-County)",
+      "State Senate District 5 (Multi-County)",
+      "State Senate District 6"
+    ],
+    "state_lower": [
+      "State House District 1 (Multi-County)",
+      "State House District 2",
+      "State House District 3"
+    ],
+    "other_statewide": [
+      "Shall JILL M. POHLMAN be retained in the office of Justice of the Supreme Court of Utah?",
+      "Shall MICHELE M. CHRISTIANSEN FORSTER be retained in the office of Judge of the Court of Appeals of Utah?",
+      "State School Board District 1 (Multi-County) (districted, not statewide)"
+    ],
+    "measures": ["Constitutional Amendment A", "Constitutional Amendment B"]
+  },
+  "choice_format": "ballotItems[].summaryResults.ballotOptions[]: name [{\"languageId\":\"en\",\"text\":\"BEN MCADAMS\"}] (candidate names are ALL CAPS), voteCount 174492, party {abbreviation: null, name:[{\"languageId\":\"en\",\"text\":\"Democratic\"}]} - Utah fills in only the party's full name ('Republican', 'Democratic', 'Libertarian', 'Constitution', 'Forward', 'Unaffiliated'), never an abbreviation. Constitutional amendments: contestType 'BallotMeasure', options 'FOR' and 'AGAINST'. Judicial retention: also 'BallotMeasure', options 'YES' and 'NO'. isWinner null throughout.",
+  "district_field": "Only in the title, and multi-county districts carry a ' (Multi-County)' suffix that must be stripped ('State Senate District 1 (Multi-County)'); one has ' (2-Year Term)'. contestGroupId is null for every item (Utah defines no contest groups) and voteFor is an empty array.",
+  "contest_count": 135,
+  "terms": "none found on the results site or in the API. I did not search vote.utah.gov for a general terms page.",
+  "confidence": "high",
+  "tried": [
+    "GET https://electionresults.utah.gov/ : 200, redirects to /results/public/Utah (Enhanced Voting single-page app)",
+    "GET …/results/public/api/elections/utah and …/api/elections/Utah (the list path in the brief): both 404",
+    "GET …/results/public/api/jurisdictions/Utah (path learned from Washington's site): 200, elections list",
+    "GET …/api/elections/Utah/General11032026/data with relay UA + Origin: 200, real numbers (e.g. Constitutional Amendment A FOR 605,095 / AGAINST 384,065)",
+    "No US Senate or governor contest is in the file, which matches Utah's 2026 ballot (neither office was up)"
+  ]
+}

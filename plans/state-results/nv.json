@@ -1,0 +1,108 @@
+{
+  "code": "nv",
+  "state": "Nevada",
+  "office": "Nevada Secretary of State",
+  "page": "https://silverstateelection.nv.gov/ (https://results.nv.gov/ redirects there)",
+  "platform": "custom-json",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "pointer to the current election's manifest",
+      "url": "https://silverstateelection.nv.gov/results-config.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 122,
+      "saved_as": "results-config.json",
+      "notes": "{\"manifestUrl\": \"data/v2/elections/2a6d1aef-f8eb-424f-9130-ac9bdc2cced5/manifest.json\", \"schemaVersion\": 1}. manifestUrl is relative to the site root. Last-Modified 2026-10-28, so it changes per election, not per count."
+    },
+    {
+      "what": "manifest: the release number, generation time, and the content-addressed paths of the overview, every contest's county breakdown, and turnout",
+      "url": "https://silverstateelection.nv.gov/data/v2/elections/2a6d1aef-f8eb-424f-9130-ac9bdc2cced5/manifest.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 89895,
+      "saved_as": "manifest.json",
+      "notes": "Fields: schemaVersion 2, kind 'Manifest', electionId, releaseId, sequence (63 when fetched), generatedAtUtc, overview {path, sha256, bytes}, contests [{contestId, results {path, sha256, bytes}}] (372 entries), turnout {path, sha256, bytes}. Paths are relative to the manifest's folder and named by the SHA-256 of the content, so they change whenever the content changes: always re-read the manifest first. Served with Cache-Control: no-cache, ETag and Last-Modified."
+    },
+    {
+      "what": "every contest of the election in one document, with choices and race-wide totals",
+      "url": "https://silverstateelection.nv.gov/data/v2/elections/2a6d1aef-f8eb-424f-9130-ac9bdc2cced5/objects/fe0c80aa5ae58f35abf4db344bc4dfa8619183b6cf6a6c1016540d0ceaa70db0.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 538711,
+      "saved_as": "overview.json",
+      "notes": "kind 'ElectionOverview': election {id, name '2026 General Election', type, electionDate, resultsStatus 'Unofficial'}, groups, counties (17, codes 01-17), parties, contests (372). Each contest: id, name, groupId, kind (Office | Question), scope {level, label, countyCodes}, voteFor, question {identifier, summary}, choices [{id, label, kind, candidate {lastName, firstName, partyId, incumbent...}}], totals {totalVotes, expectedCountyCount, receivedCountyCount, completeCountyCount, choices [{choiceId, votes, receivedCountyCount}], lead {status, choiceIds, marginVotes}}. 89 KB gzipped on the wire. THIS URL IS ONLY VALID FOR RELEASE 63; get the current one from manifest.overview.path."
+    },
+    {
+      "what": "one contest's county-by-county results (Governor)",
+      "url": "https://silverstateelection.nv.gov/data/v2/elections/2a6d1aef-f8eb-424f-9130-ac9bdc2cced5/objects/ee5fde0036e403bfd499fa1de8e8c8475ceae6b5cb68a35141b87daa99548dd9.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 6807,
+      "saved_as": "contest-governor.json",
+      "notes": "kind 'ContestResults': counties [{countyCode, choices [{choiceId, votes}], lead}]. Path comes from manifest.contests[] by contestId."
+    },
+    {
+      "what": "turnout per county",
+      "url": "https://silverstateelection.nv.gov/data/v2/elections/2a6d1aef-f8eb-424f-9130-ac9bdc2cced5/objects/9d040562a0b5647c288cca06bb940303c326a0655a3c0d422f98a773afc751f0.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 3611,
+      "saved_as": "turnout.json",
+      "notes": "kind 'Turnout': counties [{countyCode, activeRegisteredVoters, totalTurnout, methods {electionDay, early, absentee, mail}}]."
+    }
+  ],
+  "election_id": "2a6d1aef-f8eb-424f-9130-ac9bdc2cced5 (a UUID), in the path /data/v2/elections/<electionId>/ and as electionId in every document.",
+  "discovery": "GET https://silverstateelection.nv.gov/results-config.json and follow manifestUrl. That file is the site's own pointer to the current election, so a future election needs no code change. I found no list of past elections.",
+  "cors": "none (no Access-Control-Allow-Origin on results-config.json, the manifest or the objects)",
+  "bot_blocking": "Imperva (Incapsula) in front, 'X-CDN: Imperva'. The HTML page https://silverstateelection.nv.gov/ answered the relay User-Agent and a desktop Chrome UA from curl with a 200 that is only the Incapsula JavaScript challenge (212 and 1031 bytes), and showed headless Chrome an hCaptcha. But the JSON files (results-config.json, manifest.json, objects/*.json) answered the relay User-Agent with HTTP 200 and real data, no challenge, on five requests. Imperva sets visid_incap/incap_ses cookies on those responses; I did not send them back.",
+  "updated_field": "manifest.generatedAtUtc, e.g. '2026-11-10T22:21:36.5813185Z' (UTC; = 2:21 PM PST), plus manifest.sequence (63) and releaseId. The HTTP Last-Modified on the manifest was 'Tue, 10 Nov 2026 22:22:26 GMT'.",
+  "reporting_field": "Counties, not precincts: contest.totals.expectedCountyCount, receivedCountyCount and completeCountyCount, e.g. Governor {\"expectedCountyCount\": 17, \"receivedCountyCount\": 17, \"completeCountyCount\": 17}; each choice also has receivedCountyCount.",
+  "titles": {
+    "governor": "Governor",
+    "us_senate": null,
+    "us_house": [
+      "Representative In Congress, District 1",
+      "Representative In Congress, District 2",
+      "Representative In Congress, District 3"
+    ],
+    "state_upper": [
+      "State Senate, District 2",
+      "State Senate, District 8",
+      "State Senate, District 9"
+    ],
+    "state_lower": [
+      "State Assembly, District 1",
+      "State Assembly, District 2",
+      "State Assembly, District 3"
+    ],
+    "other_statewide": [
+      "Lieutenant Governor",
+      "Secretary of State",
+      "State Treasurer",
+      "State Controller",
+      "Attorney General",
+      "Justice of the Supreme Court, Seat B"
+    ],
+    "measures": ["Statewide Ballot Question No. 6", "Statewide Ballot Question No. 7"]
+  },
+  "choice_format": "choice.label is 'Last, First', party is by reference: {\"id\":\"56260403-...\",\"label\":\"Buck, Carrie Ann\",\"kind\":\"Candidate\",\"ballotOrder\":1,\"colorKey\":\"red\",\"candidate\":{\"displayName\":\"Buck, Carrie\",\"lastName\":\"Buck\",\"firstName\":\"Carrie\",...,\"partyId\":\"party-060aaf24f0cd822ba1e86e8af66acf73\",\"incumbent\":false}}, with parties[] in the overview mapping that id to {\"label\":\"Republican\",\"abbreviation\":\"REP\"} (also DEM, IAP, NP, LPN, NPP). Votes are in totals.choices[] keyed by choiceId, not on the choice itself. Nevada's 'None of These Candidates' is a choice with candidate null. Measures: kind 'Question', choices labelled 'Yes' and 'No' with kind 'Response', and question.summary holding the text.",
+  "district_field": "In the title ('State Assembly, District 1') and in scope.label ('Assembly District 1', 'Congressional District 1', 'Senate District 2'), with scope.level 'District' or 'Statewide'. There is no bare numeric district field; the chamber is the group (groupId -> groups[].label 'State Senate', 'State Assembly', 'U.S. Congress', 'Statewide', 'Ballot Questions').",
+  "contest_count": 372,
+  "terms": "none found (the HTML site, where terms would be, could not be read past the Imperva challenge).",
+  "confidence": "high",
+  "tried": [
+    "curl https://silverstateelection.nv.gov/ with the relay UA: 200 but only an Incapsula challenge script (212 bytes). Chrome UA: the same kind of page (1031 bytes).",
+    "Headless Chrome: hCaptcha, page never loaded.",
+    "WebFetch of the site: empty page. A news search found that the state launched an 'upgraded' results site for this election at RESULTS.NV.gov; https://results.nv.gov/ answers 302 to https://silverstateelection.nv.gov/.",
+    "Wayback Machine CDX listing for silverstateelection.nv.gov (captures of 2026-11-04) revealed the data URLs: /results-config.json, /data/v2/elections/<uuid>/manifest.json, /data/v2/elections/<uuid>/objects/<sha256>.json, and the app bundles /assets/index-*.js, /assets/payload-bootstrap-*.js.",
+    "Fetched those URLs live with the relay UA: all 200 with current data (sequence 63, generated 2026-11-10T22:21:36Z).",
+    "Not fetched: the other 371 per-contest objects (the overview already has every contest's totals).",
+    "contest_count 372 by group: County Results 173, Judicial 92, State Assembly 42, City Results 37, State Senate 11, Statewide 6, Education 5, U.S. Congress 4, Ballot Questions 2."
+  ]
+}

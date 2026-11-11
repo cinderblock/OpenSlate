@@ -1,0 +1,83 @@
+{
+  "code": "ri",
+  "state": "Rhode Island",
+  "office": "Rhode Island Board of Elections",
+  "page": "https://electionresults.ri.gov/results/public/rhodeisland/elections/2026StatewideGeneralElection",
+  "platform": "enhanced-voting",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every contest of the election in one document (453 ballot items: federal, state, General Assembly, city & town, state and local questions), with summary results and vote-method groups",
+      "url": "https://electionresults.ri.gov/results/public/api/elections/rhodeisland/2026StatewideGeneralElection/data",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 1513876,
+      "saved_as": "data.json",
+      "notes": "Standard Enhanced Voting shape: …/results/public/api/elections/<slug>/<election id>/data. Slug is case-insensitive here (rhodeisland; the jurisdiction shortName is RhodeIsland). cache-control: public, max-age=60. Served brotli-compressed (57 KB on the wire)."
+    },
+    {
+      "what": "jurisdiction document, including the list of 11 elections (publicElectionId, electionDate, name)",
+      "url": "https://electionresults.ri.gov/results/public/api/jurisdictions/rhodeisland",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 32976,
+      "saved_as": "jurisdiction.json",
+      "notes": "The 'elections' array is the elections list. …/api/elections/rhodeisland (the path the brief suggested) is 404 here."
+    },
+    {
+      "what": "media export: the whole election with precinct-level breakdown, plain names and numbers",
+      "url": "https://electionresults.ri.gov/cdn/results/RhodeIsland/export-2026StatewideGeneralElection.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 11104567,
+      "saved_as": "export-first-1MB.json",
+      "notes": "11.1 MB, so only the first 1 MB is kept (it is cut mid-document and will not parse). URL is <site>/cdn/results/<jurisdiction.mediaExportPath>; the path comes from the 'mediaExportPath' field of the data/jurisdiction documents and the '/cdn/results' base from the site's JS environment. Last-Modified: Tue, 10 Nov 2026 21:41:03 GMT, Cache-Control: public, max-age=60, served as application/octet-stream. Simpler shape than /data: results.ballotItems[].{type,id,name,voteFor,contestType,ballotOptions[].{name,voteCount,politicalParty,groupResults}}. No cut-outs made because data.json already holds every contest whole."
+    }
+  ],
+  "election_id": "2026StatewideGeneralElection (publicElectionId); last path segment of the page URL and second-to-last of the data URL. Jurisdiction slug: rhodeisland.",
+  "discovery": "GET https://electionresults.ri.gov/results/public/api/jurisdictions/rhodeisland and read elections[] (publicElectionId + electionDate, newest first). Ids are hand-named and not predictable (2026StatewideGeneralElection, RI2026StatewidePrimary, febspec26, decspec25).",
+  "cors": "*  (access-control-allow-origin: * on the data API, the jurisdictions API and the CDN export)",
+  "bot_blocking": "None. Relay User-Agent got 200 on everything (Azure Front Door, no challenge). Browser User-Agent not needed, not tried.",
+  "updated_field": "election.asOf = \"2026-11-10T21:40:56.3074467Z\" (UTC, ISO 8601 with Z); also election.lastUpdated \"2026-11-10T21:31:17.6801627Z\", election.publishDate \"2026-11-10T21:41:01.4350547Z\", and per contest ballotItems[].reportingStatus.asOf. In the media export: createdAt.",
+  "reporting_field": "Per contest: ballotItems[].reportingStatus.reportingUnits / totalUnits, e.g. Governor {\"reportingUnits\":39,\"totalUnits\":39} (units are cities/towns here: reportingStatusBy = 1, precinctsReporting is null). Per town: jurisdiction.childLocalities[].percentReporting (e.g. 0.8333333). election.groupReportingStatus gives status per count group (Election Day, Early Voting, Mail Ballots).",
+  "titles": {
+    "governor": "Governor",
+    "us_senate": "Senator in Congress",
+    "us_house": ["Representative in Congress District 1", "Representative in Congress District 2"],
+    "state_upper": [
+      "Senator in General Assembly District 1",
+      "Senator in General Assembly District 2",
+      "Senator in General Assembly District 3"
+    ],
+    "state_lower": [
+      "Representative in General Assembly District 1",
+      "Representative in General Assembly District 10",
+      "Representative in General Assembly District 11"
+    ],
+    "other_statewide": [
+      "Lieutenant Governor",
+      "Secretary of State",
+      "Attorney General",
+      "General Treasurer"
+    ],
+    "measures": [
+      "1. HIGHER EDUCATION FACILITIES - $275,000,000",
+      "2. HOUSING AND HOMEOWNERSHIP - $120,000,000"
+    ]
+  },
+  "choice_format": "Party is inside the name and also a separate object: name [{\"languageId\":\"en\",\"text\":\"John F. Reed (DEM)\"}], party.abbreviation \"DEM\", voteCount 240686. Independents are \"Kenneth Block (Ind)\" with abbreviation \"Ind\". Write-ins are one option named \"Write-in\" with party null. Measures: contestType \"BallotMeasure\", options \"Approve\" and \"Reject\" (party abbreviation \"NON\"). Local contests are prefixed with the town: \"Barrington: Town Council\".",
+  "district_field": "Only in the title (\"… District 1\", not zero-padded). No separate district field; contestGroupId maps to election.contestGroups (Federal, State, General Assembly, City & Town, State Questions, Local Questions).",
+  "contest_count": 453,
+  "terms": "none found (no terms-of-use text in the page or in the data document's clientTexts beyond result disclaimers).",
+  "confidence": "high",
+  "tried": [
+    "https://www.ri.gov/election/results/2026/general_election/ (the pre-2025 home of RI results): 404; the 2024 path still answers 200, so the old site was not carried forward",
+    "https://elections.ri.gov/ links to electionresults.ri.gov/results/public/rhodeisland/elections/2026StatewideGeneralElection (Enhanced Voting)",
+    "…/results/public/api/elections/rhodeisland/2026StatewideGeneralElection/data with relay User-Agent: 200",
+    "…/results/public/api/elections/rhodeisland: 404; …/api/jurisdictions/rhodeisland: 200 with elections[]; …/api/jurisdictions/rhodeisland/elections: 204 empty",
+    "Read main-*.js to find the media export base (/cdn/results) and fetched the export: 200, 11.1 MB"
+  ]
+}

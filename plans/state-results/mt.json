@@ -1,0 +1,133 @@
+{
+  "code": "mt",
+  "state": "Montana",
+  "office": "Montana Secretary of State",
+  "page": "https://electionresults.mt.gov/",
+  "platform": "bpro-totalvote",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "all federal contests (US Senate, both US House districts), statewide/district totals",
+      "url": "https://esersws.mt.gov/ResultsAjax.svc/GetMapData?type=FED&category=SW&raceID=0&osn=0&county=0&party=0",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 6701,
+      "saved_as": "GetMapData-FED-SW-race0.json",
+      "notes": "WCF JSON service behind the site's maps: {\"d\":[ one object per candidate per race ]}. raceID=0 returns every race of that type; a specific raceID (e.g. 450000000004069 = US Senate) returns one. osn and party must be 0 for a general election (osn=1000 or party= empty returned {\"d\":null}). category=SW gives the race-wide total, category=CTY gives one row per candidate per county (saved example: GetMapData-FED-CTY-ussenate.json, 131873 bytes). 'type' values are the same as the site's menu: FED, PSC, SCJ, JUD, SENATE, HOUSE, BQ."
+    },
+    {
+      "what": "all 25 State Senate contests",
+      "url": "https://esersws.mt.gov/ResultsAjax.svc/GetMapData?type=SENATE&category=SW&raceID=0&osn=0&county=0&party=0",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 27415,
+      "saved_as": "GetMapData-SENATE-SW-race0.json",
+      "notes": "47 rows, 25 races."
+    },
+    {
+      "what": "all 100 State House contests",
+      "url": "https://esersws.mt.gov/ResultsAjax.svc/GetMapData?type=HOUSE&category=SW&raceID=0&osn=0&county=0&party=0",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 110724,
+      "saved_as": "GetMapData-HOUSE-SW-race0.json",
+      "notes": "188 rows, 100 races."
+    },
+    {
+      "what": "statewide ballot issues",
+      "url": "https://esersws.mt.gov/ResultsAjax.svc/GetMapData?type=BQ&category=SW&raceID=0&osn=0&county=0&party=0",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 3470,
+      "saved_as": "GetMapData-BQ-SW-race0.json",
+      "notes": "3 measures, 6 rows."
+    },
+    {
+      "what": "Public Service Commission, Supreme Court, District Court judges",
+      "url": "https://esersws.mt.gov/ResultsAjax.svc/GetMapData?type=PSC&category=SW&raceID=0&osn=0&county=0&party=0",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 2539,
+      "saved_as": "GetMapData-PSC-SW-race0.json",
+      "notes": "Same URL with type=SCJ (1212 bytes, saved GetMapData-SCJ-SW-race0.json) and type=JUD (15598 bytes, saved GetMapData-JUD-SW-race0.json)."
+    },
+    {
+      "what": "turnout and precincts reporting per county, plus the server clock",
+      "url": "https://esersws.mt.gov/ResultsAjax.svc/GetVoterTurnoutData?",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 18682,
+      "saved_as": "GetVoterTurnoutData.json",
+      "notes": "One object per county: PrecinctsReporting, TotalPrecincts, PartialPrecincts, Voters, calcVoterTurnout, CurrentDateTime."
+    },
+    {
+      "what": "candidate/choice list for every contest in the state including local (no votes)",
+      "url": "https://esersws.mt.gov/ResultsAjax.svc/GetCandidates?ElectionType=General&ElectionID=0",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 209512,
+      "saved_as": "GetCandidates.json",
+      "notes": "Used by the site's search box. Fields ID, Party, desc (contest), label, name. No vote counts."
+    },
+    {
+      "what": "server-rendered HTML results page for a contest group (the same numbers; also where the last-updated stamp and race ids appear)",
+      "url": "https://electionresults.mt.gov/resultsSW.aspx?type=FED&map=CTY",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 60300,
+      "saved_as": "resultsSW-FED.html",
+      "notes": "Race ids are in onclick=\"CreateMap('FED', '450000000004069', '1000', '')\"."
+    }
+  ],
+  "election_id": "The live site serves 'the current election' with no id in the URL (ElectionID=0 in GetCandidates; GetMapData takes no election id). Archived elections use ?eid=<n> on the site and GetMapDataArchive?...&electionID=<n> / GetVoterTurnoutArchive?electionID=<n> on the service (seen in the site's JavaScript, not fetched). Race ids look like 450000000004069; the leading 45 may be this election's number but I did not confirm that.",
+  "discovery": "No elections-list endpoint found. https://electionresults.mt.gov/ always shows the current election (title on the page: '2026 General Election - November 3, 2026'); a client should read that title to know which election the unversioned service is serving.",
+  "cors": "* (Access-Control-Allow-Origin: * and Access-Control-Allow-Headers: Content-Type on every esersws.mt.gov/ResultsAjax.svc response)",
+  "bot_blocking": "None. The relay User-Agent got HTTP 200 on electionresults.mt.gov pages and on every esersws.mt.gov service call; a browser UA was not needed.",
+  "updated_field": "Not in GetMapData (its CurrentDateTime is null). The HTML pages carry 'Results last updated: 11/10/2026 4:15:25 PM MT' (Mountain time). GetVoterTurnoutData has CurrentDateTime '11/10/2026 4:20:27 PM', which is the server's clock at request time, and LastUpdateTime, which was null.",
+  "reporting_field": "PrecinctsReporting, TotalPrecincts and PrecinctsPartial on every GetMapData row, e.g. \"PrecinctsPartial\":0,\"PrecinctsReporting\":728 ... \"TotalPrecincts\":728 for US Senate.",
+  "titles": {
+    "governor": null,
+    "us_senate": "UNITED STATES SENATOR",
+    "us_house": [
+      "UNITED STATES REPRESENTATIVE 1ST CONGRESSIONAL",
+      "UNITED STATES REPRESENTATIVE 2ND CONGRESSIONAL"
+    ],
+    "state_upper": [
+      "STATE SENATOR DISTRICT 8",
+      "STATE SENATOR DISTRICT 14",
+      "STATE SENATOR DISTRICT 31"
+    ],
+    "state_lower": [
+      "STATE REPRESENTATIVE DISTRICT 1",
+      "STATE REPRESENTATIVE DISTRICT 55",
+      "STATE REPRESENTATIVE DISTRICT 100"
+    ],
+    "other_statewide": [
+      "SUPREME COURT JUSTICE #4",
+      "PUBLIC SERVICE COMMISSIONER, DISTRICT 1",
+      "PUBLIC SERVICE COMMISSIONER, DISTRICT 5"
+    ],
+    "measures": ["CI-132 CONSTITUTIONAL INITIATIVE NO. 132", "I-194 INITIATIVE NO. 194"]
+  },
+  "choice_format": "One JSON object per candidate: \"PartyCode\":\"REP\",\"PartyName\":\"Republican\", ... \"RaceName\":\"UNITED STATES SENATOR\", ... \"calcCandidate\":\"KURT ALME\",\"calcCandidatePercentage\":0.48125122581066948,\"calcCandidateVotes\":235559. Names are upper case; party codes seen: REP, DEM, LIB, IND, NON. Measures: calcCandidate \"Yes\" / \"No\" with empty PartyCode; judicial retention uses \"YES\" / \"NO\". Write-ins are not reported on this site (the site says so).",
+  "district_field": "Both. RaceName carries it ('STATE REPRESENTATIVE DISTRICT 55', 'UNITED STATES REPRESENTATIVE 2ND CONGRESSIONAL'), AreaNum carries a padded label ('HD 055', 'SD 08', '2ND CONGRESSIONAL', 'Montana' for statewide), and OfficeSeqNo encodes it numerically (8055 = HD 55, 7014 = SD 14, 2002 = CD 2, 1000 = US Senate).",
+  "contest_count": 146,
+  "terms": "none found. The footer says: 'Election Night Results Reporting is a free service provided by the Office of Montana Secretary of State Christi Jacobsen in cooperation with Montana's Clerks & Recorders and Election Administrators.' (https://electionresults.mt.gov/ResultsExport.aspx). Only a general privacy policy is linked (http://mt.gov/1240-X06.pdf, not fetched).",
+  "confidence": "high",
+  "tried": [
+    "curl https://electionresults.mt.gov/ with the relay UA: 200, BPro TotalVote layout (resultsSW.aspx, ResultsExport.aspx).",
+    "ResultsExport.aspx: offers 'Statewide Export', 'Legislative Export' and one export per county, but each is an ASP.NET __doPostBack (a form POST with __VIEWSTATE). I did not submit it, because the brief forbids submitting forms; so the export's format is not confirmed.",
+    "Read the page scripts: ServiceRoot = 'https://esersws.mt.gov/', methods ResultsAjax.svc/GetCandidates, GetMapData, GetMapDataArchive, GetVoterTurnoutData, GetVoterTurnoutArchive.",
+    "GetMapData with osn=1000&party= (as written in the HTML onclick): {\"d\":null}. With osn=0&party=0 (what CreateMap.js sends for a General): real rows.",
+    "GetMapData with raceID=0: returns every race of the type, so 7 GETs (FED, PSC, SCJ, JUD, SENATE, HOUSE, BQ) cover all 146 state-level contests.",
+    "Note: the saved HTML contains <div class=\"header-banner\">TEST</div> in the page header. The numbers are plausible live results (728 of 728 precincts, 493,831 turnout, last updated today), so I read it as a leftover or hidden banner, but I did not confirm how it renders."
+  ]
+}

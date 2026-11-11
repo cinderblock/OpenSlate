@@ -25,7 +25,7 @@ describe("who counts a race", () => {
 
   test("nobody yet for another state, a local race or another election", () => {
     expect(
-      stateContestFor({ title: "Governor", jurisdiction: "us/va", election: E }),
+      stateContestFor({ title: "Governor", jurisdiction: "us/tx", election: E }),
     ).toBeUndefined();
     expect(
       stateContestFor({ title: "Mayor", jurisdiction: "us/ca/oakland", election: E }),

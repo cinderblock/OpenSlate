@@ -1,0 +1,614 @@
+{
+  "election": {
+    "asOf": "2026-11-10T21:40:56.3074467Z",
+    "isOfficialResults": false,
+    "contestGroups": [
+      {
+        "id": "01000000-153a-9942-0089-08df3b47e6ec",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Federal"
+          }
+        ]
+      },
+      {
+        "id": "01000000-e09a-ee7d-8e5f-08df3b47eaea",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "State"
+          }
+        ]
+      },
+      {
+        "id": "01000000-6f83-aa10-4db7-08df3b47f0b2",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "General Assembly"
+          }
+        ]
+      },
+      {
+        "id": "01000000-76c1-de3a-b42b-08df3b48005d",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "City & Town"
+          }
+        ]
+      },
+      {
+        "id": "01000000-153a-9942-f9ff-08df3b4ac09b",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "State Questions"
+          }
+        ]
+      },
+      {
+        "id": "01000000-76c1-de3a-9592-08df3b4ac55a",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Local Questions"
+          }
+        ]
+      },
+      {
+        "id": "other",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Other Contests"
+          }
+        ]
+      }
+    ]
+  },
+  "ballotItems": [
+    {
+      "id": "01000000-59ac-daed-9906-08df1e27a27c",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Senator in Congress"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-153a-9942-0089-08df3b47e6ec",
+      "reportingStatus": {
+        "reportingUnits": 40,
+        "totalUnits": 40
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "John F. Reed (DEM)"
+              }
+            ],
+            "voteCount": 240686,
+            "party": {
+              "abbreviation": "DEM",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "DEMOCRAT"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Raymond T. McKay (REP)"
+              }
+            ],
+            "voteCount": 105453,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "REPUBLICAN"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Michael Bahry (Ind)"
+              }
+            ],
+            "voteCount": 13562,
+            "party": {
+              "abbreviation": "Ind",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Independent"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Write-in"
+              }
+            ],
+            "voteCount": 695,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-59ac-daed-f559-08df1e27a28f",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Representative in Congress District 1"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-153a-9942-0089-08df3b47e6ec",
+      "reportingStatus": {
+        "reportingUnits": 20,
+        "totalUnits": 20
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Gabriel Amo (DEM)"
+              }
+            ],
+            "voteCount": 112102,
+            "party": {
+              "abbreviation": "DEM",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "DEMOCRAT"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Kellie Keenan (REP)"
+              }
+            ],
+            "voteCount": 44901,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "REPUBLICAN"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Pedro DeSouza (Ind)"
+              }
+            ],
+            "voteCount": 6211,
+            "party": {
+              "abbreviation": "Ind",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Independent"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Write-in"
+              }
+            ],
+            "voteCount": 229,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-59ac-daed-66fe-08df1e27a40e",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "General Treasurer"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-e09a-ee7d-8e5f-08df3b47eaea",
+      "reportingStatus": {
+        "reportingUnits": 39,
+        "totalUnits": 39
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "James A. Diossa (DEM)"
+              }
+            ],
+            "voteCount": 229078,
+            "party": {
+              "abbreviation": "DEM",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "DEMOCRAT"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Micholas A. Credle (REP)"
+              }
+            ],
+            "voteCount": 121336,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "REPUBLICAN"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Write-in"
+              }
+            ],
+            "voteCount": 719,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-59ac-daed-bd1f-08df1e27bafb",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Senator in General Assembly District 1"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-6f83-aa10-4db7-08df3b47f0b2",
+      "reportingStatus": {
+        "reportingUnits": 1,
+        "totalUnits": 1
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Jacob Bissaillon (DEM)"
+              }
+            ],
+            "voteCount": 4376,
+            "party": {
+              "abbreviation": "DEM",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "DEMOCRAT"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Write-in"
+              }
+            ],
+            "voteCount": 100,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-59ac-daed-4572-08df1e27bbdc",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Representative in General Assembly District 10"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-6f83-aa10-4db7-08df3b47f0b2",
+      "reportingStatus": {
+        "reportingUnits": 1,
+        "totalUnits": 1
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Scott A. Slater (DEM)"
+              }
+            ],
+            "voteCount": 2061,
+            "party": {
+              "abbreviation": "DEM",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "DEMOCRAT"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Write-in"
+              }
+            ],
+            "voteCount": 44,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-59ac-daed-2535-08df1e27a49b",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Barrington: Town Council"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 2"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-76c1-de3a-b42b-08df3b48005d",
+      "reportingStatus": {
+        "reportingUnits": 1,
+        "totalUnits": 1
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Jessica Martin (DEM)"
+              }
+            ],
+            "voteCount": 3938,
+            "party": {
+              "abbreviation": "DEM",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "DEMOCRAT"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Neile Hartman (Ind)"
+              }
+            ],
+            "voteCount": 3780,
+            "party": {
+              "abbreviation": "Ind",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Independent"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Braxton Howard Cloutiér (DEM)"
+              }
+            ],
+            "voteCount": 3114,
+            "party": {
+              "abbreviation": "DEM",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "DEMOCRAT"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Anthony P. Arico (Ind)"
+              }
+            ],
+            "voteCount": 2200,
+            "party": {
+              "abbreviation": "Ind",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Independent"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Write-in"
+              }
+            ],
+            "voteCount": 59,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-59ac-daed-2e8c-08df1e27a4c5",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "1. HIGHER EDUCATION FACILITIES - $275,000,000"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "BallotMeasure",
+      "contestGroupId": "01000000-153a-9942-f9ff-08df3b4ac09b",
+      "reportingStatus": {
+        "reportingUnits": 39,
+        "totalUnits": 39
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Approve"
+              }
+            ],
+            "voteCount": 209091,
+            "party": {
+              "abbreviation": "NON",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "NONPARTISAN"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Reject"
+              }
+            ],
+            "voteCount": 139296,
+            "party": {
+              "abbreviation": "NON",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "NONPARTISAN"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

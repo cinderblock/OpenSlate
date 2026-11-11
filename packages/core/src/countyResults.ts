@@ -239,8 +239,33 @@ function n(raw: unknown): number {
   return Number.isFinite(v) ? v : 0;
 }
 
-/** "Yes", "NO", "Bonds Yes", "Bonds - No". */
-const YES_NO = /^(bonds?\s*-?\s*)?(yes|no)$/i;
+const MEASURE_PREFIX = String.raw`(?:(?:bonds?|levy|be retained)\s*-?\s*)?`;
+const MEASURE_YES = new RegExp(
+  String.raw`^${MEASURE_PREFIX}yes(?:\s*[/,].*)?$|^(?:for|approved?|in favou?r|retain)$`,
+  "i",
+);
+const MEASURE_NO = new RegExp(
+  String.raw`^${MEASURE_PREFIX}no(?:\s*[/,].*)?$|^(?:against|reject(?:ed)?|opposed?|do not retain)$`,
+  "i",
+);
+
+/**
+ * Which side of a measure a choice is, however the office words it: "Yes",
+ * "NO", "Bonds Yes", "Bonds - No", "Levy Yes", "Be Retained No", "Yes/For",
+ * "No/Against", "For", "Against", "Approve", "Rejected", "Yes, in favor of
+ * the question". Undefined for anything else (a person, "No Candidate Filed").
+ */
+export function measureSide(name: string): "yes" | "no" | undefined {
+  const text = name.trim();
+  if (MEASURE_YES.test(text)) return "yes";
+  if (MEASURE_NO.test(text)) return "no";
+  return undefined;
+}
+
+/** Whether every choice is a side of a measure. */
+function allSides(names: readonly string[]): boolean {
+  return names.length > 0 && names.every((x) => measureSide(x) !== undefined);
+}
 
 /** One CSV line's fields (quoted with "", quotes doubled inside). */
 export function csvFields(line: string): string[] {
@@ -341,7 +366,7 @@ export function parseLvtCsv(text: string): CountyContest[] {
     const total = c.choices.reduce((s, x) => s + x.votes, 0);
     for (const x of c.choices)
       x.percent = total > 0 ? Math.round((x.votes / total) * 10000) / 100 : 0;
-    c.measure = c.choices.length > 0 && c.choices.every((x) => YES_NO.test(x.name));
+    c.measure = allSides(c.choices.map((x) => x.name));
     if (c.measure) c.voteFor = 0;
     return c;
   });
@@ -389,7 +414,7 @@ export function parseClaritySummary(raw: unknown): CountyContest[] {
         percent: n(c.PCT?.[i]),
       };
     });
-    const measure = names.length > 0 && names.every((x) => YES_NO.test(x.trim()));
+    const measure = allSides(names);
     const contest: CountyContest = {
       key: String(c.K),
       title: c.C.trim(),
@@ -413,14 +438,20 @@ interface WireBallotItem {
   name?: WireText[];
   voteFor?: WireText[];
   contestType?: string;
+  contestGroupId?: string | null;
   reportingStatus?: { reportingUnits?: number; totalUnits?: number } | null;
   summaryResults?: {
     ballotOptions?: {
       name?: WireText[];
       voteCount?: number;
-      party?: { abbreviation?: string | null } | null;
+      party?: { abbreviation?: string | null; name?: WireText[] | null } | null;
     }[];
   } | null;
+}
+
+interface WireContestGroup {
+  id?: string;
+  groupHeading?: WireText[];
 }
 
 function english(texts: WireText[] | undefined): string {
@@ -428,37 +459,88 @@ function english(texts: WireText[] | undefined): string {
 }
 
 /**
- * Sacramento's `…/elections/<county>/<id>/data`: `ballotItems[]`, each with
- * its name (per language), "Vote for N", reporting units, and options with
- * their votes. `election.asOf` says when the count was published.
+ * A candidate as an Enhanced Voting site names one, apart from what the site
+ * put in the name: the party again in parentheses ("Mike Collins (Rep)",
+ * "Katie Hobbs (DEM) / John Giles (PND)" keeps its ticket), and Georgia's
+ * "(I)" for the incumbent.
  */
-export function parseResultsApi(raw: unknown): { contests: CountyContest[]; asOf?: number } {
-  const data = raw as { ballotItems?: WireBallotItem[]; election?: { asOf?: string } } | null;
+function optionName(text: string, party: string | undefined): { name: string; incumbent: boolean } {
+  let name = text.trim();
+  const escaped = party?.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (escaped && !name.includes(" / "))
+    name = name.replace(new RegExp(String.raw`\s*\(${escaped}\)\s*$`, "i"), "");
+  const incumbent = /\s*\(I\)\s*$/.test(name);
+  if (incumbent) name = name.replace(/\s*\(I\)\s*$/, "");
+  return { name: name.replace(/\s+/g, " "), incumbent };
+}
+
+const COUNT_WORDS = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+
+/** How many to elect, from "Vote for 2" or "Vote for only one"; 0 when it doesn't say. */
+function voteForOf(text: string): number {
+  const digits = text.match(/\d+/)?.[0];
+  if (digits) return n(digits);
+  const word = COUNT_WORDS.findIndex((w) => new RegExp(String.raw`\b${w}\b`, "i").test(text));
+  return word + 1;
+}
+
+/**
+ * An Enhanced Voting site's `…/elections/<slug>/<id>/data` (Sacramento
+ * County's, and the state sites of Arizona, Georgia, Idaho, Rhode Island,
+ * Utah, Virginia and Washington): `ballotItems[]`, each with its name (per
+ * language), "Vote for N", reporting units, and options with their votes.
+ * `election.asOf` says when the count was published,
+ * `election.isOfficialResults` whether it is certified. A site that groups
+ * its contests ("Federal", "State Measures") gives each its group as
+ * `category`. What a contest's units are (precincts for a county, counties or
+ * towns for a state) is the site's to say; they are in `precincts` either way.
+ */
+export function parseResultsApi(raw: unknown): {
+  contests: CountyContest[];
+  asOf?: number;
+  official?: boolean;
+} {
+  const data = raw as {
+    ballotItems?: WireBallotItem[];
+    election?: { asOf?: string; isOfficialResults?: boolean; contestGroups?: WireContestGroup[] };
+  } | null;
   if (!data || !Array.isArray(data.ballotItems))
     throw new Error("Unexpected answer from the county (no ballot items)");
+  const groups = new Map(
+    (data.election?.contestGroups ?? []).flatMap((g): [string, string][] => {
+      const heading = english(g.groupHeading);
+      return g.id && heading ? [[g.id, heading]] : [];
+    }),
+  );
   const contests = data.ballotItems.flatMap((item): CountyContest[] => {
     const title = english(item.name);
     if (!item.id || !title) return [];
     const options = item.summaryResults?.ballotOptions ?? [];
     const total = options.reduce((s, o) => s + n(o.voteCount), 0);
     const choices: CountyChoice[] = options.map((o) => {
-      const party = o.party?.abbreviation?.trim();
+      // Utah fills in only the party's whole name.
+      const party =
+        o.party?.abbreviation?.trim() || english(o.party?.name ?? undefined) || undefined;
       const votes = n(o.voteCount);
+      const { name, incumbent } = optionName(english(o.name), o.party?.abbreviation?.trim());
       return {
-        name: english(o.name),
+        name,
         ...(party ? { party } : {}),
         votes,
         percent: total > 0 ? Math.round((votes / total) * 10000) / 100 : 0,
+        ...(incumbent ? { incumbent } : {}),
       };
     });
-    const measure = choices.length > 0 && choices.every((c) => YES_NO.test(c.name));
+    const measure = item.contestType === "BallotMeasure" || allSides(choices.map((c) => c.name));
     const status = item.reportingStatus;
+    const category = item.contestGroupId ? groups.get(item.contestGroupId) : undefined;
     return [
       {
         key: item.id,
         title,
+        ...(category ? { category } : {}),
         measure,
-        voteFor: measure ? 0 : n(english(item.voteFor).match(/\d+/)?.[0]),
+        voteFor: measure ? 0 : voteForOf(english(item.voteFor)),
         ...(status
           ? { precincts: { total: n(status.totalUnits), reporting: n(status.reportingUnits) } }
           : {}),
@@ -467,7 +549,12 @@ export function parseResultsApi(raw: unknown): { contests: CountyContest[]; asOf
     ];
   });
   const asOf = Date.parse(data.election?.asOf ?? "");
-  return Number.isFinite(asOf) ? { contests, asOf } : { contests };
+  const official = data.election?.isOfficialResults;
+  return {
+    contests,
+    ...(Number.isFinite(asOf) ? { asOf } : {}),
+    ...(typeof official === "boolean" ? { official } : {}),
+  };
 }
 
 interface WireLaContest {
@@ -562,8 +649,7 @@ function laContests(groups: { Name?: string; Contests?: WireLaContest[] }[]): Co
           percent: total > 0 ? Math.round((votes / total) * 10000) / 100 : 0,
         };
       });
-      const measure =
-        c.Type === "Measure" || (choices.length > 0 && choices.every((x) => YES_NO.test(x.name)));
+      const measure = c.Type === "Measure" || allSides(choices.map((x) => x.name));
       return [
         {
           key,
@@ -686,7 +772,7 @@ export function parseLvtHtml(html: string): { contests: CountyContest[]; asOf?: 
       });
     }
     if (choices.length === 0) return [];
-    const measure = choices.every((c) => YES_NO.test(c.name));
+    const measure = allSides(choices.map((c) => c.name));
     return [
       {
         key: id,
@@ -776,7 +862,7 @@ export function parseAcvoteHtml(html: string): { contests: CountyContest[]; asOf
     ))
       choices.push({ name: htmlText(row[1] ?? ""), votes: n(htmlText(row[2] ?? "")), percent: 0 });
     if (choices.length === 0) continue;
-    const measure = choices.every((c) => YES_NO.test(c.name));
+    const measure = allSides(choices.map((c) => c.name));
     const needs = text.match(/Needs ([^.]*?) Yes votes/i)?.[1] ?? "";
     const threshold = /2\s*\/\s*3|two[\s-]*thirds/i.test(needs)
       ? "2/3"

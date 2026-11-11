@@ -1,0 +1,63 @@
+{
+  "code": "ok",
+  "state": "Oklahoma",
+  "office": "Oklahoma State Election Board",
+  "page": "https://results.okelections.gov/OKER/?elecDate=20261103",
+  "platform": "custom-json",
+  "status": "blocked",
+  "feeds": [
+    {
+      "what": "the API the results app reads (county/statewide results for an election date). NOT fetched: it needs a bearer token",
+      "url": "https://results.okelections.gov/OKERS/enrapi/GetCntyResults/20261103/0",
+      "method": "GET",
+      "headers_needed": {
+        "Authorization": "Bearer <token from PUT /OKERS/enrapi/login/>",
+        "User-Agent": "a browser one; the relay User-Agent is refused with 403 before reaching the API"
+      },
+      "format": "json",
+      "bytes": 61,
+      "saved_as": "us-GetCntyResults.noauth.browser.txt",
+      "notes": "Without a token the answer is HTTP 401 {\"Message\":\"Authorization has been denied for this request.\"} (that is the 61 bytes saved; fetched through results.okelections.us, which 301-redirects to results.okelections.gov:443). The path shape is read from the app's JS, not confirmed by a successful fetch; the second path segment (0) is my guess at 'statewide' and is unverified. Other paths in the bundle, all with the same Authorization header: enrapi/getconfig/<date>, enrapi/GetPctResults/<date>/<county>/<x>, enrapi/GetFile/<date>/<fmt>/SW/xx (statewide report download), enrapi/GetFile/<date>/<fmt>/CW/ALL, enrapi/GetExtract/<date>/<x>."
+    },
+    {
+      "what": "the app's config: list of API base URLs (index 1 is the one used)",
+      "url": "https://results.okelections.gov/OKER/assets/config.json",
+      "method": "GET",
+      "headers_needed": { "User-Agent": "a browser one" },
+      "format": "json",
+      "bytes": 303,
+      "saved_as": "config.json",
+      "notes": "[\"dev\",\"https://results.okelections.gov/OKERS/\", …]. Fetched with a desktop Chrome User-Agent (200). Same file from results.okelections.us saved as us-config.browser.json."
+    }
+  ],
+  "election_id": "The election date as YYYYMMDD: ?elecDate=20261103 on the page, and a path segment in the API (enrapi/…/20261103/…).",
+  "discovery": "Not found. The state board links each election by hand from https://oklahoma.gov/elections/elections-results/election-results/2026-election-results/november-general-election.html (button to https://results.okelections.us/OKER/?elecDate=20261103). The id is just the date, so a known election date is enough.",
+  "cors": "not observed on a successful response (none on the 401 or the 403).",
+  "bot_blocking": "Two layers. (1) The AWS load balancer answers the relay User-Agent with HTTP 403 (118-byte 'awselb/2.0' page) on every path on both results.okelections.gov and results.okelections.us; headless Chrome (its default HeadlessChrome User-Agent) got the same 403. A desktop Chrome User-Agent gets 200 for the page, JS and config.json. (2) The data API (/OKERS/enrapi/…) then wants 'Authorization: Bearer <token>'. The app obtains the token by sending PUT /OKERS/enrapi/login/ with a JSON body {Username:\"appuser\", Password:<a key hard-coded in main.*.bundle.js as this.connKey>}. I did NOT send that login request: the brief forbids logging in, so the token step and everything behind it are untested.",
+  "updated_field": "unknown (no data response obtained).",
+  "reporting_field": "unknown (no data response obtained).",
+  "titles": {
+    "governor": null,
+    "us_senate": null,
+    "us_house": [],
+    "state_upper": [],
+    "state_lower": [],
+    "other_statewide": [],
+    "measures": []
+  },
+  "choice_format": "unknown (no data response obtained). The null/empty titles above mean 'not seen', not 'not on the ballot'.",
+  "district_field": "unknown.",
+  "contest_count": 0,
+  "terms": "none found on the pages reached (the results app shell and the state board's election page).",
+  "confidence": "medium",
+  "tried": [
+    "https://results.okelections.gov/ with the relay User-Agent: 403 from awselb/2.0 (saved page.relay-403.html)",
+    "Same root with a desktop Chrome User-Agent: 403 from IIS ('Access is denied', no default document at /)",
+    "https://results.okelections.gov/OKER/?elecDate=20261103 with a Chrome User-Agent: 200, an Angular shell (saved page.html); with the relay User-Agent: 403",
+    "Read main.c79774cb1fe93a6677b7.bundle.js: loads /OKER/assets/config.json, then PUT enrapi/login/ (appuser + embedded key) to get a bearer token, then enrapi/getconfig, GetCntyResults, GetPctResults, GetFile, GetExtract",
+    "Headless Chrome on the page: 'TITLE 403 Forbidden', no requests logged (blocked like the relay User-Agent). I did not retry with a spoofed User-Agent in the browser because that would have made the browser perform the login",
+    "GET /OKERS/enrapi/GetCntyResults/20261103/0 with a Chrome User-Agent and no token: 401",
+    "https://oklahoma.gov/elections/… 2026 results pages (relay User-Agent, 200): only link is to results.okelections.us/OKER/?elecDate=20261103, which behaves the same (403 for the relay User-Agent); no CSV/XML/PDF download for this election yet (saved sos-november-general-election.html)",
+    "Confidence 'medium' is in the diagnosis (blocked, token needed), not in any data shape"
+  ]
+}

@@ -19,6 +19,7 @@ import {
 } from "./recorded";
 import type { Recorder } from "./recorder";
 import { handleSosCa, SOS_CA_PREFIX, SOS_CA_UPSTREAM } from "./sosCa";
+import { handleStateFeed, STATE_FEEDS_PREFIX } from "./stateFeeds";
 
 export interface Env {
   /** Secret: OpenSlate's Google Civic Information API key. Unset → the civic routes answer 501. */
@@ -135,6 +136,7 @@ export default {
           results_upstream: RESULTS_UPSTREAM,
           sos_ca_upstream: SOS_CA_UPSTREAM,
           county_ca: COUNTY_CA_PREFIX,
+          state_feeds: STATE_FEEDS_PREFIX,
           // The recorder: results from its copy, history, and live reports over a WebSocket.
           recorder: Boolean(recorder),
           geocode: GEOCODE_PATH,
@@ -178,6 +180,9 @@ export default {
     }
     if (url.pathname.startsWith(COUNTY_CA_PREFIX)) {
       return handleCountyCa(url.pathname, corsHeaders());
+    }
+    if (url.pathname.startsWith(STATE_FEEDS_PREFIX)) {
+      return handleStateFeed(url.pathname, corsHeaders());
     }
 
     return new Response("Not Found", { status: 404, headers: corsHeaders() });

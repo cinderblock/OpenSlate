@@ -1,0 +1,67 @@
+{
+  "code": "nm",
+  "state": "New Mexico",
+  "office": "New Mexico Secretary of State",
+  "page": "https://electionresults.sos.nm.gov/",
+  "platform": "bpro-totalvote",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every contest of the election in one CSV ('All Results' media export): statewide totals, one row per candidate/choice",
+      "url": "https://electionresults.sos.nm.gov/resultsCSV.aspx?text=All&type=STATE&map=CTY",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "csv",
+      "bytes": 129331,
+      "saved_as": "resultsCSV-STATE.csv",
+      "notes": "Linked from https://electionresults.sos.nm.gov/ResultsMedia.aspx ('Media/Results Exports'). Other type= values on that page give subsets: FED, SW (statewide offices & questions), LGX (legislative), JDX, JMC, MGX, ECX, CLX, SWX, MUX, CTY (by county). Columns: RaceID,RaceName,PartyCode,AreaNum,CandidateID,CandidateName,VoteFor,CandidateVotes,CandidatePercentage,PrecinctsReporting,CandidateAbsenteeVotes,CandidateElectionDayVotes,CandidateEarlyVotes. Every data row ends with an EXTRA trailing comma (14 fields against 13 headers). CRLF, no BOM, UTF-8 (\"AMANDA LÓPEZ ASKIN\"). Served as application/text with content-disposition: attachment;filename=Media.csv. No election id in the URL: the site shows only the current election. The three vote-method columns were empty."
+    }
+  ],
+  "election_id": "None in the URL. The site serves whichever election is current (the page header reads 'November 3, 2026' and 'Unofficial Results'). The page's inline JS has an eid variable for an ajax service, not needed for the export.",
+  "discovery": "Nothing to discover: the same URL serves the current election. There is no elections list; a consumer must check the date in the HTML header of https://electionresults.sos.nm.gov/ to know which election the CSV belongs to (the CSV itself carries no date).",
+  "cors": "none (no Access-Control-Allow-Origin on the CSV or the pages)",
+  "bot_blocking": "None. Relay User-Agent got 200 on the home page, ResultsMedia.aspx and the CSV (server: volt-adc, an F5 front; it sets ASP.NET_SessionId, ARRAffinity and TS… cookies, which were not needed). /ResultsExport.aspx (the usual BPro path) redirects to an error page here; the export page is ResultsMedia.aspx. Browser User-Agent not needed, not tried.",
+  "updated_field": "Not in the CSV. Only in the HTML of the home page: <span>Results last updated:</span><span>11/6/2026 9:55 AM MT</span> (Mountain time, labelled MT).",
+  "reporting_field": "CSV column PrecinctsReporting, a string 'reported/total' per contest, e.g. 2204/2204 (statewide), 778/778 (US House District 1).",
+  "titles": {
+    "governor": "Governor and Lieutenant Governor",
+    "us_senate": "United States Senator",
+    "us_house": [
+      "United States Representative (AreaNum \"DISTRICT 1\")",
+      "United States Representative (AreaNum \"DISTRICT 2\")",
+      "United States Representative (AreaNum \"DISTRICT 3\")"
+    ],
+    "state_upper": [
+      "State Senator (AreaNum \"DISTRICT 33\") — the only Senate contest in the file; the Senate is not regularly up in 2026"
+    ],
+    "state_lower": [
+      "State Representative (AreaNum \"DISTRICT 1\")",
+      "State Representative (AreaNum \"DISTRICT 2\")",
+      "State Representative (AreaNum \"DISTRICT 10\")"
+    ],
+    "other_statewide": [
+      "Secretary of State",
+      "Attorney General",
+      "State Treasurer",
+      "State Auditor",
+      "Commissioner of Public Lands",
+      "Judge of the Court of Appeals Position 1"
+    ],
+    "measures": [
+      "Constitutional Amendment 1: Proposing an amendment to Article 4, Section 22 of the Constitution of New Mexico to require the governor to provide veto messages on all bills vetoed in whole or in part and to provide that all bills passed by the legislature and not acted on by the governor will become law.",
+      "Constitutional Amendment 2: Proposing to amend Article 7, Section 1 of the Constitution of New Mexico to remove the requirement that school elections be separate from partisan elections."
+    ]
+  },
+  "choice_format": "Separate columns, name in capitals: 11185,\"United States Senator\",\"DEM\",\"\",19607,\"BEN R LUJAN\",1,458756,0.632601111432866,2204/2204,,,,  — PartyCode DEM/REP, CandidatePercentage a 0..1 fraction. Governor is a joint ticket: \"DEB HAALAND AND STEPHANIE GARCIA RICHARD\". Measures: CandidateName \"Yes\" (CandidateID 9001) and \"No\" (9002), PartyCode empty; the RaceName is the measure's whole ballot text.",
+  "district_field": "Separate column AreaNum (\"DISTRICT 1\"), NOT in the title: every US House row has RaceName \"United States Representative\" and every state house row \"State Representative\". Contests must be keyed on RaceID (428 distinct RaceIDs), never on RaceName (273 distinct names).",
+  "contest_count": 428,
+  "terms": "none found on the results site.",
+  "confidence": "high",
+  "tried": [
+    "https://electionresults.sos.nm.gov/ : BPro TotalVote (resultsSW.aspx pages), shows November 3, 2026 Unofficial Results",
+    "/ResultsExport.aspx: redirected to /ErrorPages/Error.aspx",
+    "/ResultsMedia.aspx: lists resultsCSV.aspx exports; fetched type=STATE (All Results) with the relay User-Agent: 200",
+    "https://nmresultswebservice.azurewebsites.us/NMResultsAjax.svc/GetCandidates?ElectionType=FED&ElectionID=0 (ajax service named in the page's JS; it does answer Access-Control-Allow-Origin: *): HTTP 500 'CommandText property has not been initialized' with ElectionID=0; not pursued",
+    "No XML or JSON export link found on ResultsMedia.aspx"
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "code": "mn",
+  "state": "Minnesota",
+  "office": "Office of the Minnesota Secretary of State",
+  "page": "https://electionresults.sos.mn.gov/ (2026-11-03 general is ersElectionId=201, e.g. https://electionresults.sos.mn.gov/Results/Index?ersElectionId=201&scenario=Governor&officeInElectionId=38695)",
+  "platform": "custom-text",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "Governor & Lt Governor, statewide",
+      "url": "https://electionresultsfiles.sos.mn.gov/20261103/Governor.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 397,
+      "saved_as": "Governor.txt",
+      "notes": "Semicolon-delimited, no header row, one row per candidate. URL is https://electionresultsfiles.sos.mn.gov/<YYYYMMDD of election>/<file>.txt. File names are case-insensitive on this host (governor.txt returned the same 397 bytes). Sibling statewide files fetched: ussenate.txt, secofstate.txt, auditor.txt, attorneygen.txt, ConstAmend.txt, judicial.txt."
+    },
+    {
+      "what": "U.S. Senator, statewide",
+      "url": "https://electionresultsfiles.sos.mn.gov/20261103/ussenate.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 399,
+      "saved_as": "ussenate.txt",
+      "notes": "Same 16-column layout."
+    },
+    {
+      "what": "all 8 U.S. House districts, district totals",
+      "url": "https://electionresultsfiles.sos.mn.gov/20261103/ushouse.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 2318,
+      "saved_as": "ushouse.txt",
+      "notes": "25 rows."
+    },
+    {
+      "what": "all 67 State Senate districts, district totals",
+      "url": "https://electionresultsfiles.sos.mn.gov/20261103/stsenate.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 17160,
+      "saved_as": "stsenate.txt",
+      "notes": "201 rows."
+    },
+    {
+      "what": "all 134 State House districts, district totals",
+      "url": "https://electionresultsfiles.sos.mn.gov/20261103/LegislativeByDistrict.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 36156,
+      "saved_as": "LegislativeByDistrict.txt",
+      "notes": "387 rows. Despite the name it holds only State Representative districts (1A..67B); senate is stsenate.txt."
+    },
+    {
+      "what": "statewide constitutional amendment",
+      "url": "https://electionresultsfiles.sos.mn.gov/20261103/ConstAmend.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 264,
+      "saved_as": "ConstAmend.txt",
+      "notes": "Three rows: YES, NO, ESTIMATED BLANKS (blanks count as NO under MN law, so the site publishes them as a choice). The question text is in BallotQuestions.txt (county id 88 = statewide, office id 0351)."
+    },
+    {
+      "what": "every federal, state, judicial and county contest broken down by county (no statewide rollup rows)",
+      "url": "https://electionresultsfiles.sos.mn.gov/20261103/allracesbycounty.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 714945,
+      "saved_as": "allracesbycounty.txt",
+      "notes": "8285 rows, column 2 is the county id (01..87, names in cntytbl.txt). This is the nearest thing to one-document-for-everything, but a client must sum counties itself; the per-office files above already carry district/state totals."
+    },
+    {
+      "what": "other statewide and lookup files",
+      "url": "https://electionresultsfiles.sos.mn.gov/20261103/attorneygen.txt",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 249,
+      "saved_as": "attorneygen.txt",
+      "notes": "Also fetched and saved from the same folder: secofstate.txt (425 B), auditor.txt (314 B), judicial.txt (1321 B, Supreme Court / Court of Appeals), judicialdst.txt (21501 B, district courts), BallotQuestions.txt (181569 B, question texts for all levels), cand.txt (93413 B, candidate table), PartyTbl.txt (197 B, party codes), cntytbl.txt (1319 B, county codes), pctstats.txt (206127 B, per-precinct registration/turnout). Not fetched: allracesbyprecinct.txt (named in the 2024 folder by a web search; expected to be large). Names that returned 404: statewide.txt, amendment.txt, amendments.txt, ConstitutionalAmendment.txt, allraces.txt."
+    }
+  ],
+  "election_id": "Two ids. The flat-file folder is the election date, 20261103, in https://electionresultsfiles.sos.mn.gov/20261103/. The HTML site uses ersElectionId=201 (seen in every link on the home page).",
+  "discovery": "The flat-file folder is simply the election date YYYYMMDD (earlier folders seen in search results: 20201103, 20221108, 20241105, 20260811 primary, 20251216 special). The HTML site's list of elections and the official 'Media Files' page (/Select/MediaFiles/Index?ersElectionId=201) sit behind a Radware captcha, so there is no fetchable index; the file names have been stable across 2020-2026.",
+  "cors": "none on electionresultsfiles.sos.mn.gov (no Access-Control-Allow-Origin header on any .txt response). The Radware front on electionresults.sos.mn.gov echoes 'Access-Control-Allow-Origin: https://openslate.us' but only on its 302 to the captcha.",
+  "bot_blocking": "Flat files (electionresultsfiles.sos.mn.gov): relay User-Agent got HTTP 200 on every file, no challenge. HTML site (electionresults.sos.mn.gov): Radware Bot Manager ('Server: rdwr') answered 302 to validate.perfdrive.com (captcha page) for the relay UA and for a desktop Chrome UA from curl. Headless Chrome got the home page once (HTTP 200, saved as page.headless-chrome.html), then every later load was sent to an hCaptcha 'Radware Captcha Page'.",
+  "updated_field": "None inside the files. Use the HTTP Last-Modified header, e.g. 'Last-Modified: Tue, 10 Nov 2026 21:08:16 GMT' (GMT; = 1:08 PM PST). An ETag is also sent.",
+  "reporting_field": "Columns 12 and 13 of every result row: precincts reporting ; total precincts for that office in that area. Example from Governor.txt: '...;GP;4105;4105;51388;1.82;2830164' = 4105 of 4105 precincts.",
+  "titles": {
+    "governor": "Governor & Lt Governor",
+    "us_senate": "U.S. Senator",
+    "us_house": [
+      "U.S. Representative District 1",
+      "U.S. Representative District 2",
+      "U.S. Representative District 3"
+    ],
+    "state_upper": [
+      "State Senator District 1",
+      "State Senator District 2",
+      "State Senator District 3"
+    ],
+    "state_lower": [
+      "State Representative District 1A",
+      "State Representative District 1B",
+      "State Representative District 2A"
+    ],
+    "other_statewide": [
+      "Attorney General",
+      "Secretary of State",
+      "State Auditor",
+      "Associate Justice - Supreme Court 1",
+      "Associate Justice - Supreme Court 4"
+    ],
+    "measures": ["CONSTITUTIONAL AMENDMENT 1"]
+  },
+  "choice_format": "One row per candidate; name in column 8, party abbreviation in column 11 (codes in PartyTbl.txt: R, DFL, FI, GP, IND, LIB, UNI, NP, WI). Verbatim: 'MN;;;0102;U.S. Senator;;0403;Peggy Flanagan;;;DFL;4105;4105;1520908;53.71;2831757'. Governor tickets are one name: 'Amy Klobuchar and Ben Schierer'. Write-ins are a row 'WRITE-IN' with party WI. Measure: 'MN;;;0351;CONSTITUTIONAL AMENDMENT 1;;9001;YES;;;NP;4105;4105;2068204;72.53;2851615', then 'NO' (9002) and 'ESTIMATED BLANKS' (9003).",
+  "district_field": "Both. The district is in the title (column 5, 'U.S. Representative District 1', 'State Representative District 1A') and alone in column 6 ('1', '1A'). Column 4 is a 4-digit office id (0104 = CD1, 0121 = SD1, 0188 = HD 1A).",
+  "contest_count": 374,
+  "terms": "none found. The site's terms/about pages are behind the Radware captcha; the home page (saved) only says results are 'unofficial until the Minnesota State Canvassing Board meets on Thursday, November 19, 2026'.",
+  "confidence": "high",
+  "tried": [
+    "curl https://electionresults.sos.mn.gov/ with the relay UA: 302 to validate.perfdrive.com (Radware captcha). Same with a Chrome UA.",
+    "curl https://electionresultsfiles.sos.mn.gov/20261103/ussenate.txt with the relay UA: 200, real numbers.",
+    "Probed file names known from earlier elections on the same host; 200s and 404s are listed in the feeds notes.",
+    "Headless Chrome on the home page: loaded once, gave ersElectionId=201 and the office links. A second load (the Media Files index) and all later loads hit the hCaptcha page, so I stopped touching that host.",
+    "WebFetch of the Media Files index: also redirected to the captcha.",
+    "Web search restricted to electionresultsfiles.sos.mn.gov found the 2024 amendment file names (ConstAmend.txt, ConstAmendCty.txt, ConstAmendCG.txt, ConstAmendPct.txt, allracesbyprecinct.txt); ConstAmend.txt exists for 20261103.",
+    "Column meanings (state; county id; precinct; office id; office name; district; candidate order code; candidate name; suffix; incumbent code; party; precincts reporting; total precincts; votes; percent; total votes for office) are inferred from the data and my memory of the Secretary of State's file-layout page, which I could not fetch today.",
+    "contest_count 374 = distinct office titles in allracesbycounty.txt (federal, state, judicial, county); municipal and school files were not fetched."
+  ]
+}

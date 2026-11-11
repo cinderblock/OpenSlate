@@ -1,0 +1,79 @@
+{
+  "code": "mi",
+  "state": "Michigan",
+  "office": "Michigan Department of State, Bureau of Elections (Michigan Voter Information Center)",
+  "page": "https://mvic.sos.state.mi.us/votehistory/ (choose 'County Results' and '11/3/2026 STATE GENERAL'; the site's own id for it is 707)",
+  "platform": "custom-text",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every state-level contest of the election, one row per candidate per county, tab-delimited (statewide offices, US Senate, US House, State Senate, State House, education boards, judges, statewide proposals)",
+      "url": "https://mvic.sos.state.mi.us/VoteHistory/GetElectionResultFile?electionId=707",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "text",
+      "bytes": 1182443,
+      "saved_as": "2026STATE_GENERAL_MI_CENR_BY_COUNTY.txt",
+      "notes": "Linked as 'Election Data' on the results page's Data tab. Content-Disposition names it 2026STATE_GENERAL_MI_CENR_BY_COUNTY.txt. Line 1 is 'TOTAL VOTER TURNOUT: 105,267,036' (not a believable turnout; ignore it), line 2 is the header row, then 8742 data rows, then a footer line 'RECORDS: 8742<TAB>RESULTS: '. There are NO statewide or district total rows: a client sums CandidateVotes over the 83 counties per (OfficeCode, DistrictCode, OfficeDescription, CandidateID). 1.18 MB uncompressed, 116 KB gzipped on the wire."
+    },
+    {
+      "what": "the same election as server-rendered HTML with statewide/district totals, percentages, the Updated stamp and 'Counties: 83/83'",
+      "url": "https://mvic.sos.state.mi.us/VoteHistory/GetCountyVoteRecords?electionId=707",
+      "method": "GET",
+      "headers_needed": { "User-Agent": "a desktop browser UA (only that was tried on this URL)" },
+      "format": "html",
+      "bytes": 990448,
+      "saved_as": "GetCountyVoteRecords-707.html",
+      "notes": "An HTML fragment the page loads with jQuery .load(). Header text: '2026 Michigan Election Results Date: 11/3/2026 Type: STATE GENERAL, UNOFFICIAL Updated: 11/10/2026 6:01:13 PM Counties: 83/83'. Also links /VoteHistory/GetVoterTurnoutFile?electionId=707 (not fetched). Precinct detail is /VoteHistory/GetPrecinctInfo?electionId=707&countyCode=<n> (seen in the script, not fetched)."
+    }
+  ],
+  "election_id": "707, the value of the '11/3/2026 STATE GENERAL' option in the election dropdown on https://mvic.sos.state.mi.us/votehistory/ ; used as ?electionId=707.",
+  "discovery": "The <select> on https://mvic.sos.state.mi.us/votehistory/ lists every election with its id (707 = 11/3/2026 STATE GENERAL, 706 = 8/4/2026 STATE PRIMARY, 699 = 11/5/2024 STATE GENERAL ...). The options are in the raw HTML of that page (saved page.chrome-ua.html), but the page itself answered the relay User-Agent with a Cloudflare challenge, so discovery needs a browser-like client or a hard-coded id.",
+  "cors": "none (no Access-Control-Allow-Origin on the data file)",
+  "bot_blocking": "Cloudflare. The relay User-Agent got 403 'Cf-Mitigated: challenge' on the page https://mvic.sos.state.mi.us/votehistory/ but HTTP 200 with the full file on /VoteHistory/GetElectionResultFile?electionId=707 (byte-identical to the copy fetched with a Chrome UA). A desktop Chrome UA from curl got 200 on the page and on the HTML fragment. So the feed itself currently answers a non-browser client, but the same host does challenge that client elsewhere; expect this to be fragile.",
+  "updated_field": "Not in the data file. The HTML fragment says 'Updated: 11/10/2026 6:01:13 PM' (Eastern time; no zone printed).",
+  "reporting_field": "No precinct counts. The HTML fragment says 'Counties: 83/83'. In the data file a county simply has rows or does not.",
+  "titles": {
+    "governor": "GOVERNOR AND LIEUTENANT GOVERNOR 4 YEAR TERM (1) POSITION",
+    "us_senate": "UNITED STATES SENATOR 6 YEAR TERM (1) POSITION",
+    "us_house": [
+      "1ST DISTRICT REPRESENTATIVE IN CONGRESS 2 YEAR TERM (1) POSITION",
+      "2ND DISTRICT REPRESENTATIVE IN CONGRESS 2 YEAR TERM (1) POSITION",
+      "3RD DISTRICT REPRESENTATIVE IN CONGRESS 2 YEAR TERM (1) POSITION"
+    ],
+    "state_upper": [
+      "1ST DISTRICT STATE SENATOR 4 YEAR TERM (1) POSITION",
+      "2ND DISTRICT STATE SENATOR 4 YEAR TERM (1) POSITION",
+      "3RD DISTRICT STATE SENATOR 4 YEAR TERM (1) POSITION"
+    ],
+    "state_lower": [
+      "1ST DISTRICT REPRESENTATIVE IN STATE LEGISLATURE 2 YEAR TERM (1) POSITION",
+      "2ND DISTRICT REPRESENTATIVE IN STATE LEGISLATURE 2 YEAR TERM (1) POSITION",
+      "3RD DISTRICT REPRESENTATIVE IN STATE LEGISLATURE 2 YEAR TERM (1) POSITION"
+    ],
+    "other_statewide": [
+      "SECRETARY OF STATE 4 YEAR TERM (1) POSITION",
+      "ATTORNEY GENERAL 4 YEAR TERM (1) POSITION",
+      "MEMBER OF THE STATE BOARD OF EDUCATION 8 YEAR TERMS (2) POSITIONS",
+      "REGENT OF THE UNIVERSITY OF MICHIGAN 8 YEAR TERMS (2) POSITIONS",
+      "JUSTICE OF SUPREME COURT 8 YEAR TERMS (2) POSITIONS"
+    ],
+    "measures": ["PROPOSAL 2026-1", "PROPOSAL 2026-2"]
+  },
+  "choice_format": "Name split over columns CandidateLastName / CandidateFirstName / CandidateMiddleName, party spelled out in PartyDescription. Verbatim row (tabs shown as |): 2026-11-03|3|0|0|1|ALCONA|GOVERNOR AND LIEUTENANT GOVERNOR 4 YEAR TERM (1) POSITION|1|DEMOCRATIC|663858|Benson|Jocelyn|||2000||| . Parties seen: DEMOCRATIC, REPUBLICAN, LIBERTARIAN, U.S. TAXPAYERS, GREEN, NATURAL LAW, WORKING CLASS PARTY, NO PARTY AFFILIATION. Write-in placeholders are rows with last name 'WRITE-IN' and 'Y' in the WriteIn column (many per contest, mostly 0 votes). Measures: last name 'Yes' or 'No', PartyOrder 99, empty party, and StatusCode equal to the proposal's office code.",
+  "district_field": "Both. The district is spelled in OfficeDescription ('1ST DISTRICT REPRESENTATIVE IN CONGRESS ...') and is a separate zero-padded column DistrictCode(Text) ('01' for congress and state senate, '001' for state house, '0' statewide, 5-character court codes like '00300'), with OfficeCode(text) giving the office kind (3 governor, 5 SOS, 6 AG, 7 US Senate, 8 US House, 9 State Senate, 10 State House, 11-14 education boards, 46-51 courts).",
+  "contest_count": 340,
+  "terms": "none found on the results page or in the file.",
+  "confidence": "high",
+  "tried": [
+    "curl https://mvic.sos.state.mi.us/votehistory/ with the relay UA: 403 Cloudflare challenge. With a Chrome UA: 200, a JavaScript shell.",
+    "Headless Chrome on that page: the election dropdown listed 707 = '11/3/2026 STATE GENERAL'.",
+    "Read /bundles/electionResultsJS: endpoints /VoteHistory/GetCountyVoteRecords?electionId=<id> and /VoteHistory/GetPrecinctInfo?electionId=<id>&countyCode=<n>.",
+    "GetCountyVoteRecords?electionId=707 (Chrome UA): 200, HTML with real unofficial totals for all 83 counties and links to the data files.",
+    "GetElectionResultFile?electionId=707 with the relay UA: 200, the tab-delimited file.",
+    "Dead end: https://mielections.us/election/results/2026GEN_CENR.html (the host Michigan used for election-night results in earlier years): connection timed out.",
+    "https://www.michigan.gov/sos/elections/election-results-and-data via WebFetch: 403.",
+    "Timing caveat (from a web search summary of the Department's August 2026 primary news release, not read directly): statewide unofficial results are posted at mi.gov/vote 'once all counties reported', and the public is told to rely on county clerk websites while votes are counted. So this feed may be empty or partial on election night itself; today it shows 83/83 counties.",
+    "contest_count 340 = distinct (OfficeCode, DistrictCode, OfficeDescription) in the data file: 4 statewide offices, 13 US House, 38 State Senate, 110 State House, 4 education boards, 169 court contests, 2 proposals."
+  ]
+}

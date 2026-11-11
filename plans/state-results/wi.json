@@ -1,0 +1,49 @@
+{
+  "code": "wi",
+  "state": "Wisconsin",
+  "office": "Wisconsin Elections Commission",
+  "page": "https://elections.wi.gov/elections/election-results",
+  "platform": "none",
+  "status": "none",
+  "feeds": [
+    {
+      "what": "the Commission's Election Results page: states that there is no statewide election-night count, and lists certified (official) results documents for past elections only. No 2026-11-03 numbers are on it.",
+      "url": "https://elections.wi.gov/elections/election-results",
+      "method": "GET",
+      "headers_needed": {
+        "User-Agent": "a desktop browser User-Agent string (the relay User-Agent gets a Cloudflare 403 challenge)"
+      },
+      "format": "html",
+      "bytes": 22237,
+      "saved_as": "election-results-chrome.html",
+      "notes": "Evidence for status 'none', not a feed. When fetched (Last-Modified Tue, 10 Nov 2026 22:33:44 GMT) the newest entry under 'State and Federal Official Results' was '2026 Partisan Primary Election Results' (Friday, August 28, 2026, certified August 25, 2026); the page does not contain the strings '2026 General' or 'November 3, 2026'. Past official results are posted as files under /sites/default/files/documents/ (e.g. 'County by County Report_Spring Election 2026_All State Contests.xlsx', 'Ward by Ward Report_…xlsx', canvass PDFs), weeks after each election."
+    }
+  ],
+  "election_id": "none (no results application; certified results get a page like /election-result/2026-partisan-primary-election-results)",
+  "discovery": "Nothing to discover for election night. For certified results, watch https://elections.wi.gov/elections/election-results for a new '2026 General Election Results' entry (pattern from 2024: /election-result/2024-general-election-results with 'County by County Report_<contest>.pdf' files). Unofficial election-night numbers exist only on the 72 county clerks' sites, listed at https://elections.wi.gov/wisconsin-county-election-websites (not fetched).",
+  "cors": "none seen (HTML page only; no feed to test)",
+  "bot_blocking": "Relay User-Agent: 403 with a Cloudflare 'Just a moment...' challenge page (saved as election-results.html). Desktop Chrome User-Agent string with curl: 200. WebFetch: 403.",
+  "updated_field": "none (no live count)",
+  "reporting_field": "none (no live count)",
+  "titles": {
+    "governor": null,
+    "us_senate": null,
+    "us_house": [],
+    "state_upper": [],
+    "state_lower": [],
+    "other_statewide": [],
+    "measures": []
+  },
+  "choice_format": "not applicable: the state office publishes no 2026-11-03 count yet. (titles are null because there is no state feed to read them from, not because the offices were absent from the ballot.)",
+  "district_field": "not applicable",
+  "contest_count": 0,
+  "terms": "none found on the page. The page's own statement, quoted verbatim from https://elections.wi.gov/elections/election-results : \"Wisconsin does not have a statewide system for reporting unofficial results on Election Night, and there is no central official website or feed where results are reported.  State law requires that counties post the unofficial election night numbers for each polling place.  The unofficial statewide and county results numbers that the public sees on Election Night and the days thereafter come from the news media, including the Associated Press, which collects them from the 72 county clerks’ websites.\"",
+  "confidence": "high",
+  "tried": [
+    "GET https://elections.wi.gov/elections/election-results with relay UA: 403 Cloudflare challenge",
+    "WebFetch on the same URL: 403",
+    "GET with a desktop Chrome UA string: 200; read the page text and every results link on it",
+    "Confirmed the page has no 2026 general entry a week after the election and carries the 'no statewide system' statement",
+    "Not done: visiting any of the 72 county clerk sites (out of scope: the brief asks for the state office's own count)"
+  ]
+}

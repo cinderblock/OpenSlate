@@ -1,0 +1,59 @@
+{
+  "code": "ny",
+  "state": "New York",
+  "office": "New York State Board of Elections",
+  "page": "https://nyenr.elections.ny.gov/",
+  "platform": "html-only",
+  "status": "html-only",
+  "feeds": [
+    {
+      "what": "every contest of the election on one server-rendered HTML page (the 'All Contests results page' for browsers without JavaScript): 253 result tables with statewide/district totals",
+      "url": "https://nyenr.elections.ny.gov/HomeNoJS.aspx",
+      "method": "GET",
+      "headers_needed": {
+        "Origin": "MUST NOT be sent: a request carrying 'Origin: https://openslate.us' gets a Cloudflare challenge (403, Cf-Mitigated: challenge); the same request without an Origin header gets 200"
+      },
+      "format": "html",
+      "bytes": 1299166,
+      "saved_as": "HomeNoJS.aspx.html",
+      "notes": "1.30 MB of HTML (about 70 KB gzipped), Cache-Control: private; the page's own auto-refresh is 'every 5 mins'. No election id in the URL: always the current election (the header says only 'General Election', with no date or year anywhere on the page). Markup per contest: <table class=\"datatable\" summary=\"Results for All Counties Governor and Lieutenant Governor\"> … <td class=\"resultsHeader\"><span>&nbsp;TITLE > All Counties (Active Registered Voters: N)</span></td><td class=\"resultsHeaderRight\"><span>Election Districts Reporting: X of Y&nbsp;</span></td> … then one <tr> per candidate-and-party line. The interactive page https://nyenr.elections.ny.gov/Home.aspx (saved as Home.aspx.html) shows one contest at a time through an ASP.NET form postback and was not driven."
+    }
+  ],
+  "election_id": "None. The site shows only the current election and labels it 'General Election' with no date.",
+  "discovery": "Nothing to discover: fixed URL. A consumer cannot tell from the page which election it shows (no date), so pair it with the known election date and the 'lblDateTime' update time.",
+  "cors": "none on the 200 response. And cross-origin use is actively blocked: sending an Origin header is what triggers the Cloudflare challenge, so a browser on another origin cannot fetch this at all; it has to go through a server-side relay that sends no Origin.",
+  "bot_blocking": "Cloudflare managed challenge (Turnstile 'Just a moment…', HTTP 403, header Cf-Mitigated: challenge), triggered by the Origin header rather than the User-Agent. Observed: relay User-Agent + Origin -> 403 on / and /Home.aspx; desktop Chrome User-Agent + Origin -> 403; relay User-Agent with NO Origin -> 200 on /, /Home.aspx and /HomeNoJS.aspx; headless Chrome (a normal navigation, no Origin) -> stuck on the challenge page for 60 s, so the challenge also fires on other signals. /robots.txt and /api/ answered 404 unchallenged. The main site https://elections.ny.gov/election-results also answered 403 challenge (fetched with Origin; not retried without).",
+  "updated_field": "HTML: <span id=\"lblDateTime\" aria-label=\"DateTime\">11/10/2026 6:02:02 PM</span> (no zone; New York is Eastern). One value for the whole page.",
+  "reporting_field": "HTML text per contest: 'Election Districts Reporting: 12,199 of 13,187' (election districts are New York's precincts; thousands separators), in <td class=\"resultsHeaderRight\">. The title cell also carries '(Active Registered Voters: 12,665,686)'.",
+  "titles": {
+    "governor": "Governor and Lieutenant Governor",
+    "us_senate": null,
+    "us_house": [
+      "1st Congressional District",
+      "2nd Congressional District",
+      "3rd Congressional District"
+    ],
+    "state_upper": ["1st Senate District", "2nd Senate District", "3rd Senate District"],
+    "state_lower": ["1st Assembly District", "2nd Assembly District", "3rd Assembly District"],
+    "other_statewide": [
+      "State Comptroller",
+      "Attorney General",
+      "1st Judicial District (Supreme Court; multi-seat: title cell adds '(Vote for 6)')"
+    ],
+    "measures": []
+  },
+  "choice_format": "HTML table rows, one per party line, because of fusion voting: <td class=\"resultsColumnData\" rowspan=\"2\">Kathy C. Hochul / Adrienne E. Adams</td><td class=\"resultsColumnDataCenter\">DEM</td> … <td class=\"resultsColumnDataCenter\">3,249,722</td> … <td class=\"resultsColumnDataCenter\">3,622,773</td>, then a second row with only WOR and 373,051. The name cell spans the candidate's party rows (rowspan); each row has 'Votes (by Party)', and the first row of a candidate also has 'Votes (by Candidate)' = the sum across that candidate's lines. Column headers: Candidate, Party, Graph (by Party), % (by Party), Votes (by Party), Graph (by Candidate), % (by Candidate), Votes (by Candidate). Party codes seen: DEM, REP, CON, WOR. Votes have thousands separators. The page says write-ins are shown in aggregate. No yes/no measure appears on the page.",
+  "district_field": "Only in the title, as an ordinal, and the title is the district alone with no office name: \"1st Congressional District\" (US House), \"1st Senate District\" (State Senate), \"1st Assembly District\" (State Assembly), \"1st Judicial District\" (Supreme Court). 26 congressional, 63 senate, 150 assembly, 10 judicial, 3 statewide.",
+  "contest_count": 253,
+  "terms": "No automated-access terms found. The page carries a 'Statement on the Unofficial Nature of Election Night Results': \"The unofficial election night results displayed on this website are based on the unofficial results reported to us by each County Board of Elections and as such, are posted on the web as a convenience to the public.\" URL: https://nyenr.elections.ny.gov/HomeNoJS.aspx",
+  "confidence": "high",
+  "tried": [
+    "https://nyenr.elections.ny.gov/ with relay User-Agent + Origin: 403 Cloudflare challenge (saved page.relay-403.html); with a desktop Chrome User-Agent + Origin: 403 challenge",
+    "Headless Chrome on the same URL: stayed on 'Just a moment…' (Turnstile) until the 60 s timeout",
+    "A probe of /Home.aspx without the Origin header returned 200; repeating it with Origin returned 403 (saved Home.aspx.relay-with-origin-403.html); without Origin again 200 (saved Home.aspx.html). So the Origin header is the trigger",
+    "Home.aspx is a form (contest / district / county-breakdown dropdowns, postback); it links HomeNoJS.aspx as the all-contests page",
+    "HomeNoJS.aspx without Origin, relay User-Agent: 200, 1.30 MB, 253 contests with real counts",
+    "Web search for a documented API/JSON/XML media feed for nyenr.elections.ny.gov: none found. Search results also named https://results.elections.ny.gov/ (answered 200; appears to be the certified-results archive with per-contest CSV) and https://flateau.elections.ny.gov/downloads (answered 200, title 'Downloads'); neither was examined, so whether they carry the 2026 general is unknown",
+    "No US Senate contest and no statewide ballot proposal appear on the page"
+  ]
+}

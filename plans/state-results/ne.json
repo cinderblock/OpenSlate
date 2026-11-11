@@ -1,0 +1,74 @@
+{
+  "code": "ne",
+  "state": "Nebraska",
+  "office": "Nebraska Secretary of State",
+  "page": "https://electionresults.nebraska.gov/",
+  "platform": "bpro-totalvote",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every state-reported contest of the election in one CSV (statewide offices, US Senate, US House, Legislature, measures, judicial retention, regents, NRDs, power districts...)",
+      "url": "https://electionresults.nebraska.gov/resultsCSV.aspx?text=All&type=All&map=CTY",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "csv",
+      "bytes": 105358,
+      "saved_as": "resultsCSV-All.txt",
+      "notes": "Linked as 'All Contests' on the site's Media page (ResultsMedia.aspx). Content-Type is application/text with Content-Disposition: attachment;filename=Media.csv. Has a header row; one row per candidate; every row ends with a trailing comma (an empty 15th column). No election id in the URL: it is always the current election. The 'type' parameter narrows it: SW statewide, CG congressional, LD legislature, PS, SE, RG, JD, CC, LC, NR, UT, PP, RD, ED, PA statewide ballot measures (same codes as the site's menu)."
+    },
+    {
+      "what": "statewide ballot measures only",
+      "url": "https://electionresults.nebraska.gov/resultsCSV.aspx?text=All&type=PA&map=CTY",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "csv",
+      "bytes": 1182,
+      "saved_as": "resultsCSV-PA.txt",
+      "notes": "Same rows as in the All file (there the measures have AreaType SW)."
+    }
+  ],
+  "election_id": "None in the feed URL: the site and resultsCSV.aspx serve the current election ('General Election November 3, 2026' in the page header). The page's JavaScript uses ElectionID=0 for current and ?eid=<n> for archived elections. Race ids are in column RaceID (13224 = US Senate).",
+  "discovery": "No elections-list endpoint found. The same URL will serve the next election once the Secretary of State switches the site over; read the header text ('General Election November 3, 2026') on https://electionresults.nebraska.gov/ to know which election is live.",
+  "cors": "Access-Control-Allow-Origin: https://neresults-stage.azurewebsites.us (a fixed value naming the vendor's staging site, with Vary: Origin; not our origin, so a browser on openslate.us cannot read it)",
+  "bot_blocking": "None. The relay User-Agent got HTTP 200 on the home page, the Media page and both CSV exports (IIS on Azure, sets ASP.NET_SessionId and ARRAffinity cookies but does not require them). A browser UA was not needed.",
+  "updated_field": "No true last-updated value. Column CurrentDateTime (e.g. '11/10/2026 5:23:06 PM') is the server clock at the moment of the request, in Central time: a second request 94 seconds later carried 5:24:40 PM on every row. The home page's 'last-updated' div was empty.",
+  "reporting_field": "Column PrecinctsReporting, written as an Excel text formula: =\"1322/1322\" (reporting/total for the contest's area), e.g. =\"438/438\" for Congressional District 01.",
+  "titles": {
+    "governor": "For Governor and Lt. Governor",
+    "us_senate": "For United States Senator - 6  Year Term",
+    "us_house": [
+      "For Representative in Congress - 2  Year Term (AreaNum 'District 01')",
+      "For Representative in Congress - 2  Year Term (AreaNum 'District 02')",
+      "For Representative in Congress - 2  Year Term (AreaNum 'District 03')"
+    ],
+    "state_upper": [
+      "For Member of the Legislature (AreaNum 'District 02')",
+      "For Member of the Legislature (AreaNum 'District 04')",
+      "For Member of the Legislature (AreaNum 'District 06')"
+    ],
+    "state_lower": [],
+    "other_statewide": [
+      "For Secretary of State",
+      "For State Treasurer",
+      "For Attorney General",
+      "For Auditor of Public Accounts"
+    ],
+    "measures": [
+      "Proposed Amendment No. 1",
+      "Initiative Measure 440",
+      "Initiative Measure 441",
+      "Initiative Measure 442"
+    ]
+  },
+  "choice_format": "Name in CandidateName with a double space between first and last name and a trailing space, party in PartyCode. Verbatim row: 13224,\"For United States Senator - 6  Year Term\",\"REP\",\"SW\",\"\",102,,3012,\"Pete  Ricketts \",11/10/2026 5:23:06 PM,1,378244,0.501405814411288,=\"1322/1322\", . Party codes seen: REP, DEM, LIB, LMN, NWP, AFP, PET (by petition), NON (nonpartisan). Governor tickets: \"Jim Pillen and Joe Kelly \". Measures: \"  For \" / \"  Against \" with empty PartyCode; judicial retention: \"  Yes \" / \"  No \". CandidatePercentage is a 0-1 fraction.",
+  "district_field": "Separate fields, NOT in the title: RaceName is identical for every district ('For Representative in Congress - 2  Year Term', 'For Member of the Legislature'); the district is in AreaNum ('District 01') with AreaType giving the kind (CG, LD, SW...). Use RaceID to tell contests apart. Nebraska's legislature is unicameral, so there is no lower chamber; 25 districts are on this ballot (the even-numbered ones plus District 41).",
+  "contest_count": 463,
+  "terms": "none found on the home page or the Media page.",
+  "confidence": "high",
+  "tried": [
+    "curl https://electionresults.nebraska.gov/ with the relay UA: 200, BPro TotalVote layout, ServiceRoot = https://neresultswebservice.azurewebsites.us/ (the same ResultsAjax.svc service as Montana; not fetched because the CSV export covers everything).",
+    "ResultsMedia.aspx: plain GET links /resultsCSV.aspx?text=All&type=<code>&map=<CTY|DIST>.",
+    "Fetched type=All (625 data rows, 463 contests by RaceID+AreaNum) and type=PA (4 measures).",
+    "Not tried: county-level breakdown parameters of resultsCSV.aspx."
+  ]
+}

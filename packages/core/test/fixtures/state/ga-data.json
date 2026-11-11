@@ -1,0 +1,418 @@
+{
+  "election": {
+    "asOf": "2026-11-10T22:30:12.40547Z",
+    "isOfficialResults": false,
+    "contestGroups": []
+  },
+  "ballotItems": [
+    {
+      "id": "01000000-3a82-a359-4042-08df23e5ff36",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "US Senate"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": null,
+      "reportingStatus": {
+        "reportingUnits": 159,
+        "totalUnits": 159
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Mike Collins (Rep)"
+              }
+            ],
+            "voteCount": 1713658,
+            "party": {
+              "abbreviation": "Rep",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Rep"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Jon Ossoff (I) (Dem)"
+              }
+            ],
+            "voteCount": 2468990,
+            "party": {
+              "abbreviation": "Dem",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Dem"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-3a82-a359-0434-08df23e5ff46",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Governor"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": null,
+      "reportingStatus": {
+        "reportingUnits": 159,
+        "totalUnits": 159
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Rick Jackson (Rep)"
+              }
+            ],
+            "voteCount": 1910912,
+            "party": {
+              "abbreviation": "Rep",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Rep"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Keisha Lance Bottoms (Dem)"
+              }
+            ],
+            "voteCount": 2273865,
+            "party": {
+              "abbreviation": "Dem",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Dem"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-3a82-a359-c4c2-08df23e5ff63",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "PSC - District 3"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": null,
+      "reportingStatus": {
+        "reportingUnits": 159,
+        "totalUnits": 159
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Fitz Johnson (Rep)"
+              }
+            ],
+            "voteCount": 1809588,
+            "party": {
+              "abbreviation": "Rep",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Rep"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Peter Hubbard (I) (Dem)"
+              }
+            ],
+            "voteCount": 2340818,
+            "party": {
+              "abbreviation": "Dem",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Dem"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-3a82-a359-6c09-08df23e60217",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "US House of Representatives - District 7"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": null,
+      "reportingStatus": {
+        "reportingUnits": 6,
+        "totalUnits": 6
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Rich McCormick (I) (Rep)"
+              }
+            ],
+            "voteCount": 191624,
+            "party": {
+              "abbreviation": "Rep",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Rep"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Tony Kozycki (Dem)"
+              }
+            ],
+            "voteCount": 149457,
+            "party": {
+              "abbreviation": "Dem",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Dem"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-3a82-a359-c36d-08df23e6db31",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "State Senate - District 5/ Senador Estatal del Distrito 5"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": null,
+      "reportingStatus": {
+        "reportingUnits": 1,
+        "totalUnits": 1
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Sheikh Rahman (I) (Dem)"
+              }
+            ],
+            "voteCount": 35109,
+            "party": {
+              "abbreviation": "Dem",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Dem"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-3a82-a359-6d62-08df23e626b5",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "State House of Representatives - District 1"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": null,
+      "reportingStatus": {
+        "reportingUnits": 2,
+        "totalUnits": 2
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Mike Cameron (I)(Rep)"
+              }
+            ],
+            "voteCount": 13265,
+            "party": {
+              "abbreviation": "Rep",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Rep"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Steven \"Diz\" Disbrow (Dem)"
+              }
+            ],
+            "voteCount": 4883,
+            "party": {
+              "abbreviation": "Dem",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Dem"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "01000000-3a82-a359-3447-08df23e5ff70",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Proposed Constitutional Amendment 1"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": null,
+      "reportingStatus": {
+        "reportingUnits": 159,
+        "totalUnits": 159
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Yes"
+              }
+            ],
+            "voteCount": 2163674,
+            "party": {
+              "abbreviation": "",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": ""
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "No"
+              }
+            ],
+            "voteCount": 1854423,
+            "party": {
+              "abbreviation": "",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": ""
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

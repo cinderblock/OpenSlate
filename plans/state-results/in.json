@@ -1,0 +1,134 @@
+{
+  "code": "in",
+  "state": "Indiana",
+  "office": "Indiana Secretary of State, Election Division",
+  "page": "https://enr.indianavoters.in.gov/site/index.html",
+  "platform": "other:civix-firsttuesday-enr (Quest Information Systems 'FirstTuesday' Election Night Reporting, now Civix; static JSON in Azure Blob Storage behind Cloudflare)",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "settings: which version of the data files is current (A or B), when it was written, election date, certified flag, party list",
+      "url": "https://enr.indianavoters.in.gov/site/data/settings.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 3578,
+      "saved_as": "settings.json",
+      "notes": "Fetch this first. Root.VersionType ('B' when fetched) is the suffix of every other data file: <name>_<VersionType>.json. The site writes a new set under the other letter and then flips this pointer, so always re-read settings.json. Root.IntervalInMinutes = '2'. All files start with a UTF-8 byte-order mark and wrap everything in {\"Root\":…}. Single-element lists are collapsed to an object (XML-to-JSON style), so every 'Race', 'Candidate', 'Item', 'Region' must be read as object-or-array."
+    },
+    {
+      "what": "index of office categories (which OffCatC files exist) and the statewide precincts-reporting numbers",
+      "url": "https://enr.indianavoters.in.gov/site/data/statewideElectionsC_B.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 21592,
+      "saved_as": "statewideElectionsC_B.json",
+      "notes": "Root.List[] has Heading ('Federal', 'State', 'Local', 'Major Political Party') and Items.Item[] with OFFICECATEGORYID and OFFICE_CATEGORY_NAME. 32 categories in this election; the federal and state ones are 1005 US Representative, 1041 Secretary of State, 1047 State Comptroller (Auditor of State), 1037 Treasurer of State, 1018 State Senator, 1040 State Representative. The last List entry has no Items."
+    },
+    {
+      "what": "all US House contests, statewide totals and per-county rows (one file per office category: OffCatC_<OFFICECATEGORYID>_<VersionType>.json)",
+      "url": "https://enr.indianavoters.in.gov/site/data/OffCatC_1005_B.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 116481,
+      "saved_as": "OffCatC_1005_B.json",
+      "notes": "Root.StatewideSummary.Race[] is the district-wide total per contest (OFFICEID, OFFICE_TITLE, SubSortOrder, NumofSeats, Candidates.Candidate[] with NAME_ON_BALLOT, PARTY, TOTAL, isWinner 'T'/'F'). Root.OfficeCategory.Regions.Region[] is one entry per district (MAP_JURISDICTION_NAME is the district number) with RegionSummary and Races.Race[] per county (Jurisdiction.FIPS, JURISDICTION_NAME; there the fields are PARTY_ABBREV, TOTAL_VOTES and isWinner '1'/'0')."
+    },
+    {
+      "what": "all state senate contests (25)",
+      "url": "https://enr.indianavoters.in.gov/site/data/OffCatC_1018_B.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 92174,
+      "saved_as": "OffCatC_1018_B.json",
+      "notes": "Same shape as OffCatC_1005."
+    },
+    {
+      "what": "all state house contests (100)",
+      "url": "https://enr.indianavoters.in.gov/site/data/OffCatC_1040_B.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 301925,
+      "saved_as": "OffCatC_1040_B.json",
+      "notes": "Same shape as OffCatC_1005."
+    },
+    {
+      "what": "a statewide office (Secretary of State), with per-county rows",
+      "url": "https://enr.indianavoters.in.gov/site/data/OffCatC_1041_B.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 265856,
+      "saved_as": "OffCatC_1041_B.json",
+      "notes": "Same shape. The other statewide offices are OffCatC_1047_B.json (Comptroller) and OffCatC_1037_B.json (Treasurer), not fetched."
+    },
+    {
+      "what": "the statewide offices' totals in one small file (the page's ticker)",
+      "url": "https://enr.indianavoters.in.gov/site/data/statewideTickerC_B.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 6146,
+      "saved_as": "statewideTickerC_B.json",
+      "notes": "Root.ElectionSummaries.Race[]: OFFICE_TITLE, Candidates.Candidate[] (NAME_ON_BALLOT, PARTY, TOTAL)."
+    },
+    {
+      "what": "every referendum and retention question, one row per county x question (the statewide questions have no pre-summed total)",
+      "url": "https://enr.indianavoters.in.gov/site/data/statewideTickerR_B.json",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "json",
+      "bytes": 292985,
+      "saved_as": "statewideTickerR_B.json",
+      "notes": "Root.ElectionSummaries.Question[] (457 rows, 66 distinct REFERENDUMID): REFERENDUMID, FIPS (county), Questions.Referendum{REFERENDUM_TITLE, YES_VOTES, NO_VOTES (strings), REFERENDUM_TEXT, REFERENDUM_TYPE_NAME}. A statewide question appears once for each of the 92 counties and must be summed by REFERENDUMID: 'Public Question #1' (id 1023) sums to 1,041,702 yes / 746,207 no; 'Public Question #2' (id 1029) 1,119,478 / 669,852. statewideElectionsR_B.json (saved too) only gives per-county sums over all questions; per-county detail is in JurR_<FIPS>_<VersionType>.json (named in the site's script, not fetched)."
+    }
+  ],
+  "election_id": "None in the URLs. /site/data/ always holds the current election; settings.json says which: Root.CurrentElection = '11/03/2026', ElectionType = 'G', VersionCode = '20261110_170052'. Past elections move to an archive section of the same site (not explored).",
+  "discovery": "GET https://enr.indianavoters.in.gov/site/data/settings.json: check CurrentElection is the date wanted, take VersionType, then GET statewideElectionsC_<VersionType>.json for the category ids and OffCatC_<id>_<VersionType>.json for each category wanted. The category ids looked stable (they are office-category ids, not election ids), but that is an inference from one election.",
+  "cors": "none",
+  "bot_blocking": "Relay User-Agent: 200 on the page, the scripts and every JSON file (Cloudflare in front, no challenge). Browser User-Agent not needed, not tried.",
+  "updated_field": "Root.WriteTime in every file, e.g. settings.json '2026-11-10T17:04:24.393', with no zone. It is US Eastern time: the HTTP Last-Modified of the same file was 'Tue, 10 Nov 2026 22:04:24 GMT' (17:04 EST = 22:04 UTC). Root.VersionCode '20261110_170052' is the same instant as a string. Root.Certified = 'F'. The files were still being rewritten a week after the election.",
+  "reporting_field": "Statewide only: statewideElectionsC_<V>.json Root.JurisdictionsReporting.TOTAL_ALLPRECINCTSREPORTING = '4902' and TOTAL_ALLPRECINCTS = '5067'. There is no precincts-reporting field per contest in the OffCat files; each category has only ALLREPORTED ('0'/'1') in the index.",
+  "titles": {
+    "governor": null,
+    "us_senate": null,
+    "us_house": [
+      "United States Representative, First District",
+      "United States Representative, Second District",
+      "United States Representative, Third District"
+    ],
+    "state_upper": [
+      "State Senator, District 01",
+      "State Senator, District 04",
+      "State Senator, District 49"
+    ],
+    "state_lower": [
+      "State Representative, District 001",
+      "State Representative, District 002",
+      "State Representative, District 100"
+    ],
+    "other_statewide": [
+      "Secretary Of State",
+      "State Comptroller (Auditor of State)",
+      "Treasurer of State"
+    ],
+    "measures": ["Public Question #1", "Public Question #2"]
+  },
+  "choice_format": "Statewide summary: {\"NAME_ON_BALLOT\":\"Frank J. Mrvan\",\"isWinner\":\"T\",\"POLITICALPARTYID\":\"1021\",\"PARTY\":\"D\",\"DISPLAY_COLOR\":\"#007ECD\",\"TOTAL\":140368,\"CandidateName\":\"Mrvan, Frank Frank\",\"SORT_ORDER\":\"10\"}. Party is an abbreviation ('D', 'R', 'L', 'LP', 'I', 'NSAW'…) keyed to settings.json Root.PolParties.PolParty[] (PARTY_ABBREV, PARTY_NAME). Write-ins are ordinary candidates with ' (W/I)' appended to the name ('Andrew Delano (W/I)'). CandidateName is unreliable (it repeats the first name). Measures are not choices: each row has YES_VOTES and NO_VOTES as strings.",
+  "district_field": "Separate fields exist. In the OffCat file each OfficeCategory.Regions.Region has MAP_JURISDICTION_TYPE 'District' and MAP_JURISDICTION_NAME with the number ('1' for Congress, '01' for state senate) and its RegionSummary.Race carries the same OFFICEID as the statewide summary. In titles: Congress spells the ordinal ('First District') while SubSortOrder has the digit ('United States Representative, (1) District'); the legislature zero-pads ('District 01', 'District 001').",
+  "contest_count": 137,
+  "terms": "none found. The page footer is only 'Copyright 1989 - {{currentYear}}. Quest Information Systems, Inc. All Rights Reserved.'",
+  "confidence": "high",
+  "tried": [
+    "GET https://enr.indianavoters.in.gov/site/index.html (relay User-Agent): 200, an AngularJS app ('EnrApp', FirstTuesday logo).",
+    "Headless Chrome on the page: it loads /site/data/settings.json, statewideElectionsC_B.json, statewideTickerC_B.json, statewideTickerR_B.json, /site/clientData/additionalSettings.json and one OffCatC_<id>_B.json per office category (32 of them).",
+    "Read Scripts/EnrAngular/Services/jsonDataFetcher.js and Initialization/enrMainController.js to confirm the naming rule: data/<name>[_<VersionType>].json, version from settings.json; referendum mode reads statewideElectionsR and JurR_<FIPS>.",
+    "Read Directives/enrDownloadResults.js looking for a whole-election export: the 'download' feature only exports voter turnout (statewideTurnout_<V>.json) built in the browser. There is no single all-contests file.",
+    "Fetched settings, both statewide indexes, both tickers and four OffCat files with the relay User-Agent and Origin: all 200, application/json, no CORS header.",
+    "Note on contest_count: 137 is the federal and state candidate contests in the six categories checked (9 US House, 25 State Senator, 100 State Representative read from the files; Secretary of State, Comptroller, Treasurer one each). Not counted: the 26 local and judicial office categories (not fetched) and the 66 referendum and retention questions in statewideTickerR."
+  ]
+}

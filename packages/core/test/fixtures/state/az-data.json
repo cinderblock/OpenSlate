@@ -1,0 +1,684 @@
+{
+  "election": {
+    "asOf": "2026-11-10T23:00:55.866264Z",
+    "isOfficialResults": false,
+    "contestGroups": [
+      {
+        "id": "01000000-9c37-b0a0-f4c0-08df312183b8",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Federal"
+          }
+        ]
+      },
+      {
+        "id": "01000000-9c37-b0a0-4c07-08df3121893a",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "State"
+          }
+        ]
+      },
+      {
+        "id": "01000000-9b7e-d38a-bd69-08df31219484",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Legislative"
+          }
+        ]
+      },
+      {
+        "id": "01000000-9c37-b0a0-0a6d-08df31219bcb",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Judicial"
+          }
+        ]
+      },
+      {
+        "id": "01000000-9c37-b0a0-80a8-08df3121a48a",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Ballot Measures"
+          }
+        ]
+      },
+      {
+        "id": "other",
+        "groupHeading": [
+          {
+            "languageId": "en",
+            "text": "Other Contests"
+          }
+        ]
+      }
+    ]
+  },
+  "ballotItems": [
+    {
+      "id": "248c0000-c0a3-7204-fbf5-08df11bc03ba",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "U.S. Representative in Congress - District No. 1"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-9c37-b0a0-f4c0-08df312183b8",
+      "reportingStatus": {
+        "reportingUnits": 1,
+        "totalUnits": 1
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Amish Shah"
+              }
+            ],
+            "voteCount": 184770,
+            "party": {
+              "abbreviation": "DEM",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Democratic"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Thomas \"Jay\" Feely IV"
+              }
+            ],
+            "voteCount": 160408,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Republican"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Monica Alponte"
+              }
+            ],
+            "voteCount": 7661,
+            "party": {
+              "abbreviation": "LIB",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Libertarian"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Unassigned Write-in"
+              }
+            ],
+            "voteCount": 240,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Gage Dylan Thunder"
+              }
+            ],
+            "voteCount": 15,
+            "party": {
+              "abbreviation": "NON",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Other"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Dev Gupta "
+              }
+            ],
+            "voteCount": 14,
+            "party": {
+              "abbreviation": "IND",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Independent"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Unofficial Write-in"
+              }
+            ],
+            "voteCount": 0,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "248c0000-c0a3-7204-3acd-08df11bc03cf",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Governor and Lieutenant Governor"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-9c37-b0a0-4c07-08df3121893a",
+      "reportingStatus": {
+        "reportingUnits": 15,
+        "totalUnits": 15
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Katie Hobbs (DEM) / John Giles (PND)"
+              }
+            ],
+            "voteCount": 1424282,
+            "party": {
+              "abbreviation": "DEM",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Democratic"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Andy Biggs (REP) / Sine Kerr (REP)"
+              }
+            ],
+            "voteCount": 1087326,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Republican"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Risa Lombardo (GRN) / Lisa Castillo (GRN)"
+              }
+            ],
+            "voteCount": 24330,
+            "party": {
+              "abbreviation": "GRN",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Green"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Teri Ann Hourihan (NOL) / Angela Harrolle Mohan (PND)"
+              }
+            ],
+            "voteCount": 23298,
+            "party": {
+              "abbreviation": "NOL",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "No Labels"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Unofficial Write-in"
+              }
+            ],
+            "voteCount": 1702,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Alice Novoa "
+              }
+            ],
+            "voteCount": 16,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Republican"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Unassigned Write-in"
+              }
+            ],
+            "voteCount": 13,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Gertritrude Gonzalez "
+              }
+            ],
+            "voteCount": 10,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Republican"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "248c0000-c0a3-7204-420e-08df11bc03cf",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "State Senator - District No.  1"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 1"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-9b7e-d38a-bd69-08df31219484",
+      "reportingStatus": {
+        "reportingUnits": 2,
+        "totalUnits": 2
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Mark Finchem"
+              }
+            ],
+            "voteCount": 73919,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Republican"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Christine Ellen Dargon"
+              }
+            ],
+            "voteCount": 45114,
+            "party": {
+              "abbreviation": "DEM",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Democratic"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Unofficial Write-in"
+              }
+            ],
+            "voteCount": 132,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Unassigned Write-in"
+              }
+            ],
+            "voteCount": 2,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "248c0000-c0a3-7204-f2a9-08df11bc03cf",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "State Representative - District No. 10"
+        }
+      ],
+      "voteFor": [
+        {
+          "languageId": "en",
+          "text": "Vote for 2"
+        }
+      ],
+      "contestType": "Candidate",
+      "contestGroupId": "01000000-9b7e-d38a-bd69-08df31219484",
+      "reportingStatus": {
+        "reportingUnits": 2,
+        "totalUnits": 2
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Justin Olson"
+              }
+            ],
+            "voteCount": 44819,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Republican"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "James Rogers"
+              }
+            ],
+            "voteCount": 43795,
+            "party": {
+              "abbreviation": "REP",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Republican"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Helen Hunter"
+              }
+            ],
+            "voteCount": 37245,
+            "party": {
+              "abbreviation": "DEM",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Democratic"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Brian Calaway"
+              }
+            ],
+            "voteCount": 35268,
+            "party": {
+              "abbreviation": "DEM",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "Democratic"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "David Scott"
+              }
+            ],
+            "voteCount": 2964,
+            "party": {
+              "abbreviation": "NOL",
+              "name": [
+                {
+                  "languageId": "en",
+                  "text": "No Labels"
+                }
+              ]
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Unofficial Write-in"
+              }
+            ],
+            "voteCount": 62,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Unassigned Write-in"
+              }
+            ],
+            "voteCount": 0,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "248c0000-c0a3-7204-8a96-08df11bc03d0",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "Shall Justice John Lopez IV, Justice of the Supreme Court be retained in office?"
+        }
+      ],
+      "voteFor": [],
+      "contestType": "BallotMeasure",
+      "contestGroupId": "01000000-9c37-b0a0-0a6d-08df31219bcb",
+      "reportingStatus": {
+        "reportingUnits": 15,
+        "totalUnits": 15
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Be retained YES"
+              }
+            ],
+            "voteCount": 1172343,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "Be retained NO"
+              }
+            ],
+            "voteCount": 805730,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "248c0000-c0a3-7204-c77a-08df11bc03d0",
+      "name": [
+        {
+          "languageId": "en",
+          "text": "PROPOSITION 141"
+        }
+      ],
+      "voteFor": [],
+      "contestType": "BallotMeasure",
+      "contestGroupId": "01000000-9c37-b0a0-80a8-08df3121a48a",
+      "reportingStatus": {
+        "reportingUnits": 15,
+        "totalUnits": 15
+      },
+      "summaryResults": {
+        "ballotOptions": [
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "YES"
+              }
+            ],
+            "voteCount": 1236796,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          },
+          {
+            "name": [
+              {
+                "languageId": "en",
+                "text": "NO"
+              }
+            ],
+            "voteCount": 1188682,
+            "party": {
+              "abbreviation": null,
+              "name": []
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

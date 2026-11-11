@@ -1,0 +1,56 @@
+{
+  "code": "al",
+  "state": "Alabama",
+  "office": "Alabama Secretary of State",
+  "page": "https://www2.alabamavotes.gov/electionNight/statewideResultsByContest.aspx?ecode=1001305",
+  "platform": "html-only",
+  "status": "html-only",
+  "feeds": [
+    {
+      "what": "page 1 of 20 of the statewide results: the first 10 contests (Governor, Lieutenant Governor, United States Senator, US House districts 1–7) plus the statewide header (ballots cast, counties reported, last updated)",
+      "url": "https://www2.alabamavotes.gov/electionNight/statewideResultsByContest.aspx?ecode=1001305",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "html",
+      "bytes": 112442,
+      "saved_as": "statewideResultsByContest.html",
+      "notes": "Server-rendered ASP.NET WebForms page; 112,442 bytes decoded, 11,497 on the wire (gzip). Cache-Control: public, max-age=60. A GET only ever returns page 1: '&page=2' is ignored ('Page: 1 of 20' again). Pages 2–20 (where the state legislature and amendments must be) and the 'Export Data' link are javascript:__doPostBack(...) links, i.e. a form POST carrying __VIEWSTATE and __EVENTVALIDATION (targets cmdNext / cmdNext_top / hlnkExportData). The brief forbids submitting forms, so NEITHER was exercised: what 'Export Data' returns (format, size) is unknown. Each contest is a <table class=\"contestTable\"> with the title in <td class=\"enrContestHeader\"> and one row per candidate (name cell class enrCandNameCol, percent span, votes in div.numberValue)."
+    }
+  ],
+  "election_id": "1001305, the ecode query parameter (2026 General Election).",
+  "discovery": "No list endpoint found. https://www.sos.alabama.gov/alabama-votes carries a link 'View Unofficial Election Night Results for 2026 General Election' → …/statewideResultsByContest.aspx?ecode=1001305; scrape that link for the current ecode. https://www2.alabamavotes.gov/electionNight/ with no ecode is an empty page.",
+  "cors": "none (no Access-Control-Allow-Origin on the HTML page when sent Origin: https://openslate.us)",
+  "bot_blocking": "Plain relay User-Agent: 200 (Server: cloudflare, cf-cache-status MISS, no challenge). Headless Chrome also loads it. Browser User-Agent not needed, not tried.",
+  "updated_field": "In the HTML header block: 'Last Updated: 11/04/2026 11:16:06 AM' (no zone shown; Alabama is US Central). The HTTP Last-Modified header was the fetch time, so it is not useful.",
+  "reporting_field": "Statewide only, in the header block: 'Counties Reported: 67 of 67', 'Total Ballots Cast: 1,693,621', 'Total Registered Voters: 3,852,947', 'Voter Turnout: 43.96%'. No per-contest precinct or county reporting figure on the statewide page.",
+  "titles": {
+    "governor": "GOVERNOR",
+    "us_senate": "UNITED STATES SENATOR",
+    "us_house": [
+      "UNITED STATES REPRESENTATIVE, 1ST CONGRESSIONAL DISTRICT",
+      "UNITED STATES REPRESENTATIVE, 2ND CONGRESSIONAL DISTRICT",
+      "UNITED STATES REPRESENTATIVE, 3RD CONGRESSIONAL DISTRICT"
+    ],
+    "state_upper": [],
+    "state_lower": [],
+    "other_statewide": ["LIEUTENANT GOVERNOR"],
+    "measures": []
+  },
+  "choice_format": "Name padded with spaces then the party in parentheses, in one table cell: 'Doug Jones                             (DEM)' → collapse whitespace to 'Doug Jones (DEM)'; 'Tommy Tuberville (REP)'; write-ins are a row 'Write-In ' with no party. Votes use thousands separators ('806,253'). Measure format not seen (measures are on later pages).",
+  "district_field": "Only in the title, as an ordinal: 'UNITED STATES REPRESENTATIVE, 1ST CONGRESSIONAL DISTRICT'. No separate field.",
+  "contest_count": 10,
+  "terms": "On the page itself: 'The election results presented on these pages are unofficial and presented as a courtesy of the Alabama Secretary of State and Alabama's Probate Judges. The accuracy of the election results is the responsibility of the Probate Judge for each county reporting.' (https://www2.alabamavotes.gov/electionNight/statewideResultsByContest.aspx?ecode=1001305). Nothing about automated access found.",
+  "confidence": "medium",
+  "tried": [
+    "GET https://www2.alabamavotes.gov/electionnight/ : 200, an empty WebForms page",
+    "GET https://www.sos.alabama.gov/alabama-votes/voter/election-night-official-results : only 2017 PDFs",
+    "GET https://www.sos.alabama.gov/alabama-votes : has the link with ecode=1001305",
+    "Headless Chrome on the results page: no JSON/XML/CSV requests at all; everything is in the HTML",
+    "GET …/statewideResultsByContest.aspx?ecode=1001305 with relay UA + Origin: 200, real counts (Governor 1,684,735 votes; 67 of 67 counties; last updated 11/04/2026 11:16:06 AM)",
+    "GET …&page=2 : still page 1 of 20 (paging is postback-only)",
+    "GET …/exportData.aspx?ecode=1001305 (a guess): 302 to /err/err404.aspx",
+    "GET …/chooseCounty.aspx?ecode=1001305 : 200, a county picker (not explored)",
+    "NOT tried, on purpose: the __doPostBack POSTs for 'Next >>' and 'Export Data' (form submission is outside this brief's read-only rule). contest_count 10 is only page 1; with 20 pages the election has roughly 200 contests. State legislature and amendment titles are therefore not recorded.",
+    "The first web search surfaced a third party, civicAPI, that republishes 'unofficial results from the Alabama Secretary of State's office' — not used, noted only as a sign that others scrape this site."
+  ]
+}

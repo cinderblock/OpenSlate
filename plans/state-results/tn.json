@@ -1,0 +1,107 @@
+{
+  "code": "tn",
+  "state": "Tennessee",
+  "office": "Tennessee Secretary of State, Division of Elections",
+  "page": "https://www.elections.tn.gov/categories/governor/offices",
+  "platform": "html-only",
+  "status": "html-only",
+  "feeds": [
+    {
+      "what": "Governor (1 contest)",
+      "url": "https://www.elections.tn.gov/categories/governor/offices",
+      "method": "GET",
+      "headers_needed": {
+        "User-Agent": "a desktop browser User-Agent string (the relay User-Agent gets 403 from CloudFront)"
+      },
+      "format": "html",
+      "bytes": 28411,
+      "saved_as": "governor.html",
+      "notes": "https://www.elections.tn.gov/ redirects here. Each contest is a <div class=\"chart-container\" data-race=\"Governor\" id=\"chart-Governor\" data-candidates=\"[…]\"> whose data-candidates attribute is HTML-entity-encoded JSON: [{\"name\":\"Marsha Blackburn\",\"party\":\"Republican\",\"votes\":957136}, …]. Unescape the attribute, then JSON.parse. The human title is the following <h3 class=\"chart-title\">, the status is in .unofficial-indicator-text ('Final Unofficial Results') and the progress in .county-reporting-header-text ('95 of 95 Counties Completed'). Cache-Control: no-store."
+    },
+    {
+      "what": "US Senate and 9 US House districts (10 contests)",
+      "url": "https://www.elections.tn.gov/categories/congressional/offices",
+      "method": "GET",
+      "headers_needed": { "User-Agent": "a desktop browser User-Agent string" },
+      "format": "html",
+      "bytes": 49945,
+      "saved_as": "congressional.html",
+      "notes": "Same markup."
+    },
+    {
+      "what": "Tennessee Senate (odd districts) and Tennessee House of Representatives (116 contests)",
+      "url": "https://www.elections.tn.gov/categories/general-assembly/offices",
+      "method": "GET",
+      "headers_needed": { "User-Agent": "a desktop browser User-Agent string" },
+      "format": "html",
+      "bytes": 249798,
+      "saved_as": "general-assembly.html",
+      "notes": "Same markup."
+    },
+    {
+      "what": "3 constitutional amendments",
+      "url": "https://www.elections.tn.gov/categories/constitutional-amendments/offices",
+      "method": "GET",
+      "headers_needed": { "User-Agent": "a desktop browser User-Agent string" },
+      "format": "html",
+      "bytes": 30771,
+      "saved_as": "constitutional-amendments.html",
+      "notes": "Same markup; candidates are [{\"name\":\"Yes\",\"party\":\"\",\"votes\":1330845},{\"name\":\"No\",\"party\":\"\",\"votes\":651321}]."
+    },
+    {
+      "what": "live updates as Server-Sent Events (what the page listens to on election night)",
+      "url": "https://www.elections.tn.gov/server-sent-events/governor",
+      "method": "GET",
+      "headers_needed": {
+        "User-Agent": "a desktop browser User-Agent string",
+        "Accept": "text/event-stream"
+      },
+      "format": "text",
+      "bytes": 0,
+      "saved_as": "sse-governor.txt",
+      "notes": "Answered 200, Content-Type text/event-stream, Content-Length 0: now that results are 'Final Unofficial' the stream is empty, so I could not capture an event. From /js/barchartd3.js (saved as js-barchartd3.js): streams are /server-sent-events/<categoryGroup> (governor, congressional, general-assembly, constitutional-amendments), /server-sent-events/following, /server-sent-events/results-by-county/<county>, /server-sent-events/district/<page>/<number>; named events are statewidegovernor, countygovernor, statewideussenate, countyussenate, statewideushouse, countyushouse, statewidetnsenate, countytnsenate, statewidetnhouse, countytnhouse, statewideconstitutionalamendment, countyconstitutionalamendment, and 'lastUpdatedTimestamp'; each race event's data is a JSON array of candidates with a chartName. Unverified against a live stream."
+    }
+  ],
+  "election_id": "none: the site shows one election at a time ('November 3, 2026 Election' in <h1 id=\"electionTitle\">) and the URLs carry no election id.",
+  "discovery": "None needed and none available: the same four /categories/<group>/offices URLs serve whatever election is current; check h1#electionTitle for the date. A search result showed the same application at https://www.tnelectionresults.com/home titled 'August 6th, 2026 Unofficial Election Results' (it also 403s the relay UA; not explored), so earlier elections may live on a second host.",
+  "cors": "The request Origin is reflected: 'Access-Control-Allow-Origin: https://openslate.us' with 'Access-Control-Allow-Credentials: true' (on the HTML pages and the SSE endpoint, when sent with a browser User-Agent). So a browser on openslate.us could read these pages directly.",
+  "bot_blocking": "Relay User-Agent: 403 from CloudFront ('ERROR: The request could not be satisfied', X-Cache: Error from cloudfront) on https://www.elections.tn.gov/, https://sos.tn.gov/elections/results, https://www.tnelectionresults.com/home and the SSE endpoint. The same requests with a desktop Chrome User-Agent string (plain curl, no cookies, no JavaScript) get 200. So it is a User-Agent filter, not a challenge; the page also loads a Dynatrace RUM script (ruxitagentjs) that is not required.",
+  "updated_field": "Only through the SSE event 'lastUpdatedTimestamp', which the page writes into <div id=\"lastUpdatedTimestamp\"> as 'Last Updated: <text>'. In the static HTML that div is empty, and the stream was empty when fetched, so I have no example value or zone. (The site ships /js/userTimezone.js, which suggests it converts to the viewer's zone; not read.)",
+  "reporting_field": "Text per contest: <div class=\"… county-reporting-header-text\">95 of 95 Counties Completed</div> (counties, not precincts), and a status <div class=\"unofficial-indicator-text … race-is-finalized\">Final Unofficial Results</div>.",
+  "titles": {
+    "governor": "Governor",
+    "us_senate": "United States Senate",
+    "us_house": [
+      "United States House of Representatives District 1",
+      "United States House of Representatives District 2",
+      "United States House of Representatives District 3"
+    ],
+    "state_upper": [
+      "Tennessee Senate District 1",
+      "Tennessee Senate District 3",
+      "Tennessee Senate District 5"
+    ],
+    "state_lower": [
+      "Tennessee House of Representatives District 1",
+      "Tennessee House of Representatives District 98",
+      "Tennessee House of Representatives District 99"
+    ],
+    "other_statewide": [],
+    "measures": ["Amendment 1", "Amendment 2", "Amendment 3"]
+  },
+  "choice_format": "JSON inside the data-candidates attribute, entity-encoded in the HTML: [{&quot;name&quot;:&quot;Marsha Blackburn&quot;,&quot;party&quot;:&quot;Republican&quot;,&quot;votes&quot;:957136}, …] i.e. {\"name\":\"Marsha Blackburn\",\"party\":\"Republican\",\"votes\":957136}. Party is the full word ('Republican', 'Democratic', 'Independent'). Measures: {\"name\":\"Yes\",\"party\":\"\",\"votes\":1330845} and {\"name\":\"No\",…}. The rendered page shows them as 'Marsha Blackburn (R) - 957,136 ✔ 45.52%'.",
+  "district_field": "Only in the title. Two spellings of it: the data-race attribute and element ids use underscores ('United_States_House_of_Representatives_District_1', id 'chart-United_States_House_of_Representatives_District_1'); the visible <h3 class=\"chart-title\"> and the county-breakdown link use spaces ('/county-breakdown/United%20States%20Senate').",
+  "contest_count": 130,
+  "terms": "The footer links 'Web and Social Media Policies' at https://sos.tn.gov/web-and-social-media-policies; I could not read it with the relay User-Agent (sos.tn.gov answers 403) and did not fetch it with a browser User-Agent, so no quote. Note the site actively refuses non-browser User-Agents, which is itself a signal about automated access.",
+  "confidence": "medium",
+  "tried": [
+    "GET https://www.elections.tn.gov/ and https://sos.tn.gov/elections/results with relay UA: 403 CloudFront error page (saved as elections-tn-gov.html, sos-results.html)",
+    "GET https://www.tnelectionresults.com/home with relay UA: 403 (saved tnelectionresults-home.html)",
+    "GET https://www.elections.tn.gov/ with Chrome UA string: 200, redirected to /categories/governor/offices; candidate numbers found in data-candidates attributes",
+    "Read /js/gridView.js, /js/favoringCharts.js, /js/barchartd3.js for endpoints: only EventSource('/server-sent-events/…'), no JSON/CSV/XML export, no API",
+    "Headless Chrome (desktop UA) on the governor page: confirmed the only data request is GET /server-sent-events/governor",
+    "curl -N on /server-sent-events/governor with Chrome UA: 200 text/event-stream but zero bytes (results are final); with relay UA: 403",
+    "Fetched the other three category pages with Chrome UA: 10 + 116 + 3 contests, real numbers (US Senate: Bill Hagerty 1,138,436, Marquita Bradshaw 886,974)",
+    "Not fetched: /results-by-county, /district/congressional, /county-breakdown/<race> (county-level HTML), /home (the information page), /js/userTimezone.js"
+  ]
+}

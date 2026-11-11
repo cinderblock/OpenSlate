@@ -1,0 +1,57 @@
+{
+  "code": "ak",
+  "state": "Alaska",
+  "office": "Alaska Division of Elections",
+  "page": "https://www.elections.alaska.gov/election-results/",
+  "platform": "custom-csv",
+  "status": "works",
+  "feeds": [
+    {
+      "what": "every contest of the election, one row per precinct × contest × candidate (20,046 rows, 444 precincts, 76 contests). There are no statewide total rows: totals must be summed.",
+      "url": "https://www.elections.alaska.gov/enr/26GENR/results/GA_ENR_Precinct_State_of_Alaska.csv",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "csv",
+      "bytes": 3312495,
+      "saved_as": "GA_ENR_Precinct_State_of_Alaska.csv",
+      "notes": "A Dominion Democracy Suite ENR export sitting on S3 behind CloudFront (Server: AmazonS3). UTF-8, CRLF, no BOM, every line ends with a trailing comma. Not compressed on the wire (3.3 MB each fetch); it has an ETag ('c1e447393d105ee83a2ca6243158850d') and Last-Modified, so poll with If-None-Match. The page links it as 'Summary'. Columns: Precinct_name, Reporting_flag, Pct_Id, Pct_seq_nbr, Reg_voters, Aggregation_ID, Contest_Id, Contest_seq_nbr, Contest_title, Contest_party_name, Selectable_Options, Candidate_State_ID, candidate_id, candidate_name, Candidate_Type, cand_seq_nbr, Party_Code, total_ballots, total_votes, total_under_votes, total_over_votes, then the same four for Election Day, Absentee, Early Voting, Question, Remote. 'Precincts' include counting groups such as 'District 8 - Absentee', 'District 9 - Early Voting', 'HD99 Fed Overseas Absentee'. Alaska uses ranked-choice voting: these are FIRST-CHOICE votes only; RCV rounds are not in this file. Path pattern: /enr/<YY><ELECTION>/results/ with 26GENR = 2026 general."
+    },
+    {
+      "what": "the statewide summary report (PDF) — the only place the state totals appear ready-made",
+      "url": "https://www.elections.alaska.gov/enr/26GENR/results/ElectionSummaryReportRPT.pdf",
+      "method": "GET",
+      "headers_needed": {},
+      "format": "other:pdf",
+      "bytes": 272733,
+      "saved_as": "ElectionSummaryReportRPT.pdf",
+      "notes": "Not machine-friendly; kept as a cross-check for summed totals. Per-house-district PDFs are at …/results/HD1.pdf … HD40.pdf (not fetched)."
+    }
+  ],
+  "election_id": "26GENR, a path segment: /enr/26GENR/results/… (the site's other ids look like 24genr, 26prim, 26reaa in /election-results/e/?id=…).",
+  "discovery": "No list endpoint. https://www.elections.alaska.gov/election-results/ shows the current election with the links above; past elections are at /election-results/e/?id=<yy><genr|prim|…>. For a future general, expect /enr/<YY>GENR/results/GA_ENR_Precinct_State_of_Alaska.csv, but confirm from the results page (the path is new: the directory listing /enr/26GENR/results/ answers 404).",
+  "cors": "none (no Access-Control-Allow-Origin on the CSV when sent Origin: https://openslate.us)",
+  "bot_blocking": "Plain relay User-Agent: 200 on the results page, the CSV and the PDF (CloudFront, no challenge). Browser User-Agent not needed, not tried.",
+  "updated_field": "None inside the CSV. Use the HTTP Last-Modified header: 'Tue, 10 Nov 2026 00:40:26 GMT' (UTC). The results page also prints, for its ballot statistics table, 'Table last updated November 9, 2026 at 2:21 pm.' (Alaska time, no zone shown).",
+  "reporting_field": "Reporting_flag per precinct row, but it was '0' on all 20,046 rows even though the rows carry votes, so its meaning could not be confirmed (it may only flip to 1 when a precinct is complete). Precinct count per contest = distinct Pct_Id values for that contest (U.S. Senator: 444). No 'precincts reporting' total anywhere in the file.",
+  "titles": {
+    "governor": "Governor / Lieutenant Governor",
+    "us_senate": "U.S. Senator",
+    "us_house": ["U.S. Representative"],
+    "state_upper": ["Senate District A", "Senate District C", "Senate District E"],
+    "state_lower": ["House District 1", "House District 2", "House District 3"],
+    "other_statewide": ["Supreme Court - Pate"],
+    "measures": ["BM#2 24ESEG", "BM#3 25USCV"]
+  },
+  "choice_format": "candidate_name is 'Last, First M.' in quotes with Party_Code in its own column: \"Peltola, Mary\",C,2,\"DEM\"; \"Sullivan, Dan S.\" REP. Party_Code can be empty (\"Sullivan, Daniel J. Jr.\") and is 'NON' for nonpartisan/undeclared. Governor is a ticket of surnames: \"Kreiss-Tomkins/Johnson\" with Party_Code \"DEM/NON\". Measures and judicial retention: candidate_name \"YES\" and \"NO\", empty Party_Code. Candidate_Type is 'C' on every row.",
+  "district_field": "Only in the title: 'House District 1' (number), 'Senate District A' (letter). Alaska has one at-large US House seat, titled just 'U.S. Representative'. Contest_Id is an internal number (U.S. Senator = 6), not a district. Measure titles are internal codes ('BM#2 24ESEG' = Ballot Measure 2, petition 24ESEG), not the ballot wording.",
+  "contest_count": 76,
+  "terms": "none found on the results page (the site footer links /website-disclaimer, not read)",
+  "confidence": "medium",
+  "tried": [
+    "GET https://www.elections.alaska.gov/election-results/ with the relay UA: 200; links for 26GENR: Summary PDF, 'Summary' CSV, per-district PDFs, CVR_Export.zip, and a dated Combined Report (htm) of ballot statistics",
+    "GET the CSV with relay UA + Origin: 200, 3,312,495 bytes; summed U.S. Senator = Peltola 106,321, Sullivan 103,804, Heikes 4,865, Sullivan Jr. 3,651 (first choices)",
+    "HEAD …/results/CVR_Export.zip: 200, 30,883,890 bytes (cast vote record; not downloaded — over the size limit and not needed for totals)",
+    "HEAD …/results/ : 404; HEAD …/results/ElectionSummaryReportRPT.html (a guess): 405",
+    "Not found: any JSON/XML feed, or a file with statewide totals other than the PDF; RCV round-by-round results were not looked for"
+  ]
+}

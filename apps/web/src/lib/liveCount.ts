@@ -10,6 +10,8 @@ export interface Reporting {
   text: string;
   /** Percent reporting, when the text says. */
   percent?: number;
+  /** What `percent` is of, when it isn't precincts: a state's site counts "counties". */
+  units?: string;
   /** When the count was last updated, as the source words it ("November 3, 2026, 8:15 p.m."). */
   time?: string;
   /** When the source last changed its count, ms since epoch, when it says (a county's file time). */
