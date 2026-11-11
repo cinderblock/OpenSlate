@@ -160,7 +160,10 @@ export function contestOffice(rawTitle: string, hints: OfficeHints = {}): Contes
     !/\bstate\b/.test(title);
   if ((US_HOUSE.test(title) || bareHouse) && legislator) {
     // A state with one seat prints no district: it is district 1 (SPEC §3.3).
-    return { kind: "us-house", district: districtOf(title) ?? "1", ...special };
+    // Congress has no lettered districts, so Hawaii's "Dist I" is 1.
+    const named = districtOf(title) ?? "1";
+    const district = /^[ivx]$/.test(named) ? String(roman(named) ?? named) : named;
+    return { kind: "us-house", district, ...special };
   }
   if (GOVERNOR.test(title)) return { kind: "governor", ...special };
   // A commission elected by district (Nebraska's Public Service Commission) isn't statewide.
@@ -198,7 +201,7 @@ export function isStatewideMeasureTitle(rawTitle: string): boolean {
   )
     return true;
   if (
-    /\b(?:city|town|village|county|borough|township|parish|school|college|library|fire|hospital|park|water|sewer|port|transit|pud|utility|cemetery|road|levy|bonds?)\b/.test(
+    /\b(?:city|town|village|county|borough|township|parish|charter|school|college|library|fire|hospital|park|water|sewer|port|transit|pud|utility|cemetery|road|levy|bonds?)\b/.test(
       title.split(/[:–—]| - /)[0] ?? "",
     )
   )

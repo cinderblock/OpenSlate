@@ -227,7 +227,8 @@ export function readContests(feed: StateFeed, contests: readonly CountyContest[]
       : contestOffice(contest.title, {
           ...(feed.bareHouseIsCongress ? { bareHouseIsCongress: true } : {}),
         });
-    const everywhere = most >= 3 && contest.precincts?.total === most;
+    // All of them, or all but a few (Alaska: 443 of the Senate race's 444 precincts).
+    const everywhere = most >= 3 && (contest.precincts?.total ?? 0) >= most * 0.98;
     const statewide =
       office.kind === "us-senate" ||
       office.kind === "governor" ||

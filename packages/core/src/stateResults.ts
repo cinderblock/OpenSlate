@@ -56,7 +56,11 @@ export type StateFeedKind =
   /** The District of Columbia: every citywide and ward contest in one array, the time in another call. */
   | "dc-json"
   /** Montana: TotalVote's map service, a JSON array per kind of race with a row per candidate. */
-  | "totalvote-json";
+  | "totalvote-json"
+  /** Hawaii: one tab-separated summary, a row per candidate. */
+  | "hi-text"
+  /** Alaska: a CSV with a row per candidate per precinct, summed. */
+  | "ak-csv";
 
 export interface StateFeed {
   /** The state's name: "Virginia". */
@@ -202,6 +206,18 @@ function totalVote(
  * what every state publishes, these and the ones not read yet).
  */
 export const STATE_FEEDS: Record<string, StateFeed> = {
+  ak: {
+    name: "Alaska",
+    kind: "ak-csv",
+    office: "Alaska Division of Elections",
+    election: "2026-11-03",
+    base: "https://www.elections.alaska.gov/enr/26GENR/results",
+    page: "https://www.elections.alaska.gov/election-results/",
+    cors: false,
+    units: "precincts",
+    files: { results: "GA_ENR_Precinct_State_of_Alaska.csv" },
+    lastModified: true,
+  },
   ar: totalResults(
     "Arkansas",
     "Arkansas Secretary of State",
@@ -260,6 +276,17 @@ export const STATE_FEEDS: Record<string, StateFeed> = {
     "Georgia",
     "11032026GeneralAndSpecialElection",
   ),
+  hi: {
+    name: "Hawaii",
+    kind: "hi-text",
+    office: "Hawaii Office of Elections",
+    election: "2026-11-03",
+    base: "https://elections.hawaii.gov/wp-content/results/2026%20General",
+    page: "https://elections.hawaii.gov/election-results/",
+    cors: false,
+    units: "precincts",
+    files: { summary: "summary.txt" },
+  },
   ia: clarity("Iowa", "Iowa Secretary of State", "https://electionresults.iowa.gov/IA/127077"),
   id: enhancedVoting(
     "Idaho",
@@ -1178,6 +1205,163 @@ export function parseTotalVoteMap(raw: unknown): CountyContest[] {
   return [...contests.values()];
 }
 
+/** Records of a delimited text, a quoted field keeping its delimiters and line breaks (`""` is a quote). */
+function delimited(text: string, delimiter: string): string[][] {
+  const records: string[][] = [];
+  let record: string[] = [];
+  let field = "";
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch === '"' && text[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else if (ch === '"') quoted = false;
+      else field += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === delimiter) {
+      record.push(field);
+      field = "";
+    } else if (ch === "\n") {
+      record.push(field);
+      records.push(record);
+      record = [];
+      field = "";
+    } else if (ch !== "\r") field += ch;
+  }
+  if (field !== "" || record.length > 0) {
+    record.push(field);
+    records.push(record);
+  }
+  return records;
+}
+
+/**
+ * Hawaii's `summary.txt`: tab-separated, a `#FormatVersion` line, a header
+ * starting `#Contest ID`, then a row per candidate. A name carries its
+ * party before it, surname first ("(D) CASE, Ed"; `N` is nonpartisan), and
+ * the governor's ticket is one quoted field of two lines. Its precinct
+ * columns count every precinct twice against the counted ones, so they are
+ * left out; nothing in it says when it was made.
+ */
+export function parseHiSummary(text: string): CountyContest[] {
+  const records = delimited(text, "\t");
+  const head = records.findIndex((record) => record[0]?.trim() === "#Contest ID");
+  if (head < 0) throw new Error("Unexpected answer from the state (not a summary)");
+  const header = (records[head] ?? []).map((name) => name.trim());
+  const at = (name: string) => header.indexOf(name);
+  const columns = {
+    title: at("Contest Title"),
+    name: at("Candidate Name"),
+    votes: at("Total Votes"),
+  };
+  if (columns.title < 0 || columns.name < 0 || columns.votes < 0)
+    throw new Error("Unexpected answer from the state (columns missing)");
+  const contests = new Map<string, CountyContest>();
+  for (const record of records.slice(head + 1)) {
+    const key = record[0]?.trim();
+    const title = record[columns.title]?.trim();
+    if (!key || !title || record.length < header.length - 2) continue;
+    let contest = contests.get(key);
+    if (!contest) {
+      contest = { key, title, measure: false, voteFor: 1, choices: [] };
+      contests.set(key, contest);
+    }
+    // One line a person; a ticket's two, each with its party and, under it,
+    // the office it is for ("For GOVERNOR"), which the title already says.
+    const people = (record[columns.name] ?? "")
+      .split(/\n/)
+      .map((line) => line.trim())
+      .filter((line) => line !== "" && !/^for\s/i.test(line));
+    const party = people[0]?.match(/^\(([A-Z]+)\)\s*/)?.[1];
+    contest.choices.push({
+      name: people.map((person) => person.replace(/^\([A-Z]+\)\s*/, "")).join(" / "),
+      ...(party && party !== "N" ? { party } : {}),
+      votes: count(record[columns.votes]),
+      percent: 0,
+    });
+  }
+  for (const contest of contests.values()) {
+    const total = contest.choices.reduce((sum, choice) => sum + choice.votes, 0);
+    for (const choice of contest.choices) choice.percent = share(choice.votes, total);
+    contest.measure = contest.choices.every((choice) => measureSide(choice.name) !== undefined);
+    if (contest.measure) contest.voteFor = 0;
+  }
+  return [...contests.values()];
+}
+
+/**
+ * Alaska's precinct export (Dominion's): a header, then a row per candidate
+ * per precinct, comma-separated. A contest is a `Contest_Id`; a candidate's
+ * `total_votes` are summed over the precincts, and the precincts a contest
+ * has rows for are its total (whether each has reported isn't told: its
+ * `Reporting_flag` stays 0). These are first choices: Alaska ranks, and the
+ * rounds aren't in this file.
+ */
+export function parseAkPrecincts(text: string): CountyContest[] {
+  const lines = text.split(/\r?\n/);
+  const header = csvFields(lines[0] ?? "").map((name) => name.trim());
+  const at = (name: string) => header.indexOf(name);
+  const columns = {
+    precinct: at("Pct_Id"),
+    contest: at("Contest_Id"),
+    title: at("Contest_title"),
+    seats: at("Selectable_Options"),
+    candidate: at("candidate_id"),
+    name: at("candidate_name"),
+    party: at("Party_Code"),
+    votes: at("total_votes"),
+  };
+  if (Object.values(columns).some((index) => index < 0))
+    throw new Error("Unexpected answer from the state (not a precinct export)");
+  const contests = new Map<string, CountyContest>();
+  const choices = new Map<string, CountyChoice>();
+  const precincts = new Map<string, Set<string>>();
+  for (const line of lines.slice(1)) {
+    if (!line.trim()) continue;
+    const row = csvFields(line);
+    const key = row[columns.contest]?.trim();
+    const title = row[columns.title]?.trim();
+    if (!key || !title) continue;
+    let contest = contests.get(key);
+    if (!contest) {
+      contest = {
+        key,
+        title,
+        measure: false,
+        voteFor: count(row[columns.seats]) || 1,
+        choices: [],
+      };
+      contests.set(key, contest);
+      precincts.set(key, new Set());
+    }
+    precincts.get(key)?.add(row[columns.precinct] ?? "");
+    const id = `${key}|${row[columns.candidate]}`;
+    let choice = choices.get(id);
+    if (!choice) {
+      const party = row[columns.party]?.trim();
+      choice = {
+        name: (row[columns.name] ?? "").trim(),
+        ...(party && party !== "NON" ? { party } : {}),
+        votes: 0,
+        percent: 0,
+      };
+      choices.set(id, choice);
+      contest.choices.push(choice);
+    }
+    choice.votes += count(row[columns.votes]);
+  }
+  for (const contest of contests.values()) {
+    const total = contest.choices.reduce((sum, choice) => sum + choice.votes, 0);
+    for (const choice of contest.choices) choice.percent = share(choice.votes, total);
+    contest.precincts = { total: precincts.get(contest.key)?.size ?? 0, reporting: 0 };
+    contest.measure = contest.choices.every((choice) => measureSide(choice.name) !== undefined);
+    if (contest.measure) contest.voteFor = 0;
+  }
+  return [...contests.values()];
+}
+
 interface WireTotalResults {
   lastUpdated?: string;
   isOfficial?: boolean;
@@ -1284,6 +1468,10 @@ export function parseStateFiles(feed: StateFeed, texts: Record<string, string>):
         names.filter((name) => name !== "names").map((name) => JSON.parse(texts[name] ?? "null")),
       ),
     );
+  if (feed.kind === "hi-text")
+    return tidied(feed, { contests: parseHiSummary(texts.summary ?? "") });
+  if (feed.kind === "ak-csv")
+    return tidied(feed, { contests: parseAkPrecincts(texts.results ?? "") });
   if (feed.kind === "de-json")
     return tidied(feed, parseDeResults(JSON.parse(texts.results ?? "null")));
   if (feed.kind === "la-json")

@@ -577,6 +577,61 @@ describe("Delaware, Louisiana, the District and Montana", () => {
   });
 });
 
+describe("Hawaii and Alaska", () => {
+  const text = (name: string) =>
+    readFileSync(join(import.meta.dir, "fixtures/state", name), "utf8");
+
+  test("Hawaii: tabs, a ticket on several lines of one field, the party before the name", () => {
+    const { contests, asOf } = parseStateFiles(feedOf("hi"), { summary: text("hi-summary.txt") });
+    expect(asOf).toBeUndefined();
+    const house = named(contests, "U.S. Representative, Dist I");
+    expect(house.choices.map((c) => [c.name, c.party, c.votes])).toEqual([
+      ["CASE, Ed", "D", 126022],
+      ["LAM, Adriel C.", "R", 40235],
+      ["CONLEY, Jordan S.", "G", 6977],
+      // `N`: nonpartisan.
+      ["BERNING, Nathan M.", undefined, 2341],
+    ]);
+    expect(house.choices.reduce((sum, c) => sum + c.percent, 0)).toBeCloseTo(100, 1);
+    // Its precinct columns count each precinct twice: left out.
+    expect(house.precincts).toBeUndefined();
+    const governor = named(contests, "Governor and Lieutenant Governor");
+    expect(governor.choices[0]).toMatchObject({
+      name: "GREEN, Josh / KAWAKAMI, Derek S.K.",
+      party: "D",
+      votes: 278652,
+    });
+    expect(named(contests, "Question #1").measure).toBe(true);
+    expect(() => parseStateFiles(feedOf("hi"), { summary: "<html>" })).toThrow("not a summary");
+  });
+
+  test("Alaska: every precinct's rows summed; the precincts a contest has are its total", () => {
+    const fixture = text("ak-results.csv");
+    const { contests } = parseStateFiles(feedOf("ak"), { results: fixture });
+    expect(contests.map((c) => c.title).sort()).toEqual([
+      "House District 1",
+      "Senate District A",
+      "U.S. Representative",
+      "U.S. Senator",
+    ]);
+    const senate = named(contests, "U.S. Senator");
+    const rows = fixture
+      .split(/\r?\n/)
+      .filter((line) => line.includes(',"U.S. Senator",'))
+      .map((line) => line.split('"U.S. Senator",')[1]?.split(",") ?? []);
+    expect(senate.choices.reduce((sum, c) => sum + c.votes, 0)).toBeGreaterThan(1000);
+    expect(senate.choices.find((c) => c.name === "Peltola, Mary")?.party).toBe("DEM");
+    // A candidate with no party code has none.
+    expect(senate.choices.find((c) => c.name === "Sullivan, Daniel J. Jr.")?.party).toBeUndefined();
+    // Forty precincts in the fixture; whether each has reported isn't in the file.
+    expect(senate.precincts).toEqual({ total: 40, reporting: 0 });
+    expect(rows.length).toBe(40 * senate.choices.length);
+    expect(() => parseStateFiles(feedOf("ak"), { results: "a,b\n1,2" })).toThrow(
+      "not a precinct export",
+    );
+  });
+});
+
 describe("Clarity, as states run it", () => {
   test("Colorado: offices, and a measure voted Yes/For or No/Against", () => {
     const { contests, asOf } = read("co", "summary");

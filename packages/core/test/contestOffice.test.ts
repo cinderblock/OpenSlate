@@ -293,6 +293,10 @@ describe("every contest of eleven states' counts", () => {
     // Nebraska's one chamber, half of it up.
     expect(seats("ne")).toEqual({ "us-house": 3, "state-upper": 25 });
     expect(seats("nc")).toEqual({ "us-house": 14, "state-upper": 50, "state-lower": 120 });
+    // Hawaii numbers its two House districts in Roman numerals; 4 Senate seats and two specials.
+    expect(seats("hi")).toEqual({ "us-house": 2, "state-upper": 4, "state-lower": 31 });
+    // Alaska: one House seat, Senate districts by letter.
+    expect(seats("ak")).toEqual({ "us-house": 1, "state-upper": 10, "state-lower": 40 });
     // Delaware: one House seat, half its Senate.
     expect(seats("de")).toEqual({ "us-house": 1, "state-upper": 11, "state-lower": 41 });
     // Louisiana elects its legislature in odd years: one House seat was filled.
@@ -404,6 +408,8 @@ describe("a measure", () => {
       "American Falls Joint School District Supplemental Levy",
       "Spartanburg County School District 2 Referendum-Question 1",
       "Town of Irmo Form of Government Referendum",
+      // A county's charter, in a feed that doesn't say which county.
+      "Charter Question #1",
     ]) {
       expect([title, isStatewideMeasureTitle(title)]).toEqual([title, false]);
     }
