@@ -1,0 +1,6 @@
+MN;;;0188;State Representative District 1A;1A;0301;John Burkel;;;R;174;174;13258;71.91;18437
+MN;;;0188;State Representative District 1A;1A;0402;Leanna Sandahl;;;DFL;174;174;5170;28.04;18437
+MN;;;0188;State Representative District 1A;1A;9901;WRITE-IN;;;WI;174;174;9;0.05;18437
+MN;;;0189;State Representative District 1B;1B;0301;Steve Gander;;;R;141;141;11092;65.96;16817
+MN;;;0189;State Representative District 1B;1B;0402;Jennifer Compeau;;;DFL;141;141;5716;33.99;16817
+MN;;;0189;State Representative District 1B;1B;9901;WRITE-IN;;;WI;141;141;9;0.05;16817

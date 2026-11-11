@@ -126,7 +126,8 @@ const US_HOUSE = new RegExp(
 /** Offices that name a congressional district without being Congress: a state board elected by one. */
 const NOT_A_LEGISLATOR =
   /\b(?:board|regent|education|judge|justice|court|commission(?:er)?|trustee|school|attorney|solicitor|sheriff|council)\b/;
-const GOVERNOR = /^(?:for )?governor\b/;
+// Not "Governor of Wayne State University", a board seat Michigan elects statewide.
+const GOVERNOR = /^(?:for )?governor\b(?! of\b)/;
 const UPPER =
   /\bsenat(?:e|or)\b|\bsenatorial district\b|\bmember of the legislature\b|\blegislature\b.*\bdistrict\b/;
 const LOWER =

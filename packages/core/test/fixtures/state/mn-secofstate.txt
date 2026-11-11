@@ -1,0 +1,5 @@
+MN;;;0332;Secretary of State;;0401;Steve Simon;;;DFL;4105;4105;1529236;54.71;2795177
+MN;;;0332;Secretary of State;;0902;Seth Kuhl-Stennes;;;GP;4105;4105;41368;1.48;2795177
+MN;;;0332;Secretary of State;;0303;Tad Jude;;;R;4105;4105;1168633;41.81;2795177
+MN;;;0332;Secretary of State;;1104;George "Chip" Tangen;;;LIB;4105;4105;54684;1.96;2795177
+MN;;;0332;Secretary of State;;9901;WRITE-IN;;;WI;4105;4105;1256;0.04;2795177

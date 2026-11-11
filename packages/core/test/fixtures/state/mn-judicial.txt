@@ -1,0 +1,14 @@
+MN;;;7002;Associate Justice - Supreme Court 1;;9001;Sarah Hennesy;;;NP;4105;4105;1639686;98.94;1657313
+MN;;;7002;Associate Justice - Supreme Court 1;;9901;WRITE-IN;;;WI;4105;4105;17627;1.06;1657313
+MN;;;7005;Associate Justice - Supreme Court 4;;9001;Paul Thissen;;;NP;4105;4105;1620702;99.00;1637087
+MN;;;7005;Associate Justice - Supreme Court 4;;9901;WRITE-IN;;;WI;4105;4105;16385;1.00;1637087
+MN;;;7010;Judge - Court of Appeals 1;;9001;Elizabeth Bentley;;;NP;4105;4105;1600287;99.04;1615768
+MN;;;7010;Judge - Court of Appeals 1;;9901;WRITE-IN;;;WI;4105;4105;15481;0.96;1615768
+MN;;;7016;Judge - Court of Appeals 7;;9001;Rachel Bond;;;NP;4105;4105;1585751;99.05;1601038
+MN;;;7016;Judge - Court of Appeals 7;;9901;WRITE-IN;;;WI;4105;4105;15287;0.95;1601038
+MN;;;7022;Judge - Court of Appeals 13;;9001;Jeanne Cochran;;;NP;4105;4105;1579455;99.06;1594464
+MN;;;7022;Judge - Court of Appeals 13;;9901;WRITE-IN;;;WI;4105;4105;15009;0.94;1594464
+MN;;;7024;Judge - Court of Appeals 15;;9001;Kevin G. Ross;;;NP;4105;4105;1575988;99.08;1590585
+MN;;;7024;Judge - Court of Appeals 15;;9901;WRITE-IN;;;WI;4105;4105;14597;0.92;1590585
+MN;;;7027;Judge - Court of Appeals 18;;9001;JaPaul J. Harris;;;NP;4105;4105;1565054;99.02;1580518
+MN;;;7027;Judge - Court of Appeals 18;;9901;WRITE-IN;;;WI;4105;4105;15464;0.98;1580518

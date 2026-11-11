@@ -236,6 +236,8 @@ describe("the offices every state elects, however it words them", () => {
       "Mayor - Farmville (Town of Farmville)",
       "College of Southern Idaho Trustee Zone 1",
       "For Public Service Commissioner - 6 Year Term District 02",
+      "GOVERNOR OF WAYNE STATE UNIVERSITY",
+      "REGENT OF THE UNIVERSITY OF MICHIGAN",
     ]) {
       expect([title, office(title)]).toEqual([title, { kind: "other" }]);
     }
@@ -291,6 +293,10 @@ describe("every contest of eleven states' counts", () => {
     // Nebraska's one chamber, half of it up.
     expect(seats("ne")).toEqual({ "us-house": 3, "state-upper": 25 });
     expect(seats("nc")).toEqual({ "us-house": 14, "state-upper": 50, "state-lower": 120 });
+    // Minnesota's House districts are a Senate district's halves: 1A, 1B.
+    expect(seats("mn")).toEqual({ "us-house": 8, "state-upper": 67, "state-lower": 134 });
+    expect(seats("pa")).toEqual({ "us-house": 17, "state-upper": 25, "state-lower": 203 });
+    expect(seats("mi")).toEqual({ "us-house": 13, "state-upper": 38, "state-lower": 110 });
     // Texas: 38 in Congress, half the Senate, the whole House.
     expect(seats("tx")).toEqual({ "us-house": 38, "state-upper": 16, "state-lower": 150 });
     // New Mexico's Senate wasn't up: one seat was filled.

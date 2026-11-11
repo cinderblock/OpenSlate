@@ -32,14 +32,20 @@ import {
  * one row per candidate (`resultsCSV.aspx?text=All&type=…`). `ncsbe-json`:
  * North Carolina's own `results_0.txt`, a JSON array with a row per
  * candidate. `civix-enr`: Texas's results API, one JSON document whose
- * sections are each base64-encoded JSON.
+ * sections are each base64-encoded JSON. `mn-text`: Minnesota's
+ * semicolon-separated files, one per office. `pa-json`: Pennsylvania's
+ * returns API, a document per office. `mi-text`: Michigan's tab-separated
+ * file of every county's count.
  */
 export type StateFeedKind =
   | "clarity"
   | "results-api"
   | "totalvote-csv"
   | "ncsbe-json"
-  | "civix-enr";
+  | "civix-enr"
+  | "mn-text"
+  | "pa-json"
+  | "mi-text";
 
 export interface StateFeed {
   /** The state's name: "Virginia". */
@@ -179,6 +185,40 @@ export const STATE_FEEDS: Record<string, StateFeed> = {
   ),
   // Nebraska's one export has every contest; New Mexico's `STATE` every one
   // the state reports; South Dakota's comes in three.
+  mi: {
+    name: "Michigan",
+    kind: "mi-text",
+    office: "Michigan Department of State",
+    election: "2026-11-03",
+    base: "https://mvic.sos.state.mi.us",
+    page: "https://mvic.sos.state.mi.us/votehistory/",
+    cors: false,
+    units: "counties",
+    files: { results: "VoteHistory/GetElectionResultFile?electionId=707" },
+  },
+  mn: {
+    name: "Minnesota",
+    kind: "mn-text",
+    office: "Minnesota Secretary of State",
+    election: "2026-11-03",
+    base: "https://electionresultsfiles.sos.mn.gov/20261103",
+    page: "https://electionresults.sos.mn.gov/",
+    cors: false,
+    units: "precincts",
+    files: {
+      ussenate: "ussenate.txt",
+      ushouse: "ushouse.txt",
+      governor: "Governor.txt",
+      secofstate: "secofstate.txt",
+      auditor: "auditor.txt",
+      attorneygen: "attorneygen.txt",
+      stsenate: "stsenate.txt",
+      sthouse: "LegislativeByDistrict.txt",
+      amendment: "ConstAmend.txt",
+      judicial: "judicial.txt",
+    },
+    lastModified: true,
+  },
   nc: {
     name: "North Carolina",
     kind: "ncsbe-json",
@@ -201,6 +241,28 @@ export const STATE_FEEDS: Record<string, StateFeed> = {
     "https://electionresults.sos.nm.gov",
     { state: "type=STATE&map=CTY" },
   ),
+  pa: {
+    name: "Pennsylvania",
+    kind: "pa-json",
+    office: "Pennsylvania Department of State",
+    election: "2026-11-03",
+    base: "https://www.electionreturns.pa.gov/api/ElectionReturn",
+    page: "https://www.electionreturns.pa.gov/",
+    cors: false,
+    units: "districts",
+    // The office ids are the site's own: 3 governor, 11 Congress, 12 Senate, 13 House.
+    files: Object.fromEntries(
+      [
+        ["governor", 3],
+        ["congress", 11],
+        ["senate", 12],
+        ["house", 13],
+      ].map(([name, id]) => [
+        name,
+        `GetOfficeData?officeId=${id}&methodName=GetOfficeDetails&electionid=117&electiontype=G&isactive=1`,
+      ]),
+    ),
+  },
   ri: enhancedVoting(
     "Rhode Island",
     "Rhode Island Board of Elections",
@@ -517,12 +579,219 @@ export function parseCivixEnr(raw: unknown): StateCount {
   return { contests, ...(asOf !== undefined ? { asOf } : {}) };
 }
 
+/** A share of the votes, as a percent with two decimals. */
+function share(votes: number, total: number): number {
+  return total > 0 ? Math.round((votes / total) * 10000) / 100 : 0;
+}
+
+/**
+ * One of Minnesota's results files (`ushouse.txt`, `Governor.txt`): no
+ * header, a row per candidate, sixteen fields separated by semicolons. The
+ * fourth is the office's id, the fifth its title with the district in it,
+ * the eighth the candidate, the eleventh the party (`NP` for none, `WI` for
+ * the write-in line), then precincts reporting and in all, votes, percent.
+ * An amendment has a third line, "ESTIMATED BLANKS": Minnesota counts a
+ * ballot that skips an amendment against it, and publishes how many did. It
+ * is left out here, so Yes and No are as the state shows them.
+ */
+export function parseMnFile(text: string): CountyContest[] {
+  const contests = new Map<string, CountyContest>();
+  for (const line of text.split(/\r?\n/)) {
+    const row = line.split(";");
+    const key = row[3]?.trim();
+    const title = row[4]?.trim();
+    const name = row[7]?.trim();
+    if (row.length < 16 || !key || !title || !name) continue;
+    if (/^estimated blanks$/i.test(name)) continue;
+    let contest = contests.get(key);
+    if (!contest) {
+      contest = {
+        key,
+        title,
+        measure: false,
+        voteFor: 1,
+        precincts: { total: Number(row[12]) || 0, reporting: Number(row[11]) || 0 },
+        choices: [],
+      };
+      contests.set(key, contest);
+    }
+    const party = row[10]?.trim();
+    contest.choices.push({
+      name,
+      ...(party && party !== "NP" && party !== "WI" ? { party } : {}),
+      votes: Number(row[13]) || 0,
+      percent: Number(row[14]) || 0,
+    });
+  }
+  for (const contest of contests.values()) {
+    contest.measure = contest.choices.every((choice) => measureSide(choice.name) !== undefined);
+    if (contest.measure) contest.voteFor = 0;
+  }
+  return [...contests.values()];
+}
+
+interface WirePaCandidate {
+  CandidateName?: string;
+  PartyName?: string;
+  Votes?: string;
+  Percentage?: string;
+  IsRetention?: string;
+  YesVotes?: string;
+  NoVotes?: string;
+}
+
+/**
+ * One office from Pennsylvania's returns API (`GetOfficeData?officeId=…`).
+ * The body is JSON inside a JSON string. `Election[<office>][0]` maps
+ * `<district>$$<id>$$` to `[{ District, Candidates[] }]`; the district is
+ * words ("1st Congressional District", or "Statewide"), so office and
+ * district together are the title. Every number is a string. A retention
+ * question is a candidate with yes and no votes.
+ */
+export function parsePaOffice(text: string): CountyContest[] {
+  let doc: unknown = JSON.parse(text);
+  if (typeof doc === "string") doc = JSON.parse(doc);
+  const election = (doc as { Election?: Record<string, Record<string, unknown>[]> } | null)
+    ?.Election;
+  if (!election || typeof election !== "object")
+    throw new Error("Unexpected answer from the state (not an office's returns)");
+  const contests: CountyContest[] = [];
+  for (const [office, groups] of Object.entries(election)) {
+    for (const [key, entries] of Object.entries(groups?.[0] ?? {})) {
+      const entry = (entries as { District?: string; Candidates?: WirePaCandidate[] }[])?.[0];
+      const district = entry?.District?.trim();
+      const title = !district || district === "Statewide" ? office : `${office} ${district}`;
+      const candidates = entry?.Candidates ?? [];
+      const retained = candidates.filter((c) => c.IsRetention === "1");
+      for (const judge of retained) {
+        const [yes, no] = [Number(judge.YesVotes) || 0, Number(judge.NoVotes) || 0];
+        contests.push({
+          key: `${office}|${key}|${judge.CandidateName}`,
+          title: `${title}: retain ${judge.CandidateName?.trim()}`,
+          measure: true,
+          voteFor: 0,
+          choices: [
+            { name: "Yes", votes: yes, percent: share(yes, yes + no) },
+            { name: "No", votes: no, percent: share(no, yes + no) },
+          ],
+        });
+      }
+      const running = candidates.filter((c) => c.IsRetention !== "1");
+      if (running.length === 0) continue;
+      contests.push({
+        key: `${office}|${key}`,
+        title,
+        measure: false,
+        voteFor: 1,
+        choices: running.map((c) => {
+          const party = c.PartyName?.trim();
+          return {
+            name: (c.CandidateName ?? "").trim(),
+            ...(party ? { party } : {}),
+            votes: Number(c.Votes) || 0,
+            percent: Number(c.Percentage) || 0,
+          };
+        }),
+      });
+    }
+  }
+  return contests;
+}
+
+/**
+ * Michigan's results file: a line of turnout, a header, then a row per
+ * candidate per county, tab-separated, and a footer. Nothing is totalled:
+ * a contest is an office code, district code and description, and a
+ * candidate's votes are summed over the counties. The description carries
+ * the term and seats ("1ST DISTRICT REPRESENTATIVE IN CONGRESS 2 YEAR TERM
+ * (1) POSITION"): the seats become `voteFor` and both come off the title. A
+ * contest with district code `0` is the whole state's.
+ */
+export function parseMiResults(text: string): CountyContest[] {
+  const lines = text.split(/\r?\n/);
+  const head = lines.findIndex((line) => line.startsWith("ElectionDate\t"));
+  if (head < 0) throw new Error("Unexpected answer from the state (not a results file)");
+  const header = (lines[head] ?? "").split("\t").map((name) => name.trim());
+  const at = (name: string) => header.indexOf(name);
+  const columns = {
+    office: at("OfficeCode(text)"),
+    district: at("DistrictCode(Text)"),
+    title: at("OfficeDescription"),
+    party: at("PartyDescription"),
+    candidate: at("CandidateID"),
+    last: at("CandidateLastName"),
+    first: at("CandidateFirstName"),
+    middle: at("CandidateMiddleName"),
+    votes: at("CandidateVotes"),
+  };
+  if (Object.values(columns).some((index) => index < 0))
+    throw new Error("Unexpected answer from the state (columns missing)");
+  const contests = new Map<string, CountyContest>();
+  const choices = new Map<string, CountyChoice>();
+  for (const line of lines.slice(head + 1)) {
+    const row = line.split("\t");
+    if (row.length < header.length - 4 || !/^\d{4}-\d\d-\d\d$/.test(row[0] ?? "")) continue;
+    const cell = (index: number) => (row[index] ?? "").replace(/\s+/g, " ").trim();
+    const described = cell(columns.title);
+    const key = `${cell(columns.office)}|${cell(columns.district)}|${described}`;
+    let contest = contests.get(key);
+    if (!contest) {
+      const seats = Number(described.match(/\((\d+)\) POSITIONS?$/i)?.[1]) || 1;
+      contest = {
+        key,
+        title: described
+          .replace(/\s*\(\d+\) POSITIONS?$/i, "")
+          .replace(/\s+(?:\d+ YEAR TERMS?|- PARTIAL TERM ENDING [\d/]+)$/i, "")
+          .trim(),
+        ...(cell(columns.district) === "0" ? { category: "Statewide" } : {}),
+        measure: false,
+        voteFor: seats,
+        choices: [],
+      };
+      contests.set(key, contest);
+    }
+    const id = `${key}|${cell(columns.candidate)}|${cell(columns.last)}`;
+    let choice = choices.get(id);
+    if (!choice) {
+      const party = cell(columns.party);
+      const name = [cell(columns.first), cell(columns.middle), cell(columns.last)]
+        .filter(Boolean)
+        .join(" ");
+      choice = {
+        name: name === "WRITE-IN" ? "Write-in" : name,
+        ...(party && party !== "NO PARTY AFFILIATION" ? { party } : {}),
+        votes: 0,
+        percent: 0,
+      };
+      choices.set(id, choice);
+      contest.choices.push(choice);
+    }
+    choice.votes += Number(cell(columns.votes)) || 0;
+  }
+  for (const contest of contests.values()) {
+    const total = contest.choices.reduce((sum, choice) => sum + choice.votes, 0);
+    for (const choice of contest.choices) choice.percent = share(choice.votes, total);
+    contest.measure = contest.choices.every((choice) => measureSide(choice.name) !== undefined);
+    if (contest.measure) contest.voteFor = 0;
+  }
+  return [...contests.values()];
+}
+
 /**
  * A state's count from the files its feed names (`StateFeed.files`), each as
  * its text. For the platforms whose one document is fixed by their kind, use
  * `parseStateFeed`.
  */
 export function parseStateFiles(feed: StateFeed, texts: Record<string, string>): StateCount {
+  const names = Object.keys(feed.files ?? {});
+  if (feed.kind === "mn-text")
+    return tidied(feed, { contests: names.flatMap((name) => parseMnFile(texts[name] ?? "")) });
+  if (feed.kind === "pa-json")
+    return tidied(feed, {
+      contests: names.flatMap((name) => parsePaOffice(texts[name] ?? "null")),
+    });
+  if (feed.kind === "mi-text")
+    return tidied(feed, { contests: parseMiResults(texts.results ?? "") });
   if (feed.kind === "ncsbe-json")
     return tidied(feed, { contests: parseNcsbeResults(JSON.parse(texts.results ?? "null")) });
   if (feed.kind === "civix-enr")

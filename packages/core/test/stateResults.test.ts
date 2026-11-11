@@ -296,6 +296,104 @@ describe("states with a format of their own", () => {
   });
 });
 
+describe("Minnesota, Pennsylvania and Michigan", () => {
+  const text = (name: string) =>
+    readFileSync(join(import.meta.dir, "fixtures/state", name), "utf8");
+
+  test("Minnesota: a file per office, semicolons, and an amendment's blank ballots left out", () => {
+    const feed = feedOf("mn");
+    expect(stateFeedUrl(feed, "sthouse")).toBe(
+      "https://electionresultsfiles.sos.mn.gov/20261103/LegislativeByDistrict.txt",
+    );
+    const texts = Object.fromEntries(
+      Object.keys(feed.files ?? {}).map((name) => [name, text(`mn-${name}.txt`)]),
+    );
+    const { contests } = parseStateFiles(feed, texts);
+    const house = named(contests, "U.S. Representative District 1");
+    expect(house.choices).toEqual([
+      { name: "Jake Johnson", party: "DFL", votes: 163055, percent: 49.99 },
+      { name: "Brad Finstad", party: "R", votes: 162733, percent: 49.89 },
+      // The write-in line has no party.
+      { name: "WRITE-IN", votes: 391, percent: 0.12 },
+    ]);
+    expect(house.precincts).toEqual({ total: 750, reporting: 750 });
+    expect(contests.map((c) => c.title)).toEqual(
+      expect.arrayContaining([
+        "U.S. Senator",
+        "Governor & Lt Governor",
+        "State Senator District 1",
+        "State Representative District 1A",
+        "State Representative District 1B",
+      ]),
+    );
+    const amendment = named(contests, "CONSTITUTIONAL AMENDMENT 1");
+    expect(amendment.measure).toBe(true);
+    expect(amendment.choices.map((c) => [c.name, c.votes])).toEqual([
+      ["YES", 2068204],
+      ["NO", 666628],
+    ]);
+  });
+
+  test("Pennsylvania: JSON inside a JSON string, office and district as words", () => {
+    const feed = feedOf("pa");
+    expect(stateFeedUrl(feed, "congress")).toBe(
+      "https://www.electionreturns.pa.gov/api/ElectionReturn/GetOfficeData?officeId=11&methodName=GetOfficeDetails&electionid=117&electiontype=G&isactive=1",
+    );
+    const { contests } = parseStateFiles(feed, {
+      governor: text("pa-governor.json"),
+      congress: text("pa-congress.json"),
+      senate: text("pa-senate.json"),
+      house: text("pa-house.json"),
+    });
+    expect(contests.map((c) => c.title)).toEqual([
+      "Governor",
+      "Representative in Congress 1st Congressional District",
+      "Representative in Congress 2nd Congressional District",
+      "Senator in the General Assembly 2nd Senatorial District",
+      "Senator in the General Assembly 4th Senatorial District",
+      "Representative in the General Assembly 1st Legislative District",
+      "Representative in the General Assembly 2nd Legislative District",
+    ]);
+    expect(named(contests, "Governor").choices[0]).toEqual({
+      name: "JOSH SHAPIRO",
+      party: "DEM",
+      votes: 3019001,
+      percent: 60.45,
+    });
+    expect(() => parseStateFiles(feed, { governor: '"{}"' })).toThrow("not an office's returns");
+  });
+
+  test("Michigan: every county's rows summed, the term and seats off the title", () => {
+    const feed = feedOf("mi");
+    const { contests } = parseStateFiles(feed, { results: text("mi-results.txt") });
+    const senate = named(contests, "UNITED STATES SENATOR");
+    expect(senate.category).toBe("Statewide");
+    // Six counties of the file are in the fixture: their votes are added up.
+    const rows = text("mi-results.txt")
+      .split(/\r?\n/)
+      .map((line) => line.split("\t"))
+      .filter((row) => row[1] === "7");
+    const total = rows.reduce((sum, row) => sum + Number(row[14]), 0);
+    expect(new Set(rows.map((row) => row[4])).size).toBe(6);
+    expect(senate.choices.reduce((sum, c) => sum + c.votes, 0)).toBe(total);
+    expect(Math.abs(senate.choices.reduce((sum, c) => sum + c.percent, 0) - 100)).toBeLessThan(0.1);
+    // A name is first, middle, last; a party is spelled out.
+    expect(senate.choices.some((c) => / /.test(c.name) && c.party !== undefined)).toBe(true);
+    expect(contests.map((c) => c.title)).toEqual(
+      expect.arrayContaining([
+        "GOVERNOR AND LIEUTENANT GOVERNOR",
+        "1ST DISTRICT REPRESENTATIVE IN CONGRESS",
+        "1ST DISTRICT STATE SENATOR",
+        "1ST DISTRICT REPRESENTATIVE IN STATE LEGISLATURE",
+        "PROPOSAL 2026-1",
+      ]),
+    );
+    expect(named(contests, "PROPOSAL 2026-1").measure).toBe(true);
+    expect(named(contests, "1ST DISTRICT REPRESENTATIVE IN CONGRESS").category).toBeUndefined();
+    expect(() => parseStateFiles(feed, { results: "<html>" })).toThrow("not a results file");
+  });
+});
+
 describe("Clarity, as states run it", () => {
   test("Colorado: offices, and a measure voted Yes/For or No/Against", () => {
     const { contests, asOf } = read("co", "summary");
