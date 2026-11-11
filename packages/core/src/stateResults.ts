@@ -1,8 +1,10 @@
 import {
+  type CountyChoice,
   type CountyContest,
   type CountyFeed,
-  type CountyFeedKind,
+  csvFields,
   feedPathTtl,
+  measureSide,
   parseClaritySummary,
   parseResultsApi,
 } from "./countyResults";
@@ -23,13 +25,31 @@ import {
  * `…/<ST>/elections.json`).
  */
 
-/** The platforms read so far: the two the county feeds already use. */
-export type StateFeedKind = Extract<CountyFeedKind, "clarity" | "results-api">;
+/**
+ * The platforms read so far. `clarity` and `results-api` (Enhanced Voting)
+ * are the two the county feeds already use, each one document. `totalvote-csv`:
+ * KNOWiNK's (once BPro's) TotalVote sites, whose "media" exports are CSV with
+ * one row per candidate (`resultsCSV.aspx?text=All&type=…`).
+ */
+export type StateFeedKind = "clarity" | "results-api" | "totalvote-csv";
 
-export interface StateFeed extends CountyFeed {
+export interface StateFeed {
   /** The state's name: "Virginia". */
   name: string;
   kind: StateFeedKind;
+  /** The feed's root, no trailing slash. For Clarity, the election's folder. */
+  base: string;
+  /** The state's own results page, for people. */
+  page: string;
+  /** False when the feed sends no CORS header: a browser can only read it through a relay. */
+  cors: boolean;
+  /**
+   * The files the count is in, where the platform doesn't fix them: a short
+   * name (what a relay is asked for: `/api/state/sd/swr`) to the path under
+   * `base` it stands for, query included. Clarity's pointer and summary and
+   * Enhanced Voting's `data` are fixed by their kind, and list none.
+   */
+  files?: Record<string, string>;
   /** Who counts: "Virginia Department of Elections". */
   office: string;
   /** The election this feed is, as a date: `2026-11-03`. */
@@ -90,6 +110,27 @@ function clarity(
   };
 }
 
+function totalVote(
+  name: string,
+  office: string,
+  site: string,
+  types: Record<string, string>,
+): StateFeed {
+  return {
+    name,
+    kind: "totalvote-csv",
+    office,
+    election: "2026-11-03",
+    base: site,
+    page: `${site}/`,
+    cors: false,
+    units: "precincts",
+    files: Object.fromEntries(
+      Object.entries(types).map(([key, query]) => [key, `resultsCSV.aspx?text=All&${query}`]),
+    ),
+  };
+}
+
 /**
  * States with a feed for the 2026-11-03 general, by postal code in lower
  * case. Each was fetched and read on 2026-11-10 (plans/national-scale.md has
@@ -123,6 +164,17 @@ export const STATE_FEEDS: Record<string, StateFeed> = {
     "id",
     "nov2026",
   ),
+  // Nebraska's one export has every contest; New Mexico's `STATE` every one
+  // the state reports; South Dakota's comes in three.
+  ne: totalVote("Nebraska", "Nebraska Secretary of State", "https://electionresults.nebraska.gov", {
+    all: "type=All&map=CTY",
+  }),
+  nm: totalVote(
+    "New Mexico",
+    "New Mexico Secretary of State",
+    "https://electionresults.sos.nm.gov",
+    { state: "type=STATE&map=CTY" },
+  ),
   ri: enhancedVoting(
     "Rhode Island",
     "Rhode Island Board of Elections",
@@ -136,6 +188,16 @@ export const STATE_FEEDS: Record<string, StateFeed> = {
     "South Carolina State Election Commission",
     "https://www.enr-scvotes.org/SC/127300",
     { partyPrefixed: true },
+  ),
+  sd: totalVote(
+    "South Dakota",
+    "South Dakota Secretary of State",
+    "https://electionresults.sd.gov",
+    {
+      statewide: "type=SWR&map=CTY",
+      questions: "type=BQ&map=CTY",
+      legislature: "type=LEG&map=DIST",
+    },
   ),
   ut: enhancedVoting(
     "Utah",
@@ -173,9 +235,20 @@ export function stateFeed(code: string | undefined): StateFeed | undefined {
   return Object.hasOwn(STATE_FEEDS, key) ? STATE_FEEDS[key] : undefined;
 }
 
-/** Whether a path under a state feed's base is one OpenSlate reads, and how long its answer stays good. */
+/**
+ * Whether a relay may be asked for `inner` of a state's feed, and how long its
+ * answer stays good: one of the feed's named files, or a path the platform
+ * fixes (Clarity's pointer and versioned summary, Enhanced Voting's `data`).
+ */
 export function stateFeedPathTtl(feed: StateFeed, inner: string): number | null {
-  return feedPathTtl(feed, inner);
+  if (feed.files) return Object.hasOwn(feed.files, inner) ? 60 : null;
+  if (feed.kind !== "clarity" && feed.kind !== "results-api") return null;
+  return feedPathTtl({ ...feed, kind: feed.kind } satisfies CountyFeed, inner);
+}
+
+/** Where an allowed `inner` (`stateFeedPathTtl`) is on the state's own site. */
+export function stateFeedUrl(feed: StateFeed, inner: string): string {
+  return `${feed.base}/${feed.files?.[inner] ?? inner}`;
 }
 
 /** Things a state's site lists among its contests that aren't one. */
@@ -191,12 +264,108 @@ export interface StateCount {
 }
 
 /**
+ * A TotalVote "media" export: a header row, then one row per candidate,
+ * read by column name since states' exports differ in which columns they
+ * have. A contest is a `RaceID`; its district, where it has one, is in
+ * `AreaNum` ("District 01"), not in `RaceName`, so the two together are the
+ * title ("State Senator District 01"). `CandidatePercentage` is a fraction,
+ * `PrecinctsReporting` is `671/671`, which South Dakota and Nebraska wrap as
+ * an Excel formula (`="671/671"`). The export says nothing true about when
+ * the count was made: its `CurrentDateTime` is the server's clock.
+ */
+export function parseTotalVoteCsv(text: string): CountyContest[] {
+  const lines = text.split(/\r?\n/).filter((line) => line.trim() !== "");
+  const header = csvFields(lines[0] ?? "").map((name) => name.trim());
+  const at = (name: string) => header.indexOf(name);
+  const columns = {
+    race: at("RaceID"),
+    name: at("RaceName"),
+    party: at("PartyCode"),
+    area: at("AreaNum"),
+    candidate: at("CandidateName"),
+    voteFor: at("VoteFor"),
+    votes: at("CandidateVotes"),
+    percent: at("CandidatePercentage"),
+    precincts: at("PrecinctsReporting"),
+  };
+  if (columns.race < 0 || columns.name < 0 || columns.candidate < 0 || columns.votes < 0)
+    throw new Error("Unexpected answer from the state (not a results export)");
+  const contests = new Map<string, CountyContest>();
+  for (const line of lines.slice(1)) {
+    const row = csvFields(line);
+    const cell = (index: number) =>
+      index >= 0 ? (row[index] ?? "").replace(/\s+/g, " ").trim() : "";
+    const key = cell(columns.race);
+    if (!key) continue;
+    let contest = contests.get(key);
+    if (!contest) {
+      const area = cell(columns.area);
+      const reported = cell(columns.precincts).match(/(\d+)\s*\/\s*(\d+)/);
+      contest = {
+        key,
+        title: area ? `${cell(columns.name)} ${area}` : cell(columns.name),
+        measure: false,
+        voteFor: Number(cell(columns.voteFor)) || 0,
+        ...(reported
+          ? { precincts: { total: Number(reported[2]), reporting: Number(reported[1]) } }
+          : {}),
+        choices: [],
+      };
+      contests.set(key, contest);
+    }
+    const party = cell(columns.party);
+    const choice: CountyChoice = {
+      name: cell(columns.candidate),
+      ...(party ? { party } : {}),
+      votes: Number(cell(columns.votes)) || 0,
+      percent: Math.round((Number(cell(columns.percent)) || 0) * 10000) / 100,
+    };
+    contest.choices.push(choice);
+  }
+  for (const contest of contests.values()) {
+    contest.measure =
+      contest.choices.length > 0 &&
+      contest.choices.every((choice) => measureSide(choice.name) !== undefined);
+    if (contest.measure) contest.voteFor = 0;
+  }
+  return [...contests.values()];
+}
+
+/**
+ * A state's count from the files its feed names (`StateFeed.files`), each as
+ * its text. For the platforms whose one document is fixed by their kind, use
+ * `parseStateFeed`.
+ */
+export function parseStateFiles(feed: StateFeed, texts: Record<string, string>): StateCount {
+  if (feed.kind !== "totalvote-csv")
+    throw new Error(`${feed.name}'s feed isn't read from named files`);
+  const seen = new Set<string>();
+  const contests = Object.keys(feed.files ?? {}).flatMap((name) =>
+    parseTotalVoteCsv(texts[name] ?? "").filter((contest) => {
+      // One contest can be in two of a state's exports.
+      if (seen.has(contest.key)) return false;
+      seen.add(contest.key);
+      return true;
+    }),
+  );
+  return tidied(feed, { contests });
+}
+
+/**
  * A state feed's document (Clarity's `summary.json`, Enhanced Voting's
  * `data`) as contests, with what that state's site does to names undone.
  */
 export function parseStateFeed(feed: StateFeed, raw: unknown): StateCount {
-  const read: StateCount =
-    feed.kind === "clarity" ? { contests: parseClaritySummary(raw) } : parseResultsApi(raw);
+  if (feed.kind !== "clarity" && feed.kind !== "results-api")
+    throw new Error(`${feed.name}'s feed isn't one document`);
+  return tidied(
+    feed,
+    feed.kind === "clarity" ? { contests: parseClaritySummary(raw) } : parseResultsApi(raw),
+  );
+}
+
+/** What every state's contests get: no tallies that aren't contests, single spaces, parties off names. */
+function tidied(feed: StateFeed, read: StateCount): StateCount {
   const contests = read.contests
     .filter((contest) => !NOT_A_CONTEST.test(contest.title))
     .map((contest) => ({

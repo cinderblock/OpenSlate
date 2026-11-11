@@ -6,11 +6,13 @@ import {
   isStatewideMeasureTitle,
   parseClarityVersion,
   parseStateFeed,
+  parseStateFiles,
   STATE_FEEDS,
   type StateFeed,
   type Subject,
   seatOf,
   stateFeed,
+  stateFeedUrl,
 } from "@openslate/core";
 import { type Area, parseJurisdiction } from "./jurisdictions";
 import { LIVE_REFRESH_MS } from "./liveCount";
@@ -76,9 +78,60 @@ const lastRead = new Map<string, StateResults>();
 /** One request per state at a time, shared by every contest asking. */
 const inFlight = new Map<string, Promise<StateResults>>();
 
+/** FNV-1a over a string: tells one count from the next, nothing more. */
+function hashOf(text: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
+  return (h >>> 0).toString(36);
+}
+
+/**
+ * A feed that is several named files (`StateFeed.files`): all of them, then
+ * one count. Its version is the numbers themselves: these exports stamp every
+ * row with the server's clock, so the text differs each minute when nothing
+ * was counted.
+ */
+async function readFiles(
+  code: string,
+  feed: StateFeed,
+  previous: StateResults | undefined,
+): Promise<StateResults> {
+  const direct = feed.cors && getRoutingMode(PROVIDER) === "direct";
+  const base = baseFor(code, feed);
+  const texts: Record<string, string> = {};
+  await Promise.all(
+    Object.keys(feed.files ?? {}).map(async (name) => {
+      const res = await fetch(direct ? stateFeedUrl(feed, name) : `${base}/${name}`);
+      if (!res.ok) throw new Error(`${feed.name}'s results site answered ${res.status}`);
+      texts[name] = await res.text();
+    }),
+  );
+  const count = parseStateFiles(feed, texts);
+  const version = hashOf(
+    count.contests
+      .map(
+        (c) =>
+          `${c.key}:${c.precincts?.reporting ?? ""}:${c.choices.map((x) => x.votes).join(",")}`,
+      )
+      .join("|"),
+  );
+  if (previous?.version === version) return previous;
+  const out: StateResults = {
+    state: code,
+    version,
+    ...(count.asOf !== undefined ? { updated: count.asOf } : {}),
+    seenAt: Date.now(),
+    ...(count.official !== undefined ? { official: count.official } : {}),
+    contests: count.contests,
+  };
+  lastRead.set(code, out);
+  return out;
+}
+
 async function readState(code: string, feed: StateFeed): Promise<StateResults> {
   const base = baseFor(code, feed);
   const previous = lastRead.get(code);
+  if (feed.files) return readFiles(code, feed, previous);
   let version: string;
   let res: Response;
   if (feed.kind === "clarity") {

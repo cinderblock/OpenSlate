@@ -2392,5 +2392,1469 @@
     ["NON-PARTISAN ELECTION OF CIRCUIT COURT JUDGE - UNEXPIRED TERM, 27th Division 4", 0],
     ["NON-PARTISAN ELECTION OF FAMILY COURT JUDGE - UNEXPIRED TERM, 6th Division 2", 0],
     ["AMENDMENT NO 1: CITIZENSHIP REQUIREMENT TO VOTE IN WEST VIRGINIA ELECTIONS AMENDMENT", 1]
+  ],
+  "sd": [
+    ["United States Senator", 0],
+    ["United States Representative", 0],
+    ["Governor and Lieutenant Governor", 0],
+    ["Secretary of State", 0],
+    ["Attorney General", 0],
+    ["State Auditor", 0],
+    ["State Treasurer", 0],
+    ["Commissioner of School and Public Lands", 0],
+    ["Public Utilities Commissioner", 0],
+    [
+      "Constitutional Amendment I: An Amendment to the South Dakota Constitution that Repeals Expanded Medicaid Coverage if Federal Funding for the Program Drops below 90%.",
+      1
+    ],
+    [
+      "Constitutional Amendment J: An Amendment to the South Dakota Constitution Clarifying that an Individual Must Be a Citizen of the United States to be Eligible to Vote.",
+      1
+    ],
+    [
+      "Constitutional Amendment K: An Amendment to the South Dakota Constitution Establishing the Trust for Unclaimed Property Fund.",
+      1
+    ],
+    [
+      "Constitutional Amendment L: An Amendment to the South Dakota Constitution Requiring that a Proposed Constitutional Amendment or Revision Receive an Affirmative Vote of Sixty Percent of the Votes Cast.",
+      1
+    ],
+    ["State Senator District 01", 0],
+    ["State Senator District 02", 0],
+    ["State Senator District 03", 0],
+    ["State Senator District 04", 0],
+    ["State Senator District 05", 0],
+    ["State Senator District 06", 0],
+    ["State Senator District 07", 0],
+    ["State Senator District 08", 0],
+    ["State Senator District 09", 0],
+    ["State Senator District 10", 0],
+    ["State Senator District 11", 0],
+    ["State Senator District 12", 0],
+    ["State Senator District 13", 0],
+    ["State Senator District 14", 0],
+    ["State Senator District 15", 0],
+    ["State Senator District 16", 0],
+    ["State Senator District 17", 0],
+    ["State Senator District 18", 0],
+    ["State Senator District 19", 0],
+    ["State Senator District 20", 0],
+    ["State Senator District 21", 0],
+    ["State Senator District 22", 0],
+    ["State Senator District 23", 0],
+    ["State Senator District 24", 0],
+    ["State Senator District 25", 0],
+    ["State Senator District 26", 0],
+    ["State Senator District 27", 0],
+    ["State Senator District 28", 0],
+    ["State Senator District 29", 0],
+    ["State Senator District 30", 0],
+    ["State Senator District 31", 0],
+    ["State Senator District 32", 0],
+    ["State Senator District 33", 0],
+    ["State Senator District 34", 0],
+    ["State Senator District 35", 0],
+    ["State Representative District 01", 0],
+    ["State Representative District 02", 0],
+    ["State Representative District 03", 0],
+    ["State Representative District 04", 0],
+    ["State Representative District 05", 0],
+    ["State Representative District 06", 0],
+    ["State Representative District 07", 0],
+    ["State Representative District 08", 0],
+    ["State Representative District 09", 0],
+    ["State Representative District 10", 0],
+    ["State Representative District 11", 0],
+    ["State Representative District 12", 0],
+    ["State Representative District 13", 0],
+    ["State Representative District 14", 0],
+    ["State Representative District 15", 0],
+    ["State Representative District 16", 0],
+    ["State Representative District 17", 0],
+    ["State Representative District 18", 0],
+    ["State Representative District 19", 0],
+    ["State Representative District 20", 0],
+    ["State Representative District 21", 0],
+    ["State Representative District 22", 0],
+    ["State Representative District 23", 0],
+    ["State Representative District 24", 0],
+    ["State Representative District 25", 0],
+    ["State Representative District 26A", 0],
+    ["State Representative District 26B", 0],
+    ["State Representative District 27", 0],
+    ["State Representative District 28A", 0],
+    ["State Representative District 28B", 0],
+    ["State Representative District 29", 0],
+    ["State Representative District 30", 0],
+    ["State Representative District 31", 0],
+    ["State Representative District 32", 0],
+    ["State Representative District 33", 0],
+    ["State Representative District 34", 0],
+    ["State Representative District 35", 0]
+  ],
+  "ne": [
+    ["For United States Senator - 6 Year Term", 0],
+    ["For Representative in Congress - 2 Year Term District 01", 0],
+    ["For Representative in Congress - 2 Year Term District 02", 0],
+    ["For Representative in Congress - 2 Year Term District 03", 0],
+    ["For Governor and Lt. Governor", 0],
+    ["For Secretary of State", 0],
+    ["For State Treasurer", 0],
+    ["For Attorney General", 0],
+    ["For Auditor of Public Accounts", 0],
+    ["For Public Service Commissioner - 6 Year Term District 02", 0],
+    ["For Member of the Legislature District 02", 0],
+    ["For Member of the Legislature District 04", 0],
+    ["For Member of the Legislature District 06", 0],
+    ["For Member of the Legislature District 08", 0],
+    ["For Member of the Legislature District 10", 0],
+    ["For Member of the Legislature District 12", 0],
+    ["For Member of the Legislature District 14", 0],
+    ["For Member of the Legislature District 16", 0],
+    ["For Member of the Legislature District 18", 0],
+    ["For Member of the Legislature District 20", 0],
+    ["For Member of the Legislature District 22", 0],
+    ["For Member of the Legislature District 24", 0],
+    ["For Member of the Legislature District 26", 0],
+    ["For Member of the Legislature District 28", 0],
+    ["For Member of the Legislature District 30", 0],
+    ["For Member of the Legislature District 32", 0],
+    ["For Member of the Legislature District 34", 0],
+    ["For Member of the Legislature District 36", 0],
+    ["For Member of the Legislature District 38", 0],
+    ["For Member of the Legislature District 40", 0],
+    ["For Member of the Legislature - 2 Year Term District 41", 0],
+    ["For Member of the Legislature District 42", 0],
+    ["For Member of the Legislature District 44", 0],
+    ["For Member of the Legislature District 46", 0],
+    ["For Member of the Legislature District 48", 0],
+    ["For Member of the State Board of Education District 05", 0],
+    ["For Member of the State Board of Education District 06", 0],
+    ["For Member of the State Board of Education District 07", 0],
+    ["For Member of the State Board of Education District 08", 0],
+    ["For University of Nebraska Board of Regents - 6 Year Term District 01", 0],
+    ["For University of Nebraska Board of Regents - 6 Year Term District 02", 0],
+    ["For University of Nebraska Board of Regents District 04", 0],
+    [
+      "Judge of the Court of Appeals - District 02 Shall Judge Michael W. Pirtle be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the Nebraska Workers' Compensation Court Shall Judge Thomas E. Stine be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the Nebraska Workers' Compensation Court Shall Judge Dirk V. Block be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 01 Shall Judge David J. A. Bargen be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 01 Shall Judge Julie D. Smith be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 01 Shall Judge Ricky A. Schreiner be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 02 Shall Judge Stefanie A. Martinez be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 02 Shall Judge Michael A. Smith be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 02 Shall Judge George A. Thompson be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 03 Shall Judge Darla Ideus be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 03 Shall Judge Andrew Jacobsen be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 03 Shall Judge Kevin R. McManaman be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 03 Shall Judge Matthew O. Mellor be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 04 Shall Judge Katie L. Benson be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 04 Shall Judge Duane C. Dougherty be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 04 Shall Judge Molly B. Keane be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 04 Shall Judge Marlon A. Polk be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 04 Shall Judge LeAnne M. Srb be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 06 Shall Judge Geoffrey Hall be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 09 Shall Judge Patrick M. Lee be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 09 Shall Judge John H. Marsh be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 10 Shall Judge Morgan R. Farquhar be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 11 Shall Judge Cindy Volkmer be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 12 Shall Judge Andrea Miller be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 12 Shall Judge Travis P. O'Gorman be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the District Court - District 11 Shall Judge Patrick M. Heng be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 01 Shall Judge Richard R. Smith be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 02 Shall Judge Todd J. Hutton be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 02 Shall Judge S. Colin Palm be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 03 Shall Judge Rodney D. Reuter be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 04 Shall Judge Marcena M. Hendrix be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 04 Shall Judge John E. Huber be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 04 Shall Judge Marcela A. Keim be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 04 Shall Judge Sheryl L. Lohaus be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 04 Shall Judge Craig Q. McDermott be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 04 Shall Judge Stephanie Steigleder Shearer be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 05 Shall Judge Denise Kracl be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 06 Shall Judge Sara E. Bauer be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 06 Shall Judge Thomas J. Klein be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 08 Shall Judge Kale B. Burdick be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 09 Shall Judge Alfred E. Corey III be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 09 Shall Judge Bryan S. McQuay be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 10 Shall Judge Michael P. Burns be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 11 Shall Judge Tanya Roberts-Connick be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 12 Shall Judge Aaron J. Conn be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the County Court - District 12 Shall Judge Kristen D. Mickey be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the Separate Juvenile Court - Douglas Shall Judge Matthew R. Kahler be retained in office? - 6 Year Term",
+      1
+    ],
+    [
+      "Judge of the Separate Juvenile Court - Sarpy Shall Judge Sarah M. Moore be retained in office? - 6 Year Term",
+      1
+    ],
+    ["Central Community College For Board of Governors District 01", 0],
+    ["Central Community College For Board of Governors District 02", 0],
+    ["Central Community College For Board of Governors District 03", 0],
+    ["Central Community College For Board of Governors District 04", 0],
+    ["Central Community College For Board of Governors District 05", 0],
+    ["Metropolitan Community College For Board of Governors At Large", 0],
+    ["Metropolitan Community College For Board of Governors District 01", 0],
+    ["Metropolitan Community College For Board of Governors District 02", 0],
+    ["Metropolitan Community College For Board of Governors District 03", 0],
+    ["Metropolitan Community College For Board of Governors District 04", 0],
+    ["Metropolitan Community College For Board of Governors District 05", 0],
+    ["Mid-Plains Community College For Board of Governors District 01", 0],
+    ["Mid-Plains Community College For Board of Governors District 02", 0],
+    ["Mid-Plains Community College For Board of Governors District 03", 0],
+    ["Mid-Plains Community College For Board of Governors District 04", 0],
+    ["Mid-Plains Community College For Board of Governors District 05", 0],
+    ["Northeast Community College For Board of Governors District 01", 0],
+    ["Northeast Community College For Board of Governors District 02", 0],
+    ["Northeast Community College For Board of Governors District 03", 0],
+    ["Northeast Community College For Board of Governors District 04", 0],
+    ["Northeast Community College For Board of Governors District 05", 0],
+    ["Southeast Community College For Board of Governors District 01", 0],
+    ["Southeast Community College For Board of Governors District 02", 0],
+    ["Southeast Community College For Board of Governors District 03", 0],
+    ["Southeast Community College For Board of Governors District 04", 0],
+    ["Southeast Community College For Board of Governors District 05", 0],
+    ["Western Community College For Board of Governors District 01", 0],
+    ["Western Community College For Board of Governors District 02", 0],
+    ["Western Community College For Board of Governors District 03", 0],
+    ["Western Community College For Board of Governors District 04", 0],
+    ["Western Community College For Board of Governors District 05", 0],
+    ["Learning Community of Douglas & Sarpy Counties Subcouncil 01", 0],
+    ["Learning Community of Douglas & Sarpy Counties Subcouncil 03", 0],
+    ["Learning Community of Douglas & Sarpy Counties Subcouncil 05", 0],
+    ["Central Platte Natural Resources District For Board of Directors At Large", 0],
+    ["Central Platte Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["Central Platte Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Central Platte Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["Central Platte Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Central Platte Natural Resources District For Board of Directors Subdistrict 05", 0],
+    ["Central Platte Natural Resources District For Board of Directors Subdistrict 06", 0],
+    ["Central Platte Natural Resources District For Board of Directors Subdistrict 07", 0],
+    ["Central Platte Natural Resources District For Board of Directors Subdistrict 08", 0],
+    ["Central Platte Natural Resources District For Board of Directors Subdistrict 09", 0],
+    ["Central Platte Natural Resources District For Board of Directors Subdistrict 10", 0],
+    ["Lewis and Clark Natural Resources District For Board of Directors At Large", 0],
+    ["Lewis and Clark Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["Lewis and Clark Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Lewis and Clark Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["Lewis and Clark Natural Resources District For Board of Directors Subdistrict 04", 0],
+    [
+      "Lewis and Clark Natural Resources District For Board of Directors - 2 Year Term Subdistrict 05",
+      0
+    ],
+    ["Little Blue Natural Resources District For Board of Directors At Large", 0],
+    ["Little Blue Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["Little Blue Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["Little Blue Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Little Blue Natural Resources District For Board of Directors Subdistrict 05", 0],
+    ["Little Blue Natural Resources District For Board of Directors Subdistrict 06", 0],
+    ["Little Blue Natural Resources District For Board of Directors Subdistrict 07", 0],
+    [
+      "Little Blue Natural Resources District For Board of Directors - 2 Year Term Subdistrict 07",
+      0
+    ],
+    ["Little Blue Natural Resources District For Board of Directors Subdistrict 08", 0],
+    [
+      "Little Blue Natural Resources District For Board of Directors - 2 Year Term Subdistrict 08",
+      0
+    ],
+    ["Lower Big Blue Natural Resources District For Board of Directors At Large", 0],
+    ["Lower Big Blue Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["Lower Big Blue Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Lower Big Blue Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["Lower Big Blue Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Lower Big Blue Natural Resources District For Board of Directors Subdistrict 05", 0],
+    ["Lower Big Blue Natural Resources District For Board of Directors Subdistrict 06", 0],
+    ["Lower Elkhorn Natural Resources District For Board of Directors At Large", 0],
+    ["Lower Elkhorn Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["Lower Elkhorn Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Lower Elkhorn Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["Lower Elkhorn Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Lower Elkhorn Natural Resources District For Board of Directors Subdistrict 05", 0],
+    ["Lower Elkhorn Natural Resources District For Board of Directors Subdistrict 06", 0],
+    ["Lower Elkhorn Natural Resources District For Board of Directors Subdistrict 07", 0],
+    ["Lower Loup Natural Resources District For Board of Directors At Large", 0],
+    ["Lower Loup Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["Lower Loup Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Lower Loup Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Lower Loup Natural Resources District For Board of Directors Subdistrict 05", 0],
+    ["Lower Loup Natural Resources District For Board of Directors Subdistrict 06", 0],
+    ["Lower Loup Natural Resources District For Board of Directors Subdistrict 07", 0],
+    ["Lower Loup Natural Resources District For Board of Directors Subdistrict 08", 0],
+    ["Lower Loup Natural Resources District For Board of Directors Subdistrict 09", 0],
+    ["Lower Loup Natural Resources District For Board of Directors Subdistrict 10", 0],
+    ["Lower Niobrara Natural Resources District For Board of Directors At Large", 0],
+    ["Lower Niobrara Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["Lower Niobrara Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Lower Niobrara Natural Resources District For Board of Directors Subdistrict 03", 0],
+    [
+      "Lower Niobrara Natural Resources District For Board of Directors - 2 Year Term Subdistrict 03",
+      0
+    ],
+    ["Lower Niobrara Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Lower Niobrara Natural Resources District For Board of Directors Subdistrict 05", 0],
+    [
+      "Lower Niobrara Natural Resources District For Board of Directors - 2 Year Term Subdistrict 05",
+      0
+    ],
+    ["Lower Niobrara Natural Resources District For Board of Directors Subdistrict 06", 0],
+    ["Lower Niobrara Natural Resources District For Board of Directors Subdistrict 07", 0],
+    ["Lower Niobrara Natural Resources District For Board of Directors Subdistrict 08", 0],
+    ["Lower Platte North Natural Resources District For Board of Directors At Large", 0],
+    ["Lower Platte North Natural Resources District For Board of Directors Subdistrict 01", 0],
+    [
+      "Lower Platte North Natural Resources District For Board of Directors - 2 Year Term Subdistrict 01",
+      0
+    ],
+    ["Lower Platte North Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Lower Platte North Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["Lower Platte North Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Lower Platte North Natural Resources District For Board of Directors Subdistrict 05", 0],
+    ["Lower Platte North Natural Resources District For Board of Directors Subdistrict 06", 0],
+    ["Lower Platte North Natural Resources District For Board of Directors Subdistrict 07", 0],
+    ["Lower Platte North Natural Resources District For Board of Directors Subdistrict 08", 0],
+    ["Lower Platte North Natural Resources District For Board of Directors Subdistrict 09", 0],
+    ["Lower Platte South Natural Resources District For Board of Directors At Large", 0],
+    ["Lower Platte South Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["Lower Platte South Natural Resources District For Board of Directors Subdistrict 02", 0],
+    [
+      "Lower Platte South Natural Resources District For Board of Directors - 2 Year Term Subdistrict 02",
+      0
+    ],
+    ["Lower Platte South Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["Lower Platte South Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Lower Platte South Natural Resources District For Board of Directors Subdistrict 05", 0],
+    ["Lower Platte South Natural Resources District For Board of Directors Subdistrict 06", 0],
+    ["Lower Platte South Natural Resources District For Board of Directors Subdistrict 07", 0],
+    ["Lower Platte South Natural Resources District For Board of Directors Subdistrict 08", 0],
+    ["Lower Platte South Natural Resources District For Board of Directors Subdistrict 09", 0],
+    ["Lower Platte South Natural Resources District For Board of Directors Subdistrict 10", 0],
+    ["Lower Republican Natural Resources District For Board of Directors At Large", 0],
+    ["Lower Republican Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["Lower Republican Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Lower Republican Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["Lower Republican Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Lower Republican Natural Resources District For Board of Directors Subdistrict 05", 0],
+    ["Middle Niobrara Natural Resources District For Board of Directors At Large", 0],
+    ["Middle Niobrara Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Middle Niobrara Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Middle Niobrara Natural Resources District For Board of Directors Subdistrict 06", 0],
+    ["Middle Republican Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["Middle Republican Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Middle Republican Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["Middle Republican Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Middle Republican Natural Resources District For Board of Directors Subdistrict 05", 0],
+    ["Nemaha Natural Resources District For Board of Directors At Large", 0],
+    ["Nemaha Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Nemaha Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["Nemaha Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Nemaha Natural Resources District For Board of Directors Subdistrict 05", 0],
+    ["Nemaha Natural Resources District For Board of Directors - 2 Year Term Subdistrict 05", 0],
+    ["Nemaha Natural Resources District For Board of Directors Subdistrict 06", 0],
+    ["Nemaha Natural Resources District For Board of Directors Subdistrict 07", 0],
+    ["Nemaha Natural Resources District For Board of Directors Subdistrict 08", 0],
+    ["Nemaha Natural Resources District For Board of Directors - 2 Year Term Subdistrict 08", 0],
+    ["Nemaha Natural Resources District For Board of Directors Subdistrict 09", 0],
+    ["Nemaha Natural Resources District For Board of Directors Subdistrict 10", 0],
+    ["North Platte Natural Resources District For Board of Directors At Large", 0],
+    ["North Platte Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["North Platte Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["North Platte Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Papio-Missouri River Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Papio-Missouri River Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Papio-Missouri River Natural Resources District For Board of Directors Subdistrict 06", 0],
+    ["Papio-Missouri River Natural Resources District For Board of Directors Subdistrict 08", 0],
+    ["Papio-Missouri River Natural Resources District For Board of Directors Subdistrict 10", 0],
+    [
+      "South Platte Natural Resources District For Board of Directors - 2 Year Term Subdistrict 01",
+      0
+    ],
+    ["South Platte Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["South Platte Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["South Platte Natural Resources District For Board of Directors Subdistrict 06", 0],
+    ["Tri-Basin Natural Resources District For Board of Directors At Large", 0],
+    ["Tri-Basin Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["Tri-Basin Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Tri-Basin Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["Tri-Basin Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Tri-Basin Natural Resources District For Board of Directors Subdistrict 05", 0],
+    ["Tri-Basin Natural Resources District For Board of Directors Subdistrict 06", 0],
+    ["Twin Platte Natural Resources District For Board of Directors At Large", 0],
+    ["Twin Platte Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["Twin Platte Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Twin Platte Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["Twin Platte Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Twin Platte Natural Resources District For Board of Directors Subdistrict 05", 0],
+    ["Upper Big Blue Natural Resources District For Board of Directors At Large", 0],
+    ["Upper Big Blue Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["Upper Big Blue Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Upper Big Blue Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["Upper Big Blue Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Upper Big Blue Natural Resources District For Board of Directors Subdistrict 05", 0],
+    ["Upper Big Blue Natural Resources District For Board of Directors Subdistrict 06", 0],
+    ["Upper Big Blue Natural Resources District For Board of Directors Subdistrict 07", 0],
+    ["Upper Big Blue Natural Resources District For Board of Directors Subdistrict 08", 0],
+    ["Upper Elkhorn Natural Resources District For Board of Directors At Large", 0],
+    ["Upper Elkhorn Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["Upper Elkhorn Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Upper Elkhorn Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["Upper Elkhorn Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Upper Elkhorn Natural Resources District For Board of Directors Subdistrict 05", 0],
+    ["Upper Elkhorn Natural Resources District For Board of Directors Subdistrict 06", 0],
+    ["Upper Elkhorn Natural Resources District For Board of Directors Subdistrict 07", 0],
+    ["Upper Loup Natural Resources District For Board of Directors At Large", 0],
+    ["Upper Loup Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["Upper Loup Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Upper Loup Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["Upper Loup Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Upper Niobrara White Natural Resources District For Board of Directors At Large", 0],
+    ["Upper Niobrara White Natural Resources District For Board of Directors Subdistrict 01", 0],
+    ["Upper Niobrara White Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Upper Niobrara White Natural Resources District For Board of Directors Subdistrict 03", 0],
+    ["Upper Niobrara White Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Upper Niobrara White Natural Resources District For Board of Directors Subdistrict 05", 0],
+    [
+      "Upper Niobrara White Natural Resources District For Board of Directors - 2 Year Term Subdistrict 05",
+      0
+    ],
+    ["Upper Republican Natural Resources District For Board of Directors At Large", 0],
+    ["Upper Republican Natural Resources District For Board of Directors Subdistrict 02", 0],
+    ["Upper Republican Natural Resources District For Board of Directors Subdistrict 04", 0],
+    ["Upper Republican Natural Resources District For Board of Directors Subdistrict 06", 0],
+    ["Upper Republican Natural Resources District For Board of Directors Subdistrict 08", 0],
+    ["Upper Republican Natural Resources District For Board of Directors Subdistrict 10", 0],
+    ["Metropolitan Utilities District of Omaha - 6 Year Term Subdivision 3", 0],
+    ["Metropolitan Utilities District of Omaha - 6 Year Term Subdivision 4", 0],
+    ["Metropolitan Utilities District of Omaha - 6 Year Term Subdivision 5", 0],
+    ["Burt County Public Power District - 6 Year Term At Large", 0],
+    ["Butler Public Power District - 6 Year Term District 01", 0],
+    ["Butler Public Power District - 2 Year Term District 03", 0],
+    ["Butler Public Power District - 6 Year Term District 05", 0],
+    ["Butler Public Power District - 6 Year Term District 06", 0],
+    ["Cedar-Knox Public Power District - 6 Year Term Subdivision 01", 0],
+    ["Cedar-Knox Public Power District - 6 Year Term Subdivision 02", 0],
+    ["Cedar-Knox Public Power District - 6 Year Term Subdivision 03", 0],
+    [
+      "Central Nebraska Public Power and Irrigation District - 6 Year Term Gosper County Subdivision",
+      0
+    ],
+    [
+      "Central Nebraska Public Power and Irrigation District - 6 Year Term Kearney County Subdivision",
+      0
+    ],
+    [
+      "Central Nebraska Public Power and Irrigation District - 6 Year Term Lincoln County Subdivision",
+      0
+    ],
+    [
+      "Central Nebraska Public Power and Irrigation District - 6 Year Term Phelps County Subdivision",
+      0
+    ],
+    ["Chimney Rock Public Power District - 6 Year Term At Large", 0],
+    ["Cornhusker Public Power District - 6 Year Term Subdivision 02", 0],
+    ["Cornhusker Public Power District - 6 Year Term Subdivision 05", 0],
+    ["Cornhusker Public Power District - 6 Year Term Subdivision 10", 0],
+    ["Cuming County Public Power District - 6 Year Term Subdivision 01", 0],
+    ["Custer Public Power District - 6 Year Term At Large", 0],
+    ["Custer Public Power District At Large", 0],
+    ["Dawson Public Power District - 6 Year Term Buffalo Subdivision", 0],
+    ["Dawson Public Power District - 2 Year Term Buffalo Subdivision", 0],
+    ["Dawson Public Power District - 6 Year Term Dawson Subdivision", 0],
+    ["Dawson Public Power District - 6 Year Term Lincoln Subdivision", 0],
+    ["Elkhorn Rural Public Power District - 6 Year Term Subdivision 01", 0],
+    ["Elkhorn Rural Public Power District - 6 Year Term Subdivision 02", 0],
+    ["Elkhorn Rural Public Power District - 6 Year Term Subdivision 03", 0],
+    ["Howard Greeley Rural Public Power District - 6 Year Term Subdivision 01", 0],
+    ["Howard Greeley Rural Public Power District - 6 Year Term Subdivision 04", 0],
+    ["Howard Greeley Rural Public Power District - 6 Year Term Subdivision 06", 0],
+    ["Imperial Public Power District - 6 Year Term At Large", 0],
+    ["KBR Rural Public Power District - 6 Year Term Cherry Subdivision", 0],
+    ["KBR Rural Public Power District - 6 Year Term Keya Paha Subdivision", 0],
+    ["KBR Rural Public Power District Keya Paha Subdivision", 0],
+    ["KBR Rural Public Power District - 6 Year Term Rock Subdivision", 0],
+    ["KBR Rural Public Power District - 2 Year Term Rock Subdivision", 0],
+    ["Loup River Public Power District - 6 Year Term Subdivision 05", 0],
+    ["Loup River Public Power District - 6 Year Term Subdivision 08", 0],
+    ["Loup River Public Power District - 6 Year Term Subdivision 09", 0],
+    ["Loup Valleys Rural Public Power District - 6 Year Term At Large", 0],
+    ["McCook Public Power District - 6 Year Term Subdivision 01", 0],
+    ["McCook Public Power District - 2 Year Term Subdivision 02", 0],
+    ["McCook Public Power District - 6 Year Term Subdivision 06", 0],
+    ["Middle Loup Public Power and Irrigation District - 6 Year Term Subdivision 01", 0],
+    ["Middle Loup Public Power and Irrigation District - 6 Year Term Subdivision 05", 0],
+    ["Nebraska Public Power District - 6 Year Term Subdivision 01", 0],
+    ["Nebraska Public Power District - 6 Year Term Subdivision 02", 0],
+    ["Nebraska Public Power District - 2 Year Term Subdivision 04", 0],
+    ["Nebraska Public Power District - 6 Year Term Subdivision 07", 0],
+    ["Nebraska Public Power District - 6 Year Term Subdivision 09", 0],
+    ["Norris Public Power District - 6 Year Term Subdivision 03", 0],
+    ["Norris Public Power District - 6 Year Term Subdivision 04", 0],
+    ["Norris Public Power District - 6 Year Term West Subdivision", 0],
+    ["North Central Public Power District - 6 Year Term Subdivision 02", 0],
+    ["North Central Public Power District - 6 Year Term Subdivision 03", 0],
+    ["North Loup River Public Power and Irrigation District - 6 Year Term Subdistrict 01", 0],
+    ["North Loup River Public Power and Irrigation District - 6 Year Term Subdistrict 02", 0],
+    ["North Loup River Public Power and Irrigation District Subdistrict 04", 0],
+    ["Northeast Nebraska Public Power District - 6 Year Term Subdivision 02", 0],
+    ["Northeast Nebraska Public Power District - 6 Year Term Subdivision 06", 0],
+    ["Northeast Nebraska Public Power District - 6 Year Term Subdivision 08", 0],
+    ["Northwest Rural Public Power District - 2 Year Term Subdivision 01", 0],
+    ["Northwest Rural Public Power District - 6 Year Term Subdivision 02", 0],
+    ["Northwest Rural Public Power District - 6 Year Term Subdivision 03", 0],
+    ["Omaha Public Power District - 6 Year Term Subdivision 01", 0],
+    ["Omaha Public Power District - 6 Year Term Subdivision 02", 0],
+    ["Omaha Public Power District - 6 Year Term Subdivision 03", 0],
+    ["Perennial Public Power District - 6 Year Term Subdivision 01", 0],
+    ["Perennial Public Power District - 6 Year Term Subdivision 02", 0],
+    ["Polk County Rural Public Power District - 6 Year Term Subdivision 03", 0],
+    ["Roosevelt Public Power District - 6 Year Term Subdivision 01", 0],
+    ["Roosevelt Public Power District - 6 Year Term Subdivision 03", 0],
+    ["Roosevelt Public Power District - 6 Year Term Subdivision 06", 0],
+    ["South Central Public Power District - 6 Year Term Subdivision 02", 0],
+    ["South Central Public Power District - 6 Year Term Subdivision 07", 0],
+    ["Southern Public Power District - 6 Year Term Subdivision 02", 0],
+    ["Southern Public Power District - 6 Year Term Subdivision 05", 0],
+    ["Southern Public Power District - 6 Year Term Subdivision 06", 0],
+    ["Southern Public Power District - 6 Year Term Subdivision 07", 0],
+    ["Southwest Public Power District - 6 Year Term Subdistrict 01", 0],
+    ["Southwest Public Power District - 6 Year Term Subdistrict 02", 0],
+    ["Southwest Public Power District - 2 Year Term Subdistrict 03", 0],
+    ["Stanton County Public Power District - 6 Year Term At Large", 0],
+    ["Twin Valleys Public Power District - 6 Year Term Subdivision 01", 0],
+    ["Twin Valleys Public Power District - 6 Year Term Subdivision 02", 0],
+    ["Wheat Belt Public Power District - 6 Year Term North Subdivision", 0],
+    ["Loup Basin Reclamation District - 6 Year Term Subdivision 01", 0],
+    ["Loup Basin Reclamation District - 6 Year Term Subdivision 02", 0],
+    ["Loup Basin Reclamation District - 6 Year Term Subdivision 03", 0],
+    ["Twin Loups Reclamation District - 6 Year Term Subdivision 01", 0],
+    ["Twin Loups Reclamation District - 6 Year Term Subdivision 02", 0],
+    ["Twin Loups Reclamation District - 6 Year Term Subdivision 03", 0],
+    ["Educational Service Unit No. 1 District 01", 0],
+    ["Educational Service Unit No. 1 District 03", 0],
+    ["Educational Service Unit No. 1 District 05", 0],
+    ["Educational Service Unit No. 1 District 07", 0],
+    ["Educational Service Unit No. 1 District 09", 0],
+    ["Educational Service Unit No. 2 District 01", 0],
+    ["Educational Service Unit No. 2 District 03", 0],
+    ["Educational Service Unit No. 2 District 05", 0],
+    ["Educational Service Unit No. 2 District 07", 0],
+    ["Educational Service Unit No. 3 District 01", 0],
+    ["Educational Service Unit No. 3 District 03", 0],
+    ["Educational Service Unit No. 3 District 05", 0],
+    ["Educational Service Unit No. 3 District 07", 0],
+    ["Educational Service Unit No. 4 District 01", 0],
+    ["Educational Service Unit No. 4 District 03", 0],
+    ["Educational Service Unit No. 4 District 05", 0],
+    ["Educational Service Unit No. 4 District 07", 0],
+    ["Educational Service Unit No. 4 District 09", 0],
+    ["Educational Service Unit No. 5 District 01", 0],
+    ["Educational Service Unit No. 5 District 03", 0],
+    ["Educational Service Unit No. 5 District 05", 0],
+    ["Educational Service Unit No. 5 District 07", 0],
+    ["Educational Service Unit No. 6 District 01", 0],
+    ["Educational Service Unit No. 6 District 03", 0],
+    ["Educational Service Unit No. 6 District 05", 0],
+    ["Educational Service Unit No. 6 District 07", 0],
+    ["Educational Service Unit No. 7 District 03", 0],
+    ["Educational Service Unit No. 7 District 05", 0],
+    ["Educational Service Unit No. 7 District 07", 0],
+    ["Educational Service Unit No. 7 District 09", 0],
+    ["Educational Service Unit No. 7 District 11", 0],
+    ["Educational Service Unit No. 8 District 01", 0],
+    ["Educational Service Unit No. 8 District 03", 0],
+    ["Educational Service Unit No. 8 District 05", 0],
+    ["Educational Service Unit No. 8 District 07", 0],
+    ["Educational Service Unit No. 8 District 09", 0],
+    ["Educational Service Unit No. 9 District 01", 0],
+    ["Educational Service Unit No. 9 District 03", 0],
+    ["Educational Service Unit No. 9 District 05", 0],
+    ["Educational Service Unit No. 9 District 07", 0],
+    ["Educational Service Unit No. 10 District 03", 0],
+    ["Educational Service Unit No. 10 District 05", 0],
+    ["Educational Service Unit No. 10 District 07", 0],
+    ["Educational Service Unit No. 10 District 09", 0],
+    ["Educational Service Unit No. 11 District 01", 0],
+    ["Educational Service Unit No. 11 District 03", 0],
+    ["Educational Service Unit No. 11 District 05", 0],
+    ["Educational Service Unit No. 11 District 09", 0],
+    ["Educational Service Unit No. 13 District 01", 0],
+    ["Educational Service Unit No. 13 District 03", 0],
+    ["Educational Service Unit No. 13 District 09", 0],
+    ["Educational Service Unit No. 13 District 11", 0],
+    ["Educational Service Unit No. 15 District 01", 0],
+    ["Educational Service Unit No. 15 District 03", 0],
+    ["Educational Service Unit No. 15 District 05", 0],
+    ["Educational Service Unit No. 15 District 07", 0],
+    ["Educational Service Unit No. 15 District 09", 0],
+    ["Educational Service Unit No. 16 District 01", 0],
+    ["Educational Service Unit No. 16 District 03", 0],
+    ["Educational Service Unit No. 16 District 05", 0],
+    ["Educational Service Unit No. 16 District 07", 0],
+    ["Educational Service Unit No. 16 District 09", 0],
+    ["Educational Service Unit No. 16 District 11", 0],
+    ["Educational Service Unit No. 17 District 01", 0],
+    ["Educational Service Unit No. 17 District 03", 0],
+    ["Educational Service Unit No. 17 District 05", 0],
+    ["Educational Service Unit No. 17 District 07", 0],
+    ["Proposed Amendment No. 1", 1],
+    ["Initiative Measure 440", 1],
+    ["Initiative Measure 441", 1],
+    ["Initiative Measure 442", 1]
+  ],
+  "nm": [
+    ["United States Senator", 0],
+    ["United States Representative DISTRICT 1", 0],
+    ["United States Representative DISTRICT 2", 0],
+    ["United States Representative DISTRICT 3", 0],
+    ["Governor and Lieutenant Governor", 0],
+    ["Secretary of State", 0],
+    ["Attorney General", 0],
+    ["State Auditor", 0],
+    ["State Treasurer", 0],
+    ["Commissioner of Public Lands", 0],
+    ["State Senator DISTRICT 33", 0],
+    ["State Representative DISTRICT 1", 0],
+    ["State Representative DISTRICT 2", 0],
+    ["State Representative DISTRICT 3", 0],
+    ["State Representative DISTRICT 4", 0],
+    ["State Representative DISTRICT 5", 0],
+    ["State Representative DISTRICT 6", 0],
+    ["State Representative DISTRICT 7", 0],
+    ["State Representative DISTRICT 8", 0],
+    ["State Representative DISTRICT 9", 0],
+    ["State Representative DISTRICT 10", 0],
+    ["State Representative DISTRICT 11", 0],
+    ["State Representative DISTRICT 12", 0],
+    ["State Representative DISTRICT 13", 0],
+    ["State Representative DISTRICT 14", 0],
+    ["State Representative DISTRICT 15", 0],
+    ["State Representative DISTRICT 16", 0],
+    ["State Representative DISTRICT 17", 0],
+    ["State Representative DISTRICT 18", 0],
+    ["State Representative DISTRICT 19", 0],
+    ["State Representative DISTRICT 20", 0],
+    ["State Representative DISTRICT 21", 0],
+    ["State Representative DISTRICT 22", 0],
+    ["State Representative DISTRICT 23", 0],
+    ["State Representative DISTRICT 24", 0],
+    ["State Representative DISTRICT 25", 0],
+    ["State Representative DISTRICT 26", 0],
+    ["State Representative DISTRICT 27", 0],
+    ["State Representative DISTRICT 28", 0],
+    ["State Representative DISTRICT 29", 0],
+    ["State Representative DISTRICT 30", 0],
+    ["State Representative DISTRICT 31", 0],
+    ["State Representative DISTRICT 32", 0],
+    ["State Representative DISTRICT 33", 0],
+    ["State Representative DISTRICT 34", 0],
+    ["State Representative DISTRICT 35", 0],
+    ["State Representative DISTRICT 36", 0],
+    ["State Representative DISTRICT 37", 0],
+    ["State Representative DISTRICT 38", 0],
+    ["State Representative DISTRICT 39", 0],
+    ["State Representative DISTRICT 40", 0],
+    ["State Representative DISTRICT 41", 0],
+    ["State Representative DISTRICT 42", 0],
+    ["State Representative DISTRICT 43", 0],
+    ["State Representative DISTRICT 44", 0],
+    ["State Representative DISTRICT 45", 0],
+    ["State Representative DISTRICT 46", 0],
+    ["State Representative DISTRICT 47", 0],
+    ["State Representative DISTRICT 48", 0],
+    ["State Representative DISTRICT 49", 0],
+    ["State Representative DISTRICT 50", 0],
+    ["State Representative DISTRICT 51", 0],
+    ["State Representative DISTRICT 52", 0],
+    ["State Representative DISTRICT 53", 0],
+    ["State Representative DISTRICT 54", 0],
+    ["State Representative DISTRICT 55", 0],
+    ["State Representative DISTRICT 56", 0],
+    ["State Representative DISTRICT 57", 0],
+    ["State Representative DISTRICT 58", 0],
+    ["State Representative DISTRICT 59", 0],
+    ["State Representative DISTRICT 60", 0],
+    ["State Representative DISTRICT 61", 0],
+    ["State Representative DISTRICT 62", 0],
+    ["State Representative DISTRICT 63", 0],
+    ["State Representative DISTRICT 64", 0],
+    ["State Representative DISTRICT 65", 0],
+    ["State Representative DISTRICT 66", 0],
+    ["State Representative DISTRICT 67", 0],
+    ["State Representative DISTRICT 68", 0],
+    ["State Representative DISTRICT 69", 0],
+    ["State Representative DISTRICT 70", 0],
+    ["Judge of the Court of Appeals Position 1", 0],
+    ["Public Education Commissioner DISTRICT 2", 0],
+    ["Public Education Commissioner DISTRICT 3", 0],
+    ["Public Education Commissioner DISTRICT 5", 0],
+    ["Public Education Commissioner DISTRICT 6", 0],
+    ["Public Education Commissioner DISTRICT 7", 0],
+    ["District Court Judge 10TH JUDICIAL DISTRICT", 0],
+    ["District Court Judge TWELFTH JUDICIAL DISTRICT : DIVISION 02", 0],
+    ["District Court Judge SECOND JUDICIAL DISTRICT : DIVISION 02", 0],
+    ["District Court Judge ELEVENTH JUDICIAL DISTRICT : DIVISION 02", 0],
+    ["District Court Judge THIRD JUDICIAL DISTRICT : DIVISION 04", 0],
+    ["District Court Judge FIRST JUDICIAL DISTRICT: DIVISION 04", 0],
+    ["District Court Judge FIFTH JUDICIAL DISTRICT: DIVISION 05", 0],
+    ["District Court Judge ELEVENTH JUDICIAL DISTRICT : DIVISION 06", 0],
+    ["District Court Judge ELEVENTH JUDICIAL DISTRICT : DIVISION 08", 0],
+    ["District Court Judge FIRST JUDICIAL DISTRICT: DIVISION 08", 0],
+    ["District Court Judge SECOND JUDICIAL DISTRICT : DIVISION 11", 0],
+    ["District Court Judge SECOND JUDICIAL DISTRICT : DIVISION 19", 0],
+    ["District Court Judge SECOND JUDICIAL DISTRICT : DIVISION 24", 0],
+    ["Magistrate Judge - Luna - Luna MAGISTRATE", 0],
+    ["Magistrate Judge - Guadalupe - Guadalupe MAGISTRATE", 0],
+    ["Magistrate Judge - Hidalgo - Hidalgo MAGISTRATE", 0],
+    ["Magistrate Judge - Harding - Harding MAGISTRATE", 0],
+    ["Magistrate Judge - Roosevelt - Roosevelt MAGISTRATE", 0],
+    ["Magistrate Judge - Sierra - Sierra MAGISTRATE", 0],
+    ["Magistrate Judge - Union - Union MAGISTRATE", 0],
+    ["Magistrate Judge - Torrance - Torrance MAGISTRATE", 0],
+    ["Magistrate Judge - Catron - Catron MAGISTRATE", 0],
+    ["Magistrate Judge - Los Alamos - Los Alamos MAGISTRATE", 0],
+    ["Magistrate Judge - Quay - Quay MAGISTRATE", 0],
+    ["Magistrate Judge - Mora - Mora MAGISTRATE- MORA", 0],
+    ["Magistrate Judge - Socorro - Socorro MAGISTRATE", 0],
+    ["Magistrate Judge - Chaves - Chaves MAGISTRATE DIVISION 1", 0],
+    ["Magistrate Judge - McKinley - McKinley DIVISION 1", 0],
+    ["Magistrate Judge - Santa Fe - Santa Fe DIVISION 1", 0],
+    ["Magistrate Judge - Sandoval - Sandoval DIVISION 1", 0],
+    ["Magistrate Judge - Dona Ana - Dona Ana MAGISTRATE COURT DIVISION 1", 0],
+    ["Magistrate Judge - Eddy - Eddy DIVISION 1", 0],
+    ["Magistrate Judge - San Miguel - San Miguel MAGISTRATE DIVISION 1", 0],
+    ["Magistrate Judge - Lincoln - Lincoln DIVISION 1", 0],
+    ["Magistrate Judge - Cibola - Cibola DIVISION 1", 0],
+    ["Magistrate Judge - Valencia - Valencia DIVISION 1", 0],
+    ["Magistrate Judge - Colfax - Colfax DIVISION 1", 0],
+    ["Magistrate Judge - Otero - Otero DIVISION 1", 0],
+    ["Magistrate Judge - Lea - Lea DIVISION 1", 0],
+    ["Magistrate Judge - Curry - Curry DIVISION 1", 0],
+    ["Magistrate Judge - Taos - Taos DIVISION 1", 0],
+    ["Magistrate Judge - Rio Arriba - Rio Arriba DIVISION 1", 0],
+    ["Magistrate Judge - San Juan - San Juan DIVISION 1", 0],
+    ["Magistrate Judge - McKinley - McKinley DIVISION 2", 0],
+    ["Magistrate Judge - Santa Fe - Santa Fe DIVISION 2", 0],
+    ["Magistrate Judge - Taos - Taos DIVISION 2", 0],
+    ["Magistrate Judge - Chaves - Chaves MAGISTRATE DIVISION 2", 0],
+    ["Magistrate Judge - San Juan - San Juan DIVISION 2", 0],
+    ["Magistrate Judge - Otero - Otero DIVISION 2", 0],
+    ["Magistrate Judge - Lea - Lea DIVISION 2", 0],
+    ["Magistrate Judge - Valencia - Valencia DIVISION 2", 0],
+    ["Magistrate Judge - Rio Arriba - Rio Arriba DIVISION 2", 0],
+    ["Magistrate Judge - Dona Ana - Dona Ana MAGISTRATE COURT DIVISION 2", 0],
+    ["Magistrate Judge - Eddy - Eddy DIVISION 2", 0],
+    ["Magistrate Judge - Grant - Grant DIVISION 2", 0],
+    ["Magistrate Judge - San Miguel - San Miguel MAGISTRATE DIVISION 2", 0],
+    ["Magistrate Judge - Lincoln - Lincoln DIVISION 2", 0],
+    ["Magistrate Judge - Cibola - Cibola DIVISION 2", 0],
+    ["Magistrate Judge - Sandoval - Sandoval DIVISION 2", 0],
+    ["Magistrate Judge - Colfax - Colfax DIVISION 2", 0],
+    ["Magistrate Judge - Curry - Curry DIVISION 2", 0],
+    ["Magistrate Judge - San Juan - San Juan DIVISION 3", 0],
+    ["Magistrate Judge - Eddy - Eddy DIVISION 3", 0],
+    ["Magistrate Judge - Sandoval - Sandoval DIVISION 3", 0],
+    ["Magistrate Judge - Lea - Lea DIVISION 3", 0],
+    ["Magistrate Judge - Valencia - Valencia DIVISION 3", 0],
+    ["Magistrate Judge - Dona Ana - Dona Ana MAGISTRATE COURT DIVISION 3", 0],
+    ["Magistrate Judge - McKinley - McKinley DIVISION 3", 0],
+    ["Magistrate Judge - Santa Fe - Santa Fe DIVISION 3", 0],
+    ["Magistrate Judge - Santa Fe - Santa Fe DIVISION 4", 0],
+    ["Magistrate Judge - San Juan - San Juan DIVISION 4", 0],
+    ["Magistrate Judge - Dona Ana - Dona Ana MAGISTRATE COURT DIVISION 4", 0],
+    ["Magistrate Judge - Lea - Lea DIVISION 4", 0],
+    ["Judge of the Metropolitan Court DIVISION 5", 0],
+    ["Magistrate Judge - Dona Ana - Dona Ana MAGISTRATE COURT DIVISION 5", 0],
+    ["Magistrate Judge - San Juan - San Juan DIVISION 5", 0],
+    ["Magistrate Judge - San Juan - San Juan DIVISION 6", 0],
+    ["Magistrate Judge - Dona Ana - Dona Ana MAGISTRATE COURT DIVISION 6", 0],
+    ["Magistrate Judge - Dona Ana - Dona Ana MAGISTRATE COURT DIVISION 7", 0],
+    ["Magistrate Judge - De Baca - De Baca MAGISTRATE DISTRICT 10", 0],
+    ["Judge of the Metropolitan Court DIVISION 19", 0],
+    ["County Clerk - Eddy", 0],
+    ["County Clerk - Lincoln", 0],
+    ["County Treasurer - Lincoln", 0],
+    [
+      "County Commissioner by Commissioner District - San Miguel - San Miguel COUNTY COMMISSION DIST 1",
+      0
+    ],
+    ["County Commissioner by Commissioner District - Santa Fe - Santa Fe DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - San Juan - San Juan DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Sierra - Sierra DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Valencia - Valencia DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Dona Ana - Dona Ana DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Mora - Mora DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Socorro - Socorro DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Colfax - Colfax DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Luna - Luna DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Eddy - Eddy DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Grant - Grant DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Catron - Catron DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - De Baca - De Baca DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Guadalupe - Guadalupe DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Sandoval - Sandoval DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Cibola - Cibola DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Bernalillo - Bernalillo DISTRICT 1", 0],
+    [
+      "County Commissioner by Commissioner District - Chaves - Chaves COUNTY COMMISSION DISTRICT 1",
+      0
+    ],
+    ["County Commissioner by Commissioner District - Harding - Harding DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Rio Arriba - Rio Arriba DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Torrance - Torrance DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Curry - Curry DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Otero - Otero DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Taos - Taos DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - McKinley - McKinley DISTRICT 1", 0],
+    ["County Commissioner by Commissioner District - Otero - Otero DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - Catron - Catron DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - Mora - Mora DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - Guadalupe - Guadalupe DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - Luna - Luna DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - Lea - Lea DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - Lincoln - Lincoln DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - Taos - Taos DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - Sierra - Sierra DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - Grant - Grant DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - Rio Arriba - Rio Arriba DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - San Juan - San Juan DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - Colfax - Colfax DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - De Baca - De Baca DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - Torrance - Torrance DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - McKinley - McKinley DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - Harding - Harding DISTRICT 2", 0],
+    ["County Commissioner by Commissioner District - Lea - Lea DISTRICT 3", 0],
+    [
+      "County Commissioner by Commissioner District - San Miguel - San Miguel COUNTY COMMISSION DIST 3",
+      0
+    ],
+    ["County Commissioner by Commissioner District - Curry - Curry DISTRICT 3", 0],
+    ["County Commissioner by Commissioner District - Sandoval - Sandoval DISTRICT 3", 0],
+    ["County Commissioner by Commissioner District - Valencia - Valencia DISTRICT 3", 0],
+    ["County Commissioner by Commissioner District - Socorro - Socorro DISTRICT 3", 0],
+    ["County Commissioner by Commissioner District - Quay - Quay DISTRICT 3", 0],
+    ["County Commissioner by Commissioner District - Cibola - Cibola DISTRICT 3", 0],
+    ["County Commissioner by Commissioner District - Roosevelt - Roosevelt DISTRICT 3", 0],
+    ["County Commissioner by Commissioner District - Santa Fe - Santa Fe DISTRICT 3", 0],
+    ["County Commissioner by Commissioner District - Dona Ana - Dona Ana DISTRICT 3", 0],
+    ["County Commissioner by Commissioner District - Lincoln - Lincoln DISTRICT 4", 0],
+    ["County Commissioner by Commissioner District - Eddy - Eddy DISTRICT 4", 0],
+    ["County Commissioner by Commissioner District - Roosevelt - Roosevelt DISTRICT 4", 0],
+    ["County Commissioner by Commissioner District - Taos - Taos DISTRICT 5", 0],
+    ["County Commissioner by Commissioner District - Roosevelt - Roosevelt DISTRICT 5", 0],
+    ["County Commissioner by Commissioner District - Bernalillo - Bernalillo DISTRICT 5", 0],
+    [
+      "County Commissioner by Commissioner District - Chaves - Chaves COUNTY COMMISSION DISTRICT 5",
+      0
+    ],
+    ["County Commissioner by Commissioner District - Lincoln - Lincoln DISTRICT 5", 0],
+    ["County Commissioner At Large - Hidalgo", 0],
+    ["County Commissioner At Large - Hidalgo", 0],
+    ["County Commissioner At Large - Union", 0],
+    ["County Commissioner At Large - Los Alamos", 0],
+    ["County Sheriff - Hidalgo", 0],
+    ["County Sheriff - Grant", 0],
+    ["County Sheriff - San Miguel", 0],
+    ["County Sheriff - Torrance", 0],
+    ["County Sheriff - Dona Ana", 0],
+    ["County Sheriff - San Juan", 0],
+    ["County Sheriff - Santa Fe", 0],
+    ["County Sheriff - McKinley", 0],
+    ["County Sheriff - Catron", 0],
+    ["County Sheriff - Sierra - Sierra", 0],
+    ["County Sheriff - De Baca", 0],
+    ["County Sheriff - Chaves", 0],
+    ["County Sheriff - Otero", 0],
+    ["County Sheriff - Luna", 0],
+    ["County Sheriff - Socorro", 0],
+    ["County Sheriff - Roosevelt", 0],
+    ["County Sheriff - Los Alamos", 0],
+    ["County Sheriff - Colfax", 0],
+    ["County Sheriff - Valencia", 0],
+    ["County Sheriff - Guadalupe", 0],
+    ["County Sheriff - Sandoval", 0],
+    ["County Sheriff - Mora", 0],
+    ["County Sheriff - Bernalillo", 0],
+    ["County Sheriff - Quay", 0],
+    ["County Sheriff - Harding", 0],
+    ["County Sheriff - Union", 0],
+    ["County Sheriff - Taos", 0],
+    ["County Sheriff - Lea", 0],
+    ["County Sheriff - Rio Arriba", 0],
+    ["County Sheriff - Cibola", 0],
+    ["County Sheriff - Curry", 0],
+    ["County Assessor - Colfax", 0],
+    ["County Assessor - Roosevelt", 0],
+    ["County Assessor - Catron", 0],
+    ["County Assessor - San Miguel", 0],
+    ["County Assessor - Socorro", 0],
+    ["County Assessor - San Juan", 0],
+    ["County Assessor - Rio Arriba", 0],
+    ["County Assessor - Dona Ana", 0],
+    ["County Assessor - Otero", 0],
+    ["County Assessor - Taos", 0],
+    ["County Assessor - Hidalgo", 0],
+    ["County Assessor - Luna", 0],
+    ["County Assessor - Union", 0],
+    ["County Assessor - Grant", 0],
+    ["County Assessor - Harding", 0],
+    ["County Assessor - Chaves", 0],
+    ["County Assessor - Lea", 0],
+    ["County Assessor - Mora", 0],
+    ["County Assessor - Quay", 0],
+    ["County Assessor - Sierra - Sierra", 0],
+    ["County Assessor - Cibola", 0],
+    ["County Assessor - Sandoval", 0],
+    ["County Assessor - McKinley", 0],
+    ["County Assessor - Guadalupe", 0],
+    ["County Assessor - Los Alamos", 0],
+    ["County Assessor - Curry", 0],
+    ["County Assessor - De Baca", 0],
+    ["County Assessor - Eddy", 0],
+    ["County Assessor - Valencia", 0],
+    ["County Assessor - Bernalillo", 0],
+    ["County Assessor - Torrance", 0],
+    ["County Assessor - Santa Fe", 0],
+    ["Probate Judge - Rio Arriba", 0],
+    ["Probate Judge - Harding", 0],
+    ["Probate Judge - Cibola", 0],
+    ["Probate Judge - McKinley", 0],
+    ["Probate Judge - Otero", 0],
+    ["Probate Judge - Curry", 0],
+    ["Probate Judge - Socorro", 0],
+    ["Probate Judge - Lea", 0],
+    ["Probate Judge - Sierra - Sierra", 0],
+    ["Probate Judge - Catron", 0],
+    ["Probate Judge - Roosevelt", 0],
+    ["Probate Judge - Bernalillo", 0],
+    ["Probate Judge - Santa Fe", 0],
+    ["Probate Judge - Los Alamos", 0],
+    ["Probate Judge - Colfax", 0],
+    ["Probate Judge - Dona Ana", 0],
+    ["Probate Judge - Lincoln", 0],
+    ["Probate Judge - Valencia", 0],
+    ["Probate Judge - Sandoval", 0],
+    ["Probate Judge - Quay", 0],
+    ["Probate Judge - Eddy", 0],
+    ["Probate Judge - De Baca", 0],
+    ["Probate Judge - Luna", 0],
+    ["Probate Judge - Hidalgo", 0],
+    ["Probate Judge - Taos", 0],
+    ["Probate Judge - Union", 0],
+    ["Probate Judge - Torrance", 0],
+    ["Probate Judge - Guadalupe", 0],
+    ["Probate Judge - San Miguel", 0],
+    ["Probate Judge - San Juan", 0],
+    ["Probate Judge - Mora", 0],
+    ["Probate Judge - Chaves", 0],
+    ["Probate Judge - Grant", 0],
+    ["Municipal Judge MUNICIPAL DISTRICT 32", 0],
+    ["JUDICIAL RETENTION: Shall DAVID K THOMSON be retained as Justice of the Supreme Court?", 1],
+    ["JUDICIAL RETENTION: Shall SHANNON BACON be retained as Justice of the Supreme Court?", 1],
+    ["JUDICIAL RETENTION: Shall J MILES HANISEE be retained as Judge of the Court of Appeals?", 1],
+    [
+      "JUDICIAL RETENTION: Shall BRADFORD J DALLEY be retained as District Court Judge, Division 1? ELEVENTH JUDICIAL DISTRICT : DIVISION 01",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall MICHAEL A ARAGON be retained as District Court Judge, Division 1? FOURTH JUDICIAL DISTRICT : DIVISION 01",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall MERCEDES C MURPHY be retained as District Court Judge, Division 1? SEVENTH JUDICIAL DISTRICT : DIVISION 01",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall MANUEL ISAAC ARRIETA be retained as District Court Judge, Division 1? THIRD JUDICIAL DISTRICT : DIVISION 01",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall EMILIO JACOB CHAVEZ be retained as District Court Judge, Division 1? EIGHTH JUDICIAL DISTRICT : DIVISION 01",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall BENJAMIN S CROSS be retained as Judge of the Ninth Judicial District, Division 1? NINTH JUDICIAL DISTRICT : DIVISION 01",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall TOM F STEWART be retained as District Court Judge, Division 1? SIXTH JUDICIAL DISTRICT : DIVISION 1",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall FRANCIS J MATHEW be retained as District Court Judge, Division 1? FIRST JUDICIAL DISTRICT: DIVISION 01",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall STEPHEN P OCHOA be retained as District Court Judge, Division 1? TWELFTH JUDICIAL DISTRICT : DIVISION 01",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall WILLIAM EDWARD PARNALL be retained as District Court Judge, Division 01? SECOND JUDICIAL DISTRICT : DIVISION 01",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall JAMES LAWRENCE SANCHEZ be retained as District Court Judge Division 1? THIRTEENTH JUDICIAL DISTRICT : DIVISION 01",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall DAVID E FINGER be retained as District Court Judge, Division 1? FIFTH JUDICIAL DISTRICT: DIVISION 01",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall DONNA J MOWRER be retained as District Court Judge, Division 4? NINTH JUDICIAL DISTRICT : DIVISION 04",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall CURTIS R GURLEY be retained as District Court Judge, Division 4? ELEVENTH JUDICIAL DISTRICT : DIVISION 04",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall BEATRICE J BRICKHOUSE be retained as District Court Judge, Division 04? SECOND JUDICIAL DISTRICT : DIVISION 04",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall AMANDA CONNIE SANCHEZ VILLALOBOS be retained as District Court Judge, Division 4? THIRTEENTH JUDICIAL DISTRICT : DIVISION 04",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall ANGIE K SCHNEIDER be retained as District Court Judge, Division 4? TWELFTH JUDICIAL DISTRICT : DIVISION 04",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall MICHAEL HAROLD STONE be retained as District Court Judge, Division 7? FIFTH JUDICIAL DISTRICT: DIVISION 07",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall DOUGLAS R DRIGGERS be retained as District Court Judge, Division 7? THIRD JUDICIAL DISTRICT : DIVISION 07",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall T GLENN ELLINGTON be retained as District Court Judge, Division 7? FIRST JUDICIAL DISTRICT: DIVISION 07",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall CHRISTOPHER GEORGE PEREZ be retained as District Court Judge, Division 7? THIRTEENTH JUDICIAL DISTRICT : DIVISION 07",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall DOUGLAS W DECKER be retained as District Court Judge, Division 7? ELEVENTH JUDICIAL DISTRICT : DIVISION 07",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall ALMA C GARCIA ROBERSON be retained as District Court Judge, Division 07? SECOND JUDICIAL DISTRICT : DIVISION 07",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall DUSTIN KELLY HUNTER be retained as District Court Judge, Division 10? FIFTH JUDICIAL DISTRICT: DIVISION 10",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall KATHLEEN MCGARRY ELLENWOOD be retained as District Court Judge, Division 10? FIRST JUDICIAL DISTRICT: DIVISION 10",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall BRUCE C FOX be retained as District Court Judge, Division 10? SECOND JUDICIAL DISTRICT : DIVISION 10",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall LISA CHAVEZ ORTEGA be retained as District Court Judge, Division 13? SECOND JUDICIAL DISTRICT : DIVISION 13",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall JAROD KYLE HOFACKET be retained as District Court Judge, Division 4? SIXTH JUDICIAL DISTRICT : DIVISION 4",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall JENNIFER J WERNERSBACH be retained as District Court Judge, Division 16? SECOND JUDICIAL DISTRICT : DIVISION 16",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall AMBER LOUISEE CHAVEZ BAKER be retained as District Court Judge, Division 22? SECOND JUDICIAL DISTRICT : DIVISION 22",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall JANE CONWAY LEVY be retained as District Court Judge, Division 25? SECOND JUDICIAL DISTRICT : DIVISION 25",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall CLARA M MORAN be retained as District Court Judge, Division 28? SECOND JUDICIAL DISTRICT : DIVISION 28",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall CHRISTINE EVE RODRIGUEZ be retained as Judge of the Metropolitan Court, Division 2? DIVISION 2",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall JOSHUA J SANCHEZ be retained as Judge of the Metropolitan Court, Division 4? DIVISION 4",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall JILL MARTINEZ be retained as Judge of the Metropolitan Court, Division 8? DIVISION 8",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall BRITTANY MALDONADO MALOTT be retained as Judge of the Metropolitan Court, Division 10? DIVISION 10",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall JASON M JARAMILLO be retained as Judge of the Metropolitan Court, Division 12? DIVISION 12",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall VIDALIA G CHAVEZ be retained as Judge of the Metropolitan Court, Division 14? DIVISION 14",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall CLAIRE ANN MCDANIEL be retained as Judge of the Metropolitan Court, Division 16? DIVISION 16",
+      1
+    ],
+    [
+      "JUDICIAL RETENTION: Shall ROSIE LAZCANO ALLRED be retained as Judge of the Metropolitan Court, Division 18? DIVISION 18",
+      1
+    ],
+    [
+      "Constitutional Amendment 1: Proposing an amendment to Article 4, Section 22 of the Constitution of New Mexico to require the governor to provide veto messages on all bills vetoed in whole or in part and to provide that all bills passed by the legislature and not acted on by the governor will become law.",
+      1
+    ],
+    [
+      "Constitutional Amendment 2: Proposing to amend Article 7, Section 1 of the Constitution of New Mexico to remove the requirement that school elections be separate from partisan elections.",
+      1
+    ],
+    [
+      "Constitutional Amendment 3: Proposing an amendment to Article 12, Section 13 of the Constitution of New Mexico to establish nominating committees to provide lists of nominees to the governor for appointment of nonstudent members to the boards of regents of state educational institutions; providing that student members of boards of regents shall be appointed from a list provided by an elected student governing body of the institution; providing that, except for a student member, members of the boards of regents shall not have changed their political party registration in the twelve months preceding appointment.",
+      1
+    ],
+    [
+      "Constitutional Amendment 4: Proposing to amend Article 4, Section 10 of the Constitution of New Mexico to allow legislative compensation that is limited to the median household income for New Mexico, to require legislative compensation to be reduced if the median household income for New Mexico falls, to allow legislative compensation to be increased only if the median household income for New Mexico rises and to provide for delayed implementation.",
+      1
+    ],
+    [
+      "Bond Question 1: The 2026 Capital Projects General Obligation Bond Act authorizes the issuance and sale of senior citizen facility improvement, construction and equipment acquisition bonds. Shall the state be authorized to issue general obligation bonds in an amount not to exceed twenty-one million five hundred eighty-two thousand two hundred thirteen dollars ($21,582,213) to make capital expenditures for certain senior citizen facility improvement, construction and equipment acquisition projects and provide for a general property tax imposition and levy for the payment of principal of, interest on and expenses incurred in connection with the issuance of the bonds and the collection of the tax as permitted by law?",
+      1
+    ],
+    [
+      "Bond Question 2: The 2026 Capital Projects General Obligation Bond Act authorizes the issuance and sale of library acquisition bonds. Shall the state be authorized to issue general obligation bonds in an amount not to exceed nineteen million three hundred twenty-four thousand one hundred eighty-eight dollars ($19,324,188) to make capital expenditures for academic, public school, public and tribal library resource acquisitions and provide for a general property tax imposition and levy for the payment of principal of, interest on and expenses incurred in connection with the issuance of the bonds and the collection of the tax as permitted by law?",
+      1
+    ],
+    [
+      "Bond Question 3: The 2026 Capital Projects General Obligation Bond Act authorizes the issuance and sale of higher education, special schools and tribal schools capital improvement and acquisition bonds. Shall the state be authorized to issue general obligation bonds in an amount not to exceed three hundred fifty-two million two hundred twenty five thousand three hundred seventy-nine dollars ($352,225,379) to make capital expenditures for certain higher education, special schools and tribal schools capital improvements and acquisitions and provide for a general property tax imposition and levy for the payment of principal of, interest on and expenses incurred in connection with the issuance of the bonds and the collection of the tax as permitted by law?",
+      1
+    ],
+    [
+      "College District General Obligation Bond: Shall the Advisory Board of the University of New Mexico Gallup Branch Community College District, be authorized to issue up to $10,000,000 of general obligation bonds for the purpose of erecting, furnishing, constructing, purchasing, remodeling and equipping buildings and utility facilities, exclusive of stadiums; making other real property improvements; purchasing grounds; and purchasing and installing computer hardware and software; or any combination of these purposes? UNM GALLUP",
+      1
+    ],
+    [
+      "SAN JUAN COLLEGE GENERAL OBLIGATION BOND QUESTION: Shall San Juan College District, issue general obligation bonds of the College District, in one series or more, in the aggregate principal amount not to exceed $7,500,000, for the purpose of any, all or a combination of: erecting, furnishing, constructing, purchasing, remodeling, and equipping buildings and utility facilities, exclusive of stadiums; making other real property improvements; purchasing grounds; and purchasing and installing computer hardware and software with a useful life equal to or exceeding the maturity of the bonds; said bonds to be payable from general (ad valorem) taxes and to be issued and sold at such time or times upon such terms and conditions as the College Board may determine? SAN JUAN COLLEGE",
+      1
+    ],
+    [
+      "COUNTY BOND QUESTION 1: Shall Valencia County issue up to $1,000,000 of its general obligation bonds, to be repaid from property taxes, to construct, renovate, furnish, enhance and otherwise improve buildings for sheriff and fire department facilities? - Valencia - Valencia",
+      1
+    ],
+    [
+      "Local Economic Development Act GRT Question: Shall the County of Otero impose a countywide one-eighth of one percent (0.125%, or 12.5 cents per $100 of taxable gross receipts) Local Economic Development Act local option gross receipts tax, with the revenue being dedicated to furthering or implementing economic development plans and projects, among which arts and cultural districts, cultural facilities and retail businesses would be qualifying uses? - Otero - Otero",
+      1
+    ],
+    [
+      "Village of Angel Fire Economic Development Tax Question: Shall the Village of Angel Fire impose an Economic Development Tax at a rate of 0.25% to fund incentives, provide public support for projects, and improve the community's economic well-being and overall quality of life? ANGEL FIRE MUNICIPALITY 600",
+      1
+    ],
+    [
+      "City of Las Cruces General Obligation Library Bond: Shall the City of Las Cruces be authorized to issue general obligation bonds, payable from property taxes, in an amount up to $26,000, 000 to acquire, plan, design, develop, construct, improve, renovate, modernize, automate, furnish, and equip the Thomas Branigan Memorial Library? CITY OF LAS CRUCES",
+      1
+    ],
+    [
+      "CITY OF RUIDOSO DOWNS IMPOSING A QUALITY-OF-LIFE GROSS RECEIPTS TAX ORDINANCE: Shall the City of Ruidoso Downs adopt a Municipal Quality of Life Gross Receipts Tax Ordinance imposing an excise tax equal to one-fourth of one percent (.25%) of the gross receipts reported or required to be reported by all persons engaged in business in the City of Ruidoso Downs, with revenues from the tax to be dedicated to cultural programs and activities provided by a local government and to cultural programs, events and activities provided by contract or operating agreement with nonprofit or publicly owned cultural organizations and institutions for a period time for not more than ten years? CITY OF RUIDOSO DOWNS",
+      1
+    ],
+    [
+      "LEA COUNTY DEFENSE FUND GROSS RECEIPTS TAX: Shall the County of Lea impose a county gross receipts tax in the amount of one-hundredth of one percent (0.01%), the revenues of which shall be used to create a defense fund to protect and defend against unconstitutional state government overreach, including actions that infringe upon the right to keep and bear arms protected by the Constitution of the United States and the Constitution of New Mexico? - Lea - Lea",
+      1
+    ],
+    [
+      "County Tax Authorization Question: Shall the County of Chaves impose a countywide one-eighth of one percent (0.125%, or 12.5 cents per $100 of taxable gross receipts) Local Economic Development Act local option gross receipts tax, with the revenue being dedicated to furthering or implementing economic development plans and projects, among which arts and cultural districts, cultural facilities and retail businesses would be qualifying uses and which would sunset after 5 years from enactment? - Chaves - Chaves",
+      1
+    ],
+    [
+      "LIBRARY BONDS: Shall Bernalillo County, New Mexico, be authorized to issue its general obligation bonds, in one series or more, in an aggregate principal amount not exceeding $2,500,000 for the purpose of purchasing materials and resources for libraries within Bernalillo County, New Mexico, said bonds to be payable from general (ad valorem) taxes, and to be issued and sold at such time or times and upon such terms and conditions as the Board of County Commissioners may determine and as permitted by law? - Bernalillo - Bernalillo",
+      1
+    ],
+    [
+      "COUNTY BUREAU OF ELECTIONS SECURE STORAGE FACILITY BONDS: Shall Sandoval County be authorized to issue up to $22,000,000 of general obligation bonds for the purpose of designing, constructing, equipping, and furnishing a County Bureau of Elections secure storage facility for voting machines, polling facility and offices, said bonds to be payable from general (ad valorem) taxes, and to be issued and sold at such time or times and upon such terms and conditions as the Board of County Commissioners may determine and as permitted by law? - Sandoval - Sandoval",
+      1
+    ],
+    [
+      "REMODELING/ADDITION BONDS: Shall Grant County, New Mexico, be authorized to issue its general obligation bonds, in one series or more, in an aggregate principal amount not exceeding $4,000,000 for the purpose of remodeling and making additions to necessary public buildings within Grant County, New Mexico, including, but not limited to, courthouses, jails, bridges, hospitals, public libraries, facilities for the holding of county fairs, cultural facilities, juvenile detention homes, athletic facilities, parking structures, administrative facilities, facilities for housing equipment, repairing equipment and servicing equipment and sewage facilities, and for water, sewer or sanitary landfill systems, said bonds to be payable from general (ad valorem) taxes to be issued and sold at such time or times, upon such terms and conditions as the Board of County Commissioners may determine and as permitted by law? - Grant - Grant",
+      1
+    ],
+    [
+      "Town of Taos Local Economic Development Act Local Option Gross Receipts Tax: Shall Town of Taos Ordinance 26-07 be approved, imposing a Local Economic Development Act local option gross receipts tax equal to one-fourth of one percent (0.25%), with the revenue dedicated to economic development plans and projects as authorized by the Local Economic Development Act or the Statewide Economic Development Finance Act? TAOS MUNICIPAL DISTRICT 126",
+      1
+    ],
+    [
+      "CITY OF RUIDOSO DOWNS GENERAL OBLIGATION BOND : Shall the City of Ruidoso Downs issue up to $2,500,000 in general obligation bonds payable from general (ad valorem) taxes to design, acquire, construct, renovate, expand, furnish, eqmp, enhance, and otherwise improve public infrastructure and buildings, including municipal streets, roads, alleys, or any combination thereof, public buildings, water & wastewater systems and storm water facilities located within the City?",
+      0
+    ],
+    ["", 0],
+    ["", 0],
+    [
+      "ROAD CONSTRUCTION AND REPAIR BONDS: Shall Grant County, New Mexico, be authorized to issue its general obligation bonds, in one series or more, in an aggregate principal amount not exceeding $4,000,000 for the purpose of constructing or repairing public roads and for construction and acquisition of water, sewer or sanitary landfill systems, said bonds to be payable from general (ad valorem) taxes and to be issued and sold at such time or times, upon such terms and conditions as the Board of County Commissioners may determine and as permitted by law? - Grant - Grant",
+      1
+    ],
+    [
+      "COUNTY BOND QUESTION 2: Shall Valencia County issue up to $4,000,000 of its general obligation bonds, to be repaid from property taxes, to construct, rehabilitate, enhance and otherwise improve public roads, including purchasing capital equipment for such projects? - Valencia - Valencia",
+      1
+    ],
+    [
+      "Doña Ana Soil and Water Conservation District Mill Levy for land, water, and natural resources conservation: Shall the duly elected Doña Ana Soil and Water Conservation District Board of Supervisors establish a levy of up to 0.25 mills to: protect drinking water sources and the health of rivers and streams by improving stormwater and floodplain management; reduce the risk of flooding by improving the watersheds and range lands above dams; continuing work on lowering the heat index by planting trees (DASWCD NeighborWoods) in Las Cruces and Doña Ana County; restore wildlife habitat, including along the Rio Grande; preserve agricultural land by partnering with local farmers to promote healthy soil practices; restore and conserve natural areas and open spaces to provide equitable access to the outdoors; and provide natural resources education for youth and adults, with all revenues and expenditures subject to an independent annual audit? DOÑA ANA SOIL & WATER CONSERVATION DISTRICT",
+      1
+    ],
+    [
+      "CITY OF JAL GROSS RECEIPTS TAX: Shall the City of Jal impose a one-fourth of one percent (0.25% or 25 cents per $100 of taxable gross receipts) Local Economic Development Act local option gross receipts tax, with the revenue being dedicated to furthering or implementing economic development plans and projects, among which arts and cultural districts, cultural facilities and retail businesses would be qualifying uses? JAL MUNICIPAL DISTRICT",
+      1
+    ],
+    [
+      "FIRE DEPARTMENT BONDS: Shall Sandoval County be authorized to issue up to $9,000,000 of general obligation bonds for the purpose of planning, designing, engineering, constructing, acquiring and building a County Fire Department training facility and other fire department stations, said bonds to be payable from general (ad valorem) taxes, and to be issued and sold at such time or times and upon such terms and conditions as the Board of County Commissioners may determine and as permitted by law? - Sandoval - Sandoval",
+      1
+    ],
+    [
+      "PUBLIC SAFETY FACILITIES, FLEET AND OTHER COUNTY BUILDINGS BONDS: Shall Bernalillo County, New Mexico, be authorized to issue its general obligation bonds, in one series or more, in an aggregate principal amount not exceeding $8,900,000 for the purpose of acquiring property, planning, designing, upgrading, constructing, remodeling, purchasing, furnishing, equipping, repairing and otherwise improving, County facilities and fleet, including but not limited to health and public safety facilities, fire station and law enforcement facilities, jail and detention center facilities, courthouse facilities, youth and family service center and learning facilities, visitors center facilities, necessary redevelopment of facilities, and replacement of fleet vehicles and heavy equipment, and construction and improvements required by the Americans with Disabilities Act, said bonds to be payable from general (ad valorem) taxes, and to be issued and sold at such time or times and upon such terms and conditions as the Board of County Commissioners may determine and as permitted by law? - Bernalillo - Bernalillo",
+      1
+    ],
+    [
+      "COUNTY BOND QUESTION 3: Shall Valencia County issue up to $2,000,000 of its general obligation bonds, to be repaid from property taxes, to construct, equip, renovate, enhance and otherwise improve and to acquire equipment for park and recreational facilities including public parks, splash pads, sports fields and other recreational facilities, open space, bike paths, Bosque lands and trails? - Valencia - Valencia",
+      1
+    ],
+    [
+      "LIBRARY BONDS : Shall Sandoval County, New Mexico, be authorized to issue its general obligation bonds, in one series or more, in an aggregate principal amount not exceeding $3,400,000 for the purpose of planning, designing, upgrading, constructing, remodeling, furnishing, equipping, repairing and otherwise improving library facilities within Sandoval County, New Mexico, and purchasing books and other library resources for libraries within Sandoval County, New Mexico, said bonds to be payable from general (ad valorem) taxes, and to be issued and sold at such time or times and upon such terms and conditions as the Board of County Commissioners may determine and as permitted by law? - Sandoval - Sandoval",
+      1
+    ],
+    [
+      "TOWN OF TATUM GROSS RECEIPTS TAX: Shall the Town of Tatum impose a one-fourth of one percent (0.25% or 25 cents per $100 of taxable gross receipts) Local Economic Development Act local option gross receipts tax, with the revenue being dedicated to furthering or implementing economic development plans and projects, among which arts and cultural districts, cultural facilities and retail businesses would be qualifying uses? TATUM MUNICIPAL DISTRICT",
+      1
+    ],
+    [
+      "PARKS AND RECREATION BONDS: Shall Bernalillo County, New Mexico, be authorized to issue its general obligation bonds, in one series or more, in an aggregate principal amount not exceeding $20,384,920 for the purpose of acquiring property, planning, designing, upgrading, constructing, remodeling, furnishing, equipping, repairing and otherwise improving park and recreational facilities within the County, including but not limited to parks, aquatic centers, community centers, playgrounds, ball fields, open spaces, cultural and educational facilities, community recreation centers and pools, and necessary redevelopment of facilities, and construction and improvements required by the Americans with Disabilities Act, said bonds to be payable from general (ad valorem) taxes, and to be issued and sold at such time or times and upon such terms and conditions as the Board of County Commissioners may determine and as permitted by law? - Bernalillo - Bernalillo",
+      1
+    ],
+    [
+      "TRANSPORTATION BONDS: Shall Bernalillo County, New Mexico, be authorized to issue its general obligation bonds, in one series or more, in an aggregate principal amount not exceeding $6,215,080 for the purpose of acquiring property, planning, designing, upgrading, constructing, rehabilitating, furnishing, equipping, repairing and otherwise improving transportation facilities within the County, including but not limited to roads, non-motor vehicle pathways, bridges, traffic calming facilities, guardrails, bike lanes, trails, sidewalks, transit improvements, paving, landscaping, traffic signals and other street improvements, and necessary construction and improvements required by the Americans with Disabilities Act, said bonds to be payable from general (ad valorem) taxes, and to be issued and sold at such time or times and upon such terms and conditions as the Board of County Commissioners may determine and as permitted by law? - Bernalillo - Bernalillo",
+      1
+    ],
+    [
+      "MILL LEVY QUESTION: For the purpose of providing continued operating revenues for medical services including trauma care and behavioral health services including substance abuse treatment, shall Sandoval County, New Mexico continue to impose a mill levy of one and ninety hundredths (1.90) mills each year for eight (8) years on each dollar of net taxable value of property in Sandoval County, to pay to Sandoval Regional Medical Center, a campus of UNM Hospital, in accordance with a health care facilities contract with Sandoval County? - Sandoval - Sandoval",
+      1
+    ],
+    [
+      "COUNTY BOND QUESTION 4: Shall Valencia County issue up to $2,000,000 of its general obligation bonds, to be repaid from property taxes, to construct, equip, renovate, enhance and otherwise improve County owned community centers, including those for families, youth and senior citizens? - Valencia - Valencia",
+      1
+    ],
+    [
+      "STORM DRAINAGE AND UTILITIES BONDS: Shall Bernalillo County, New Mexico, be authorized to issue its general obligation bonds, in one series or more, in an aggregate principal amount not exceeding $1,000,000 for the purpose of acquiring property, planning, designing, upgrading, constructing, rehabilitating, equipping, repairing and otherwise improving drainage and utility infrastructure, including but not limited to storm sewer and drainage, wastewater, water and drainage systems and facilities within Bernalillo County, New Mexico, said bonds to be payable from general (ad valorem) taxes, and to be issued and sold at such time or times and upon such terms and conditions as the Board of County Commissioners may determine and as permitted by law? - Bernalillo - Bernalillo",
+      1
+    ],
+    [
+      "PUBLIC HOUSING BONDS: Shall Bernalillo County, New Mexico, be authorized to issue its general obligation bonds, in one series or more, in an aggregate principal amount not exceeding $6,000,000 for the purpose of acquiring property, planning, designing, upgrading, constructing, remodeling, rehabilitating, furnishing, equipping, repairing and otherwise improving housing facilities within the County, said bonds to be payable from general (ad valorem) taxes, and to be issued and sold at such time or times and upon such terms and conditions as the Board of County Commissioners may determine and as permitted by law? - Bernalillo - Bernalillo",
+      1
+    ],
+    [
+      "GENERAL OBLIGATION BOND QUESTION 1: Shall Santa Fe County issue up to $14,035,000 in general obligation bonds payable from general (ad valorem) taxes to acquire, construct, design, equip, and improve roads within the County? - Santa Fe - Santa Fe",
+      1
+    ],
+    [
+      "GENERAL OBLIGATION BOND QUESTION 2: Shall Santa Fe County issue up to $6,500,000 in general obligation bonds payable from general (ad valorem) taxes to acquire real property and necessary water rights for, and to construct, design, equip, rehabilitate, and improve water and wastewater projects within the County? - Santa Fe - Santa Fe",
+      1
+    ],
+    [
+      "PERFORMING ARTS CENTER FUNDING REQUIREMENT: Shall the Charter of the City of Albuquerque be amended to repeal Article XI, Section 7, which requires voter approval before the City may appropriate more than $10 million for a performing arts center so that future funding of any amount would no longer require a separate vote? CITY OF ALBUQUERQUE",
+      1
+    ],
+    [
+      "ALBUQUERQUE COMMUNITY SAFETY (ACS) CHIEF APPOINTMENT: Shall the Charter of the City of Albuquerque be amended to designate the Director of Albuquerque Community Safety as the 'ACS Chief' and require that this position be appointed by the Mayor with the advice and consent of the City Council, subject to the same confirmation, employment agreement, and removal terms currently applied to the Police Chief and Fire Chief? CITY OF ALBUQUERQUE",
+      1
+    ],
+    [
+      "GENERAL OBLIGATION BOND QUESTION 3: Shall Santa Fe County issue up to $7,010,000 in general obligation bonds payable from general (ad valorem) taxes to acquire, design, construct, improve, equip, and restore open space, trails, and parks within the County? - Santa Fe - Santa Fe",
+      1
+    ],
+    [
+      "GENERAL OBLIGATION BOND QUESTION 4: Shall Santa Fe County issue up to $17,455,000 in general obligation bonds payable from general (ad valorem) taxes to acquire real property for, and to construct, design, equip, rehabilitate, and improve fire stations within the County? - Santa Fe - Santa Fe",
+      1
+    ],
+    [
+      "PUBLIC SAFETY GROSS RECEIPTS TAX DEDICATION UPDATE: Shall the City of Albuquerque amend the Public Safety Gross Receipts Tax to divide funds amongst updated city services? The money would be divided as follows: Police 35%; Fire 38%; Albuquerque Community Safety 8%; Health, Housing, and Homelessness 8%; Prisoner Transport 6%; and Code Enforcement 5%. This would not increase the tax rate. CITY OF ALBUQUERQUE",
+      1
+    ],
+    [
+      "GENERAL OBLIGATION FLOOD CONTROL BONDS: Shall the Albuquerque Metropolitan Arroyo Flood Control Authority be authorized to issue its general obligation bonds in principal amount- not exceeding $30,000 000 for the extension betterment, alteration, reconstruction, repair and other improvements of the Authority's flood control system? - Bernalillo - Bernalillo ALBUQUERQUE METROPOLITAN ARROYO FLOOD CONTROL AUTHORITY",
+      1
+    ],
+    [
+      "GENERAL OBLIGATION STREET, SIDEWALK, AND PEDESTRIAN ACCESSIBILITY BONDS: Shall the City of Santa Fe issue up to $11,250,000 in general obligation bonds, to be repaid from property taxes, to plan, design, construct, equip, reconstruct, rehabilitate, preserve, repair, replace, and improve streets, sidewalks, curb ramps, pedestrian routes, and related infrastructure within the City? SANTA FE CITY",
+      1
+    ],
+    [
+      "GENERAL OBLIGATION MUNICIPAL RECREATION COMPLEX SOCCER VALLEY BONDS : Shall the City of Santa Fe issue up to $4,500,000 in general obligation bonds, to be repaid from property taxes, to plan, design, construct, equip, furnish, improve, and expand athletic fields and related public recreational facilities and infrastructure at the Municipal Recreation Complex Soccer Valley? SANTA FE CITY",
+      1
+    ],
+    [
+      "GENERAL OBLIGATION SWAN PARK IMPROVEMENT BONDS : Shall the City of Santa Fe issue up to $4,250,000 in general obligation bonds, to be repaid from property taxes, to plan, design, construct, equip, furnish, and improve a splash pad and related public recreational facilities and infrastructure at SWAN Park? SANTA FE CITY",
+      1
+    ],
+    [
+      "GENERAL OBLIGATION MIDTOWN CAPITAL IMPROVEMENT BONDS: Shall the City of Santa Fe issue up to $5,000,000 in general obligation bonds, to be repaid from property taxes, to plan, design, prepare, demolish, construct, reconstruct, renovate, equip, furnish, manage, and improve public facilities, infrastructure, public spaces, and other City-owned assets at the Midtown property? SANTA FE CITY",
+      1
+    ],
+    [
+      "COUNTY QUESTION AMENDMENT TO THE CHARTER OF THE INCORPORATED COUNTY (COUNTY) OF LOS ALAMOS, PURSUANT TO COUNTY ORDINANCE NO. 755, TO INCREASE THE NUMBER OF TERMS A PERSON MAY SERVE ON THE SAME STANDING BOARD OR COMMISSION FROM TWO TERMS IN SUCCESSION TO THREE TERMS IN SUCCESSION QUESTION NO. 1: Shall Article III, Section 305, Subsection 305.4, of the Charter of the Incorporated County of Los Alamos, relating to Standing Boards and Commissions and Ad Hoc Advisory Committees, be amended to allow a person to serve on the same standing board or commission from no more than two (2) terms to no more than three (3) terms in succession? - Los Alamos - Los Alamos",
+      1
+    ],
+    [
+      "COUNTY QUESTION AMENDMENT TO THE CHARTER OF THE INCORPORATED COUNTY (COUNTY) OF LOS ALAMOS, PURSUANT TO COUNTY ORDINANCE NO. 757, TO AMEND THE POLITICAL PARTY COMPOSITION OF STANDING BOARDS AND COMMISSIONS QUESTION NO. 2: Shall Article III, Section 305, Subsection 305.3, of the Charter of the Incorporated County of Los Alamos, relating to Standing Boards and Commissions and Ad Hoc Advisory Committees, be amended to remove the political party composition requirements for all standing Board and Commissions with the exception of the Planning and Zoning Commission, the Board of Public Utilities, and the Personnel Board? - Los Alamos - Los Alamos",
+      1
+    ],
+    [
+      "COUNTY QUESTION AMENDMENT TO THE CHARTER OF THE INCORPORATED COUNTY (COUNTY) OF LOS ALAMOS, PURSUANT TO COUNTY ORDINANCE NO. 758, TO AMEND THE PRIORITY OF THE DEPARTMENT OF PUBLIC UTILITIES (DPU) BUDGETED EXPENDITURES QUESTION NO. 3: Shall Article V, Section 509, of the Charter of the Incorporated County of Los Alamos, relating to the priority of the Department of Public Utilities (DPU) budgeted expenditures, be amended to omit the provision for all remaining Department of Public Utilities operating profits to be transferred to the County General Fund? - Los Alamos - Los Alamos",
+      1
+    ]
   ]
 }

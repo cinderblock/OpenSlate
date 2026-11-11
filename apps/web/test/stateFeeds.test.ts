@@ -262,6 +262,53 @@ describe("reading a state's count", () => {
     expect(asked.filter((url) => url.endsWith("summary.json"))).toHaveLength(1);
   });
 
+  test("a feed of several files: all of them, one count, and the same numbers are the same count", async () => {
+    const csv = (name: string) =>
+      readFileSync(
+        join(import.meta.dir, "../../../packages/core/test/fixtures/state", name),
+        "utf8",
+      );
+    const routes = {
+      "/sd/statewide": { body: csv("sd-statewide.csv") },
+      "/sd/questions": { body: csv("sd-questions.csv") },
+      "/sd/legislature": { body: csv("sd-legislature.csv") },
+    };
+    const asked = stub(routes);
+    const results = await fetchStateResults("sd");
+    expect(asked.map((url) => url.slice(url.lastIndexOf("/") + 1)).sort()).toEqual([
+      "legislature",
+      "questions",
+      "statewide",
+    ]);
+    expect(results.contests).toHaveLength(85);
+    // The export has no time of its own for the count.
+    expect(results.updated).toBeUndefined();
+    // A minute later the server's clock on every row has moved and no vote has.
+    stub({
+      ...routes,
+      "/sd/statewide": {
+        body: csv("sd-statewide.csv").replaceAll(
+          "11/10/2026 11:07:48 PM",
+          "11/10/2026 11:08:50 PM",
+        ),
+      },
+    });
+    expect(await fetchStateResults("sd")).toBe(results);
+    const sections = stateSections("us/sd", feedOf("sd"), results.contests, {
+      districts: { "us/sd/sd": "1", "us/sd/hd": "26a" },
+    });
+    expect(titles(sections.mine)).toEqual([
+      "State Senator District 01",
+      "State Representative District 26A",
+    ]);
+    // South Dakota's one House seat is everyone's.
+    expect(titles(sections.statewide).slice(0, 3)).toEqual([
+      "United States Senator",
+      "United States Representative",
+      "Governor and Lieutenant Governor",
+    ]);
+  });
+
   test("everyone asking at once shares one request", async () => {
     const asked = stub({ "/va/data": { body: fixture("va-data.json") } });
     const [a, b] = await Promise.all([fetchStateResults("va"), fetchStateResults("va")]);

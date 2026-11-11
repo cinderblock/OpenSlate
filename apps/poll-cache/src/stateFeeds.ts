@@ -6,11 +6,12 @@
  * honest User-Agent. The public worker and a self-hosted apps/server both
  * mount this. Stateless apart from the cache; stores and logs nothing.
  *
- * `/api/state/<postal code>/<path under the state's feed>`, e.g.
- * `/api/state/va/data`, `/api/state/co/current_ver.txt`.
+ * `/api/state/<postal code>/<file>`, e.g. `/api/state/va/data`,
+ * `/api/state/co/current_ver.txt`, `/api/state/sd/legislature`: a path under
+ * the state's feed, or the name the registry gives one of its files.
  */
 
-import { stateFeed, stateFeedPathTtl } from "@openslate/core/stateResults";
+import { stateFeed, stateFeedPathTtl, stateFeedUrl } from "@openslate/core/stateResults";
 import { type CountyUpstream, relayFeed } from "./countyCa";
 
 export const STATE_FEEDS_PREFIX = "/api/state/";
@@ -24,7 +25,7 @@ export function stateFeedUpstream(pathname: string): CountyUpstream | null {
   if (!feed) return null;
   const rest = inner.slice(slash + 1);
   const ttl = stateFeedPathTtl(feed, rest);
-  return ttl === null ? null : { url: `${feed.base}/${rest}${feed.query ?? ""}`, ttl };
+  return ttl === null ? null : { url: stateFeedUrl(feed, rest), ttl };
 }
 
 export function handleStateFeed(pathname: string, cors: Record<string, string>): Promise<Response> {

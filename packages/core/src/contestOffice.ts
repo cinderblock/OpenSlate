@@ -162,7 +162,11 @@ export function contestOffice(rawTitle: string, hints: OfficeHints = {}): Contes
     return { kind: "us-house", district: districtOf(title) ?? "1", ...special };
   }
   if (GOVERNOR.test(title)) return { kind: "governor", ...special };
-  if (STATEWIDE_OFFICE.test(title)) return { kind: "statewide-office", ...special };
+  // A commission elected by district (Nebraska's Public Service Commission) isn't statewide.
+  if (STATEWIDE_OFFICE.test(title))
+    return /\bdistrict\b/.test(title)
+      ? { kind: "other" }
+      : { kind: "statewide-office", ...special };
   if (!legislator) return { kind: "other" };
   for (const [kind, pattern] of [
     ["state-upper", UPPER],

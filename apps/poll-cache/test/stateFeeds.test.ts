@@ -25,6 +25,13 @@ test("only listed states' feed files reach a state", () => {
     url: `${COLORADO}/386671/json/en/summary.json`,
     ttl: 3600,
   });
+  // A feed of named files: the name stands for a query on the state's own site.
+  expect(stateFeedUpstream("/api/state/sd/legislature")).toEqual({
+    url: "https://electionresults.sd.gov/resultsCSV.aspx?text=All&type=LEG&map=DIST",
+    ttl: 60,
+  });
+  expect(stateFeedUpstream("/api/state/sd/resultsCSV.aspx")).toBeNull();
+  expect(stateFeedUpstream("/api/state/sd/data")).toBeNull();
   // Another file of the same site, another state's kind of file, a path out of the feed.
   expect(stateFeedUpstream("/api/state/co/386671/json/en/electionsettings.json")).toBeNull();
   expect(stateFeedUpstream("/api/state/co/data")).toBeNull();

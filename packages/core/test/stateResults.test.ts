@@ -4,10 +4,12 @@ import { join } from "node:path";
 import type { CountyContest } from "../src/countyResults";
 import {
   parseStateFeed,
+  parseStateFiles,
   STATE_FEEDS,
   type StateFeed,
   stateFeed,
   stateFeedPathTtl,
+  stateFeedUrl,
 } from "../src/stateResults";
 
 /**
@@ -149,6 +151,85 @@ describe("Enhanced Voting, as states run it", () => {
       "Shall Justice John Lopez IV, Justice of the Supreme Court be retained in office?",
     );
     expect(justice.measure).toBe(true);
+  });
+});
+
+describe("TotalVote's CSV exports", () => {
+  const text = (name: string) =>
+    readFileSync(join(import.meta.dir, "fixtures/state", name), "utf8");
+
+  test("only a feed's named files may be asked for, and each is a query on the state's site", () => {
+    const south = feedOf("sd");
+    expect(stateFeedPathTtl(south, "legislature")).toBe(60);
+    expect(stateFeedPathTtl(south, "resultsCSV.aspx")).toBeNull();
+    expect(stateFeedPathTtl(south, "data")).toBeNull();
+    expect(stateFeedPathTtl(south, "constructor")).toBeNull();
+    expect(stateFeedUrl(south, "legislature")).toBe(
+      "https://electionresults.sd.gov/resultsCSV.aspx?text=All&type=LEG&map=DIST",
+    );
+    expect(stateFeedUrl(feedOf("va"), "data")).toBe(
+      "https://enr.elections.virginia.gov/results/public/api/elections/virginia/2026-November-General/data",
+    );
+  });
+
+  test("South Dakota: three exports, one count; the district joins the title", () => {
+    const { contests, asOf } = parseStateFiles(feedOf("sd"), {
+      statewide: text("sd-statewide.csv"),
+      questions: text("sd-questions.csv"),
+      legislature: text("sd-legislature.csv"),
+    });
+    // The export's clock is the server's, not the count's.
+    expect(asOf).toBeUndefined();
+    expect(contests).toHaveLength(85);
+    const senate = named(contests, "United States Senator");
+    expect(senate.choices).toEqual([
+      { name: "Mike Rounds", party: "REP", votes: 184589, percent: 60.5 },
+      { name: "Brian L Bengs", party: "IND", votes: 120513, percent: 39.5 },
+    ]);
+    // `="671/671"`, as Excel would want it.
+    expect(senate.precincts).toEqual({ total: 671, reporting: 671 });
+    expect(named(contests, "State Senator District 01").voteFor).toBe(1);
+    // A two-member House district is one contest.
+    expect(named(contests, "State Representative District 01").voteFor).toBe(2);
+    expect(contests.map((c) => c.title)).toContain("State Representative District 26A");
+    const amendment = contests.find((c) => c.title.startsWith("Constitutional Amendment I:"));
+    expect(amendment?.measure).toBe(true);
+    expect(amendment?.choices.map((c) => c.name).sort()).toEqual(["No", "Yes"]);
+  });
+
+  test("Nebraska: every contest in one export, the same race name for every district", () => {
+    const { contests } = parseStateFiles(feedOf("ne"), { all: text("ne-all.csv") });
+    expect(contests.map((c) => c.title)).toEqual(
+      expect.arrayContaining([
+        "For United States Senator - 6 Year Term",
+        "For Governor and Lt. Governor",
+        "For Representative in Congress - 2 Year Term District 01",
+        "For Representative in Congress - 2 Year Term District 02",
+        "For Member of the Legislature District 02",
+        "Proposed Amendment No. 1",
+      ]),
+    );
+    expect(named(contests, "Proposed Amendment No. 1").measure).toBe(true);
+  });
+
+  test("New Mexico: columns in another order, read by name", () => {
+    const { contests } = parseStateFiles(feedOf("nm"), { state: text("nm-state.csv") });
+    const senate = named(contests, "United States Senator");
+    expect(senate.choices.map((c) => [c.name, c.party, c.votes])).toEqual([
+      ["LARRY E MARKER", "REP", 266434],
+      ["BEN R LUJAN", "DEM", 458756],
+    ]);
+    expect(senate.precincts).toEqual({ total: 2204, reporting: 2204 });
+    expect(contests.map((c) => c.title)).toContain("United States Representative DISTRICT 1");
+    expect(contests.map((c) => c.title)).toContain("State Representative DISTRICT 2");
+  });
+
+  test("something that isn't an export says so", () => {
+    expect(() => parseStateFiles(feedOf("sd"), { statewide: "<html>Error</html>" })).toThrow(
+      "not a results export",
+    );
+    expect(() => parseStateFiles(feedOf("va"), {})).toThrow("isn't read from named files");
+    expect(() => parseStateFeed(feedOf("sd"), {})).toThrow("isn't one document");
   });
 });
 

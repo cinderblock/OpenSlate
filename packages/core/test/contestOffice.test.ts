@@ -235,6 +235,7 @@ describe("the offices every state elects, however it words them", () => {
       "Regional Transportation District Director - District B",
       "Mayor - Farmville (Town of Farmville)",
       "College of Southern Idaho Trustee Zone 1",
+      "For Public Service Commissioner - 6 Year Term District 02",
     ]) {
       expect([title, office(title)]).toEqual([title, { kind: "other" }]);
     }
@@ -284,6 +285,13 @@ describe("every contest of eleven states' counts", () => {
       "state-upper": 17,
       "state-lower": 100,
     });
+    // The district is a column of its own in these three states' exports; the title has it joined on.
+    // South Dakota: one House seat, 35 Senate districts, 37 House districts (26A, 26B, 28A, 28B).
+    expect(seats("sd")).toEqual({ "us-house": 1, "state-upper": 35, "state-lower": 37 });
+    // Nebraska's one chamber, half of it up.
+    expect(seats("ne")).toEqual({ "us-house": 3, "state-upper": 25 });
+    // New Mexico's Senate wasn't up: one seat was filled.
+    expect(seats("nm")).toEqual({ "us-house": 3, "state-upper": 1, "state-lower": 70 });
   });
 
   test("one Senate race and one governor's at most, and no town's race among the state's", () => {
