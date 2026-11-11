@@ -193,7 +193,7 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
      `apps/web/src/lib/stateFeeds.ts` (fetch, sections, a slate's race to
      its contest), `regions/stateFeedCounts.ts` (each as a `StateCounts`, so
      My ballot and race pages use it), `StateLivePanel.tsx` on Results.
-   - Done, 20 states live: Enhanced Voting (AZ, GA, ID, RI, UT, VA, WA) and
+   - Done, 24 live (23 states and the District): Enhanced Voting (AZ, GA, ID, RI, UT, VA, WA) and
      Clarity (CO, IA, SC, WV), the two platforms the county feeds already
      used; TotalVote's CSV "media" exports (NE, NM, SD), a feed of several
      named files (`StateFeed.files`, `parseStateFiles`), which is how every
@@ -202,7 +202,13 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
      Pennsylvania's API, a double-encoded JSON document per office
      (`parsePaOffice`); Michigan's tab file of every county's rows, summed
      (`parseMiResults`); KNOWiNK's TotalResults API (AR, ND), names in one
-     document and votes in others (`parseTotalResults`).
+     document and votes in others (`parseTotalResults`); Delaware's one
+     JSON array (`parseDeResults`); Louisiana's two documents joined by id
+     (`parseLaResults`); the District's citywide array (`parseDcResults`);
+     Montana's TotalVote map service (`parseTotalVoteMap`).
+   - `packages/core/src/stateResults.ts` is 1,350 lines now, the registry
+     and a dozen parsers in one module: split it by platform
+     (`stateResults/<kind>.ts`) before adding the rest.
    - Minnesota is read and parsed (`parseMnFile`, semicolon files, one per
      office) but not offered: its file host answers a home connection and
      refuses Cloudflare, where the public relay runs (HTTP 522 from
@@ -218,12 +224,14 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
      certificate since 2026-11-09, so no relay can fetch it. Its tab file is
      simple (`plans/state-results/fl.json`); add it when the certificate is
      renewed.
-   - Next, by platform: TotalVote's JSON (MT), Indiana's Civix
-     "FirstTuesday" files, then
-     each state's own format, biggest first: FL (when its certificate is
-     renewed), OH (an IEEE 1622 XML document, 1.2 MB: needs an XML reader
-     that runs in a worker), LA, CT, NV, DE, HI, AK, VT, DC. Wyoming
-     publishes only spreadsheets.
+   - Left, of the readable ones: FL (when its certificate is renewed), OH
+     (an IEEE 1622 XML document, 1.2 MB: needs an XML reader that runs in a
+     worker), IN (Civix "FirstTuesday": a settings file, then a file per
+     office category), CT (a version pointer, then lookups joined to votes;
+     its lookup file carries candidates' home addresses, so pass through
+     only what is read), NV (a manifest of files named by their hash), HI
+     and AK (text and CSV), VT (XML). Wyoming publishes only spreadsheets.
+     Each one's URLs and shapes are in `plans/state-results/<code>.json`.
    - Adding one: a `STATE_FEEDS` entry, a parser to `CountyContest[]` if
      the platform is new, a fixture cut from the real feed, and its seat
      counts in `test/contestOffice.test.ts`.
@@ -374,11 +382,11 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
   maps, Virginia's live count); its listing and endorsers are the same
   set-aside data work as step 6.
 - [ ] Step 8: the world.
-- [ ] Step 9: every state's results. 20 of the 34 readable states live
+- [ ] Step 9: every state's results. 24 of the 34 readable ones live
   2026-11-10 (11 live on openslate.us at `7c502fa`; the production relay
   answers `/api/state/va/data` from Cloudflare). Checked in headless Chrome
   against the states' real sites
-  through the repo's own relay code: all 20 panels show contests and vote
+  through the repo's own relay code: all 24 panels show contests and vote
   counts; a Virginia voter sees the 11th district first; a Texas voter is
   told Texas isn't read yet; California's page is as it was.
 

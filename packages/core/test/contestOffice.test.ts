@@ -293,6 +293,13 @@ describe("every contest of eleven states' counts", () => {
     // Nebraska's one chamber, half of it up.
     expect(seats("ne")).toEqual({ "us-house": 3, "state-upper": 25 });
     expect(seats("nc")).toEqual({ "us-house": 14, "state-upper": 50, "state-lower": 120 });
+    // Delaware: one House seat, half its Senate.
+    expect(seats("de")).toEqual({ "us-house": 1, "state-upper": 11, "state-lower": 41 });
+    // Louisiana elects its legislature in odd years: one House seat was filled.
+    expect(seats("la")).toEqual({ "us-house": 6, "state-lower": 1 });
+    // The District: its delegate (and a "United States Representative" it elects citywide).
+    expect(seats("dc")).toEqual({ "us-house": 1 });
+    expect(seats("mt")).toEqual({ "us-house": 2, "state-upper": 25, "state-lower": 100 });
     // Arkansas types its titles by hand: "District 01", "DIST 85", "State Senate, District 32".
     expect(seats("ar")).toEqual({ "us-house": 4, "state-upper": 18, "state-lower": 100 });
     // North Dakota: its odd-numbered districts, each electing a senator and two representatives.

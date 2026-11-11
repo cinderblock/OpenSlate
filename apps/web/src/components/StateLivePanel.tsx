@@ -75,20 +75,20 @@ function Panel({ region, code }: { region: string; code: string }) {
         {results?.updated !== undefined && (
           <>
             {" "}
-            The state last published at {whenFmt.format(results.updated)}{" "}
+            It last published at {whenFmt.format(results.updated)}{" "}
             <span className="hint">({utcFmt.format(results.updated)}Z)</span>.
           </>
         )}
         {results?.official === true
-          ? " The state calls these results official."
-          : " Unofficial until the state certifies them."}
+          ? " It calls these results official."
+          : " Unofficial until they are certified."}
       </p>
 
       {query.isError && !results ? (
         <p className="error">
           Couldn't get {name}'s count: {query.error.message}. Trying again.{" "}
           <a href={feed.page} target="_blank" rel="noreferrer">
-            The state's own page ↗
+            Its own page ↗
           </a>
         </p>
       ) : !results || !sections ? (
@@ -140,7 +140,7 @@ function Panel({ region, code }: { region: string; code: string }) {
         <a href={feed.page} target="_blank" rel="noreferrer">
           {feed.office} ↗
         </a>
-        . Where a contest says how much has reported, it counts {feed.units}, as the state does.
+        . Where a contest says how much has reported, it counts {feed.units}.
       </p>
     </section>
   );

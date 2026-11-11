@@ -48,7 +48,15 @@ export type StateFeedKind =
   | "mn-text"
   | "pa-json"
   | "mi-text"
-  | "totalresults";
+  | "totalresults"
+  /** Delaware: one JSON array, a row per candidate, keys with spaces in them. */
+  | "de-json"
+  /** Louisiana: one document of races and candidates, one of votes, joined by id. */
+  | "la-json"
+  /** The District of Columbia: every citywide and ward contest in one array, the time in another call. */
+  | "dc-json"
+  /** Montana: TotalVote's map service, a JSON array per kind of race with a row per candidate. */
+  | "totalvote-json";
 
 export interface StateFeed {
   /** The state's name: "Virginia". */
@@ -220,6 +228,31 @@ export const STATE_FEEDS: Record<string, StateFeed> = {
     "Colorado Secretary of State",
     "https://results.enr.clarityelections.com/CO/127407",
   ),
+  dc: {
+    name: "District of Columbia",
+    kind: "dc-json",
+    office: "District of Columbia Board of Elections",
+    election: "2026-11-03",
+    base: "https://electionresults.dcboe.org",
+    page: "https://electionresults.dcboe.org/election_results/2026-General-Election",
+    cors: false,
+    units: "precincts",
+    files: {
+      contests: "cityWide/getCityWide/2026-General-Election",
+      info: "electionResults/getElectionInfo/2026-General-Election",
+    },
+  },
+  de: {
+    name: "Delaware",
+    kind: "de-json",
+    office: "Delaware Department of Elections",
+    election: "2026-11-03",
+    base: "https://elections.delaware.gov/results/enr",
+    page: "https://elections.delaware.gov/results/enr/GE2026.html",
+    cors: false,
+    units: "election districts",
+    files: { results: "Election_StatewideResults_ID_GE2026.json" },
+  },
   ga: enhancedVoting(
     "Georgia",
     "Georgia Secretary of State",
@@ -237,6 +270,20 @@ export const STATE_FEEDS: Record<string, StateFeed> = {
   ),
   // Nebraska's one export has every contest; New Mexico's `STATE` every one
   // the state reports; South Dakota's comes in three.
+  la: {
+    name: "Louisiana",
+    kind: "la-json",
+    office: "Louisiana Secretary of State",
+    election: "2026-11-03",
+    base: "https://voterportal.sos.la.gov/ElectionResults/ElectionResults",
+    page: "https://voterportal.sos.la.gov/graphical",
+    cors: false,
+    units: "precincts",
+    files: {
+      races: "Data?blob=20261103/RacesCandidates_Multiparish.htm",
+      votes: "Data?blob=20261103/Votes_Multiparish.htm",
+    },
+  },
   mi: {
     name: "Michigan",
     kind: "mi-text",
@@ -247,6 +294,30 @@ export const STATE_FEEDS: Record<string, StateFeed> = {
     cors: false,
     units: "counties",
     files: { results: "VoteHistory/GetElectionResultFile?electionId=707" },
+  },
+  mt: {
+    name: "Montana",
+    kind: "totalvote-json",
+    office: "Montana Secretary of State",
+    election: "2026-11-03",
+    base: "https://esersws.mt.gov/ResultsAjax.svc",
+    page: "https://electionresults.mt.gov/",
+    // The service answers any origin.
+    cors: true,
+    units: "precincts",
+    files: Object.fromEntries(
+      [
+        ["federal", "FED"],
+        ["senate", "SENATE"],
+        ["house", "HOUSE"],
+        ["questions", "BQ"],
+        ["commission", "PSC"],
+        ["court", "SCJ"],
+      ].map(([name, type]) => [
+        name,
+        `GetMapData?type=${type}&category=SW&raceID=0&osn=0&county=0&party=0`,
+      ]),
+    ),
   },
   nc: {
     name: "North Carolina",
@@ -851,6 +922,262 @@ export function parseMiResults(text: string): CountyContest[] {
   return [...contests.values()];
 }
 
+/** "240,587" or 240587, as a number. */
+function count(value: unknown): number {
+  return Number(String(value ?? "").replace(/[,\s]/g, "")) || 0;
+}
+
+/**
+ * Delaware's `Election_StatewideResults_ID_<election>.json`: an array with a
+ * row per candidate, the contest repeated on each (`Contest Title`, `Total
+ * Precincts`, `Precincts Reported`), votes with thousands separators, the
+ * party spelled out ("Democratic Party"), and on every row when the report
+ * was made (`ReportTime`, with its offset) and whether it is official.
+ */
+export function parseDeResults(raw: unknown): StateCount {
+  if (!Array.isArray(raw)) throw new Error("Unexpected answer from the state (not a results list)");
+  const contests = new Map<string, CountyContest>();
+  let asOf: number | undefined;
+  let official: boolean | undefined;
+  for (const row of raw as Record<string, unknown>[]) {
+    const title = String(row?.["Contest Title"] ?? "").trim();
+    const name = String(row?.["Candidate Name"] ?? "").trim();
+    if (!title || !name) continue;
+    const at = Date.parse(String(row.ReportTime ?? ""));
+    if (Number.isFinite(at) && (asOf === undefined || at > asOf)) asOf = at;
+    if (typeof row["Results Type"] === "string")
+      official = /^official/i.test(row["Results Type"].trim());
+    let contest = contests.get(title);
+    if (!contest) {
+      contest = {
+        key: title,
+        title,
+        measure: false,
+        voteFor: 1,
+        precincts: {
+          total: count(row["Total Precincts"]),
+          reporting: count(row["Precincts Reported"]),
+        },
+        choices: [],
+      };
+      contests.set(title, contest);
+    }
+    const party = String(row["Party Name"] ?? "")
+      .replace(/\s+Party(?: of Delaware)?$/i, "")
+      .trim();
+    contest.choices.push({
+      name,
+      ...(party ? { party } : {}),
+      votes: count(row["Total Votes"]),
+      percent: Number(row.Percentage) || 0,
+    });
+  }
+  for (const contest of contests.values()) {
+    contest.measure = contest.choices.every((choice) => measureSide(choice.name) !== undefined);
+    if (contest.measure) contest.voteFor = 0;
+  }
+  return {
+    contests: [...contests.values()],
+    ...(asOf !== undefined ? { asOf } : {}),
+    ...(official !== undefined ? { official } : {}),
+  };
+}
+
+interface WireLaRace {
+  ID?: string;
+  SpecificTitle?: string;
+  NumberToBeElected?: string;
+  PrecinctsReporting?: string;
+  PrecinctsExpected?: string;
+  Choice?:
+    | { ID?: string; Desc?: string; VoteTotal?: string }[]
+    | { ID?: string; Desc?: string; VoteTotal?: string };
+}
+
+/** One thing or several, as a list: Louisiana writes a lone choice as an object. */
+function listOf<T>(value: T | T[] | undefined): T[] {
+  return value === undefined ? [] : Array.isArray(value) ? value : [value];
+}
+
+/**
+ * Louisiana's two documents: `races` (`RacesCandidates_Multiparish`: each
+ * race's title and its choices' names, "Julia Letlow (REP)") and `votes`
+ * (`Votes_Multiparish`: votes and precincts by the same ids). Everything is
+ * a string. `Races.WriteTime` is when the count was written, on Louisiana's
+ * clock.
+ */
+export function parseLaResults(races: unknown, votes: unknown): StateCount {
+  const named = (
+    races as { Races?: { WriteTime?: string; Race?: WireLaRace | WireLaRace[] } } | null
+  )?.Races;
+  const counted = (votes as { Races?: { Race?: WireLaRace | WireLaRace[] } } | null)?.Races;
+  if (!named?.Race || !counted?.Race)
+    throw new Error("Unexpected answer from the state (no races)");
+  const tallies = new Map(listOf(counted.Race).map((race) => [race.ID ?? "", race]));
+  const contests: CountyContest[] = [];
+  for (const race of listOf(named.Race)) {
+    const tally = tallies.get(race.ID ?? "");
+    const title = race.SpecificTitle?.trim();
+    if (!race.ID || !title || !tally) continue;
+    const totals = new Map(listOf(tally.Choice).map((c) => [c.ID ?? "", count(c.VoteTotal)]));
+    const all = [...totals.values()].reduce((sum, n) => sum + n, 0);
+    const choices: CountyChoice[] = listOf(race.Choice).map((c) => {
+      const described = (c.Desc ?? "").trim().match(/^(.*?)\s*\(([A-Z]+)\)$/);
+      const party = described?.[2];
+      const votes = totals.get(c.ID ?? "") ?? 0;
+      return {
+        name: (described?.[1] ?? c.Desc ?? "").trim(),
+        // `NOPTY`: no party.
+        ...(party && party !== "NOPTY" ? { party } : {}),
+        votes,
+        percent: share(votes, all),
+      };
+    });
+    const measure = choices.length > 0 && choices.every((c) => measureSide(c.name) !== undefined);
+    contests.push({
+      key: race.ID,
+      title,
+      measure,
+      voteFor: measure ? 0 : count(race.NumberToBeElected) || 1,
+      precincts: {
+        total: count(tally.PrecinctsExpected),
+        reporting: count(tally.PrecinctsReporting),
+      },
+      choices,
+    });
+  }
+  const written = named.WriteTime?.match(/^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)/);
+  const asOf = written
+    ? zonedInstant(
+        Date.UTC(
+          Number(written[1]),
+          Number(written[2]) - 1,
+          Number(written[3]),
+          Number(written[4]),
+          Number(written[5]),
+          Number(written[6]),
+        ),
+        "America/Chicago",
+      )
+    : undefined;
+  return { contests, ...(asOf !== undefined ? { asOf } : {}) };
+}
+
+interface WireDcContest {
+  OfficeName?: string;
+  ContestNumber?: number;
+  ElectionData?: {
+    Contestant?: string;
+    Votes?: number;
+    PartyCode?: string;
+    VotesPercentage?: number;
+  }[];
+}
+
+/**
+ * The District of Columbia's `getCityWide` (an array of contests, each with
+ * its `ElectionData`: "DEM Robert White" with `PartyCode` "DEM" beside it)
+ * and `getElectionInfo` (when it was last updated). A contest that isn't a
+ * ward's is the whole District's.
+ */
+export function parseDcResults(contestsRaw: unknown, info: unknown): StateCount {
+  if (!Array.isArray(contestsRaw))
+    throw new Error("Unexpected answer from the District (not a list of contests)");
+  const contests = (contestsRaw as WireDcContest[]).flatMap((contest): CountyContest[] => {
+    const title = contest.OfficeName?.trim();
+    if (!title) return [];
+    // "OVER VOTES" and "UNDER VOTES" are listed beside the choices; they aren't any.
+    const cast = (contest.ElectionData ?? []).filter(
+      (c) => !/^(?:over|under) ?votes$/i.test((c.Contestant ?? "").trim()),
+    );
+    const total = cast.reduce((sum, c) => sum + (Number(c.Votes) || 0), 0);
+    const choices: CountyChoice[] = cast.map((c) => {
+      const party = c.PartyCode?.trim();
+      const raw = (c.Contestant ?? "").trim();
+      const name = party && raw.startsWith(`${party} `) ? raw.slice(party.length + 1) : raw;
+      const votes = Number(c.Votes) || 0;
+      return {
+        name,
+        // `NPN`: no party named.
+        ...(party && party !== "NPN" ? { party } : {}),
+        votes,
+        // Of the votes for a choice: the District's own share counts blank ballots too.
+        percent: share(votes, total),
+      };
+    });
+    const measure = choices.length > 0 && choices.every((c) => measureSide(c.name) !== undefined);
+    return [
+      {
+        key: String(contest.ContestNumber ?? title),
+        title,
+        ...(/^ward\b/i.test(title) ? {} : { category: "Statewide" }),
+        measure,
+        voteFor: measure ? 0 : 1,
+        choices,
+      },
+    ];
+  });
+  const asOf = Date.parse((info as { LastUpdated?: string } | null)?.LastUpdated ?? "");
+  return { contests, ...(Number.isFinite(asOf) ? { asOf } : {}) };
+}
+
+interface WireMapRow {
+  RaceID?: number | string;
+  RaceName?: string;
+  PartyCode?: string;
+  PrecinctsReporting?: number;
+  TotalPrecincts?: number;
+  VoteFor?: number;
+  calcCandidate?: string;
+  calcCandidatePercentage?: number;
+  calcCandidateVotes?: number;
+}
+
+/**
+ * One answer of TotalVote's map service (`GetMapData?type=…&category=SW`,
+ * Montana): `{ d: [...] }`, a row per candidate with its race's name (the
+ * district in it), precincts, and the candidate's votes and share (a
+ * fraction).
+ */
+export function parseTotalVoteMap(raw: unknown): CountyContest[] {
+  const rows = (raw as { d?: WireMapRow[] | null } | null)?.d;
+  if (rows === null) return [];
+  if (!Array.isArray(rows)) throw new Error("Unexpected answer from the state (no rows)");
+  const contests = new Map<string, CountyContest>();
+  for (const row of rows) {
+    const key = String(row.RaceID ?? "");
+    const title = row.RaceName?.trim();
+    if (!key || !title) continue;
+    let contest = contests.get(key);
+    if (!contest) {
+      contest = {
+        key,
+        title,
+        measure: false,
+        voteFor: Number(row.VoteFor) || 1,
+        precincts: {
+          total: Number(row.TotalPrecincts) || 0,
+          reporting: Number(row.PrecinctsReporting) || 0,
+        },
+        choices: [],
+      };
+      contests.set(key, contest);
+    }
+    const party = row.PartyCode?.trim();
+    contest.choices.push({
+      name: (row.calcCandidate ?? "").trim(),
+      ...(party && party !== "NON" ? { party } : {}),
+      votes: Number(row.calcCandidateVotes) || 0,
+      percent: Math.round((Number(row.calcCandidatePercentage) || 0) * 10000) / 100,
+    });
+  }
+  for (const contest of contests.values()) {
+    contest.measure = contest.choices.every((choice) => measureSide(choice.name) !== undefined);
+    if (contest.measure) contest.voteFor = 0;
+  }
+  return [...contests.values()];
+}
+
 interface WireTotalResults {
   lastUpdated?: string;
   isOfficial?: boolean;
@@ -957,6 +1284,22 @@ export function parseStateFiles(feed: StateFeed, texts: Record<string, string>):
         names.filter((name) => name !== "names").map((name) => JSON.parse(texts[name] ?? "null")),
       ),
     );
+  if (feed.kind === "de-json")
+    return tidied(feed, parseDeResults(JSON.parse(texts.results ?? "null")));
+  if (feed.kind === "la-json")
+    return tidied(
+      feed,
+      parseLaResults(JSON.parse(texts.races ?? "null"), JSON.parse(texts.votes ?? "null")),
+    );
+  if (feed.kind === "dc-json")
+    return tidied(
+      feed,
+      parseDcResults(JSON.parse(texts.contests ?? "null"), JSON.parse(texts.info ?? "null")),
+    );
+  if (feed.kind === "totalvote-json")
+    return tidied(feed, {
+      contests: names.flatMap((name) => parseTotalVoteMap(JSON.parse(texts[name] ?? "null"))),
+    });
   if (feed.kind === "mn-text")
     return tidied(feed, { contests: names.flatMap((name) => parseMnFile(texts[name] ?? "")) });
   if (feed.kind === "pa-json")

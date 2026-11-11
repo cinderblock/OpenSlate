@@ -117,7 +117,7 @@ export const PROVIDERS: Record<string, ProviderInfo> = {
     directUrl: "https://results.enr.clarityelections.com",
     proxyUrl: envBase("VITE_STATE_FEEDS_BASE", `${apiBase()}/api/state`),
     privacyNote:
-      "A few states' results sites allow browser-direct access (Arkansas, Colorado, Iowa, North Dakota, Rhode Island, South Carolina, West Virginia); most don't, so those always go through our backend. Through it, a crowd of browsers costs a state one request a minute, and the state sees us instead of you.",
+      "A few states' results sites allow browser-direct access (Arkansas, Colorado, Iowa, Montana, North Dakota, Rhode Island, South Carolina, West Virginia); most don't, so those always go through our backend. Through it, a crowd of browsers costs a state one request a minute, and the state sees us instead of you.",
   },
   votehub: {
     key: "votehub",

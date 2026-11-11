@@ -469,6 +469,114 @@ describe("TotalResults: names in one document, votes in others", () => {
   });
 });
 
+describe("Delaware, Louisiana, the District and Montana", () => {
+  const text = (name: string) =>
+    readFileSync(join(import.meta.dir, "fixtures/state", name), "utf8");
+  const read = (code: string) => {
+    const feed = feedOf(code);
+    return parseStateFiles(
+      feed,
+      Object.fromEntries(
+        Object.keys(feed.files ?? {}).map((name) => [name, text(`${code}-${name}.json`)]),
+      ),
+    );
+  };
+
+  test("Delaware: votes with commas, the party spelled out, the report's own time", () => {
+    const { contests, asOf, official } = read("de");
+    expect(asOf).toBe(Date.parse("2026-11-10T13:49:42.721-05:00"));
+    expect(official).toBe(true);
+    const senate = named(contests, "U.S. Senator");
+    expect(senate.choices[0]).toEqual({
+      name: "CHRIS COONS",
+      party: "Democratic",
+      votes: 240587,
+      percent: 63.58,
+    });
+    expect(senate.precincts).toEqual({ total: 530, reporting: 530 });
+    expect(contests.map((c) => c.title)).toEqual(
+      expect.arrayContaining([
+        "Representative In Congress",
+        "State Senator District 5",
+        "State Representative District 1",
+      ]),
+    );
+  });
+
+  test("Louisiana: names in one document, votes in the other, the party after the name", () => {
+    const feed = feedOf("la");
+    expect(stateFeedUrl(feed, "votes")).toBe(
+      "https://voterportal.sos.la.gov/ElectionResults/ElectionResults/Data?blob=20261103/Votes_Multiparish.htm",
+    );
+    const { contests, asOf } = read("la");
+    // Written at 5:00:11 a.m. on Louisiana's clock.
+    expect(asOf).toBe(Date.parse("2026-11-10T11:00:11Z"));
+    const senate = named(contests, "U. S. Senator");
+    expect(senate.choices.map((c) => [c.name, c.party, c.votes])).toEqual([
+      ['"Jamie" Davis', "DEM", 720217],
+      ["Julia Letlow", "REP", 746014],
+    ]);
+    expect(senate.precincts).toEqual({ total: 3722, reporting: 3722 });
+    expect(contests.map((c) => c.title)).toContain(
+      "U. S. Representative -- 1st Congressional District",
+    );
+    const amendment = contests.find((c) => c.title.startsWith("CA No. 1 "));
+    expect(amendment?.measure).toBe(true);
+    expect(() => parseStateFiles(feed, { races: "{}", votes: "{}" })).toThrow("no races");
+  });
+
+  test("the District: the party off the name, blank ballots not a choice, wards apart", () => {
+    const { contests, asOf } = read("dc");
+    expect(asOf).toBe(Date.parse("2026-11-10T20:15:24.937Z"));
+    const delegate = named(
+      contests,
+      "DELEGATE TO THE HOUSE OF REPRESENTATIVES FROM THE DISTRICT OF COLUMBIA",
+    );
+    expect(delegate.category).toBe("Statewide");
+    expect(delegate.choices.map((c) => c.name)).not.toContain("OVER VOTES");
+    expect(delegate.choices.find((c) => c.name === "Robert White")).toMatchObject({
+      party: "DEM",
+      votes: 187558,
+    });
+    expect(
+      named(contests, "WARD ONE MEMBER OF THE COUNCIL OF THE DISTRICT OF COLUMBIA").category,
+    ).toBeUndefined();
+    const initiative = named(contests, "INITIATIVE MEASURE NO. 86");
+    expect(initiative.measure).toBe(true);
+    expect(initiative.choices.map((c) => c.name)).toEqual(["Yes, to approve", "No, to reject"]);
+    expect(initiative.choices.reduce((sum, c) => sum + c.percent, 0)).toBeCloseTo(100, 1);
+  });
+
+  test("Montana: a row per candidate from the map service, a share as a fraction", () => {
+    const feed = feedOf("mt");
+    expect(stateFeedUrl(feed, "federal")).toBe(
+      "https://esersws.mt.gov/ResultsAjax.svc/GetMapData?type=FED&category=SW&raceID=0&osn=0&county=0&party=0",
+    );
+    const { contests } = read("mt");
+    const senate = named(contests, "UNITED STATES SENATOR");
+    expect(senate.choices.find((c) => c.name === "KURT ALME")).toEqual({
+      name: "KURT ALME",
+      party: "REP",
+      votes: 235559,
+      percent: 48.13,
+    });
+    expect(senate.precincts).toEqual({ total: 728, reporting: 728 });
+    expect(contests.map((c) => c.title)).toEqual(
+      expect.arrayContaining([
+        "UNITED STATES REPRESENTATIVE 1ST CONGRESSIONAL",
+        "UNITED STATES REPRESENTATIVE 2ND CONGRESSIONAL",
+      ]),
+    );
+    expect(contests.find((c) => c.title.startsWith("CI-132"))?.measure).toBe(true);
+    // A kind of race with none this election answers `{"d": null}`.
+    expect(
+      parseStateFiles(feed, {
+        ...Object.fromEntries(Object.keys(feed.files ?? {}).map((name) => [name, '{"d":null}'])),
+      }).contests,
+    ).toEqual([]);
+  });
+});
+
 describe("Clarity, as states run it", () => {
   test("Colorado: offices, and a measure voted Yes/For or No/Against", () => {
     const { contests, asOf } = read("co", "summary");
