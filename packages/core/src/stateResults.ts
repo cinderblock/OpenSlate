@@ -35,7 +35,9 @@ import {
  * sections are each base64-encoded JSON. `mn-text`: Minnesota's
  * semicolon-separated files, one per office. `pa-json`: Pennsylvania's
  * returns API, a document per office. `mi-text`: Michigan's tab-separated
- * file of every county's count.
+ * file of every county's count. `totalresults`: KNOWiNK's newer TotalResults
+ * API (Arkansas, North Dakota), where one document names the contests and
+ * choices and others hold the votes by id.
  */
 export type StateFeedKind =
   | "clarity"
@@ -45,7 +47,8 @@ export type StateFeedKind =
   | "civix-enr"
   | "mn-text"
   | "pa-json"
-  | "mi-text";
+  | "mi-text"
+  | "totalresults";
 
 export interface StateFeed {
   /** The state's name: "Virginia". */
@@ -129,6 +132,41 @@ function clarity(
   };
 }
 
+/**
+ * A TotalResults site: `names` is its list of contests and choices, the rest
+ * its results by contest type (`types`: our name for each to the site's).
+ */
+function totalResults(
+  name: string,
+  office: string,
+  api: string,
+  page: string,
+  client: string,
+  election: string,
+  types: Record<string, string>,
+): StateFeed {
+  return {
+    name,
+    kind: "totalresults",
+    office,
+    election: "2026-11-03",
+    base: api,
+    page,
+    // The API answers any origin.
+    cors: true,
+    units: "precincts",
+    files: {
+      names: `Contest/GetContestSearchList?cid=${client}&electionID=${election}`,
+      ...Object.fromEntries(
+        Object.entries(types).map(([key, type]) => [
+          key,
+          `Contest/GetContestResults?cId=${client}&electionID=${election}&contestType=${encodeURIComponent(type)}`,
+        ]),
+      ),
+    },
+  };
+}
+
 function totalVote(
   name: string,
   office: string,
@@ -156,6 +194,20 @@ function totalVote(
  * what every state publishes, these and the ones not read yet).
  */
 export const STATE_FEEDS: Record<string, StateFeed> = {
+  ar: totalResults(
+    "Arkansas",
+    "Arkansas Secretary of State",
+    "https://enr-results-api.totalresults.com",
+    "https://arkansas.tally-enr.com/#election=11b07106-031e-4d7c-911a-d01fb473d6dd",
+    "arkansas",
+    "11b07106-031e-4d7c-911a-d01fb473d6dd",
+    {
+      federal: "Federal",
+      statewide: "Statewide",
+      senate: "State Senate",
+      house: "State Representative",
+    },
+  ),
   az: enhancedVoting(
     "Arizona",
     "Arizona Secretary of State",
@@ -196,29 +248,6 @@ export const STATE_FEEDS: Record<string, StateFeed> = {
     units: "counties",
     files: { results: "VoteHistory/GetElectionResultFile?electionId=707" },
   },
-  mn: {
-    name: "Minnesota",
-    kind: "mn-text",
-    office: "Minnesota Secretary of State",
-    election: "2026-11-03",
-    base: "https://electionresultsfiles.sos.mn.gov/20261103",
-    page: "https://electionresults.sos.mn.gov/",
-    cors: false,
-    units: "precincts",
-    files: {
-      ussenate: "ussenate.txt",
-      ushouse: "ushouse.txt",
-      governor: "Governor.txt",
-      secofstate: "secofstate.txt",
-      auditor: "auditor.txt",
-      attorneygen: "attorneygen.txt",
-      stsenate: "stsenate.txt",
-      sthouse: "LegislativeByDistrict.txt",
-      amendment: "ConstAmend.txt",
-      judicial: "judicial.txt",
-    },
-    lastModified: true,
-  },
   nc: {
     name: "North Carolina",
     kind: "ncsbe-json",
@@ -232,6 +261,15 @@ export const STATE_FEEDS: Record<string, StateFeed> = {
     files: { results: "enr/20261103/data/results_0.txt" },
     lastModified: true,
   },
+  nd: totalResults(
+    "North Dakota",
+    "North Dakota Secretary of State",
+    "https://api.resultsnd.sos.nd.gov",
+    "https://resultsnd.sos.nd.gov/#election=348",
+    "north-dakota",
+    "348",
+    { statewide: "SW", legislature: "LEG" },
+  ),
   ne: totalVote("Nebraska", "Nebraska Secretary of State", "https://electionresults.nebraska.gov", {
     all: "type=All&map=CTY",
   }),
@@ -327,6 +365,42 @@ export const STATE_FEEDS: Record<string, StateFeed> = {
     "https://results.enr.clarityelections.com/WV/127496",
     { bareHouseIsCongress: true },
   ),
+};
+
+/**
+ * States whose feed is read and parsed here but can't be reached by the
+ * hosted app, so they aren't offered: neither a browser nor the public relay
+ * gets an answer.
+ *
+ * - Minnesota: its file host sends no CORS header, and doesn't accept
+ *   connections from Cloudflare, where the public relay runs (HTTP 522,
+ *   checked 2026-11-10; the same request from a home connection answers).
+ *   A relay on another network could read it.
+ */
+export const UNREACHED_STATE_FEEDS: Record<string, StateFeed> = {
+  mn: {
+    name: "Minnesota",
+    kind: "mn-text",
+    office: "Minnesota Secretary of State",
+    election: "2026-11-03",
+    base: "https://electionresultsfiles.sos.mn.gov/20261103",
+    page: "https://electionresults.sos.mn.gov/",
+    cors: false,
+    units: "precincts",
+    files: {
+      ussenate: "ussenate.txt",
+      ushouse: "ushouse.txt",
+      governor: "Governor.txt",
+      secofstate: "secofstate.txt",
+      auditor: "auditor.txt",
+      attorneygen: "attorneygen.txt",
+      stsenate: "stsenate.txt",
+      sthouse: "LegislativeByDistrict.txt",
+      amendment: "ConstAmend.txt",
+      judicial: "judicial.txt",
+    },
+    lastModified: true,
+  },
 };
 
 /** A state's feed by its postal code, in either case. */
@@ -777,6 +851,97 @@ export function parseMiResults(text: string): CountyContest[] {
   return [...contests.values()];
 }
 
+interface WireTotalResults {
+  lastUpdated?: string;
+  isOfficial?: boolean;
+  response?: { contests?: Record<string, unknown> | unknown[] };
+}
+
+interface WireTotalResultsName {
+  contestName?: string;
+  voteFor?: number;
+  choices?: Record<string, { name?: string; partyID?: string }>;
+}
+
+interface WireTotalResultsCount {
+  contestID?: string;
+  precinctsReporting?: number;
+  totalPrecincts?: number;
+  choices?: { choiceID?: string; totalVotes?: number; partyID?: string }[];
+}
+
+/**
+ * A TotalResults site's count: `names` is `GetContestSearchList` (each
+ * contest's name and its choices' names, by id), `results` the
+ * `GetContestResults` documents (votes by the same ids, precincts reporting,
+ * and when the state last published). A party is a short code (North
+ * Dakota's `REP`), or an id with the code written before the name instead
+ * (Arkansas's "REP Tom Cotton").
+ */
+export function parseTotalResults(names: unknown, results: readonly unknown[]): StateCount {
+  const named = (names as WireTotalResults | null)?.response?.contests;
+  if (!named || typeof named !== "object" || Array.isArray(named))
+    throw new Error("Unexpected answer from the state (no list of contests)");
+  const contests: CountyContest[] = [];
+  let asOf: number | undefined;
+  let official: boolean | undefined;
+  for (const document of results as (WireTotalResults | null)[]) {
+    const counted = document?.response?.contests;
+    if (!counted || typeof counted !== "object")
+      throw new Error("Unexpected answer from the state (no results)");
+    const at = Date.parse(document.lastUpdated ?? "");
+    if (Number.isFinite(at) && (asOf === undefined || at > asOf)) asOf = at;
+    if (typeof document.isOfficial === "boolean") official = document.isOfficial;
+    for (const count of Object.values(counted) as WireTotalResultsCount[]) {
+      const name = count.contestID
+        ? (named[count.contestID] as WireTotalResultsName | undefined)
+        : undefined;
+      if (!count.contestID || !name?.contestName) continue;
+      const total = (count.choices ?? []).reduce((sum, c) => sum + (Number(c.totalVotes) || 0), 0);
+      const choices: CountyChoice[] = (count.choices ?? []).map((c) => {
+        let label = (name.choices?.[c.choiceID ?? ""]?.name ?? "").replace(/\s+/g, " ").trim();
+        let party = c.partyID?.trim();
+        if (party && !/^[A-Z]{1,4}$/.test(party)) {
+          // An id, not a code: the code is before the name.
+          // (A measure's "FOR ISSUE NO. 1" is a side, not a party and a name.)
+          const prefixed =
+            measureSide(label) === undefined ? label.match(/^([A-Z]{3}) (.+)$/) : null;
+          party = prefixed?.[1];
+          if (prefixed?.[2]) label = prefixed[2];
+        }
+        const votes = Number(c.totalVotes) || 0;
+        return {
+          name: label,
+          ...(party && party !== "NON" ? { party } : {}),
+          votes,
+          percent: share(votes, total),
+        };
+      });
+      const measure = choices.length > 0 && choices.every((c) => measureSide(c.name) !== undefined);
+      contests.push({
+        key: count.contestID,
+        title: name.contestName,
+        measure,
+        voteFor: measure ? 0 : Number(name.voteFor) || 1,
+        ...(count.totalPrecincts
+          ? {
+              precincts: {
+                total: Number(count.totalPrecincts) || 0,
+                reporting: Number(count.precinctsReporting) || 0,
+              },
+            }
+          : {}),
+        choices,
+      });
+    }
+  }
+  return {
+    contests,
+    ...(asOf !== undefined ? { asOf } : {}),
+    ...(official !== undefined ? { official } : {}),
+  };
+}
+
 /**
  * A state's count from the files its feed names (`StateFeed.files`), each as
  * its text. For the platforms whose one document is fixed by their kind, use
@@ -784,6 +949,14 @@ export function parseMiResults(text: string): CountyContest[] {
  */
 export function parseStateFiles(feed: StateFeed, texts: Record<string, string>): StateCount {
   const names = Object.keys(feed.files ?? {});
+  if (feed.kind === "totalresults")
+    return tidied(
+      feed,
+      parseTotalResults(
+        JSON.parse(texts.names ?? "null"),
+        names.filter((name) => name !== "names").map((name) => JSON.parse(texts[name] ?? "null")),
+      ),
+    );
   if (feed.kind === "mn-text")
     return tidied(feed, { contests: names.flatMap((name) => parseMnFile(texts[name] ?? "")) });
   if (feed.kind === "pa-json")

@@ -1,0 +1,90 @@
+{
+  "versionID": "v195",
+  "lastUpdated": "2026-11-10T22:31:52.2059921Z",
+  "electionID": "11b07106-031e-4d7c-911a-d01fb473d6dd",
+  "message": "",
+  "isOfficial": false,
+  "response": {
+    "contestType": "Statewide",
+    "contests": {
+      "2781aa0f-cc82-4c8a-92b3-2ce0f66c5f61": {
+        "contestID": "2781aa0f-cc82-4c8a-92b3-2ce0f66c5f61",
+        "districtID": null,
+        "precinctsReporting": 2768,
+        "precinctsPartiallyReporting": 0,
+        "totalPrecincts": 2768,
+        "totalVotes": 680263,
+        "recountType": 0,
+        "hasRecount": false,
+        "hasLocationResults": true,
+        "choices": [
+          {
+            "choiceID": "d7b3853c-ea42-44a0-8c5e-ff5cc7e7f844",
+            "totalVotes": 680263,
+            "partyID": "4c1a540e-cfe4-4ba0-8435-1dd7c3eeb1e6",
+            "votePercent": 100,
+            "isWinner": false
+          }
+        ],
+        "writeInChoices": []
+      },
+      "33e660df-1346-4daf-ad0a-76bec0cf2e3d": {
+        "contestID": "33e660df-1346-4daf-ad0a-76bec0cf2e3d",
+        "districtID": null,
+        "precinctsReporting": 2768,
+        "precinctsPartiallyReporting": 0,
+        "totalPrecincts": 2768,
+        "totalVotes": 850802,
+        "recountType": 0,
+        "hasRecount": false,
+        "hasLocationResults": true,
+        "choices": [
+          {
+            "choiceID": "165b792a-812f-43de-85fd-9b38bdf5ce72",
+            "totalVotes": 419476,
+            "partyID": "c51b7bb8-dfe1-4c24-b9aa-e79a014c9fae",
+            "votePercent": 49.3,
+            "isWinner": false
+          },
+          {
+            "choiceID": "7b764de3-31e5-448c-b38c-abe79d2aa660",
+            "totalVotes": 431326,
+            "partyID": "c51b7bb8-dfe1-4c24-b9aa-e79a014c9fae",
+            "votePercent": 50.7,
+            "isWinner": false
+          }
+        ],
+        "writeInChoices": []
+      },
+      "36024b04-0097-4d67-8098-337a02abbdf3": {
+        "contestID": "36024b04-0097-4d67-8098-337a02abbdf3",
+        "districtID": null,
+        "precinctsReporting": 2768,
+        "precinctsPartiallyReporting": 0,
+        "totalPrecincts": 2768,
+        "totalVotes": 842583,
+        "recountType": 0,
+        "hasRecount": false,
+        "hasLocationResults": true,
+        "choices": [
+          {
+            "choiceID": "9f280a08-5bb6-4812-88ee-fd1311afdbd7",
+            "totalVotes": 474838,
+            "partyID": "c51b7bb8-dfe1-4c24-b9aa-e79a014c9fae",
+            "votePercent": 56.36,
+            "isWinner": false
+          },
+          {
+            "choiceID": "7f7c543d-750c-40d7-9db1-a3b964055cb8",
+            "totalVotes": 367745,
+            "partyID": "c51b7bb8-dfe1-4c24-b9aa-e79a014c9fae",
+            "votePercent": 43.64,
+            "isWinner": false
+          }
+        ],
+        "writeInChoices": []
+      }
+    }
+  },
+  "errorMessage": null
+}

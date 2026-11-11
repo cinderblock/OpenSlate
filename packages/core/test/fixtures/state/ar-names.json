@@ -1,0 +1,378 @@
+{
+  "versionID": "v195",
+  "lastUpdated": "2026-11-10T22:31:52.2059921Z",
+  "electionID": "11b07106-031e-4d7c-911a-d01fb473d6dd",
+  "message": "",
+  "isOfficial": false,
+  "response": {
+    "contests": {
+      "1fb26d77-3a4c-4c93-ae14-2bb1b5d5031a": {
+        "contestId": "1fb26d77-3a4c-4c93-ae14-2bb1b5d5031a",
+        "contestName": "U.S. Congress District 01",
+        "contestTypeCode": "Federal",
+        "contestOrder": 2,
+        "voteFor": 1,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "713afec7-d25e-4633-99a8-48353170c309": {
+            "id": "713afec7-d25e-4633-99a8-48353170c309",
+            "name": "DEM Terri Yarbrough Green",
+            "pictureFilename": "",
+            "partyID": "f9d5fae6-a1fb-4278-a4d1-5784e643689e",
+            "color": "rgb(45, 74, 124)",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "5255c1ac-bdac-48cb-acef-d381fb98ee2a": {
+            "id": "5255c1ac-bdac-48cb-acef-d381fb98ee2a",
+            "name": "REP Rick Crawford",
+            "pictureFilename": "",
+            "partyID": "4c1a540e-cfe4-4ba0-8435-1dd7c3eeb1e6",
+            "color": "rgb(160, 38, 38)",
+            "order": 2,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "5ef0e9c7-d136-4d57-875b-10246bd2b646": {
+            "id": "5ef0e9c7-d136-4d57-875b-10246bd2b646",
+            "name": "LIB Steve G. Parsons",
+            "pictureFilename": "",
+            "partyID": "365b24a1-09bb-42c0-8003-233296ece789",
+            "color": "rgb(221, 159, 56)",
+            "order": 3,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      },
+      "5ad007d9-457d-431f-8374-3c7c91712eae": {
+        "contestId": "5ad007d9-457d-431f-8374-3c7c91712eae",
+        "contestName": "U.S. Congress District 03",
+        "contestTypeCode": "Federal",
+        "contestOrder": 4,
+        "voteFor": 1,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "2a962baf-1bfe-4263-bb19-e7e126b605be": {
+            "id": "2a962baf-1bfe-4263-bb19-e7e126b605be",
+            "name": "LIB Bobby Wilson",
+            "pictureFilename": "",
+            "partyID": "365b24a1-09bb-42c0-8003-233296ece789",
+            "color": "rgb(221, 159, 56)",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "057afac2-5d64-4336-943f-38c0ca1a9e46": {
+            "id": "057afac2-5d64-4336-943f-38c0ca1a9e46",
+            "name": "DEM Robb Ryerse",
+            "pictureFilename": "",
+            "partyID": "f9d5fae6-a1fb-4278-a4d1-5784e643689e",
+            "color": "rgb(45, 74, 124)",
+            "order": 2,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "2b57164d-19bd-46ee-8c7e-13a32381d570": {
+            "id": "2b57164d-19bd-46ee-8c7e-13a32381d570",
+            "name": "REP Steve Womack",
+            "pictureFilename": "",
+            "partyID": "4c1a540e-cfe4-4ba0-8435-1dd7c3eeb1e6",
+            "color": "rgb(160, 38, 38)",
+            "order": 3,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      },
+      "10b097d0-dfb0-4446-bd86-075ffb53bf30": {
+        "contestId": "10b097d0-dfb0-4446-bd86-075ffb53bf30",
+        "contestName": "U.S. Congress District 04",
+        "contestTypeCode": "Federal",
+        "contestOrder": 5,
+        "voteFor": 1,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "da885caa-3949-4a50-8a67-45e7534bd49c": {
+            "id": "da885caa-3949-4a50-8a67-45e7534bd49c",
+            "name": "DEM James \"Rus\" Russell, III",
+            "pictureFilename": "",
+            "partyID": "f9d5fae6-a1fb-4278-a4d1-5784e643689e",
+            "color": "rgb(45, 74, 124)",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "92f11f81-1a2d-4e9a-9457-715df41b818e": {
+            "id": "92f11f81-1a2d-4e9a-9457-715df41b818e",
+            "name": "REP Bruce Westerman",
+            "pictureFilename": "",
+            "partyID": "4c1a540e-cfe4-4ba0-8435-1dd7c3eeb1e6",
+            "color": "rgb(160, 38, 38)",
+            "order": 2,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      },
+      "2781aa0f-cc82-4c8a-92b3-2ce0f66c5f61": {
+        "contestId": "2781aa0f-cc82-4c8a-92b3-2ce0f66c5f61",
+        "contestName": "State Treasurer",
+        "contestTypeCode": "Statewide",
+        "contestOrder": 10,
+        "voteFor": 1,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "d7b3853c-ea42-44a0-8c5e-ff5cc7e7f844": {
+            "id": "d7b3853c-ea42-44a0-8c5e-ff5cc7e7f844",
+            "name": "REP John Thurston",
+            "pictureFilename": "",
+            "partyID": "4c1a540e-cfe4-4ba0-8435-1dd7c3eeb1e6",
+            "color": "rgb(160, 38, 38)",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      },
+      "33e660df-1346-4daf-ad0a-76bec0cf2e3d": {
+        "contestId": "33e660df-1346-4daf-ad0a-76bec0cf2e3d",
+        "contestName": "ISSUE NO. 3",
+        "contestTypeCode": "Statewide",
+        "contestOrder": 15,
+        "voteFor": 1,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "165b792a-812f-43de-85fd-9b38bdf5ce72": {
+            "id": "165b792a-812f-43de-85fd-9b38bdf5ce72",
+            "name": "FOR ISSUE NO. 3",
+            "pictureFilename": "",
+            "partyID": "c51b7bb8-dfe1-4c24-b9aa-e79a014c9fae",
+            "color": "#865FAC",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "7b764de3-31e5-448c-b38c-abe79d2aa660": {
+            "id": "7b764de3-31e5-448c-b38c-abe79d2aa660",
+            "name": "AGAINST ISSUE NO. 3",
+            "pictureFilename": "",
+            "partyID": "c51b7bb8-dfe1-4c24-b9aa-e79a014c9fae",
+            "color": "#93633A",
+            "order": 2,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      },
+      "36024b04-0097-4d67-8098-337a02abbdf3": {
+        "contestId": "36024b04-0097-4d67-8098-337a02abbdf3",
+        "contestName": "ISSUE NO. 4",
+        "contestTypeCode": "Statewide",
+        "contestOrder": 16,
+        "voteFor": 1,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "9f280a08-5bb6-4812-88ee-fd1311afdbd7": {
+            "id": "9f280a08-5bb6-4812-88ee-fd1311afdbd7",
+            "name": "FOR ISSUE NO. 4",
+            "pictureFilename": "",
+            "partyID": "c51b7bb8-dfe1-4c24-b9aa-e79a014c9fae",
+            "color": "#865FAC",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "7f7c543d-750c-40d7-9db1-a3b964055cb8": {
+            "id": "7f7c543d-750c-40d7-9db1-a3b964055cb8",
+            "name": "AGAINST ISSUE NO. 4",
+            "pictureFilename": "",
+            "partyID": "c51b7bb8-dfe1-4c24-b9aa-e79a014c9fae",
+            "color": "#93633A",
+            "order": 2,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      },
+      "193285f2-352d-4893-8c25-b5b29d39d616": {
+        "contestId": "193285f2-352d-4893-8c25-b5b29d39d616",
+        "contestName": "State Senate District 16",
+        "contestTypeCode": "State Senate",
+        "contestOrder": 30,
+        "voteFor": 1,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "08ff5546-00d0-4cf4-87a2-b75b68f5a7c8": {
+            "id": "08ff5546-00d0-4cf4-87a2-b75b68f5a7c8",
+            "name": "REP Rodney Wright",
+            "pictureFilename": "",
+            "partyID": "4c1a540e-cfe4-4ba0-8435-1dd7c3eeb1e6",
+            "color": "rgb(160, 38, 38)",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "e84d3cf0-f9b2-4960-8e54-b7312a0db5a6": {
+            "id": "e84d3cf0-f9b2-4960-8e54-b7312a0db5a6",
+            "name": "DEM Joshua Irby",
+            "pictureFilename": "",
+            "partyID": "f9d5fae6-a1fb-4278-a4d1-5784e643689e",
+            "color": "rgb(45, 74, 124)",
+            "order": 2,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      },
+      "1d789003-131d-40b1-9d2b-db3be895a4a2": {
+        "contestId": "1d789003-131d-40b1-9d2b-db3be895a4a2",
+        "contestName": "STATE SENATE DISTRICT 30",
+        "contestTypeCode": "State Senate",
+        "contestOrder": 35,
+        "voteFor": 1,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "be463c0f-df4c-4cde-b6ae-90a6b4c711fc": {
+            "id": "be463c0f-df4c-4cde-b6ae-90a6b4c711fc",
+            "name": "DEM Representative Denise Garner",
+            "pictureFilename": "",
+            "partyID": "f9d5fae6-a1fb-4278-a4d1-5784e643689e",
+            "color": "rgb(45, 74, 124)",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      },
+      "13f592f3-0a83-4de2-8d70-be1627abbc53": {
+        "contestId": "13f592f3-0a83-4de2-8d70-be1627abbc53",
+        "contestName": "State Senate, District 32",
+        "contestTypeCode": "State Senate",
+        "contestOrder": 37,
+        "voteFor": 1,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "8f8d68af-5857-459f-9893-4ae31d84fc75": {
+            "id": "8f8d68af-5857-459f-9893-4ae31d84fc75",
+            "name": "REP State Senator Joshua P. Bryant",
+            "pictureFilename": "",
+            "partyID": "4c1a540e-cfe4-4ba0-8435-1dd7c3eeb1e6",
+            "color": "rgb(160, 38, 38)",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      },
+      "0860aa02-2306-4aaa-b2fc-2b1644ceffcd": {
+        "contestId": "0860aa02-2306-4aaa-b2fc-2b1644ceffcd",
+        "contestName": "State Representative District 04",
+        "contestTypeCode": "State Representative",
+        "contestOrder": 42,
+        "voteFor": 1,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "f016775a-861e-43de-8319-eb26a650c8f9": {
+            "id": "f016775a-861e-43de-8319-eb26a650c8f9",
+            "name": "REP Jason Nazarenko",
+            "pictureFilename": "",
+            "partyID": "4c1a540e-cfe4-4ba0-8435-1dd7c3eeb1e6",
+            "color": "rgb(160, 38, 38)",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      },
+      "00410f7d-9227-411a-bb29-f3ea938c76e2": {
+        "contestId": "00410f7d-9227-411a-bb29-f3ea938c76e2",
+        "contestName": "State Representative District 35",
+        "contestTypeCode": "State Representative",
+        "contestOrder": 74,
+        "voteFor": 1,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "f68e1737-f7c7-48d5-a2dd-daa59eacd4f6": {
+            "id": "f68e1737-f7c7-48d5-a2dd-daa59eacd4f6",
+            "name": "REP Robert Thorne, Jr.",
+            "pictureFilename": "",
+            "partyID": "4c1a540e-cfe4-4ba0-8435-1dd7c3eeb1e6",
+            "color": "rgb(160, 38, 38)",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "08c6cfa9-6e8e-45a5-ac47-30dc7a162162": {
+            "id": "08c6cfa9-6e8e-45a5-ac47-30dc7a162162",
+            "name": "DEM Audrey P. Willis",
+            "pictureFilename": "",
+            "partyID": "f9d5fae6-a1fb-4278-a4d1-5784e643689e",
+            "color": "rgb(45, 74, 124)",
+            "order": 2,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      },
+      "0882e931-dfec-4839-a4a3-4bf7ce451317": {
+        "contestId": "0882e931-dfec-4839-a4a3-4bf7ce451317",
+        "contestName": "State Representative District 66",
+        "contestTypeCode": "State Representative",
+        "contestOrder": 105,
+        "voteFor": 1,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "e0097a85-2a5d-4e32-a872-bff05549458d": {
+            "id": "e0097a85-2a5d-4e32-a872-bff05549458d",
+            "name": "DEM Representative Mark W. Perry",
+            "pictureFilename": "",
+            "partyID": "f9d5fae6-a1fb-4278-a4d1-5784e643689e",
+            "color": "rgb(45, 74, 124)",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      }
+    }
+  },
+  "errorMessage": null
+}

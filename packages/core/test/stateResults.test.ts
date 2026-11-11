@@ -11,6 +11,7 @@ import {
   stateFeedPathTtl,
   stateFeedUrl,
   texasTime,
+  UNREACHED_STATE_FEEDS,
 } from "../src/stateResults";
 
 /**
@@ -301,7 +302,10 @@ describe("Minnesota, Pennsylvania and Michigan", () => {
     readFileSync(join(import.meta.dir, "fixtures/state", name), "utf8");
 
   test("Minnesota: a file per office, semicolons, and an amendment's blank ballots left out", () => {
-    const feed = feedOf("mn");
+    // Read and parsed, but not offered: its host refuses the public relay.
+    expect(stateFeed("mn")).toBeUndefined();
+    const feed = UNREACHED_STATE_FEEDS.mn;
+    if (!feed) throw new Error("no Minnesota feed");
     expect(stateFeedUrl(feed, "sthouse")).toBe(
       "https://electionresultsfiles.sos.mn.gov/20261103/LegislativeByDistrict.txt",
     );
@@ -391,6 +395,77 @@ describe("Minnesota, Pennsylvania and Michigan", () => {
     expect(named(contests, "PROPOSAL 2026-1").measure).toBe(true);
     expect(named(contests, "1ST DISTRICT REPRESENTATIVE IN CONGRESS").category).toBeUndefined();
     expect(() => parseStateFiles(feed, { results: "<html>" })).toThrow("not a results file");
+  });
+});
+
+describe("TotalResults: names in one document, votes in others", () => {
+  const text = (name: string) =>
+    readFileSync(join(import.meta.dir, "fixtures/state", name), "utf8");
+  const read = (code: string) => {
+    const feed = feedOf(code);
+    return parseStateFiles(
+      feed,
+      Object.fromEntries(
+        Object.keys(feed.files ?? {}).map((name) => [name, text(`${code}-${name}.json`)]),
+      ),
+    );
+  };
+
+  test("the files are queries on the state's API", () => {
+    expect(stateFeedUrl(feedOf("ar"), "senate")).toBe(
+      "https://enr-results-api.totalresults.com/Contest/GetContestResults?cId=arkansas&electionID=11b07106-031e-4d7c-911a-d01fb473d6dd&contestType=State%20Senate",
+    );
+    expect(stateFeedUrl(feedOf("nd"), "names")).toBe(
+      "https://api.resultsnd.sos.nd.gov/Contest/GetContestSearchList?cid=north-dakota&electionID=348",
+    );
+  });
+
+  test("Arkansas: the party is written before the name; an issue is voted for or against", () => {
+    const { contests, asOf, official } = read("ar");
+    expect(asOf).toBe(Date.parse("2026-11-10T22:31:52.2059921Z"));
+    expect(official).toBe(false);
+    const house = named(contests, "U.S. Congress District 01");
+    expect(house.choices.map((c) => [c.name, c.party])).toEqual([
+      ["Terri Yarbrough Green", "DEM"],
+      ["Rick Crawford", "REP"],
+      ["Steve G. Parsons", "LIB"],
+    ]);
+    expect(house.precincts?.total).toBeGreaterThan(100);
+    const issue = named(contests, "ISSUE NO. 3");
+    expect(issue.measure).toBe(true);
+    expect(issue.choices.map((c) => [c.name, c.party])).toEqual([
+      ["FOR ISSUE NO. 3", undefined],
+      ["AGAINST ISSUE NO. 3", undefined],
+    ]);
+    expect(contests.map((c) => c.title)).toContain("STATE SENATE DISTRICT 30");
+  });
+
+  test("North Dakota: a party code of its own, names with their stray spaces closed up", () => {
+    const { contests } = read("nd");
+    const commissioner = named(contests, "Agriculture Commissioner");
+    expect(commissioner.choices.map((c) => [c.name, c.party])).toEqual([
+      ["Doug Goehring", "REP"],
+      ["Vern Thompson", "DEM"],
+      ["write-in", undefined],
+    ]);
+    // Two to elect in a House district.
+    expect(named(contests, "State Representative District 01").voteFor).toBe(2);
+    const measure = contests.find((c) => c.title.startsWith("Constitutional Measure No. 1"));
+    expect(measure?.measure).toBe(true);
+  });
+
+  test("a results document for a contest the names don't have is left out, and a bad one says so", () => {
+    const feed = feedOf("nd");
+    expect(() =>
+      parseStateFiles(feed, { names: "{}", statewide: "{}", legislature: "{}" }),
+    ).toThrow("no list of contests");
+    expect(() =>
+      parseStateFiles(feed, {
+        names: text("nd-names.json"),
+        statewide: "{}",
+        legislature: text("nd-legislature.json"),
+      }),
+    ).toThrow("no results");
   });
 });
 

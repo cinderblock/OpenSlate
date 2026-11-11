@@ -1,0 +1,160 @@
+{
+  "versionID": "v876",
+  "lastUpdated": "2026-11-10T23:21:28.7881788Z",
+  "electionID": "348",
+  "message": "",
+  "isOfficial": false,
+  "response": {
+    "contestType": "LEG",
+    "contests": {
+      "22057": {
+        "contestID": "22057",
+        "districtID": "37",
+        "precinctsReporting": 1,
+        "precinctsPartiallyReporting": 0,
+        "totalPrecincts": 1,
+        "totalVotes": 6377,
+        "recountType": 0,
+        "hasRecount": false,
+        "hasLocationResults": true,
+        "choices": [
+          {
+            "choiceID": "37371",
+            "totalVotes": 2355,
+            "partyID": "REP",
+            "votePercent": 36.93,
+            "isWinner": false
+          },
+          {
+            "choiceID": "37148",
+            "totalVotes": 2234,
+            "partyID": "REP",
+            "votePercent": 35.03,
+            "isWinner": false
+          },
+          {
+            "choiceID": "37765",
+            "totalVotes": 1111,
+            "partyID": "DEM",
+            "votePercent": 17.42,
+            "isWinner": false
+          },
+          {
+            "choiceID": "37721",
+            "totalVotes": 664,
+            "partyID": "DEM",
+            "votePercent": 10.41,
+            "isWinner": false
+          },
+          {
+            "choiceID": "9901",
+            "totalVotes": 13,
+            "partyID": "NON",
+            "votePercent": 0.2,
+            "isWinner": false
+          }
+        ],
+        "writeInChoices": []
+      },
+      "22058": {
+        "contestID": "22058",
+        "districtID": "01",
+        "precinctsReporting": 7,
+        "precinctsPartiallyReporting": 0,
+        "totalPrecincts": 7,
+        "totalVotes": 5235,
+        "recountType": 0,
+        "hasRecount": false,
+        "hasLocationResults": true,
+        "choices": [
+          {
+            "choiceID": "37203",
+            "totalVotes": 1992,
+            "partyID": "REP",
+            "votePercent": 38.05,
+            "isWinner": false
+          },
+          {
+            "choiceID": "37249",
+            "totalVotes": 1895,
+            "partyID": "REP",
+            "votePercent": 36.2,
+            "isWinner": false
+          },
+          {
+            "choiceID": "37431",
+            "totalVotes": 692,
+            "partyID": "DEM",
+            "votePercent": 13.22,
+            "isWinner": false
+          },
+          {
+            "choiceID": "37160",
+            "totalVotes": 644,
+            "partyID": "DEM",
+            "votePercent": 12.3,
+            "isWinner": false
+          },
+          {
+            "choiceID": "9901",
+            "totalVotes": 12,
+            "partyID": "NON",
+            "votePercent": 0.23,
+            "isWinner": false
+          }
+        ],
+        "writeInChoices": []
+      },
+      "22059": {
+        "contestID": "22059",
+        "districtID": "03",
+        "precinctsReporting": 4,
+        "precinctsPartiallyReporting": 0,
+        "totalPrecincts": 4,
+        "totalVotes": 6793,
+        "recountType": 0,
+        "hasRecount": false,
+        "hasLocationResults": true,
+        "choices": [
+          {
+            "choiceID": "37240",
+            "totalVotes": 2250,
+            "partyID": "REP",
+            "votePercent": 33.12,
+            "isWinner": false
+          },
+          {
+            "choiceID": "37242",
+            "totalVotes": 2243,
+            "partyID": "REP",
+            "votePercent": 33.02,
+            "isWinner": false
+          },
+          {
+            "choiceID": "37541",
+            "totalVotes": 1148,
+            "partyID": "DEM",
+            "votePercent": 16.9,
+            "isWinner": false
+          },
+          {
+            "choiceID": "37534",
+            "totalVotes": 1125,
+            "partyID": "DEM",
+            "votePercent": 16.56,
+            "isWinner": false
+          },
+          {
+            "choiceID": "9901",
+            "totalVotes": 27,
+            "partyID": "NON",
+            "votePercent": 0.4,
+            "isWinner": false
+          }
+        ],
+        "writeInChoices": []
+      }
+    }
+  },
+  "errorMessage": null
+}

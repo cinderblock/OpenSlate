@@ -240,20 +240,23 @@ function n(raw: unknown): number {
 }
 
 const MEASURE_PREFIX = String.raw`(?:(?:bonds?|levy|be retained)\s*-?\s*)?`;
+/** What may follow "For" or "Against": "FOR ISSUE NO. 1", "Against the Amendment". */
+const MEASURE_NOUN = String.raw`(?:\s+(?:the\s+)?(?:issue|amendment|measure|question|proposal|proposition|bonds?|levy|tax)\b.*)?`;
 const MEASURE_YES = new RegExp(
-  String.raw`^${MEASURE_PREFIX}yes(?:\s*[/,].*)?$|^(?:for|approved?|in favou?r|retain)$`,
+  String.raw`^${MEASURE_PREFIX}yes(?:\s*[/,].*|\s+for approval)?$|^for${MEASURE_NOUN}$|^(?:approved?|in favou?r|retain)$`,
   "i",
 );
 const MEASURE_NO = new RegExp(
-  String.raw`^${MEASURE_PREFIX}no(?:\s*[/,].*)?$|^(?:against|reject(?:ed)?|opposed?|do not retain)$`,
+  String.raw`^${MEASURE_PREFIX}no(?:\s*[/,].*|\s+for rejection)?$|^against${MEASURE_NOUN}$|^(?:reject(?:ed)?|opposed?|do not retain)$`,
   "i",
 );
 
 /**
  * Which side of a measure a choice is, however the office words it: "Yes",
  * "NO", "Bonds Yes", "Bonds - No", "Levy Yes", "Be Retained No", "Yes/For",
- * "No/Against", "For", "Against", "Approve", "Rejected", "Yes, in favor of
- * the question". Undefined for anything else (a person, "No Candidate Filed").
+ * "No/Against", "For", "Against", "FOR ISSUE NO. 1", "Approve", "Rejected",
+ * "Yes, in favor of the question", "Yes for Approval". Undefined for anything
+ * else (a person, "No Candidate Filed").
  */
 export function measureSide(name: string): "yes" | "no" | undefined {
   const text = name.trim();

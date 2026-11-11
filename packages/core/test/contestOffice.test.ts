@@ -293,6 +293,10 @@ describe("every contest of eleven states' counts", () => {
     // Nebraska's one chamber, half of it up.
     expect(seats("ne")).toEqual({ "us-house": 3, "state-upper": 25 });
     expect(seats("nc")).toEqual({ "us-house": 14, "state-upper": 50, "state-lower": 120 });
+    // Arkansas types its titles by hand: "District 01", "DIST 85", "State Senate, District 32".
+    expect(seats("ar")).toEqual({ "us-house": 4, "state-upper": 18, "state-lower": 100 });
+    // North Dakota: its odd-numbered districts, each electing a senator and two representatives.
+    expect(seats("nd")).toEqual({ "us-house": 1, "state-upper": 24, "state-lower": 24 });
     // Minnesota's House districts are a Senate district's halves: 1A, 1B.
     expect(seats("mn")).toEqual({ "us-house": 8, "state-upper": 67, "state-lower": 134 });
     expect(seats("pa")).toEqual({ "us-house": 17, "state-upper": 25, "state-lower": 203 });
@@ -328,6 +332,9 @@ describe("a measure", () => {
       "Approve",
       "Approved",
       "Yes, in favor of the question",
+      "Yes for Approval",
+      "FOR ISSUE NO. 1",
+      "For the Amendment",
     ]) {
       expect([yes, measureSide(yes)]).toEqual([yes, "yes"]);
     }
@@ -341,6 +348,8 @@ describe("a measure", () => {
       "Reject",
       "Rejected",
       "No, opposed to the question",
+      "No for Rejection",
+      "AGAINST ISSUE NO. 1",
     ]) {
       expect([no, measureSide(no)]).toEqual([no, "no"]);
     }
@@ -350,6 +359,8 @@ describe("a measure", () => {
       "Noah Smith",
       "Write-in",
       "Ford",
+      "For Real",
+      "Yes Man",
     ]) {
       expect([person, measureSide(person)]).toEqual([person, undefined]);
     }
@@ -374,6 +385,7 @@ describe("a measure", () => {
       "CI-132 CONSTITUTIONAL INITIATIVE NO. 132",
       "Public Question #1",
       "ISSUE NO. 1",
+      "Initiated Constitutional Measure No. 2 relating to funding of school lunches",
     ]) {
       expect([title, isStatewideMeasureTitle(title)]).toEqual([title, true]);
     }

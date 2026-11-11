@@ -189,6 +189,14 @@ export function contestOffice(rawTitle: string, hints: OfficeHints = {}): Contes
  */
 export function isStatewideMeasureTitle(rawTitle: string): boolean {
   const title = rawTitle.toLowerCase().replace(/\s+/g, " ").trim();
+  // One that opens as a change to the constitution is the state's, whatever
+  // it goes on to be about ("… relating to funding of school lunches").
+  if (
+    /^(?:[a-z]+ )?(?:proposed |initiated )?constitutional (?:amendment|measure|initiative|convention)\b/.test(
+      title,
+    )
+  )
+    return true;
   if (
     /\b(?:city|town|village|county|borough|township|parish|school|college|library|fire|hospital|park|water|sewer|port|transit|pud|utility|cemetery|road|levy|bonds?)\b/.test(
       title.split(/[:–—]| - /)[0] ?? "",

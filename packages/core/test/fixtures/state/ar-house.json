@@ -1,0 +1,83 @@
+{
+  "versionID": "v195",
+  "lastUpdated": "2026-11-10T22:31:52.2059921Z",
+  "electionID": "11b07106-031e-4d7c-911a-d01fb473d6dd",
+  "message": "",
+  "isOfficial": false,
+  "response": {
+    "contestType": "State Representative",
+    "contests": {
+      "00410f7d-9227-411a-bb29-f3ea938c76e2": {
+        "contestID": "00410f7d-9227-411a-bb29-f3ea938c76e2",
+        "districtID": null,
+        "precinctsReporting": 14,
+        "precinctsPartiallyReporting": 0,
+        "totalPrecincts": 14,
+        "totalVotes": 7316,
+        "recountType": 0,
+        "hasRecount": false,
+        "hasLocationResults": true,
+        "choices": [
+          {
+            "choiceID": "f68e1737-f7c7-48d5-a2dd-daa59eacd4f6",
+            "totalVotes": 3098,
+            "partyID": "4c1a540e-cfe4-4ba0-8435-1dd7c3eeb1e6",
+            "votePercent": 42.35,
+            "isWinner": false
+          },
+          {
+            "choiceID": "08c6cfa9-6e8e-45a5-ac47-30dc7a162162",
+            "totalVotes": 4218,
+            "partyID": "f9d5fae6-a1fb-4278-a4d1-5784e643689e",
+            "votePercent": 57.65,
+            "isWinner": false
+          }
+        ],
+        "writeInChoices": []
+      },
+      "0860aa02-2306-4aaa-b2fc-2b1644ceffcd": {
+        "contestID": "0860aa02-2306-4aaa-b2fc-2b1644ceffcd",
+        "districtID": null,
+        "precinctsReporting": 33,
+        "precinctsPartiallyReporting": 0,
+        "totalPrecincts": 33,
+        "totalVotes": 8629,
+        "recountType": 0,
+        "hasRecount": false,
+        "hasLocationResults": true,
+        "choices": [
+          {
+            "choiceID": "f016775a-861e-43de-8319-eb26a650c8f9",
+            "totalVotes": 8629,
+            "partyID": "4c1a540e-cfe4-4ba0-8435-1dd7c3eeb1e6",
+            "votePercent": 100,
+            "isWinner": false
+          }
+        ],
+        "writeInChoices": []
+      },
+      "0882e931-dfec-4839-a4a3-4bf7ce451317": {
+        "contestID": "0882e931-dfec-4839-a4a3-4bf7ce451317",
+        "districtID": "05119",
+        "precinctsReporting": 11,
+        "precinctsPartiallyReporting": 0,
+        "totalPrecincts": 11,
+        "totalVotes": 6287,
+        "recountType": 0,
+        "hasRecount": false,
+        "hasLocationResults": true,
+        "choices": [
+          {
+            "choiceID": "e0097a85-2a5d-4e32-a872-bff05549458d",
+            "totalVotes": 6287,
+            "partyID": "f9d5fae6-a1fb-4278-a4d1-5784e643689e",
+            "votePercent": 100,
+            "isWinner": false
+          }
+        ],
+        "writeInChoices": []
+      }
+    }
+  },
+  "errorMessage": null
+}

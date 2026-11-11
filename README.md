@@ -107,10 +107,10 @@ for it. Its two sides:
   statewide and legislative races but not local ones (a local race says so and
   points you to the county). What you follow stays in this browser. *Results*
   opens on the live count for the voter's own state. For the states that
-  publish a feed of everything (Arizona, Colorado, Georgia, Idaho, Iowa,
-  Michigan, Minnesota, Nebraska, New Mexico, North Carolina, Pennsylvania,
-  Rhode Island, South Carolina, South Dakota, Texas, Utah, Virginia,
-  Washington and West Virginia so far: `STATE_FEEDS` in
+  publish a feed of everything (Arizona, Arkansas, Colorado, Georgia, Idaho,
+  Iowa, Michigan, Nebraska, New Mexico, North Carolina, North Dakota,
+  Pennsylvania, Rhode Island, South Carolina, South Dakota, Texas, Utah,
+  Virginia, Washington and West Virginia so far: `STATE_FEEDS` in
   [`packages/core/src/stateResults.ts`](./packages/core/src/stateResults.ts))
   it is the state election office's own count, checked every minute: what the
   whole state votes on, the voter's own districts, and everything else behind

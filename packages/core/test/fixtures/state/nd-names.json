@@ -1,0 +1,310 @@
+{
+  "versionID": "v876",
+  "lastUpdated": "2026-11-10T23:21:28.7881788Z",
+  "electionID": "348",
+  "message": "",
+  "isOfficial": false,
+  "response": {
+    "contests": {
+      "1831": {
+        "contestId": "1831",
+        "contestName": "Constitutional Measure No. 1 relating to the threshold for approving a constitutional amendment from a simple majority to sixty percent ",
+        "contestTypeCode": "SW",
+        "contestOrder": 531,
+        "voteFor": 1,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "9001": {
+            "id": "9001",
+            "name": "Yes ",
+            "pictureFilename": "",
+            "partyID": "",
+            "color": "#939393",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "9002": {
+            "id": "9002",
+            "name": "No ",
+            "pictureFilename": "",
+            "partyID": "",
+            "color": "#939393",
+            "order": 2,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      },
+      "1832": {
+        "contestId": "1832",
+        "contestName": "Initiated Constitutional Measure No. 2 relating to funding of school lunches ",
+        "contestTypeCode": "SW",
+        "contestOrder": 584,
+        "voteFor": 1,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "9001": {
+            "id": "9001",
+            "name": "Yes ",
+            "pictureFilename": "",
+            "partyID": "",
+            "color": "#939393",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "9002": {
+            "id": "9002",
+            "name": "No ",
+            "pictureFilename": "",
+            "partyID": "",
+            "color": "#939393",
+            "order": 2,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      },
+      "21667": {
+        "contestId": "21667",
+        "contestName": "Agriculture Commissioner",
+        "contestTypeCode": "SW",
+        "contestOrder": 160,
+        "voteFor": 1,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "9901": {
+            "id": "9901",
+            "name": "  write-in ",
+            "pictureFilename": "",
+            "partyID": "NON",
+            "color": "#939393",
+            "order": 99,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "37386": {
+            "id": "37386",
+            "name": "Doug  Goehring ",
+            "pictureFilename": "",
+            "partyID": "REP",
+            "color": "#A02626",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "37720": {
+            "id": "37720",
+            "name": "Vern  Thompson ",
+            "pictureFilename": "",
+            "partyID": "DEM",
+            "color": "#424B5B",
+            "order": 2,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      },
+      "22057": {
+        "contestId": "22057",
+        "contestName": "State Representative District 37",
+        "contestTypeCode": "LEG",
+        "contestOrder": 719,
+        "voteFor": 2,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "9901": {
+            "id": "9901",
+            "name": "  write-in ",
+            "pictureFilename": "",
+            "partyID": "NON",
+            "color": "#939393",
+            "order": 99,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "37148": {
+            "id": "37148",
+            "name": "Kylan  Klauzer ",
+            "pictureFilename": "",
+            "partyID": "REP",
+            "color": "#A02626",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "37371": {
+            "id": "37371",
+            "name": "Vicky  Steiner ",
+            "pictureFilename": "",
+            "partyID": "REP",
+            "color": "#A02626",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "37721": {
+            "id": "37721",
+            "name": "Susan  Josephson ",
+            "pictureFilename": "",
+            "partyID": "DEM",
+            "color": "#424B5B",
+            "order": 2,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "37765": {
+            "id": "37765",
+            "name": "Shelley  Lenz ",
+            "pictureFilename": "",
+            "partyID": "DEM",
+            "color": "#424B5B",
+            "order": 2,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      },
+      "22058": {
+        "contestId": "22058",
+        "contestName": "State Representative District 01",
+        "contestTypeCode": "LEG",
+        "contestOrder": 638,
+        "voteFor": 2,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "9901": {
+            "id": "9901",
+            "name": "  write-in ",
+            "pictureFilename": "",
+            "partyID": "NON",
+            "color": "#939393",
+            "order": 99,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "37160": {
+            "id": "37160",
+            "name": "Steve  Thoring ",
+            "pictureFilename": "",
+            "partyID": "DEM",
+            "color": "#424B5B",
+            "order": 2,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "37203": {
+            "id": "37203",
+            "name": "David  Richter ",
+            "pictureFilename": "",
+            "partyID": "REP",
+            "color": "#A02626",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "37249": {
+            "id": "37249",
+            "name": "Laurie Garbel ",
+            "pictureFilename": "",
+            "partyID": "REP",
+            "color": "#A02626",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "37431": {
+            "id": "37431",
+            "name": "Alex  Johnson ",
+            "pictureFilename": "",
+            "partyID": "DEM",
+            "color": "#424B5B",
+            "order": 2,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      },
+      "22059": {
+        "contestId": "22059",
+        "contestName": "State Representative District 03",
+        "contestTypeCode": "LEG",
+        "contestOrder": 640,
+        "voteFor": 2,
+        "locationType": null,
+        "locationID": null,
+        "message": "",
+        "messageLink": "",
+        "choices": {
+          "9901": {
+            "id": "9901",
+            "name": "  write-in ",
+            "pictureFilename": "",
+            "partyID": "NON",
+            "color": "#939393",
+            "order": 99,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "37240": {
+            "id": "37240",
+            "name": "Blaine DesLauriers ",
+            "pictureFilename": "",
+            "partyID": "REP",
+            "color": "#A02626",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "37242": {
+            "id": "37242",
+            "name": "Timothy  Mihalick ",
+            "pictureFilename": "",
+            "partyID": "REP",
+            "color": "#A02626",
+            "order": 1,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "37534": {
+            "id": "37534",
+            "name": "Tara  Hiatt ",
+            "pictureFilename": "",
+            "partyID": "DEM",
+            "color": "#424B5B",
+            "order": 2,
+            "isWriteIn": false,
+            "isWinner": false
+          },
+          "37541": {
+            "id": "37541",
+            "name": "Natalie  Mclaughlin ",
+            "pictureFilename": "",
+            "partyID": "DEM",
+            "color": "#424B5B",
+            "order": 2,
+            "isWriteIn": false,
+            "isWinner": false
+          }
+        }
+      }
+    }
+  },
+  "errorMessage": null
+}

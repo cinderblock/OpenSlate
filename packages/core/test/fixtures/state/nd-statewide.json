@@ -1,0 +1,104 @@
+{
+  "versionID": "v876",
+  "lastUpdated": "2026-11-10T23:21:28.7881788Z",
+  "electionID": "348",
+  "message": "",
+  "isOfficial": false,
+  "response": {
+    "contestType": "SW",
+    "contests": {
+      "1831": {
+        "contestID": "1831",
+        "districtID": "",
+        "precinctsReporting": 358,
+        "precinctsPartiallyReporting": 0,
+        "totalPrecincts": 358,
+        "totalVotes": 233606,
+        "recountType": 0,
+        "hasRecount": false,
+        "hasLocationResults": true,
+        "choices": [
+          {
+            "choiceID": "9002",
+            "totalVotes": 131947,
+            "partyID": "   ",
+            "votePercent": 56.48,
+            "isWinner": true
+          },
+          {
+            "choiceID": "9001",
+            "totalVotes": 101659,
+            "partyID": "   ",
+            "votePercent": 43.52,
+            "isWinner": false
+          }
+        ],
+        "writeInChoices": []
+      },
+      "1832": {
+        "contestID": "1832",
+        "districtID": "",
+        "precinctsReporting": 358,
+        "precinctsPartiallyReporting": 0,
+        "totalPrecincts": 358,
+        "totalVotes": 235415,
+        "recountType": 0,
+        "hasRecount": false,
+        "hasLocationResults": true,
+        "choices": [
+          {
+            "choiceID": "9002",
+            "totalVotes": 119152,
+            "partyID": "   ",
+            "votePercent": 50.61,
+            "isWinner": true
+          },
+          {
+            "choiceID": "9001",
+            "totalVotes": 116263,
+            "partyID": "   ",
+            "votePercent": 49.39,
+            "isWinner": false
+          }
+        ],
+        "writeInChoices": []
+      },
+      "21667": {
+        "contestID": "21667",
+        "districtID": "",
+        "precinctsReporting": 358,
+        "precinctsPartiallyReporting": 0,
+        "totalPrecincts": 358,
+        "totalVotes": 233301,
+        "recountType": 0,
+        "hasRecount": false,
+        "hasLocationResults": true,
+        "choices": [
+          {
+            "choiceID": "37386",
+            "totalVotes": 146373,
+            "partyID": "REP",
+            "votePercent": 62.74,
+            "isWinner": false
+          },
+          {
+            "choiceID": "37720",
+            "totalVotes": 86612,
+            "partyID": "DEM",
+            "votePercent": 37.12,
+            "isWinner": false
+          },
+          {
+            "choiceID": "9901",
+            "totalVotes": 316,
+            "partyID": "NON",
+            "votePercent": 0.14,
+            "isWinner": false
+          }
+        ],
+        "writeInChoices": []
+      }
+    }
+  },
+  "errorMessage": null
+}
