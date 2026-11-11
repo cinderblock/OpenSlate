@@ -107,9 +107,9 @@ for it. Its two sides:
   statewide and legislative races but not local ones (a local race says so and
   points you to the county). What you follow stays in this browser. *Results*
   opens on the live count for the voter's own state. For the states that
-  publish a feed of everything (Alaska, Arizona, Arkansas, Colorado,
-  Delaware, the District of Columbia, Georgia, Hawaii, Idaho, Iowa,
-  Louisiana, Michigan, Montana,
+  publish a feed of everything (Arizona, Arkansas, Colorado, Delaware, the
+  District of Columbia, Georgia, Hawaii, Idaho, Iowa, Louisiana, Michigan,
+  Montana,
   Nebraska, New Mexico, North Carolina, North Dakota, Pennsylvania, Rhode
   Island, South Carolina, South Dakota, Texas, Utah, Virginia, Washington
   and West Virginia so far: `STATE_FEEDS` in

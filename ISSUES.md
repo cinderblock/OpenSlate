@@ -177,6 +177,53 @@ source each, with the evidence the scraper skill already saves) and a public sta
 "reviewed" means there.
 
 
+## State results: the states not read yet, and why each
+
+As of 2026-11-10 (`plans/national-scale.md` step 9; what every state publishes is in
+`plans/state-results/<code>.json`). The app reads California and the states in `STATE_FEEDS`
+(`packages/core/src/stateResults.ts`). Not read:
+
+- **A feed exists and the code doesn't read it yet.** Ohio (one IEEE 1622 XML document, 1.2 MB:
+  needs an XML reader that runs in a worker and in Bun), Indiana (Civix "FirstTuesday": a
+  settings file names a version, then a file per office category), Connecticut (a version
+  pointer, then a lookup file joined to votes; the lookup file carries candidates' home
+  addresses, so the relay should pass through only what is read), Nevada (a manifest naming
+  files by their SHA-256; needs a relay rule for `objects/<hash>.json`), Vermont (its legislative
+  districts are named, `ADDISON-1`, and `contestOffice` reads numbered and lettered ones only).
+- **A feed exists and can't be fetched.** Florida: `flelectionfiles.floridados.gov` has served
+  an expired TLS certificate since 2026-11-09. Minnesota: its file host answers a home
+  connection and refuses Cloudflare, where the public relay runs (HTTP 522), and sends no CORS
+  header; its parser is written and tested (`parseMnFile`, `UNREACHED_STATE_FEEDS`). Alaska:
+  its server leaves the intermediate certificate out of its chain, which Cloudflare's `fetch`
+  and Bun's reject (HTTP 526 from the public relay); its parser is written and tested too
+  (`parseAkPrecincts`). Kentucky
+  and Oklahoma refuse every automated reader; New Hampshire publishes spreadsheets behind a
+  block.
+- **Only web pages.** Alabama, Kansas (behind a Cloudflare challenge), Maryland, Missouri, New
+  York, Oregon, Tennessee. California's Alameda and San Joaquin counties are read this way
+  (`parseAcvoteHtml`), with a daily CI check that says when a page stops parsing; the user
+  agreed to that for those two on 2026-11-04, not for states.
+- **No live statewide count.** Illinois, Maine, Massachusetts, Mississippi, New Jersey,
+  Wisconsin: election night is the counties' or towns', and the state posts certified totals
+  weeks later. Wyoming posts spreadsheets.
+
+Why it matters: a voter in one of these is told their state isn't read yet
+(`ResultsView.tsx`). Check a new state through the production relay after deploying it, not
+only from a development machine: a state's bot protection can treat Cloudflare's addresses
+differently (Minnesota), and Bun's `fetch` rejects a certificate chain that Windows and
+browsers complete (Alaska).
+
+
+## `packages/core/src/stateResults.ts` holds the registry and every parser
+
+About 1,500 lines after twenty-five states and the District (2026-11-10): the `STATE_FEEDS` table and a parser per
+platform in one module, with one test file to match.
+
+Why it matters: the next platforms (see above) make it longer, and the web bundle carries every
+parser to show one state. Split it by platform (`stateResults/<kind>.ts`, a registry that names
+its parser), and consider loading a parser with the state that needs it.
+
+
 ## State results feeds are one election's, entered by hand
 
 `STATE_FEEDS` in `packages/core/src/stateResults.ts` holds each state's feed for the 2026-11-03

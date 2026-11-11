@@ -578,6 +578,12 @@ describe("Delaware, Louisiana, the District and Montana", () => {
 });
 
 describe("Hawaii and Alaska", () => {
+  // Alaska is read and parsed, but not offered: no relay can fetch its file.
+  const unreached = (code: string): StateFeed => {
+    const feed = UNREACHED_STATE_FEEDS[code];
+    if (!feed || stateFeed(code)) throw new Error(`${code} is not among the unreached feeds`);
+    return feed;
+  };
   const text = (name: string) =>
     readFileSync(join(import.meta.dir, "fixtures/state", name), "utf8");
 
@@ -607,7 +613,7 @@ describe("Hawaii and Alaska", () => {
 
   test("Alaska: every precinct's rows summed; the precincts a contest has are its total", () => {
     const fixture = text("ak-results.csv");
-    const { contests } = parseStateFiles(feedOf("ak"), { results: fixture });
+    const { contests } = parseStateFiles(unreached("ak"), { results: fixture });
     expect(contests.map((c) => c.title).sort()).toEqual([
       "House District 1",
       "Senate District A",
@@ -626,7 +632,7 @@ describe("Hawaii and Alaska", () => {
     // Forty precincts in the fixture; whether each has reported isn't in the file.
     expect(senate.precincts).toEqual({ total: 40, reporting: 0 });
     expect(rows.length).toBe(40 * senate.choices.length);
-    expect(() => parseStateFiles(feedOf("ak"), { results: "a,b\n1,2" })).toThrow(
+    expect(() => parseStateFiles(unreached("ak"), { results: "a,b\n1,2" })).toThrow(
       "not a precinct export",
     );
   });

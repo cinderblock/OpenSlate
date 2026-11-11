@@ -206,18 +206,6 @@ function totalVote(
  * what every state publishes, these and the ones not read yet).
  */
 export const STATE_FEEDS: Record<string, StateFeed> = {
-  ak: {
-    name: "Alaska",
-    kind: "ak-csv",
-    office: "Alaska Division of Elections",
-    election: "2026-11-03",
-    base: "https://www.elections.alaska.gov/enr/26GENR/results",
-    page: "https://www.elections.alaska.gov/election-results/",
-    cors: false,
-    units: "precincts",
-    files: { results: "GA_ENR_Precinct_State_of_Alaska.csv" },
-    lastModified: true,
-  },
   ar: totalResults(
     "Arkansas",
     "Arkansas Secretary of State",
@@ -474,8 +462,25 @@ export const STATE_FEEDS: Record<string, StateFeed> = {
  *   connections from Cloudflare, where the public relay runs (HTTP 522,
  *   checked 2026-11-10; the same request from a home connection answers).
  *   A relay on another network could read it.
+ * - Alaska: its server sends its certificate without the intermediate that
+ *   signs it. Windows and browsers fetch the missing one; Cloudflare's
+ *   `fetch` and Bun's don't (HTTP 526 from the public relay, and
+ *   `UNABLE_TO_VERIFY_LEAF_SIGNATURE` locally, 2026-11-10), and the file has
+ *   no CORS header for a browser to read it itself.
  */
 export const UNREACHED_STATE_FEEDS: Record<string, StateFeed> = {
+  ak: {
+    name: "Alaska",
+    kind: "ak-csv",
+    office: "Alaska Division of Elections",
+    election: "2026-11-03",
+    base: "https://www.elections.alaska.gov/enr/26GENR/results",
+    page: "https://www.elections.alaska.gov/election-results/",
+    cors: false,
+    units: "precincts",
+    files: { results: "GA_ENR_Precinct_State_of_Alaska.csv" },
+    lastModified: true,
+  },
   mn: {
     name: "Minnesota",
     kind: "mn-text",
