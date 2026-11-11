@@ -350,8 +350,13 @@ deployments, like ca.openslate.us? How could we scale to the world?", then
   Chrome). The Live page for other states is left: see "Every state's
   results" below.
 - [x] Step 5: SPEC §3.3.
-- [ ] Step 6: federal coverage.
-- [ ] Step 7: a second state.
+- [ ] Step 6: federal coverage. Set aside by the user 2026-11-10 for another
+  thread or crowdsourcing (reviewing new data is someone else's job); what
+  it needs is in `ISSUES.md` ("Other states have no ballot listings or
+  endorsements").
+- [ ] Step 7: a second state. Its machinery is done here (districts, towns,
+  maps, Virginia's live count); its listing and endorsers are the same
+  set-aside data work as step 6.
 - [ ] Step 8: the world.
 - [ ] Step 9: every state's results. 16 of the 34 readable states done
   2026-11-10 (11 live on openslate.us at `7c502fa`; the production relay

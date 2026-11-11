@@ -152,6 +152,31 @@ on one page. Unifying them means watch-list ids that say whose count a contest i
 (`st-va:us-house/11` already does, as a race id), and the recorder taking state feeds.
 
 
+## Other states have no ballot listings or endorsements: the data work needs its own reviewer
+
+Set aside 2026-11-10 by the user ("I'll need someone else to do that. stash for another thread
+and/or crowdsourcing"); `plans/national-scale.md` steps 6 and 7. The app works in every state
+now (districts, towns, maps, 16 states' live counts), and the catalog
+(`openslate-public-endorsements`) is cut by state, but everything in it is California's. A voter
+in Virginia sees their districts and their state's count, and no races to plan.
+
+What is missing, each a piece someone can take:
+
+- **Ballot listings** (SPEC §8.2) for another state's next election: what's on the ballot, by
+  jurisdiction path (SPEC §3.3, towns included). Virginia and New Jersey vote 2027-11-02.
+- **National organizations' House and Senate endorsements**, filed under `us/<st>/cd-<n>` and
+  `us/<st>`: one source reaches every state.
+- **A state's own endorsers** (papers, parties, unions, clubs), as California's are
+  (`.claude/skills/endorsement-scraper`).
+
+Why it isn't just run: the catalog signs what it is given, in CI, with the project's key. Every
+source California has was read by a person before it was signed. Nobody is set to do that for
+49 more states, so nothing was imported. It needs either a reviewer per state, or a way for
+strangers to propose sources that keeps the review (pull requests against the catalog repo, one
+source each, with the evidence the scraper skill already saves) and a public statement of what
+"reviewed" means there.
+
+
 ## State results feeds are one election's, entered by hand
 
 `STATE_FEEDS` in `packages/core/src/stateResults.ts` holds each state's feed for the 2026-11-03
